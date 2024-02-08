@@ -1,2 +1,1 @@
-# eclang
- Easy C Lang
+# ec-lang "Easy C Lang"
