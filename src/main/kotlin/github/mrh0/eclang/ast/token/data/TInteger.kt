@@ -4,10 +4,9 @@ import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.IRValue
+import github.mrh0.eclang.ir.data.IRInt
 import github.mrh0.eclang.types.EcTypeAny
 import github.mrh0.eclang.types.numbers.EcTypeInt
-import github.mrh0.eclang.values.numbers.GsInt
 
 class TInteger(location: Loc, private val value: Int) : Tok(location) {
     override fun toString(): String {
@@ -15,6 +14,6 @@ class TInteger(location: Loc, private val value: Int) : Tok(location) {
     }
 
     override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
-        return EcTypeInt to IRValue(location, GsInt(value))
+        return EcTypeInt to IRInt(location, value)
     }
 }

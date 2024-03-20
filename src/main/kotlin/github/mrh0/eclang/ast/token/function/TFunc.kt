@@ -10,7 +10,6 @@ import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.ir.function.IRFunc
 import github.mrh0.eclang.types.EcTypeAny
 import github.mrh0.eclang.types.EcTypeNone
-import github.mrh0.eclang.values.GsValueNone
 import github.mrh0.eclang.context.state.Variable
 
 class TFunc(location: Loc, val block: TBlock, val prefix: String, val name: String, val args: MutableList<TArgument>, val returns: ITok) : Tok(location) {
@@ -27,7 +26,7 @@ class TFunc(location: Loc, val block: TBlock, val prefix: String, val name: Stri
     override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
         cd.newContext(name)
         val argPairs = args.map { Pair(it.name, it.process(cd).first) }.toTypedArray()
-        argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second, GsValueNone)) }
+        argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
         val returnType = returns.process(cd).first
         val ir = block.process(cd)
         funcIR = IRFunc(location, ir.second as IRBlock, name, argPairs, returnType)

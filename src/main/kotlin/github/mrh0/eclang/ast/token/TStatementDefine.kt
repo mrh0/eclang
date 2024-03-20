@@ -7,13 +7,12 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRStatementDefine
 import github.mrh0.eclang.types.EcTypeAny
-import github.mrh0.eclang.values.GsValueNone
 import github.mrh0.eclang.context.state.Variable
 
 class TStatementDefine(location: Loc, private val varName: String, private val expr: ITok) : Tok(location) {
     override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
         val ir = expr.process(cd)
-        val index = cd.ctx().define(location, Variable(varName, ir.first, GsValueNone))
+        val index = cd.ctx().define(location, Variable(varName, ir.first))
         return Pair(ir.first, IRStatementDefine(location, index, ir.second))
     }
 

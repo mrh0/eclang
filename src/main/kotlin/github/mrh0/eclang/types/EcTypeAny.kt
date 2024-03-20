@@ -8,7 +8,7 @@ abstract class EcTypeAny(val namespace: String, val identifier: String) {
         return "$namespace.$identifier"
     }
 
-    open fun accepts(location: Loc, type: EcTypeAny): Boolean = type == this
+    open fun accepts(location: Loc, type: EcTypeAny): Boolean = true
 
     open fun cast(location: Loc, to: EcTypeAny): EcTypeAny {
         if(!this.accepts(location, to)) throw EcError(location, "Cannot cast $this to $to")

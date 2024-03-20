@@ -112,12 +112,12 @@ public class EclangLexer extends Lexer {
 
 
 	  private final DenterHelper denter = new DenterHelper(NL,
-	                                                       GoodscriptParser.INDENT,
-	                                                       GoodscriptParser.DEDENT)
+			  EclangParser.INDENT,
+			  EclangParser.DEDENT)
 	  {
 	    @Override
 	    public Token pullToken() {
-	      return GoodscriptLexer.super.nextToken();
+	      return EclangLexer.super.nextToken();
 	    }
 	  };
 

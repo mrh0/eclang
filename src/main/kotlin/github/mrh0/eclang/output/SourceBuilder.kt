@@ -1,6 +1,9 @@
 package github.mrh0.eclang.output
 
+import java.util.*
+
 open class SourceBuilder {
+    val scopeStack: Stack<BlockScope> = Stack()
     val sb: StringBuilder = StringBuilder()
     override fun toString() = sb.toString()
 

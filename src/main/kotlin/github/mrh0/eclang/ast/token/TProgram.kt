@@ -9,11 +9,7 @@ import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.function.IRFunc
 import github.mrh0.eclang.ir.IRProgram
 import github.mrh0.eclang.types.EcTypeAny
-import github.mrh0.eclang.types.EcTypeGlobalFunction
 import github.mrh0.eclang.types.EcTypeNone
-import github.mrh0.eclang.values.GsGlobalFunction
-import github.mrh0.eclang.context.function.FunctionManager
-import github.mrh0.eclang.context.state.GlobalFunctionReference
 
 class TProgram(location: Loc, private val functions: MutableList<TFunc>, val uses: List<ITok>) : Tok(location) {
 
@@ -29,9 +25,9 @@ class TProgram(location: Loc, private val functions: MutableList<TFunc>, val use
         val argNames = res.first.map { it.first }.toTypedArray()
         val argTypes = res.first.map { it.second }.toTypedArray()
         val retType = res.second
-        val fos = FunctionManager.INSTANCE.addOverride(func.location, func.name, argNames, argTypes, retType, UserCallable(func::getFuncIR))
-        if(fos.getNumberOfOverrides() == 1)
-            cd.getGlobal().define(location, GlobalFunctionReference(func.name, EcTypeGlobalFunction, GsGlobalFunction(fos)))
+        //val fos = FunctionManager.INSTANCE.addOverride(func.location, func.name, argNames, argTypes, retType, UserCallable(func::getFuncIR))
+        //if(fos.getNumberOfOverrides() == 1)
+        //    cd.getGlobal().define(location, GlobalFunctionReference(func.name, EcTypeGlobalFunction, GsGlobalFunction(fos)))
     }
 
     override fun toString(): String {

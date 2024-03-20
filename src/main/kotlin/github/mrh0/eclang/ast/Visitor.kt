@@ -21,12 +21,9 @@ import github.mrh0.eclang.ast.token.op.compare.TNotEquals
 import github.mrh0.eclang.ast.token.op.logical.TNot
 import github.mrh0.eclang.ast.token.op.logical.TNotNot
 import github.mrh0.eclang.ast.token.type.TTypeByName
-import github.mrh0.eclang.ast.token.use.TUseAllFromModule
-import github.mrh0.eclang.ast.token.use.TUseFromModule
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import java.io.File
-
 
 class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
@@ -52,13 +49,13 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitProgram(ctx: EclangParser.ProgramContext): ITok = TProgram(loc(ctx), visit(ctx.functions), visit(ctx.use()))
 
     // Use
-    override fun visitUseFromModule(ctx: EclangParser.UseFromModuleContext): ITok {
-        return TUseFromModule(loc(ctx), ctx.exports.map { it.text }, ctx.from.text.substring(1, ctx.from.text.length-1))
-    }
+    // override fun visitUseFromModule(ctx: EclangParser.UseFromModuleContext): ITok {
+    //     return TUseFromModule(loc(ctx), ctx.exports.map { it.text }, ctx.from.text.substring(1, ctx.from.text.length-1))
+    // }
 
-    override fun visitUseAllFromModule(ctx: EclangParser.UseAllFromModuleContext): ITok {
-        return TUseAllFromModule(loc(ctx), ctx.from.text.substring(1, ctx.from.text.length-1))
-    }
+    // override fun visitUseAllFromModule(ctx: EclangParser.UseAllFromModuleContext): ITok {
+    //     return TUseAllFromModule(loc(ctx), ctx.from.text.substring(1, ctx.from.text.length-1))
+    // }
 
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
@@ -88,7 +85,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     // Expressions
     override fun visitExprNest(ctx: EclangParser.ExprNestContext): ITok = visit(ctx.expr())
-    override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
+    // override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
 
     // Primitives
     override fun visitNumberInt(ctx: EclangParser.NumberIntContext): ITok = TInteger(loc(ctx), Integer.valueOf(ctx.text.replace("_", "")))
@@ -100,7 +97,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitPrimitiveAtom(ctx: EclangParser.PrimitiveAtomContext): ITok = TAtom(loc(ctx), ctx.text.substring(1).lowercase())
 
     //Natives
-    override fun visitExprTuple(ctx: EclangParser.ExprTupleContext): ITok = TTuple(loc(ctx), visit(ctx.values))
+    // override fun visitExprTuple(ctx: EclangParser.ExprTupleContext): ITok = TTuple(loc(ctx), visit(ctx.values))
 
     // Ops
     override fun visitExprBinOp(ctx: EclangParser.ExprBinOpContext): ITok = when (ctx.binOp().text) {
