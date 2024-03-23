@@ -8,7 +8,7 @@ import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.compare.equals.IREqualsFallback
 import github.mrh0.eclang.ir.compare.equals.IREqualsIntInt
 import github.mrh0.eclang.types.numbers.EcTypeInt
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
 
 class TLessThan(location: Loc, private val left: ITok, private val right: ITok) : Tok(location) {
@@ -16,7 +16,7 @@ class TLessThan(location: Loc, private val left: ITok, private val right: ITok) 
         return "($left < $right)"
     }
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         val l = left.process(cd);
         val r = right.process(cd);
         return when {

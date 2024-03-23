@@ -4,32 +4,16 @@ import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.ast.token.TBlock
-import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.IRBlock
-import github.mrh0.eclang.ir.function.IRFunc
-import github.mrh0.eclang.types.EcTypeAny
-import github.mrh0.eclang.types.EcTypeNone
-import github.mrh0.eclang.context.state.Variable
+import github.mrh0.eclang.types.EcType
 
-class TFunc(location: Loc, val block: TBlock, val prefix: String, val name: String, val args: MutableList<TArgument>, val returns: ITok) : Tok(location) {
-    override fun toString() = "$prefix:$name($args, $block)"
+abstract class TFunc(location: Loc, val name: String, val args: TParameters, val returns: ITok) : Tok(location) {
+    override fun toString() = "SHOULD NOT HAPPEN"
 
-    private var funcIR: IRFunc? = null
-    fun getFuncIR() = funcIR ?: throw Exception("User function supplier is empty. This should never happen!")
-    fun processSignature(cd: CompileData): Pair<List<Pair<String, EcTypeAny>>, EcTypeAny> {
-        val argPairs = args.map { Pair(it.name, it.process(cd).first) }
+    fun processSignature(cd: CompileData): Pair<List<Pair<String, EcType>>, EcType> {
+        val argPairs = args.get().map { Pair(it.name, it.process(cd).first) }
         val returnType = returns.process(cd).first
         return Pair(argPairs, returnType)
     }
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
-        cd.newContext(name)
-        val argPairs = args.map { Pair(it.name, it.process(cd).first) }.toTypedArray()
-        argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
-        val returnType = returns.process(cd).first
-        val ir = block.process(cd)
-        funcIR = IRFunc(location, ir.second as IRBlock, name, argPairs, returnType)
-        return Pair(EcTypeNone, funcIR!!)
-    }
+    open fun getSourceName(): String? = null
 }

@@ -6,7 +6,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRBlock
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 
 class TBlock(location: Loc, val statements: MutableList<ITok>) : Tok(location) {
@@ -14,7 +14,7 @@ class TBlock(location: Loc, val statements: MutableList<ITok>) : Tok(location) {
         return "$statements"
     }
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         val ir = statements.map { it.process(cd).second }
         return Pair(EcTypeNone, IRBlock(location, ir))
     }

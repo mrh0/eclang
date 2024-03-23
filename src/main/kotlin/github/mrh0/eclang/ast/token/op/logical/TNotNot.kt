@@ -7,7 +7,7 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.logical.notnot.IRNotNotInt
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
 import github.mrh0.eclang.types.numbers.EcTypeInt
 
@@ -16,7 +16,7 @@ class TNotNot(location: Loc, val expr: ITok) : Tok(location) {
         return "TNotNot($expr)"
     }
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         val e = expr.process(cd);
         return when (e.first) {
             is EcTypeBool -> Pair(EcTypeBool, e.second)

@@ -6,11 +6,16 @@ import github.mrh0.eclang.antlr.EclangParser
 import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.Visitor
 import github.mrh0.eclang.ast.ITok
+import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
+import github.mrh0.eclang.context.function.GlobalFunctions
 import github.mrh0.eclang.output.SourceBuilder
 import github.mrh0.eclang.output.c.CSourceBuilder
+import github.mrh0.eclang.types.EcTypeNone
+import github.mrh0.eclang.types.EcTypeString
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
+import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Path
 import kotlin.time.ExperimentalTime
@@ -38,7 +43,11 @@ fun main(args: Array<String>) {
 
         val outputBuilder = CSourceBuilder();
         ir.toC(outputBuilder, Context.IDENTITY)
+
+        println("Output:")
         println(outputBuilder.toString())
+
+        File("./out.c").writeText(outputBuilder.toString())
     }
     println(timeTaken);
 }

@@ -7,11 +7,11 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.branch.IRInlineIf
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
 
 class TInlineIf(location: Loc, private val condition: ITok, private val body: ITok, private val elseBody: ITok) : Tok(location) {
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         val conditionPair = condition.process(cd)
         val bodyPair = body.process(cd)
         val elseBodyPair = elseBody.process(cd)

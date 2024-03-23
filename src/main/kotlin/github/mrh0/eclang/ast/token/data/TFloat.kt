@@ -5,7 +5,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.data.IRFloat
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.numbers.EcTypeFloat
 
 class TFloat(location: Loc, private val value: Double) : Tok(location) {
@@ -13,7 +13,7 @@ class TFloat(location: Loc, private val value: Double) : Tok(location) {
         return "${value}f"
     }
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         return EcTypeFloat to IRFloat(location, value)
     }
 }

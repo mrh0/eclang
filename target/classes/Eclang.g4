@@ -8,12 +8,12 @@ tokens { INDENT, DEDENT }
 
 @lexer::members {
   private final DenterHelper denter = new DenterHelper(NL,
-                                                       GoodscriptParser.INDENT,
-                                                       GoodscriptParser.DEDENT)
+                                                       EclangParser.INDENT,
+                                                       EclangParser.DEDENT)
   {
     @Override
     public Token pullToken() {
-      return GoodscriptLexer.super.nextToken();
+      return EclangLexer.super.nextToken();
     }
   };
 
@@ -80,6 +80,12 @@ lambda:
     | '(' args+=argument (',' args+=argument)+ ')' '=>' expr        #lambdaArgs
     ;
 
+functionCall:
+      NAME '(' ')'                                          #functionCallNoArgs
+    | NAME '('? args+=expr ')'?                             #functionCallWithArgs
+    | NAME '(' args+=expr (',' args+=expr)* ')'             #functionCallWithArgs
+    ;
+
 expr:
       'here'                                                        #exprHere
     | left=expr binOp right=expr                                    #exprBinOp
@@ -96,14 +102,15 @@ expr:
     | expr '.' NAME                                                 #exprAccessName
     | expr '[' expr ']'                                             #exprAccessor
     | lambda                                                        #exprLambda
+    | functionCall                                                  #exprFunctionCall
     ;
 
 type:
-      NAME                                  #typeByName
-    | type '|' type ('|' type)*             #typeUnion
-    | type '&' type ('&' type)*             #typeTuple
-    | '(' type (',' type)* ')' '=>' type    #typeCallSignature
-    | '(' type ')'                          #typeNest
+      NAME                                                          #typeByName
+    | types+=type '|' types+=type ('|' types+=type)*                #typeUnion
+    | types+=type '&' types+=type ('&' types+=type)*                #typeTuple
+    | '(' type (',' type)* ')' '=>' type                            #typeCallSignature
+    | '(' type ')'                                                  #typeNest
     ;
 
 argument:
@@ -116,11 +123,6 @@ orderExpression:
       'orderby' expr
     | 'orderasc'
     | 'orderdesc'
-    ;
-
-functionCall:
-      NAME '('? args+=expr (',' args+=expr)* ')'?           #functionCallWithArgs
-    | NAME '(' ')'                                          #functionCallNoArgs
     ;
 
 statement:
@@ -156,8 +158,9 @@ funcPrefix:
     ;
 
 func:
-      funcPrefix? 'fn' name=NAME '(' args+=argument? (',' args+=argument)* ')' ':' returnType=type 'do' body=block
-    | funcPrefix? 'fn' name=NAME '(' args+=argument? (',' args+=argument)* ')' '=' expression=expr
+      'external' 'fn' name=NAME '(' args+=argument? (',' args+=argument)* ')' ':' returnType=type 'as' externalName=STRING NL   #functionExternal
+    | funcPrefix? 'fn' name=NAME '(' args+=argument? (',' args+=argument)* ')' ':' returnType=type 'do' body=block              #functionBlock
+    | funcPrefix? 'fn' name=NAME '(' args+=argument? (',' args+=argument)* ')' (':' returnType=type)? '=' expression=expr NL    #functionExpr
     ;
 
 program:

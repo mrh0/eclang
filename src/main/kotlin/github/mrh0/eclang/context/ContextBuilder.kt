@@ -4,7 +4,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.error.EcAssignTypeError
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcNotDefinedError
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.context.state.IVar
 
 class ContextBuilder(val contextName: String) {
@@ -35,7 +35,7 @@ class ContextBuilder(val contextName: String) {
         return if(map.containsKey(name)) map[name]!! else throw EcNotDefinedError(location, name)
     }
 
-    fun assign(location: Loc, name: String, type: EcTypeAny): Int {
+    fun assign(location: Loc, name: String, type: EcType): Int {
         if(!map.containsKey(name))
             throw EcNotDefinedError(location, name)
         if(type != get(location, name).getType())

@@ -170,6 +170,30 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitLambdaArgs(EclangParser.LambdaArgsContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code functionCallNoArgs}
+	 * labeled alternative in {@link EclangParser#functionCall}.
+	 * @param ctx the parse tree
+	 */
+	void enterFunctionCallNoArgs(EclangParser.FunctionCallNoArgsContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code functionCallNoArgs}
+	 * labeled alternative in {@link EclangParser#functionCall}.
+	 * @param ctx the parse tree
+	 */
+	void exitFunctionCallNoArgs(EclangParser.FunctionCallNoArgsContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code functionCallWithArgs}
+	 * labeled alternative in {@link EclangParser#functionCall}.
+	 * @param ctx the parse tree
+	 */
+	void enterFunctionCallWithArgs(EclangParser.FunctionCallWithArgsContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code functionCallWithArgs}
+	 * labeled alternative in {@link EclangParser#functionCall}.
+	 * @param ctx the parse tree
+	 */
+	void exitFunctionCallWithArgs(EclangParser.FunctionCallWithArgsContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprNest}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -350,6 +374,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprUnOp(EclangParser.ExprUnOpContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprFunctionCall}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprFunctionCall(EclangParser.ExprFunctionCallContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprFunctionCall}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprFunctionCall(EclangParser.ExprFunctionCallContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code typeUnion}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
@@ -455,30 +491,6 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitOrderExpression(EclangParser.OrderExpressionContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code functionCallWithArgs}
-	 * labeled alternative in {@link EclangParser#functionCall}.
-	 * @param ctx the parse tree
-	 */
-	void enterFunctionCallWithArgs(EclangParser.FunctionCallWithArgsContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code functionCallWithArgs}
-	 * labeled alternative in {@link EclangParser#functionCall}.
-	 * @param ctx the parse tree
-	 */
-	void exitFunctionCallWithArgs(EclangParser.FunctionCallWithArgsContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code functionCallNoArgs}
-	 * labeled alternative in {@link EclangParser#functionCall}.
-	 * @param ctx the parse tree
-	 */
-	void enterFunctionCallNoArgs(EclangParser.FunctionCallNoArgsContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code functionCallNoArgs}
-	 * labeled alternative in {@link EclangParser#functionCall}.
-	 * @param ctx the parse tree
-	 */
-	void exitFunctionCallNoArgs(EclangParser.FunctionCallNoArgsContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code statementDefine}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -682,15 +694,41 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitFuncPrefix(EclangParser.FuncPrefixContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link EclangParser#func}.
+	 * Enter a parse tree produced by the {@code functionExternal}
+	 * labeled alternative in {@link EclangParser#func}.
 	 * @param ctx the parse tree
 	 */
-	void enterFunc(EclangParser.FuncContext ctx);
+	void enterFunctionExternal(EclangParser.FunctionExternalContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link EclangParser#func}.
+	 * Exit a parse tree produced by the {@code functionExternal}
+	 * labeled alternative in {@link EclangParser#func}.
 	 * @param ctx the parse tree
 	 */
-	void exitFunc(EclangParser.FuncContext ctx);
+	void exitFunctionExternal(EclangParser.FunctionExternalContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code functionBlock}
+	 * labeled alternative in {@link EclangParser#func}.
+	 * @param ctx the parse tree
+	 */
+	void enterFunctionBlock(EclangParser.FunctionBlockContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code functionBlock}
+	 * labeled alternative in {@link EclangParser#func}.
+	 * @param ctx the parse tree
+	 */
+	void exitFunctionBlock(EclangParser.FunctionBlockContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code functionExpr}
+	 * labeled alternative in {@link EclangParser#func}.
+	 * @param ctx the parse tree
+	 */
+	void enterFunctionExpr(EclangParser.FunctionExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code functionExpr}
+	 * labeled alternative in {@link EclangParser#func}.
+	 * @param ctx the parse tree
+	 */
+	void exitFunctionExpr(EclangParser.FunctionExprContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EclangParser#program}.
 	 * @param ctx the parse tree

@@ -6,10 +6,10 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRStatementReturn
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 
 class TStatementReturn(location: Loc, val next: ITok) : Tok(location) {
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         val ir = next.process(cd)
         return Pair(ir.first, IRStatementReturn(location, ir.second))
     }

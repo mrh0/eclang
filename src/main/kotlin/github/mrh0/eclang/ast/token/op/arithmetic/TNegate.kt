@@ -7,7 +7,7 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.arithmetic.negate.IRNegateInt
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.numbers.EcTypeInt
 
 class TNegate(location: Loc, val expr: ITok) : Tok(location) {
@@ -15,7 +15,7 @@ class TNegate(location: Loc, val expr: ITok) : Tok(location) {
         return "TNegate($expr)"
     }
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         val e = expr.process(cd);
         return when (e.first) {
             is EcTypeInt -> Pair(EcTypeInt, IRNegateInt(location, e.second))

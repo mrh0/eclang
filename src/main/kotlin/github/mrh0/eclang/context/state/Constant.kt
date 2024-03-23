@@ -1,8 +1,8 @@
 package github.mrh0.eclang.context.state
 
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 
-class Constant(private val name: String, private val type: EcTypeAny) : IVar {
+class Constant(private val name: String, private val type: EcType) : IVar {
     override fun getName() = name
     override fun getType() = type
 }

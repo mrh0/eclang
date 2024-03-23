@@ -106,6 +106,20 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLambdaArgs(EclangParser.LambdaArgsContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code functionCallNoArgs}
+	 * labeled alternative in {@link EclangParser#functionCall}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionCallNoArgs(EclangParser.FunctionCallNoArgsContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code functionCallWithArgs}
+	 * labeled alternative in {@link EclangParser#functionCall}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionCallWithArgs(EclangParser.FunctionCallWithArgsContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprNest}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -211,6 +225,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprUnOp(EclangParser.ExprUnOpContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprFunctionCall}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprFunctionCall(EclangParser.ExprFunctionCallContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code typeUnion}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
@@ -272,20 +293,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitOrderExpression(EclangParser.OrderExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code functionCallWithArgs}
-	 * labeled alternative in {@link EclangParser#functionCall}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFunctionCallWithArgs(EclangParser.FunctionCallWithArgsContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code functionCallNoArgs}
-	 * labeled alternative in {@link EclangParser#functionCall}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFunctionCallNoArgs(EclangParser.FunctionCallNoArgsContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementDefine}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -405,11 +412,26 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFuncPrefix(EclangParser.FuncPrefixContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link EclangParser#func}.
+	 * Visit a parse tree produced by the {@code functionExternal}
+	 * labeled alternative in {@link EclangParser#func}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFunc(EclangParser.FuncContext ctx);
+	T visitFunctionExternal(EclangParser.FunctionExternalContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code functionBlock}
+	 * labeled alternative in {@link EclangParser#func}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionBlock(EclangParser.FunctionBlockContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code functionExpr}
+	 * labeled alternative in {@link EclangParser#func}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionExpr(EclangParser.FunctionExprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#program}.
 	 * @param ctx the parse tree

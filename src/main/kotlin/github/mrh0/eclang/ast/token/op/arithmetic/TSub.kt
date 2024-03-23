@@ -8,14 +8,14 @@ import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.arithmetic.sub.IRSubIntInt
 import github.mrh0.eclang.types.numbers.EcTypeInt
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 
 class TSub(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
     override fun toString(): String {
         return "($left - $right)"
     }
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         val l = left.process(cd);
         val r = right.process(cd);
         return when {

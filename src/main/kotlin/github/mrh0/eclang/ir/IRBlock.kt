@@ -6,7 +6,7 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 
 class IRBlock(location: Loc, val statements: List<IIR>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
-        TODO("Not yet implemented")
+        statements.forEach { it.toC(sb, c) }
     }
 
     override fun toString(): String {

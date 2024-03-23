@@ -7,11 +7,11 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.loop.IRStatementWhile
 import github.mrh0.eclang.ir.loop.IRStatementWhileElse
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 
 class TStatementWhile(location: Loc, private val condition: ITok, private val body: ITok, private val elseBody: ITok?) : Tok(location) {
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         val conditionIR = condition.process(cd)
         val bodyIR = body.process(cd)
 

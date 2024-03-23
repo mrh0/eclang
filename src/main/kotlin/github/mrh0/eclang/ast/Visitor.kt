@@ -1,15 +1,18 @@
 package github.mrh0.eclang.ast
 
+import github.mrh0.eclang.Util
 import github.mrh0.eclang.antlr.EclangBaseVisitor
 import github.mrh0.eclang.antlr.EclangParser
 import github.mrh0.eclang.ast.token.*
 import github.mrh0.eclang.ast.token.branch.TInlineIf
 import github.mrh0.eclang.ast.token.branch.TStatementIf
 import github.mrh0.eclang.ast.token.data.*
-import github.mrh0.eclang.ast.token.function.TArgument
-import github.mrh0.eclang.ast.token.function.TExprCall
-import github.mrh0.eclang.ast.token.function.TFunc
-import github.mrh0.eclang.ast.token.function.TStatementCall
+import github.mrh0.eclang.ast.token.function.TParameter
+import github.mrh0.eclang.ast.token.function.call.TExprCall
+import github.mrh0.eclang.ast.token.function.TFuncBlock
+import github.mrh0.eclang.ast.token.function.TFuncExternal
+import github.mrh0.eclang.ast.token.function.TParameters
+import github.mrh0.eclang.ast.token.function.call.TStatementCall
 import github.mrh0.eclang.ast.token.loop.TStatementBreak
 import github.mrh0.eclang.ast.token.loop.TStatementContinue
 import github.mrh0.eclang.ast.token.loop.TStatementWhile
@@ -61,8 +64,16 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
 
     // Functions
-    override fun visitFunc(ctx: EclangParser.FuncContext): ITok {
-        return TFunc(loc(ctx), cvisit(ctx.body), ctx.funcPrefix()?.text ?: "", ctx.name.text, visit(ctx.args), visit(ctx.returnType))
+    override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {
+        return TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.args)) , visit(ctx.returnType))
+    }
+
+    // override fun visitFunctionExpr(ctx: EclangParser.FunctionExprContext): ITok {
+    //     return TFunc(loc(ctx), cvisit(ctx.expr()), ctx.funcPrefix()?.text ?: "", ctx.name.text, visit(ctx.args), visit(ctx.returnType))
+    // }
+
+    override fun visitFunctionExternal(ctx: EclangParser.FunctionExternalContext): ITok {
+        return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.args)), visit(ctx.returnType), Util.getStringContent(ctx.externalName.text))
     }
 
     override fun visitBlock(ctx: EclangParser.BlockContext): ITok = TBlock(loc(ctx), visit(ctx.statements))
@@ -72,7 +83,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     }
 
     override fun visitArgumentTyped(ctx: EclangParser.ArgumentTypedContext): ITok {
-        return TArgument(loc(ctx), ctx.NAME().text, visit(ctx.type()) as TTypeByName)
+        return TParameter(loc(ctx), ctx.NAME().text, visit(ctx.type()) as TTypeByName)
     }
 
     override fun visitFunctionCallNoArgs(ctx: EclangParser.FunctionCallNoArgsContext): ITok = TStatementCall(loc(ctx), ctx.NAME().text, arrayListOf())
@@ -93,7 +104,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitNumberHex(ctx: EclangParser.NumberHexContext): ITok = TInteger(loc(ctx), Integer.decode(ctx.text))
     override fun visitNumberFloat(ctx: EclangParser.NumberFloatContext): ITok = TFloat(loc(ctx), ctx.text.toDouble())
     override fun visitPrimitiveBool(ctx: EclangParser.PrimitiveBoolContext): ITok = TBoolean(loc(ctx), ctx.BOOL().text == "true")
-    override fun visitPrimitiveString(ctx: EclangParser.PrimitiveStringContext): ITok = TString(loc(ctx), ctx.text.substring(1, ctx.text.length-1))
+    override fun visitPrimitiveString(ctx: EclangParser.PrimitiveStringContext): ITok = TString(loc(ctx), Util.getStringContent(ctx.text))
     override fun visitPrimitiveAtom(ctx: EclangParser.PrimitiveAtomContext): ITok = TAtom(loc(ctx), ctx.text.substring(1).lowercase())
 
     //Natives

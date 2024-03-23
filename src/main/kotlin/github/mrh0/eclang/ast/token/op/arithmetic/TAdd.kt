@@ -10,7 +10,7 @@ import github.mrh0.eclang.ir.arithmetic.add.IRAddIntInt
 import github.mrh0.eclang.ir.arithmetic.add.IRAddNumbers
 import github.mrh0.eclang.ir.arithmetic.add.IRAddStringWithAny
 import github.mrh0.eclang.types.numbers.EcTypeInt
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeString
 import github.mrh0.eclang.types.numbers.EcTypeFloat
 import github.mrh0.eclang.types.numbers.EcTypeNumber
@@ -20,7 +20,7 @@ class TAdd(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
         return "($left + $right)"
     }
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         val l = left.process(cd);
         val r = right.process(cd);
         return when {

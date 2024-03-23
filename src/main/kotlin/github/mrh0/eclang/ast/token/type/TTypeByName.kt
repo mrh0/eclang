@@ -6,10 +6,13 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.types.BuiltInTypes
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 
-class TTypeByName (location: Loc, val type: String) : Tok(location) {
+class TTypeByName(location: Loc, val type: String) : Tok(location) {
     override fun toString() = "#$type"
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> = Pair(BuiltInTypes.getType(type), IRType(location))
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
+        val builtIn = BuiltInTypes.getType(type)
+        return Pair(builtIn, IRType(location, builtIn))
+    }
 }

@@ -1,13 +1,9 @@
 package github.mrh0.eclang.ast
 
-import github.mrh0.eclang.error.EcError
-import github.mrh0.eclang.types.EcTypeAny
-import github.mrh0.eclang.types.EcTypeCallSignature
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.ContextBuilder
-import github.mrh0.eclang.context.state.GlobalFunctionReference
 import github.mrh0.eclang.context.state.IVar
-import github.mrh0.eclang.context.state.Variable
 
 class CompileData {
     val contextMap: MutableMap<String, Context> = mutableMapOf()
@@ -25,7 +21,7 @@ class CompileData {
         }
     }
 
-    fun getFunctionVarIndex(location: Loc, name: String, args: Array<EcTypeAny>): Pair<Int, IVar> {
+    fun getFunctionVarIndex(location: Loc, name: String, args: Array<EcType>): Pair<Int, IVar> {
         val ivar = ctx().getRaw(location, name)
         return if(ivar != null) {
             ctx().getIndex(location, name) to ivar

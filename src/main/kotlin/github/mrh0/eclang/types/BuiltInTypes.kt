@@ -4,7 +4,7 @@ import github.mrh0.eclang.types.numbers.EcTypeFloat
 import github.mrh0.eclang.types.numbers.EcTypeInt
 
 object BuiltInTypes {
-    private val builtInPrimitives: List<EcTypeAny> = listOf(
+    private val builtInPrimitives: List<EcType> = listOf(
         EcTypeInt,
         EcTypeFloat,
         EcTypeBool,
@@ -12,8 +12,8 @@ object BuiltInTypes {
         EcTypeAtom,
         EcTypeNone
     )
-    val builtInNamespaceMap: Map<String, EcTypeAny> = builtInPrimitives.associateBy { it.toString() }
-    val builtInNameMap: Map<String, EcTypeAny> = builtInPrimitives.associateBy { it.identifier }
-    fun getType(test: String): EcTypeAny = builtInNameMap.getOrElse(test) { builtInNamespaceMap.getOrElse(test) { throw Exception("No such type $test") } }
+    val builtInNamespaceMap: Map<String, EcType> = builtInPrimitives.associateBy { it.toString() }
+    val builtInNameMap: Map<String, EcType> = builtInPrimitives.associateBy { it.identifier }
+    fun getType(test: String): EcType = builtInNameMap.getOrElse(test) { builtInNamespaceMap.getOrElse(test) { throw Exception("No such type $test") } }
 }
 

@@ -6,6 +6,6 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 
 abstract class IR(val location: Loc) : IIR {
     override fun toC(sb: CSourceBuilder, c: Context) {
-        TODO("Not yet implemented")
+        TODO("${this.javaClass.simpleName}.toC not yet implemented")
     }
 }

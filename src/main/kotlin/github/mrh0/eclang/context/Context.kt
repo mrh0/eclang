@@ -1,5 +1,6 @@
 package github.mrh0.eclang.context
 
+import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.state.IVar
 
 class Context(val name: String, val vars: Array<IVar>) {
@@ -22,6 +23,5 @@ class Context(val name: String, val vars: Array<IVar>) {
     fun captureBreak() { shouldBreak = false }
     fun isBreakFlagged() = shouldBreak
 
-    //fun getValue(location: Loc, index: Int) = vars[index].getValue(location)
-    //fun setValue(location: Loc, index: Int, value: GsBase) = vars[index].setValue(location, value)
+    fun getValue(location: Loc, index: Int) = vars[index]
 }

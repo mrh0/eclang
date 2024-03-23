@@ -5,7 +5,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.data.IRBool
-import github.mrh0.eclang.types.EcTypeAny
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
 
 class TBoolean(location: Loc, private val value: Boolean) : Tok(location) {
@@ -13,7 +13,7 @@ class TBoolean(location: Loc, private val value: Boolean) : Tok(location) {
         return "$value"
     }
 
-    override fun process(cd: CompileData): Pair<EcTypeAny, IIR> {
+    override fun process(cd: CompileData): Pair<EcType, IIR> {
         return EcTypeBool to IRBool(location, value)
     }
 }
