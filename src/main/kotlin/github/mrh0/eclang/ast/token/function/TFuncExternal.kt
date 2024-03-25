@@ -14,10 +14,10 @@ class TFuncExternal(location: Loc, name: String, args: TParameters, returns: ITo
 
     override fun process(cd: CompileData): Pair<EcType, IIR> {
         cd.newContext(name)
-        val argPairs = args.get().map { Pair(it.name, it.process(cd).first) }.toTypedArray()
+        val argPairs = args.get().map { it.name to it.process(cd).first }.toTypedArray()
         argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
         val returnType = returns.process(cd).first
-        return Pair(EcTypeNone, IRFuncExternal(location, name, externalName))
+        return EcTypeNone to IRFuncExternal(location, name, externalName)
     }
 
     override fun getSourceName() = externalName

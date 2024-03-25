@@ -1,5 +1,5 @@
 package github.mrh0.eclang.types.numbers
 
-object EcTypeInt : EcTypeNumber("Gs", "Int") {
+object EcTypeInt : EcTypeNumber("Ec", "Int") {
 
 }

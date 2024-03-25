@@ -26,7 +26,7 @@ object GlobalFunctions {
 
         val usedSourceName = sourceName ?: getSourceName(name, fos.getNumberOfOverrides());
         val res = FunctionOverride(usedSourceName, args, types, returnType)
-        println("$name $sourceName ${types.map { it.toString() }}")
+        //println("$name $sourceName ${types.map { it.toString() }}")
         fos.add(res)
         return usedSourceName
     }

@@ -4,6 +4,6 @@ int main () {
 	printf("Hello World");
 	return 0;
 }
-int test (String a) String a{
+int test (Union a) {
 	return 1;
 }

@@ -1545,6 +1545,8 @@ public class EclangParser extends Parser {
 		}
 	}
 	public static class TypeUnionContext extends TypeContext {
+		public List<TypeContext> types = new ArrayList<TypeContext>();
+		public TypeContext type;
 		public List<TypeContext> type() {
 			return getRuleContexts(TypeContext.class);
 		}
@@ -1567,6 +1569,8 @@ public class EclangParser extends Parser {
 		}
 	}
 	public static class TypeTupleContext extends TypeContext {
+		public List<TypeContext> types = new ArrayList<TypeContext>();
+		public TypeContext type;
 		public List<TypeContext> type() {
 			return getRuleContexts(TypeContext.class);
 		}
@@ -1738,13 +1742,15 @@ public class EclangParser extends Parser {
 					case 1:
 						{
 						_localctx = new TypeUnionContext(new TypeContext(_parentctx, _parentState));
+						((TypeUnionContext)_localctx).types.add(_prevctx);
 						pushNewRecursionContext(_localctx, _startState, RULE_type);
 						setState(203);
 						if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
 						setState(204);
 						match(T__35);
 						setState(205);
-						type(0);
+						((TypeUnionContext)_localctx).type = type(0);
+						((TypeUnionContext)_localctx).types.add(((TypeUnionContext)_localctx).type);
 						setState(210);
 						_errHandler.sync(this);
 						_alt = getInterpreter().adaptivePredict(_input,19,_ctx);
@@ -1755,7 +1761,8 @@ public class EclangParser extends Parser {
 								setState(206);
 								match(T__35);
 								setState(207);
-								type(0);
+								((TypeUnionContext)_localctx).type = type(0);
+								((TypeUnionContext)_localctx).types.add(((TypeUnionContext)_localctx).type);
 								}
 								} 
 							}
@@ -1768,13 +1775,15 @@ public class EclangParser extends Parser {
 					case 2:
 						{
 						_localctx = new TypeTupleContext(new TypeContext(_parentctx, _parentState));
+						((TypeTupleContext)_localctx).types.add(_prevctx);
 						pushNewRecursionContext(_localctx, _startState, RULE_type);
 						setState(213);
 						if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
 						setState(214);
 						match(T__31);
 						setState(215);
-						type(0);
+						((TypeTupleContext)_localctx).type = type(0);
+						((TypeTupleContext)_localctx).types.add(((TypeTupleContext)_localctx).type);
 						setState(220);
 						_errHandler.sync(this);
 						_alt = getInterpreter().adaptivePredict(_input,20,_ctx);
@@ -1785,7 +1794,8 @@ public class EclangParser extends Parser {
 								setState(216);
 								match(T__31);
 								setState(217);
-								type(0);
+								((TypeTupleContext)_localctx).type = type(0);
+								((TypeTupleContext)_localctx).types.add(((TypeTupleContext)_localctx).type);
 								}
 								} 
 							}

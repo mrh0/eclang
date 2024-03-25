@@ -19,9 +19,9 @@ class TLambda(location: Loc, val expr: ITok, val args: MutableList<TParameter>, 
     private var funcIR: IRFunc? = null
     fun getFuncIR() = funcIR ?: throw Exception("User function supplier is empty. This should never happen!")
     fun processSignature(cd: CompileData): Pair<List<Pair<String, EcType>>, EcType> {
-        val argPairs = args.map { Pair(it.name, it.process(cd).first) }
+        val argPairs = args.map { it.name to it.process(cd).first }
         val returnType = returns.process(cd).first
-        return Pair(argPairs, returnType)
+        return argPairs to returnType
     }
 
     override fun process(cd: CompileData): Pair<EcType, IIR> {
@@ -31,6 +31,6 @@ class TLambda(location: Loc, val expr: ITok, val args: MutableList<TParameter>, 
         val returnType = returns.process(cd).first
         val ir = expr.process(cd)
         funcIR = IRFunc(location, ir.second as IRBlock, "name", IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second) }), returnType)
-        return Pair(EcTypeNone, funcIR!!)
+        return EcTypeNone to funcIR!!
     }
 }

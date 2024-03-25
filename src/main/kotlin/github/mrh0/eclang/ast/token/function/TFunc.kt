@@ -10,9 +10,9 @@ abstract class TFunc(location: Loc, val name: String, val args: TParameters, val
     override fun toString() = "SHOULD NOT HAPPEN"
 
     fun processSignature(cd: CompileData): Pair<List<Pair<String, EcType>>, EcType> {
-        val argPairs = args.get().map { Pair(it.name, it.process(cd).first) }
+        val argPairs = args.get().map { it.name to it.process(cd).first }
         val returnType = returns.process(cd).first
-        return Pair(argPairs, returnType)
+        return argPairs to returnType
     }
 
     open fun getSourceName(): String? = null

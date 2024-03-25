@@ -18,10 +18,10 @@ class TFuncBlock (location: Loc, val block: TBlock, name: String, args: TParamet
 
     override fun process(cd: CompileData): Pair<EcType, IIR> {
         cd.newContext(name)
-        val argPairs = args.get().map { Pair(it.name, it.process(cd).first) }.toTypedArray()
+        val argPairs = args.get().map { it.name to it.process(cd).first }.toTypedArray()
         argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
         val returnType = returns.process(cd).first
         val ir = block.process(cd)
-        return Pair(EcTypeNone, IRFunc(location, ir.second as IRBlock, name, IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second) }), returnType))
+        return EcTypeNone to IRFunc(location, ir.second as IRBlock, name, IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second) }), returnType)
     }
 }

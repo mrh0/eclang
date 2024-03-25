@@ -13,4 +13,6 @@ class TParameters(location: Loc, val args: MutableList<TParameter>) : Tok(locati
     fun get() = args
     override fun process(cd: CompileData): Pair<EcType, IIR> =
         EcTypeNone to IRParameters(location, args.map { IRParameter(it.location, it.name, it.type.process(cd).first) })
+
+    override fun toString() = "$args"
 }

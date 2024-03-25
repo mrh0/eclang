@@ -12,4 +12,8 @@ class IRParameters(location: Loc, val args: List<IRParameter>) : IR(location) {
             if (index < args.size-1) sb.put(", ")
         }
     }
+
+    override fun toString(): String {
+        return "$args"
+    }
 }

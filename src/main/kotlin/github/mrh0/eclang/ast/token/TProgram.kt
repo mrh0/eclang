@@ -17,7 +17,28 @@ class TProgram(location: Loc, private val functions: MutableList<TFunc>, val use
         uses.map { it.process(cd) }
         functions.map { analyzeFunction(it, cd) }
         val irs = functions.map { it.process(cd).second }
-        return Pair(EcTypeNone, IRProgram(location, irs))
+        return EcTypeNone to IRProgram(location, irs)
+    }
+
+    private fun indexPermutation(list: MutableList<Int>, limit: List<Int>, index: Int): Boolean {
+        if (index >= list.size) return true
+        list[index] = list[index]+1
+        if (list[index] >= limit[index]) {
+            list[index] = 0
+            return indexPermutation(list, limit, index+1)
+        }
+        return false
+    }
+
+    private fun permutateFunctionArguments(argTypes: Array<EcType>, callback: (Array<EcType>) -> Any) {
+        val expanded = argTypes.map { it.expand() }
+        val indices = expanded.map { 0 }.toMutableList()
+        val limits = expanded.map { it.size }
+        while(true) {
+            println("$indices $limits")
+            callback(indices.mapIndexed { index, i -> expanded[index][i] }.toTypedArray())
+            if (indexPermutation(indices, limits, 0)) break
+        }
     }
 
     private fun analyzeFunction(func: TFunc, cd: CompileData) {
@@ -26,7 +47,19 @@ class TProgram(location: Loc, private val functions: MutableList<TFunc>, val use
         val argTypes = res.first.map { it.second }.toTypedArray()
         val retType = res.second
 
-        GlobalFunctions.addOverride(func.location, func.name, argNames, argTypes, retType, func.getSourceName())
+        permutateFunctionArguments(argTypes) { list ->
+            println("${func.name} ${list.map { it.toString() }}")
+            GlobalFunctions.addOverride(
+                func.location,
+                func.name,
+                argNames,
+                list,
+                retType,
+                func.getSourceName()
+            )
+        }
+
+
     }
 
     override fun toString(): String {

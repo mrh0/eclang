@@ -24,6 +24,7 @@ import github.mrh0.eclang.ast.token.op.compare.TNotEquals
 import github.mrh0.eclang.ast.token.op.logical.TNot
 import github.mrh0.eclang.ast.token.op.logical.TNotNot
 import github.mrh0.eclang.ast.token.type.TTypeByName
+import github.mrh0.eclang.ast.token.type.TTypeUnion
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import java.io.File
@@ -63,6 +64,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
 
+    override fun visitTypeUnion(ctx: EclangParser.TypeUnionContext): ITok = TTypeUnion(loc(ctx), visit(ctx.types))
+
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {
         return TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.args)) , visit(ctx.returnType))
@@ -83,7 +86,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     }
 
     override fun visitArgumentTyped(ctx: EclangParser.ArgumentTypedContext): ITok {
-        return TParameter(loc(ctx), ctx.NAME().text, visit(ctx.type()) as TTypeByName)
+        return TParameter(loc(ctx), ctx.NAME().text, visit(ctx.type()))
     }
 
     override fun visitFunctionCallNoArgs(ctx: EclangParser.FunctionCallNoArgsContext): ITok = TStatementCall(loc(ctx), ctx.NAME().text, arrayListOf())

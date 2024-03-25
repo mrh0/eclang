@@ -22,7 +22,6 @@ class IRFunc(location: Loc, private val block: IRBlock, val name: String, val ar
         sb.put(" (")
         args.toC(sb, c)
         sb.put(") ")
-        args.toC(sb, c)
         sb.pushScope(BlockScope())
         block.toC(sb, c)
         sb.popScope()

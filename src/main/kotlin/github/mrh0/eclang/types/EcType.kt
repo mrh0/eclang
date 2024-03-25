@@ -14,4 +14,6 @@ abstract class EcType(val namespace: String, val identifier: String) {
         if(!this.accepts(location, to)) throw EcError(location, "Cannot cast $this to $to")
         return to
     }
+
+    open fun expand(): List<EcType> = listOf(this)
 }

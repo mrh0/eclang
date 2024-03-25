@@ -2,7 +2,7 @@ package github.mrh0.eclang.types
 
 import github.mrh0.eclang.ast.Loc
 
-class EcTypeTuple(val args: Array<EcType>) : EcType("Gs", "Tuple") {
+class EcTypeTuple(val args: Array<EcType>) : EcType("Ec", "Tuple") {
     override fun toString() = args.joinToString("&", "(", ")") { it.toString() }
 
     override fun accepts(location: Loc, type: EcType): Boolean {

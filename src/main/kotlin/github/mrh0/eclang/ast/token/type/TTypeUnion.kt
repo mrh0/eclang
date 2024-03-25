@@ -14,7 +14,12 @@ class TTypeUnion(location: Loc, val types: List<ITok>) : Tok(location) {
     override fun toString() = "#Union($types)"
 
     override fun process(cd: CompileData): Pair<EcType, IIR> {
-        val union = EcTypeUnion(types.map { it.process(cd) })
-        return Pair(union, IRType(location, union))
+        val set = mutableSetOf<EcType>()
+        val processedTypes = types.map { it.process(cd).first }
+        processedTypes.forEach {
+            if (it is EcTypeUnion) set.addAll(it.expand()) else set.add(it)
+        }
+        val union = EcTypeUnion(set)
+        return union to IRType(location, union)
     }
 }
