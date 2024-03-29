@@ -267,6 +267,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeNest(EclangParser.TypeNestContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link EclangParser#record}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRecord(EclangParser.RecordContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code argumentTyped}
 	 * labeled alternative in {@link EclangParser#argument}.
 	 * @param ctx the parse tree

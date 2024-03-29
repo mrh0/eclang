@@ -7,7 +7,7 @@ import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 import github.mrh0.eclang.context.state.Variable
-import github.mrh0.eclang.ir.function.IRFuncExternal
+import github.mrh0.eclang.ir.function.IRFunctionExternal
 
 class TFuncExternal(location: Loc, name: String, args: TParameters, returns: ITok, val externalName: String) : TFunc(location, name, args, returns) {
     override fun toString() = "external:$name'$externalName'($args)"
@@ -17,7 +17,7 @@ class TFuncExternal(location: Loc, name: String, args: TParameters, returns: ITo
         val argPairs = args.get().map { it.name to it.process(cd).first }.toTypedArray()
         argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
         val returnType = returns.process(cd).first
-        return EcTypeNone to IRFuncExternal(location, name, externalName)
+        return EcTypeNone to IRFunctionExternal(location, name, externalName)
     }
 
     override fun getSourceName() = externalName

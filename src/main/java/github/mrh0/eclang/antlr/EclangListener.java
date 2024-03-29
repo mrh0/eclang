@@ -446,6 +446,16 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitTypeNest(EclangParser.TypeNestContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link EclangParser#record}.
+	 * @param ctx the parse tree
+	 */
+	void enterRecord(EclangParser.RecordContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EclangParser#record}.
+	 * @param ctx the parse tree
+	 */
+	void exitRecord(EclangParser.RecordContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code argumentTyped}
 	 * labeled alternative in {@link EclangParser#argument}.
 	 * @param ctx the parse tree

@@ -1,6 +1,7 @@
 package github.mrh0.eclang.context.function
 
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.token.TBlock
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.types.EcType
 
@@ -10,10 +11,10 @@ object GlobalFunctions {
     private fun getSourceName(name: String, index: Int): String = "${name}_$index"
 
     fun addOverride(location: Loc, name: String, args: Array<String>, types: Array<EcType>, returnType: EcType): String {
-        return addOverride(location, name, args, types, returnType, null)
+        return addOverride(location, name, args, types, returnType, null, null)
     }
 
-    fun addOverride(location: Loc, name: String, args: Array<String>, types: Array<EcType>, returnType: EcType, sourceName: String?): String {
+    fun addOverride(location: Loc, name: String, args: Array<String>, types: Array<EcType>, returnType: EcType, block: TBlock?, sourceName: String?): String {
         val fos: FunctionOverrides
         if(functions.containsKey(name)) {
             //if(functions[name]!!.returnType != returnType) throw EcError(location, "Function $name is already defined return type ${functions[name]!!.returnType}")
@@ -25,7 +26,7 @@ object GlobalFunctions {
         }
 
         val usedSourceName = sourceName ?: getSourceName(name, fos.getNumberOfOverrides());
-        val res = FunctionOverride(usedSourceName, args, types, returnType)
+        val res = FunctionOverride(usedSourceName, args, types, returnType, block)
         //println("$name $sourceName ${types.map { it.toString() }}")
         fos.add(res)
         return usedSourceName
@@ -33,4 +34,5 @@ object GlobalFunctions {
 
     fun getOverridesByName(location: Loc, name: String) = functions.getOrElse(name) { throw EcError(location, "No such override $name") }
     fun getOverrides(location: Loc, name: String, types: Array<EcType>) = getOverridesByName(location, name).getMatching(location, types)
+    fun getAllOverrides(location: Loc) = functions.values
 }

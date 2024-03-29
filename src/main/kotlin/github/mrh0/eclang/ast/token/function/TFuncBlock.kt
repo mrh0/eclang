@@ -4,10 +4,12 @@ import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.token.TBlock
+import github.mrh0.eclang.context.function.GlobalFunctions
 import github.mrh0.eclang.context.state.Variable
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRBlock
-import github.mrh0.eclang.ir.function.IRFunc
+import github.mrh0.eclang.ir.function.IRFunctionOverrides
+import github.mrh0.eclang.ir.function.IRFunctionOverride
 import github.mrh0.eclang.ir.function.IRParameter
 import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
@@ -22,6 +24,14 @@ class TFuncBlock (location: Loc, val block: TBlock, name: String, args: TParamet
         argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
         val returnType = returns.process(cd).first
         val ir = block.process(cd)
-        return EcTypeNone to IRFunc(location, ir.second as IRBlock, name, IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second) }), returnType)
+
+        val overrides = GlobalFunctions.getOverridesByName(location, name).overrides
+        val functionOverrides = overrides.map { IRFunctionOverride(location, ir.second as IRBlock, name, IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second) }), returnType) }
+
+        return EcTypeNone to IRFunctionOverrides(location, name, functionOverrides)
+    }
+
+    override fun getSourceName(): String? {
+        return if (name == "main") "main" else null // TODO: Change
     }
 }

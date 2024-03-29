@@ -7,6 +7,7 @@ import github.mrh0.eclang.ast.token.*
 import github.mrh0.eclang.ast.token.branch.TInlineIf
 import github.mrh0.eclang.ast.token.branch.TStatementIf
 import github.mrh0.eclang.ast.token.data.*
+import github.mrh0.eclang.ast.token.data.record.TRecord
 import github.mrh0.eclang.ast.token.function.TParameter
 import github.mrh0.eclang.ast.token.function.call.TExprCall
 import github.mrh0.eclang.ast.token.function.TFuncBlock
@@ -50,7 +51,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     fun loc(ctx: ParserRuleContext) = Loc(ctx.start, file)
 
     // Program
-    override fun visitProgram(ctx: EclangParser.ProgramContext): ITok = TProgram(loc(ctx), visit(ctx.functions), visit(ctx.use()))
+    override fun visitProgram(ctx: EclangParser.ProgramContext): ITok = TProgram(loc(ctx), visit(ctx.functions), visit(ctx.records), visit(ctx.use()))
 
     // Use
     // override fun visitUseFromModule(ctx: EclangParser.UseFromModuleContext): ITok {
@@ -60,6 +61,10 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // override fun visitUseAllFromModule(ctx: EclangParser.UseAllFromModuleContext): ITok {
     //     return TUseAllFromModule(loc(ctx), ctx.from.text.substring(1, ctx.from.text.length-1))
     // }
+
+    // Records
+
+    override fun visitRecord(ctx: EclangParser.RecordContext): ITok = TRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types))
 
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)

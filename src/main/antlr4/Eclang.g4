@@ -113,6 +113,10 @@ type:
     | '(' type ')'                                                  #typeNest
     ;
 
+record:
+    'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
+    ;
+
 argument:
       NAME ':' type                         #argumentTyped
     | primitive                             #argumentPrimitive
@@ -165,6 +169,6 @@ func:
 
 program:
       use*
-      functions+=func*
+      (functions+=func | records+=record)+
       EOF
     ;
