@@ -456,41 +456,41 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitRecord(EclangParser.RecordContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code argumentTyped}
-	 * labeled alternative in {@link EclangParser#argument}.
+	 * Enter a parse tree produced by the {@code parameterTyped}
+	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void enterArgumentTyped(EclangParser.ArgumentTypedContext ctx);
+	void enterParameterTyped(EclangParser.ParameterTypedContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code argumentTyped}
-	 * labeled alternative in {@link EclangParser#argument}.
+	 * Exit a parse tree produced by the {@code parameterTyped}
+	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void exitArgumentTyped(EclangParser.ArgumentTypedContext ctx);
+	void exitParameterTyped(EclangParser.ParameterTypedContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code argumentPrimitive}
-	 * labeled alternative in {@link EclangParser#argument}.
+	 * Enter a parse tree produced by the {@code parameterPrimitive}
+	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void enterArgumentPrimitive(EclangParser.ArgumentPrimitiveContext ctx);
+	void enterParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code argumentPrimitive}
-	 * labeled alternative in {@link EclangParser#argument}.
+	 * Exit a parse tree produced by the {@code parameterPrimitive}
+	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void exitArgumentPrimitive(EclangParser.ArgumentPrimitiveContext ctx);
+	void exitParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code argumentWildcard}
-	 * labeled alternative in {@link EclangParser#argument}.
+	 * Enter a parse tree produced by the {@code parameterWildcard}
+	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void enterArgumentWildcard(EclangParser.ArgumentWildcardContext ctx);
+	void enterParameterWildcard(EclangParser.ParameterWildcardContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code argumentWildcard}
-	 * labeled alternative in {@link EclangParser#argument}.
+	 * Exit a parse tree produced by the {@code parameterWildcard}
+	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void exitArgumentWildcard(EclangParser.ArgumentWildcardContext ctx);
+	void exitParameterWildcard(EclangParser.ParameterWildcardContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EclangParser#orderExpression}.
 	 * @param ctx the parse tree

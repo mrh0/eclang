@@ -23,8 +23,8 @@ class CSourceBuilder : SourceBuilder() {
         putLine("{")
     }
 
-    fun popScope(): BlockScope {
-        putLine("}")
+    fun popScope(es: Boolean = false): BlockScope {
+        if(es) putLine("};") else putLine("}")
         return scopeStack.pop()
     }
 

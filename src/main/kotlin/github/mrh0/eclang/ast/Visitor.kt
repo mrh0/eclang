@@ -38,10 +38,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return t
     }
 
-    fun <T : Token?> tvisit(list: MutableList<T>): MutableList<String> {
-        val t: MutableList<String> = mutableListOf()
-        for (pt in list) pt?.text
-        return t
+    fun <T : Token?> tvisit(list: MutableList<T>): List<String> {
+        return list.map { it!!.getText() }
     }
 
     fun <T : ParserRuleContext, O : ITok?> cvisit(rule: T?): O {
@@ -73,7 +71,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {
-        return TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.args)) , visit(ctx.returnType))
+        return TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)) , visit(ctx.returnType))
     }
 
     // override fun visitFunctionExpr(ctx: EclangParser.FunctionExprContext): ITok {
@@ -81,7 +79,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // }
 
     override fun visitFunctionExternal(ctx: EclangParser.FunctionExternalContext): ITok {
-        return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.args)), visit(ctx.returnType), Util.getStringContent(ctx.externalName.text))
+        return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), visit(ctx.returnType), Util.getStringContent(ctx.externalName.text))
     }
 
     override fun visitBlock(ctx: EclangParser.BlockContext): ITok = TBlock(loc(ctx), visit(ctx.statements))
@@ -90,7 +88,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return TStatementReturn(loc(ctx), visit(ctx.expr()))
     }
 
-    override fun visitArgumentTyped(ctx: EclangParser.ArgumentTypedContext): ITok {
+    override fun visitParameterTyped(ctx: EclangParser.ParameterTypedContext): ITok {
         return TParameter(loc(ctx), ctx.NAME().text, visit(ctx.type()))
     }
 

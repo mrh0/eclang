@@ -273,26 +273,26 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitRecord(EclangParser.RecordContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code argumentTyped}
-	 * labeled alternative in {@link EclangParser#argument}.
+	 * Visit a parse tree produced by the {@code parameterTyped}
+	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitArgumentTyped(EclangParser.ArgumentTypedContext ctx);
+	T visitParameterTyped(EclangParser.ParameterTypedContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code argumentPrimitive}
-	 * labeled alternative in {@link EclangParser#argument}.
+	 * Visit a parse tree produced by the {@code parameterPrimitive}
+	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitArgumentPrimitive(EclangParser.ArgumentPrimitiveContext ctx);
+	T visitParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code argumentWildcard}
-	 * labeled alternative in {@link EclangParser#argument}.
+	 * Visit a parse tree produced by the {@code parameterWildcard}
+	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitArgumentWildcard(EclangParser.ArgumentWildcardContext ctx);
+	T visitParameterWildcard(EclangParser.ParameterWildcardContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#orderExpression}.
 	 * @param ctx the parse tree

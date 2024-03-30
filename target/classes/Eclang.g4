@@ -76,8 +76,8 @@ binOp:
 
 lambda:
     '(' ')' '=>' expr                                               #lambdaNoArgs
-    | '('? args+=argument ')'? '=>' expr                            #lambdaArgs
-    | '(' args+=argument (',' args+=argument)+ ')' '=>' expr        #lambdaArgs
+    | '('? params+=parameter ')'? '=>' expr                            #lambdaArgs
+    | '(' params+=parameter (',' params+=parameter)+ ')' '=>' expr        #lambdaArgs
     ;
 
 functionCall:
@@ -114,13 +114,13 @@ type:
     ;
 
 record:
-    'record' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
+      'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
     ;
 
-argument:
-      NAME ':' type                         #argumentTyped
-    | primitive                             #argumentPrimitive
-    | '_'                                   #argumentWildcard
+parameter:
+      NAME ':' type                         #parameterTyped
+    | primitive                             #parameterPrimitive
+    | '_'                                   #parameterWildcard
     ;
 
 orderExpression:
@@ -162,9 +162,9 @@ funcPrefix:
     ;
 
 func:
-      'external' 'fn' name=NAME '(' args+=argument? (',' args+=argument)* ')' ':' returnType=type 'as' externalName=STRING NL   #functionExternal
-    | funcPrefix? 'fn' name=NAME '(' args+=argument? (',' args+=argument)* ')' ':' returnType=type 'do' body=block              #functionBlock
-    | funcPrefix? 'fn' name=NAME '(' args+=argument? (',' args+=argument)* ')' (':' returnType=type)? '=' expression=expr NL    #functionExpr
+      'external' 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' ':' returnType=type 'as' externalName=STRING NL   #functionExternal
+    | funcPrefix? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' ':' returnType=type 'do' body=block              #functionBlock
+    | funcPrefix? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL    #functionExpr
     ;
 
 program:

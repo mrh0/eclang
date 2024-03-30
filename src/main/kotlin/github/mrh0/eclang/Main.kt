@@ -6,13 +6,8 @@ import github.mrh0.eclang.antlr.EclangParser
 import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.Visitor
 import github.mrh0.eclang.ast.ITok
-import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
-import github.mrh0.eclang.context.function.GlobalFunctions
-import github.mrh0.eclang.output.SourceBuilder
 import github.mrh0.eclang.output.c.CSourceBuilder
-import github.mrh0.eclang.types.EcTypeNone
-import github.mrh0.eclang.types.EcTypeString
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import java.io.File
@@ -23,7 +18,7 @@ import kotlin.time.measureTime
 
 @OptIn(ExperimentalTime::class)
 fun main(args: Array<String>) {
-    val file = Path.of(Root::class.java.classLoader.getResource("test.gs")!!.toURI()).toFile()
+    val file = Path.of(Root::class.java.classLoader.getResource("test.ec")!!.toURI()).toFile()
 
     val timeTaken = measureTime {
         val stream = FileInputStream(file)

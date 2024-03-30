@@ -472,37 +472,37 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArgumentTyped(EclangParser.ArgumentTypedContext ctx) { }
+	@Override public void enterParameterTyped(EclangParser.ParameterTypedContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitArgumentTyped(EclangParser.ArgumentTypedContext ctx) { }
+	@Override public void exitParameterTyped(EclangParser.ParameterTypedContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArgumentPrimitive(EclangParser.ArgumentPrimitiveContext ctx) { }
+	@Override public void enterParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitArgumentPrimitive(EclangParser.ArgumentPrimitiveContext ctx) { }
+	@Override public void exitParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterArgumentWildcard(EclangParser.ArgumentWildcardContext ctx) { }
+	@Override public void enterParameterWildcard(EclangParser.ParameterWildcardContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitArgumentWildcard(EclangParser.ArgumentWildcardContext ctx) { }
+	@Override public void exitParameterWildcard(EclangParser.ParameterWildcardContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

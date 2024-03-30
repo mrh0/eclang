@@ -31,12 +31,12 @@ public class EclangParser extends Parser {
 	public static final int
 		RULE_number = 0, RULE_primitive = 1, RULE_block = 2, RULE_unOp = 3, RULE_binOp = 4, 
 		RULE_lambda = 5, RULE_functionCall = 6, RULE_expr = 7, RULE_type = 8, 
-		RULE_record = 9, RULE_argument = 10, RULE_orderExpression = 11, RULE_statement = 12, 
+		RULE_record = 9, RULE_parameter = 10, RULE_orderExpression = 11, RULE_statement = 12, 
 		RULE_use = 13, RULE_funcPrefix = 14, RULE_func = 15, RULE_program = 16;
 	private static String[] makeRuleNames() {
 		return new String[] {
 			"number", "primitive", "block", "unOp", "binOp", "lambda", "functionCall", 
-			"expr", "type", "record", "argument", "orderExpression", "statement", 
+			"expr", "type", "record", "parameter", "orderExpression", "statement", 
 			"use", "funcPrefix", "func", "program"
 		};
 	}
@@ -48,7 +48,7 @@ public class EclangParser extends Parser {
 			"'<'", "'>'", "'<='", "'>='", "'=='", "'!='", "'&&'", "'and'", "'||'", 
 			"'or'", "'<<'", "'>>'", "'('", "')'", "'=>'", "','", "'here'", "'if'", 
 			"'else'", "'is'", "'!is'", "'as'", "'&'", "'.'", "'['", "']'", "'|'", 
-			"'record'", "':'", "'_'", "'orderby'", "'orderasc'", "'orderdesc'", "'var'", 
+			"'rec'", "':'", "'_'", "'orderby'", "'orderasc'", "'orderdesc'", "'var'", 
 			"'='", "'val'", "'break'", "'continue'", "'do'", "'eif'", "'while'", 
 			"'for'", "'in'", "'where'", "'ret'", "'use'", "'from'", "'start'", "'external'", 
 			"'fn'"
@@ -597,16 +597,16 @@ public class EclangParser extends Parser {
 		}
 	}
 	public static class LambdaArgsContext extends LambdaContext {
-		public ArgumentContext argument;
-		public List<ArgumentContext> args = new ArrayList<ArgumentContext>();
+		public ParameterContext parameter;
+		public List<ParameterContext> params = new ArrayList<ParameterContext>();
 		public ExprContext expr() {
 			return getRuleContext(ExprContext.class,0);
 		}
-		public List<ArgumentContext> argument() {
-			return getRuleContexts(ArgumentContext.class);
+		public List<ParameterContext> parameter() {
+			return getRuleContexts(ParameterContext.class);
 		}
-		public ArgumentContext argument(int i) {
-			return getRuleContext(ArgumentContext.class,i);
+		public ParameterContext parameter(int i) {
+			return getRuleContext(ParameterContext.class,i);
 		}
 		public LambdaArgsContext(LambdaContext ctx) { copyFrom(ctx); }
 		@Override
@@ -680,8 +680,8 @@ public class EclangParser extends Parser {
 				}
 
 				setState(66);
-				((LambdaArgsContext)_localctx).argument = argument();
-				((LambdaArgsContext)_localctx).args.add(((LambdaArgsContext)_localctx).argument);
+				((LambdaArgsContext)_localctx).parameter = parameter();
+				((LambdaArgsContext)_localctx).params.add(((LambdaArgsContext)_localctx).parameter);
 				setState(68);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
@@ -705,8 +705,8 @@ public class EclangParser extends Parser {
 				setState(73);
 				match(T__21);
 				setState(74);
-				((LambdaArgsContext)_localctx).argument = argument();
-				((LambdaArgsContext)_localctx).args.add(((LambdaArgsContext)_localctx).argument);
+				((LambdaArgsContext)_localctx).parameter = parameter();
+				((LambdaArgsContext)_localctx).params.add(((LambdaArgsContext)_localctx).parameter);
 				setState(77); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
@@ -716,8 +716,8 @@ public class EclangParser extends Parser {
 					setState(75);
 					match(T__24);
 					setState(76);
-					((LambdaArgsContext)_localctx).argument = argument();
-					((LambdaArgsContext)_localctx).args.add(((LambdaArgsContext)_localctx).argument);
+					((LambdaArgsContext)_localctx).parameter = parameter();
+					((LambdaArgsContext)_localctx).params.add(((LambdaArgsContext)_localctx).parameter);
 					}
 					}
 					setState(79); 
@@ -1918,82 +1918,82 @@ public class EclangParser extends Parser {
 		return _localctx;
 	}
 
-	public static class ArgumentContext extends ParserRuleContext {
-		public ArgumentContext(ParserRuleContext parent, int invokingState) {
+	public static class ParameterContext extends ParserRuleContext {
+		public ParameterContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_argument; }
+		@Override public int getRuleIndex() { return RULE_parameter; }
 	 
-		public ArgumentContext() { }
-		public void copyFrom(ArgumentContext ctx) {
+		public ParameterContext() { }
+		public void copyFrom(ParameterContext ctx) {
 			super.copyFrom(ctx);
 		}
 	}
-	public static class ArgumentWildcardContext extends ArgumentContext {
-		public ArgumentWildcardContext(ArgumentContext ctx) { copyFrom(ctx); }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof EclangListener ) ((EclangListener)listener).enterArgumentWildcard(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof EclangListener ) ((EclangListener)listener).exitArgumentWildcard(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof EclangVisitor ) return ((EclangVisitor<? extends T>)visitor).visitArgumentWildcard(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-	public static class ArgumentPrimitiveContext extends ArgumentContext {
-		public PrimitiveContext primitive() {
-			return getRuleContext(PrimitiveContext.class,0);
-		}
-		public ArgumentPrimitiveContext(ArgumentContext ctx) { copyFrom(ctx); }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof EclangListener ) ((EclangListener)listener).enterArgumentPrimitive(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof EclangListener ) ((EclangListener)listener).exitArgumentPrimitive(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof EclangVisitor ) return ((EclangVisitor<? extends T>)visitor).visitArgumentPrimitive(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-	public static class ArgumentTypedContext extends ArgumentContext {
+	public static class ParameterTypedContext extends ParameterContext {
 		public TerminalNode NAME() { return getToken(EclangParser.NAME, 0); }
 		public TypeContext type() {
 			return getRuleContext(TypeContext.class,0);
 		}
-		public ArgumentTypedContext(ArgumentContext ctx) { copyFrom(ctx); }
+		public ParameterTypedContext(ParameterContext ctx) { copyFrom(ctx); }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof EclangListener ) ((EclangListener)listener).enterArgumentTyped(this);
+			if ( listener instanceof EclangListener ) ((EclangListener)listener).enterParameterTyped(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof EclangListener ) ((EclangListener)listener).exitArgumentTyped(this);
+			if ( listener instanceof EclangListener ) ((EclangListener)listener).exitParameterTyped(this);
 		}
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof EclangVisitor ) return ((EclangVisitor<? extends T>)visitor).visitArgumentTyped(this);
+			if ( visitor instanceof EclangVisitor ) return ((EclangVisitor<? extends T>)visitor).visitParameterTyped(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	public static class ParameterPrimitiveContext extends ParameterContext {
+		public PrimitiveContext primitive() {
+			return getRuleContext(PrimitiveContext.class,0);
+		}
+		public ParameterPrimitiveContext(ParameterContext ctx) { copyFrom(ctx); }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof EclangListener ) ((EclangListener)listener).enterParameterPrimitive(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof EclangListener ) ((EclangListener)listener).exitParameterPrimitive(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EclangVisitor ) return ((EclangVisitor<? extends T>)visitor).visitParameterPrimitive(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	public static class ParameterWildcardContext extends ParameterContext {
+		public ParameterWildcardContext(ParameterContext ctx) { copyFrom(ctx); }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof EclangListener ) ((EclangListener)listener).enterParameterWildcard(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof EclangListener ) ((EclangListener)listener).exitParameterWildcard(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EclangVisitor ) return ((EclangVisitor<? extends T>)visitor).visitParameterWildcard(this);
 			else return visitor.visitChildren(this);
 		}
 	}
 
-	public final ArgumentContext argument() throws RecognitionException {
-		ArgumentContext _localctx = new ArgumentContext(_ctx, getState());
-		enterRule(_localctx, 20, RULE_argument);
+	public final ParameterContext parameter() throws RecognitionException {
+		ParameterContext _localctx = new ParameterContext(_ctx, getState());
+		enterRule(_localctx, 20, RULE_parameter);
 		try {
 			setState(250);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case NAME:
-				_localctx = new ArgumentTypedContext(_localctx);
+				_localctx = new ParameterTypedContext(_localctx);
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(245);
@@ -2012,7 +2012,7 @@ public class EclangParser extends Parser {
 			case BIN:
 			case CHAR:
 			case STRING:
-				_localctx = new ArgumentPrimitiveContext(_localctx);
+				_localctx = new ParameterPrimitiveContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(248);
@@ -2020,7 +2020,7 @@ public class EclangParser extends Parser {
 				}
 				break;
 			case T__38:
-				_localctx = new ArgumentWildcardContext(_localctx);
+				_localctx = new ParameterWildcardContext(_localctx);
 				enterOuterAlt(_localctx, 3);
 				{
 				setState(249);
@@ -3141,8 +3141,8 @@ public class EclangParser extends Parser {
 	}
 	public static class FunctionBlockContext extends FuncContext {
 		public Token name;
-		public ArgumentContext argument;
-		public List<ArgumentContext> args = new ArrayList<ArgumentContext>();
+		public ParameterContext parameter;
+		public List<ParameterContext> params = new ArrayList<ParameterContext>();
 		public TypeContext returnType;
 		public BlockContext body;
 		public TerminalNode NAME() { return getToken(EclangParser.NAME, 0); }
@@ -3155,11 +3155,11 @@ public class EclangParser extends Parser {
 		public FuncPrefixContext funcPrefix() {
 			return getRuleContext(FuncPrefixContext.class,0);
 		}
-		public List<ArgumentContext> argument() {
-			return getRuleContexts(ArgumentContext.class);
+		public List<ParameterContext> parameter() {
+			return getRuleContexts(ParameterContext.class);
 		}
-		public ArgumentContext argument(int i) {
-			return getRuleContext(ArgumentContext.class,i);
+		public ParameterContext parameter(int i) {
+			return getRuleContext(ParameterContext.class,i);
 		}
 		public FunctionBlockContext(FuncContext ctx) { copyFrom(ctx); }
 		@Override
@@ -3178,8 +3178,8 @@ public class EclangParser extends Parser {
 	}
 	public static class FunctionExternalContext extends FuncContext {
 		public Token name;
-		public ArgumentContext argument;
-		public List<ArgumentContext> args = new ArrayList<ArgumentContext>();
+		public ParameterContext parameter;
+		public List<ParameterContext> params = new ArrayList<ParameterContext>();
 		public TypeContext returnType;
 		public Token externalName;
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
@@ -3188,11 +3188,11 @@ public class EclangParser extends Parser {
 			return getRuleContext(TypeContext.class,0);
 		}
 		public TerminalNode STRING() { return getToken(EclangParser.STRING, 0); }
-		public List<ArgumentContext> argument() {
-			return getRuleContexts(ArgumentContext.class);
+		public List<ParameterContext> parameter() {
+			return getRuleContexts(ParameterContext.class);
 		}
-		public ArgumentContext argument(int i) {
-			return getRuleContext(ArgumentContext.class,i);
+		public ParameterContext parameter(int i) {
+			return getRuleContext(ParameterContext.class,i);
 		}
 		public FunctionExternalContext(FuncContext ctx) { copyFrom(ctx); }
 		@Override
@@ -3211,8 +3211,8 @@ public class EclangParser extends Parser {
 	}
 	public static class FunctionExprContext extends FuncContext {
 		public Token name;
-		public ArgumentContext argument;
-		public List<ArgumentContext> args = new ArrayList<ArgumentContext>();
+		public ParameterContext parameter;
+		public List<ParameterContext> params = new ArrayList<ParameterContext>();
 		public TypeContext returnType;
 		public ExprContext expression;
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
@@ -3223,11 +3223,11 @@ public class EclangParser extends Parser {
 		public FuncPrefixContext funcPrefix() {
 			return getRuleContext(FuncPrefixContext.class,0);
 		}
-		public List<ArgumentContext> argument() {
-			return getRuleContexts(ArgumentContext.class);
+		public List<ParameterContext> parameter() {
+			return getRuleContexts(ParameterContext.class);
 		}
-		public ArgumentContext argument(int i) {
-			return getRuleContext(ArgumentContext.class,i);
+		public ParameterContext parameter(int i) {
+			return getRuleContext(ParameterContext.class,i);
 		}
 		public TypeContext type() {
 			return getRuleContext(TypeContext.class,0);
@@ -3274,8 +3274,8 @@ public class EclangParser extends Parser {
 				if (((((_la - 39)) & ~0x3f) == 0 && ((1L << (_la - 39)) & ((1L << (T__38 - 39)) | (1L << (BOOL - 39)) | (1L << (NAME - 39)) | (1L << (ATOM - 39)) | (1L << (INT - 39)) | (1L << (FLOAT - 39)) | (1L << (HEX - 39)) | (1L << (BIN - 39)) | (1L << (CHAR - 39)) | (1L << (STRING - 39)))) != 0)) {
 					{
 					setState(449);
-					((FunctionExternalContext)_localctx).argument = argument();
-					((FunctionExternalContext)_localctx).args.add(((FunctionExternalContext)_localctx).argument);
+					((FunctionExternalContext)_localctx).parameter = parameter();
+					((FunctionExternalContext)_localctx).params.add(((FunctionExternalContext)_localctx).parameter);
 					}
 				}
 
@@ -3288,8 +3288,8 @@ public class EclangParser extends Parser {
 					setState(452);
 					match(T__24);
 					setState(453);
-					((FunctionExternalContext)_localctx).argument = argument();
-					((FunctionExternalContext)_localctx).args.add(((FunctionExternalContext)_localctx).argument);
+					((FunctionExternalContext)_localctx).parameter = parameter();
+					((FunctionExternalContext)_localctx).params.add(((FunctionExternalContext)_localctx).parameter);
 					}
 					}
 					setState(458);
@@ -3336,8 +3336,8 @@ public class EclangParser extends Parser {
 				if (((((_la - 39)) & ~0x3f) == 0 && ((1L << (_la - 39)) & ((1L << (T__38 - 39)) | (1L << (BOOL - 39)) | (1L << (NAME - 39)) | (1L << (ATOM - 39)) | (1L << (INT - 39)) | (1L << (FLOAT - 39)) | (1L << (HEX - 39)) | (1L << (BIN - 39)) | (1L << (CHAR - 39)) | (1L << (STRING - 39)))) != 0)) {
 					{
 					setState(472);
-					((FunctionBlockContext)_localctx).argument = argument();
-					((FunctionBlockContext)_localctx).args.add(((FunctionBlockContext)_localctx).argument);
+					((FunctionBlockContext)_localctx).parameter = parameter();
+					((FunctionBlockContext)_localctx).params.add(((FunctionBlockContext)_localctx).parameter);
 					}
 				}
 
@@ -3350,8 +3350,8 @@ public class EclangParser extends Parser {
 					setState(475);
 					match(T__24);
 					setState(476);
-					((FunctionBlockContext)_localctx).argument = argument();
-					((FunctionBlockContext)_localctx).args.add(((FunctionBlockContext)_localctx).argument);
+					((FunctionBlockContext)_localctx).parameter = parameter();
+					((FunctionBlockContext)_localctx).params.add(((FunctionBlockContext)_localctx).parameter);
 					}
 					}
 					setState(481);
@@ -3396,8 +3396,8 @@ public class EclangParser extends Parser {
 				if (((((_la - 39)) & ~0x3f) == 0 && ((1L << (_la - 39)) & ((1L << (T__38 - 39)) | (1L << (BOOL - 39)) | (1L << (NAME - 39)) | (1L << (ATOM - 39)) | (1L << (INT - 39)) | (1L << (FLOAT - 39)) | (1L << (HEX - 39)) | (1L << (BIN - 39)) | (1L << (CHAR - 39)) | (1L << (STRING - 39)))) != 0)) {
 					{
 					setState(494);
-					((FunctionExprContext)_localctx).argument = argument();
-					((FunctionExprContext)_localctx).args.add(((FunctionExprContext)_localctx).argument);
+					((FunctionExprContext)_localctx).parameter = parameter();
+					((FunctionExprContext)_localctx).params.add(((FunctionExprContext)_localctx).parameter);
 					}
 				}
 
@@ -3410,8 +3410,8 @@ public class EclangParser extends Parser {
 					setState(497);
 					match(T__24);
 					setState(498);
-					((FunctionExprContext)_localctx).argument = argument();
-					((FunctionExprContext)_localctx).args.add(((FunctionExprContext)_localctx).argument);
+					((FunctionExprContext)_localctx).parameter = parameter();
+					((FunctionExprContext)_localctx).params.add(((FunctionExprContext)_localctx).parameter);
 					}
 					}
 					setState(503);

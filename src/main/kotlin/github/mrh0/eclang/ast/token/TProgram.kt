@@ -12,7 +12,6 @@ import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.ir.IRProgram
 import github.mrh0.eclang.ir.function.IRFunctionOverride
-import github.mrh0.eclang.ir.function.IRFunctionOverrides
 import github.mrh0.eclang.ir.function.IRParameter
 import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
@@ -22,18 +21,18 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
 
     override fun process(cd: CompileData): Pair<EcType, IIR> {
         uses.map { it.process(cd) }
+        val recordIRs = records.map { it.process(cd).second }
         functions.forEach { analyzeFunction(it, cd) } //it.process(cd).second
 
-        val iir: MutableList<IIR> = mutableListOf()
+        val functionIRs: MutableList<IIR> = mutableListOf()
         GlobalFunctions.getAllOverrides(location).forEach { fos ->
             fos.overrides.forEach { fo ->
                 val params = IRParameters(location, fo.argTypes.mapIndexed { index, value -> IRParameter(location, fo.argNames.get(index), value) })
-                if (!fo.isExternal()) iir.add(IRFunctionOverride(location, fo.block!!.process(cd).second as IRBlock, fo.id, params, fo.ret))
+                if (!fo.isExternal()) functionIRs.add(IRFunctionOverride(location, fo.block!!.process(cd).second as IRBlock, fo.id, params, fo.ret))
             }
         }
 
-        // val irs = functions.map { it.process(cd).second }
-        return EcTypeNone to IRProgram(location, iir)
+        return EcTypeNone to IRProgram(location, functionIRs, recordIRs)
     }
 
     private fun indexPermutation(list: MutableList<Int>, limit: List<Int>, index: Int): Boolean {

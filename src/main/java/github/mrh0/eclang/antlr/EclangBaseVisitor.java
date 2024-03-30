@@ -283,21 +283,21 @@ public class EclangBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitArgumentTyped(EclangParser.ArgumentTypedContext ctx) { return visitChildren(ctx); }
+	@Override public T visitParameterTyped(EclangParser.ParameterTypedContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitArgumentPrimitive(EclangParser.ArgumentPrimitiveContext ctx) { return visitChildren(ctx); }
+	@Override public T visitParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitArgumentWildcard(EclangParser.ArgumentWildcardContext ctx) { return visitChildren(ctx); }
+	@Override public T visitParameterWildcard(EclangParser.ParameterWildcardContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

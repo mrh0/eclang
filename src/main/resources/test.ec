@@ -1,6 +1,6 @@
 external fn log(value: String): None as "printf"
 
-record Test as
+rec Test as
     a: Int
     b: Int
 

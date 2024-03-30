@@ -19,7 +19,6 @@ class IRRecord(location: Loc, val name: String, val entries: List<Pair<String, I
             sb.put(it.first)
             sb.endStatement()
         }
-        sb.popScope()
-        sb.endStatement()
+        sb.popScope(true)
     }
 }

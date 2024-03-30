@@ -1,4 +1,8 @@
 #include <stdio.h>
+struct Test {
+	int a;
+	int b;
+};
 int main (void) {
 	printf("Hello World");
 	return 0;

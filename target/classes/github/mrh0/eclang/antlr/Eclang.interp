@@ -36,7 +36,7 @@ null
 '['
 ']'
 '|'
-'record'
+'rec'
 ':'
 '_'
 'orderby'
@@ -167,7 +167,7 @@ functionCall
 expr
 type
 record
-argument
+parameter
 orderExpression
 statement
 use
