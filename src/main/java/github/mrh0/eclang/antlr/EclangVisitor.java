@@ -1,4 +1,4 @@
-// Generated from W:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
+// Generated from C:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
 package github.mrh0.eclang.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -280,19 +280,19 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitParameterTyped(EclangParser.ParameterTypedContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code parameterPrimitive}
+	 * Visit a parse tree produced by the {@code parameterTypedDefault}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx);
+	T visitParameterTypedDefault(EclangParser.ParameterTypedDefaultContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code parameterWildcard}
+	 * Visit a parse tree produced by the {@code parameterDefault}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitParameterWildcard(EclangParser.ParameterWildcardContext ctx);
+	T visitParameterDefault(EclangParser.ParameterDefaultContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#orderExpression}.
 	 * @param ctx the parse tree

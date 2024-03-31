@@ -1,4 +1,4 @@
-// Generated from W:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
+// Generated from C:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
 package github.mrh0.eclang.antlr;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -484,25 +484,25 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx) { }
+	@Override public void enterParameterTypedDefault(EclangParser.ParameterTypedDefaultContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx) { }
+	@Override public void exitParameterTypedDefault(EclangParser.ParameterTypedDefaultContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterParameterWildcard(EclangParser.ParameterWildcardContext ctx) { }
+	@Override public void enterParameterDefault(EclangParser.ParameterDefaultContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitParameterWildcard(EclangParser.ParameterWildcardContext ctx) { }
+	@Override public void exitParameterDefault(EclangParser.ParameterDefaultContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

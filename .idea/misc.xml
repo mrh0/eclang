@@ -16,7 +16,7 @@
         <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/src/main/antlr4/Eclang.g4" />
           <option name="autoGen" value="true" />
-          <option name="outputDir" value="W:\Development\GitHub\eclang\src\main\java" />
+          <option name="outputDir" value="C:\Development\GitHub\eclang\src\main\java" />
           <option name="libDir" value="" />
           <option name="encoding" value="" />
           <option name="pkg" value="github.mrh0.eclang.antlr" />

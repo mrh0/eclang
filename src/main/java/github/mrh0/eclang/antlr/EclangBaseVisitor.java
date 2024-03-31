@@ -1,4 +1,4 @@
-// Generated from W:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
+// Generated from C:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
 package github.mrh0.eclang.antlr;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -290,14 +290,14 @@ public class EclangBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx) { return visitChildren(ctx); }
+	@Override public T visitParameterTypedDefault(EclangParser.ParameterTypedDefaultContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitParameterWildcard(EclangParser.ParameterWildcardContext ctx) { return visitChildren(ctx); }
+	@Override public T visitParameterDefault(EclangParser.ParameterDefaultContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

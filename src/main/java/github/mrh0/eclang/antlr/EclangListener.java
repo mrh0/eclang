@@ -1,4 +1,4 @@
-// Generated from W:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
+// Generated from C:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
 package github.mrh0.eclang.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -468,29 +468,29 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitParameterTyped(EclangParser.ParameterTypedContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code parameterPrimitive}
+	 * Enter a parse tree produced by the {@code parameterTypedDefault}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void enterParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx);
+	void enterParameterTypedDefault(EclangParser.ParameterTypedDefaultContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code parameterPrimitive}
+	 * Exit a parse tree produced by the {@code parameterTypedDefault}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void exitParameterPrimitive(EclangParser.ParameterPrimitiveContext ctx);
+	void exitParameterTypedDefault(EclangParser.ParameterTypedDefaultContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code parameterWildcard}
+	 * Enter a parse tree produced by the {@code parameterDefault}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void enterParameterWildcard(EclangParser.ParameterWildcardContext ctx);
+	void enterParameterDefault(EclangParser.ParameterDefaultContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code parameterWildcard}
+	 * Exit a parse tree produced by the {@code parameterDefault}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void exitParameterWildcard(EclangParser.ParameterWildcardContext ctx);
+	void exitParameterDefault(EclangParser.ParameterDefaultContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EclangParser#orderExpression}.
 	 * @param ctx the parse tree

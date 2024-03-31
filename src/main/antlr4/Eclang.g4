@@ -119,8 +119,8 @@ record:
 
 parameter:
       NAME ':' type                         #parameterTyped
-    | primitive                             #parameterPrimitive
-    | '_'                                   #parameterWildcard
+    | NAME ':' type '=' expr                #parameterTypedDefault
+    | NAME '=' expr                         #parameterDefault
     ;
 
 orderExpression:
