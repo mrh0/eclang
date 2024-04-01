@@ -89,7 +89,15 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     }
 
     override fun visitParameterTyped(ctx: EclangParser.ParameterTypedContext): ITok {
-        return TParameter(loc(ctx), ctx.NAME().text, visit(ctx.type()))
+        return TParameter(loc(ctx), ctx.NAME().text, visit(ctx.type()), null)
+    }
+
+    override fun visitParameterDefault(ctx: EclangParser.ParameterDefaultContext): ITok {
+        return TParameter(loc(ctx), ctx.NAME().text, null, visit(ctx.expr()))
+    }
+
+    override fun visitParameterTypedDefault(ctx: EclangParser.ParameterTypedDefaultContext): ITok {
+        return TParameter(loc(ctx), ctx.NAME().text, visit(ctx.type()), visit(ctx.expr()))
     }
 
     override fun visitFunctionCallNoArgs(ctx: EclangParser.FunctionCallNoArgsContext): ITok = TStatementCall(loc(ctx), ctx.NAME().text, arrayListOf())

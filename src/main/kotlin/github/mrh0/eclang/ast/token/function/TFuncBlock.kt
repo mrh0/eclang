@@ -26,7 +26,9 @@ class TFuncBlock (location: Loc, val block: TBlock, name: String, args: TParamet
         val ir = block.process(cd)
 
         val overrides = GlobalFunctions.getOverridesByName(location, name).overrides
-        val functionOverrides = overrides.map { IRFunctionOverride(location, ir.second as IRBlock, name, IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second) }), returnType) }
+        val functionOverrides = overrides.map {
+            IRFunctionOverride(location, ir.second as IRBlock, name, IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second, null) }), returnType)
+        }
 
         return EcTypeNone to IRFunctionOverrides(location, name, functionOverrides)
     }

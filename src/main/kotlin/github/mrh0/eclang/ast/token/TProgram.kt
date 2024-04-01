@@ -18,7 +18,6 @@ import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 
 class TProgram(location: Loc, private val functions: List<TFunc>, val records: List<TRecord>, val uses: List<ITok>) : Tok(location) {
-
     override fun process(cd: CompileData): Pair<EcType, IIR> {
         uses.map { it.process(cd) }
         val recordIRs = records.map { it.process(cd).second }
@@ -27,7 +26,7 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
         val functionIRs: MutableList<IIR> = mutableListOf()
         GlobalFunctions.getAllOverrides(location).forEach { fos ->
             fos.overrides.forEach { fo ->
-                val params = IRParameters(location, fo.argTypes.mapIndexed { index, value -> IRParameter(location, fo.argNames.get(index), value) })
+                val params = IRParameters(location, fo.argTypes.mapIndexed { index, value -> IRParameter(location, fo.argNames.get(index), value, null) })
                 if (!fo.isExternal()) functionIRs.add(IRFunctionOverride(location, fo.block!!.process(cd).second as IRBlock, fo.id, params, fo.ret))
             }
         }

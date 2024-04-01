@@ -12,7 +12,7 @@ import github.mrh0.eclang.types.EcTypeNone
 class TParameters(location: Loc, val args: MutableList<TParameter>) : Tok(location) {
     fun get() = args
     override fun process(cd: CompileData): Pair<EcType, IIR> =
-        EcTypeNone to IRParameters(location, args.map { IRParameter(it.location, it.name, it.type.process(cd).first) })
+        EcTypeNone to IRParameters(location, args.map { it.process(cd).second as IRParameter })
 
     override fun toString() = "$args"
 }

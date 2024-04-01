@@ -8,5 +8,5 @@ fn main(): Int do
     log "Hello World"
     ret 0
 
-fn test(a: Int | String, b: Int | String, c: Int): Int do
+fn test(a: Int | String, b: Int | String, c: Int = 5): Int do
     ret 1
