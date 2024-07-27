@@ -2,6 +2,7 @@ package github.mrh0.eclang.ir.function
 
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
+import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IR
 import github.mrh0.eclang.ir.IRType
@@ -19,4 +20,10 @@ class IRParameter(location: Loc, val name: String, val type: EcType, val def: II
 
     fun getDefaultValue() = def
     fun hasDefaultValue() = def != null
+
+    fun get() = FunctionParameter(name, type, def)
+
+    override fun toString(): String {
+        return "IRParameter($name, $type, $def)"
+    }
 }

@@ -8,11 +8,8 @@ import github.mrh0.eclang.ast.token.branch.TInlineIf
 import github.mrh0.eclang.ast.token.branch.TStatementIf
 import github.mrh0.eclang.ast.token.data.*
 import github.mrh0.eclang.ast.token.data.record.TRecord
-import github.mrh0.eclang.ast.token.function.TParameter
+import github.mrh0.eclang.ast.token.function.*
 import github.mrh0.eclang.ast.token.function.call.TExprCall
-import github.mrh0.eclang.ast.token.function.TFuncBlock
-import github.mrh0.eclang.ast.token.function.TFuncExternal
-import github.mrh0.eclang.ast.token.function.TParameters
 import github.mrh0.eclang.ast.token.function.call.TStatementCall
 import github.mrh0.eclang.ast.token.loop.TStatementBreak
 import github.mrh0.eclang.ast.token.loop.TStatementContinue
@@ -89,15 +86,13 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     }
 
     override fun visitParameterTyped(ctx: EclangParser.ParameterTypedContext): ITok {
-        return TParameter(loc(ctx), ctx.NAME().text, visit(ctx.type()), null)
+        return TParameterTyped(loc(ctx), ctx.NAME().text, visit(ctx.type()))
     }
 
-    override fun visitParameterDefault(ctx: EclangParser.ParameterDefaultContext): ITok {
-        return TParameter(loc(ctx), ctx.NAME().text, null, visit(ctx.expr()))
-    }
+    override fun visitParameterDefault(ctx: EclangParser.ParameterDefaultContext): ITok = TODO()
 
     override fun visitParameterTypedDefault(ctx: EclangParser.ParameterTypedDefaultContext): ITok {
-        return TParameter(loc(ctx), ctx.NAME().text, visit(ctx.type()), visit(ctx.expr()))
+        return TParameterTypedDefault(loc(ctx), ctx.NAME().text, visit(ctx.type()), visit(ctx.expr()))
     }
 
     override fun visitFunctionCallNoArgs(ctx: EclangParser.FunctionCallNoArgsContext): ITok = TStatementCall(loc(ctx), ctx.NAME().text, arrayListOf())

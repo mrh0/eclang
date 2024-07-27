@@ -9,9 +9,9 @@ import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.EcType
 
-class IRFunctionOverride(location: Loc, private val block: IRBlock, val name: String, val args: IRParameters, val returnType: EcType) : IR(location) {
+class IRFunctionOverride(location: Loc, private val block: IRBlock, val name: String, val params: IRParameters, val returnType: EcType) : IR(location) {
     override fun toString(): String {
-        return "fn($name, $returnType, $block)"
+        return "fn($name, $params, $returnType, $block)"
     }
 
     override fun toC(sb: CSourceBuilder, c: Context) {
@@ -20,7 +20,7 @@ class IRFunctionOverride(location: Loc, private val block: IRBlock, val name: St
         sb.put(' ')
         sb.put(name)
         sb.put(" (")
-        args.toC(sb, c)
+        params.toC(sb, c)
         sb.put(") ")
         sb.pushScope(BlockScope())
         block.toC(sb, c)

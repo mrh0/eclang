@@ -12,4 +12,6 @@ class IRArguments(location: Loc, val args: List<IRArgument>) : IR(location) {
             if (index < args.size-1) sb.put(", ")
         }
     }
+
+    override fun toString(): String = "$args"
 }

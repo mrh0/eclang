@@ -1,6 +1,5 @@
 package github.mrh0.eclang
 
-import Root
 import github.mrh0.eclang.antlr.EclangLexer
 import github.mrh0.eclang.antlr.EclangParser
 import github.mrh0.eclang.ast.CompileData
@@ -18,7 +17,7 @@ import kotlin.time.measureTime
 
 @OptIn(ExperimentalTime::class)
 fun main(args: Array<String>) {
-    val file = Path.of(Root::class.java.classLoader.getResource("test.ec")!!.toURI()).toFile()
+    val file = Path.of(Util::class.java.classLoader.getResource("test.ec")!!.toURI()).toFile()
 
     val timeTaken = measureTime {
         val stream = FileInputStream(file)

@@ -7,6 +7,7 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.data.record.TRecord
 import github.mrh0.eclang.ast.token.function.TFunc
 import github.mrh0.eclang.ast.token.function.TFuncBlock
+import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.context.function.GlobalFunctions
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRBlock
@@ -26,7 +27,7 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
         val functionIRs: MutableList<IIR> = mutableListOf()
         GlobalFunctions.getAllOverrides(location).forEach { fos ->
             fos.overrides.forEach { fo ->
-                val params = IRParameters(location, fo.argTypes.mapIndexed { index, value -> IRParameter(location, fo.argNames.get(index), value, null) })
+                val params = IRParameters(location, fo.params.map { IRParameter(location, it.name, it.type, it.def) })
                 if (!fo.isExternal()) functionIRs.add(IRFunctionOverride(location, fo.block!!.process(cd).second as IRBlock, fo.id, params, fo.ret))
             }
         }
@@ -44,29 +45,29 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
         return false
     }
 
-    private fun permutateFunctionArguments(argTypes: Array<EcType>, callback: (Array<EcType>) -> Any) {
-        val expanded = argTypes.map { it.expand() }
+    private fun permutateFunctionArguments(params: List<FunctionParameter>, callback: (Array<FunctionParameter>) -> Any) {
+        val expanded = params.map { it.type.expand() }
         val indices = expanded.map { 0 }.toMutableList()
         val limits = expanded.map { it.size }
+        println(params)
         while(true) {
-            println("$indices $limits")
-            callback(indices.mapIndexed { index, i -> expanded[index][i] }.toTypedArray())
+            callback(
+                indices.mapIndexed { index, i -> expanded[index][i] }
+                .mapIndexed { index, type -> FunctionParameter(params[index].name, type, null) }
+                .toTypedArray()
+            )
             if (indexPermutation(indices, limits, 0)) break
         }
     }
 
     private fun analyzeFunction(func: TFunc, cd: CompileData) {
         val res = func.processSignature(cd)
-        val argNames = res.first.map { it.first }.toTypedArray()
-        val argTypes = res.first.map { it.second }.toTypedArray()
         val retType = res.second
 
-        permutateFunctionArguments(argTypes) { list ->
-            println("${func.name} ${list.map { it.toString() }}")
+        permutateFunctionArguments(res.first) { list ->
             GlobalFunctions.addOverride(
                 func.location,
                 func.name,
-                argNames,
                 list,
                 retType,
                 if (func is TFuncBlock) func.block else null,

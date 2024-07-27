@@ -15,19 +15,19 @@ import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 
-class TFuncBlock (location: Loc, val block: TBlock, name: String, args: TParameters, returns: ITok) : TFunc(location, name, args, returns) {
-    override fun toString() = "$name($args, $block)"
+class TFuncBlock (location: Loc, val block: TBlock, name: String, params: TParameters, returns: ITok) : TFunc(location, name, params, returns) {
+    override fun toString() = "$name($params, $block)"
 
     override fun process(cd: CompileData): Pair<EcType, IIR> {
         cd.newContext(name)
-        val argPairs = args.get().map { it.name to it.process(cd).first }.toTypedArray()
+        val argPairs = params.get().map { it.name to it.process(cd).first }.toTypedArray()
         argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
         val returnType = returns.process(cd).first
         val ir = block.process(cd)
 
         val overrides = GlobalFunctions.getOverridesByName(location, name).overrides
-        val functionOverrides = overrides.map {
-            IRFunctionOverride(location, ir.second as IRBlock, name, IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second, null) }), returnType)
+        val functionOverrides = overrides.map { override ->
+            IRFunctionOverride(location, ir.second as IRBlock, name, IRParameters(location, override.params.map { IRParameter(location, it.name, it.type, it.def) }), returnType)
         }
 
         return EcTypeNone to IRFunctionOverrides(location, name, functionOverrides)

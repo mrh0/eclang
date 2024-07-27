@@ -10,4 +10,6 @@ class IRArgument(location: Loc, val next: IIR) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         next.toC(sb, c)
     }
+
+    override fun toString(): String = "$next"
 }

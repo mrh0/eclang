@@ -13,6 +13,6 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>)
     }
 
     override fun toString(): String {
-        return "IRProgram"
+        return "IRProgram($functions)"
     }
 }

@@ -161,6 +161,12 @@ funcPrefix:
       'start'
     ;
 
+funcWrappers:
+    'on' 'err' NAME? 'ret' expr
+    'on' 'null' 'ret' expr
+    'on' 'null' 'throw' expr?
+    ;
+
 func:
       'external' 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' ':' returnType=type 'as' externalName=STRING NL   #functionExternal
     | funcPrefix? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' ':' returnType=type 'do' body=block              #functionBlock

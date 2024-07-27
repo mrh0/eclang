@@ -10,4 +10,6 @@ class IRString(location: Loc, val value: String) : IRValue(location) {
         sb.put(value)
         sb.put('"')
     }
+
+    override fun toString(): String = "'$value'"
 }

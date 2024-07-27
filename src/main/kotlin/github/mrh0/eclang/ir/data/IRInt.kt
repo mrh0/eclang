@@ -8,4 +8,6 @@ class IRInt(location: Loc, val value: Int) : IRValue(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.put("$value")
     }
+
+    override fun toString(): String = "i$value"
 }

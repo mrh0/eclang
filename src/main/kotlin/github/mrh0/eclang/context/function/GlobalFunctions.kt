@@ -10,11 +10,11 @@ object GlobalFunctions {
 
     private fun getSourceName(name: String, index: Int): String = "${name}_$index"
 
-    fun addOverride(location: Loc, name: String, args: Array<String>, types: Array<EcType>, returnType: EcType): String {
-        return addOverride(location, name, args, types, returnType, null, null)
+    fun addOverride(location: Loc, name: String, params: Array<FunctionParameter>, returnType: EcType): String {
+        return addOverride(location, name, params, returnType, null, null)
     }
 
-    fun addOverride(location: Loc, name: String, args: Array<String>, types: Array<EcType>, returnType: EcType, block: TBlock?, sourceName: String?): String {
+    fun addOverride(location: Loc, name: String, params: Array<FunctionParameter>, returnType: EcType, block: TBlock?, sourceName: String?): String {
         val fos: FunctionOverrides
         if(functions.containsKey(name)) {
             //if(functions[name]!!.returnType != returnType) throw EcError(location, "Function $name is already defined return type ${functions[name]!!.returnType}")
@@ -26,7 +26,7 @@ object GlobalFunctions {
         }
 
         val usedSourceName = sourceName ?: getSourceName(name, fos.getNumberOfOverrides());
-        val res = FunctionOverride(usedSourceName, args, types, returnType, block)
+        val res = FunctionOverride(usedSourceName, params, returnType, block)
         //println("$name $sourceName ${types.map { it.toString() }}")
         fos.add(res)
         return usedSourceName
