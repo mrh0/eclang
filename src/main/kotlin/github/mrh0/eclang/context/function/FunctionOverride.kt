@@ -14,7 +14,7 @@ import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeCallSignature
 
-class FunctionOverride(val id: String, val params: Array<FunctionParameter>, val ret: EcType, val block: TBlock?, private var called: Boolean = false) {
+class FunctionOverride(val location: Loc, val id: String, val params: Array<FunctionParameter>, val ret: EcType, val block: TBlock?, private var called: Boolean = false) {
     fun match(location: Loc, types: Array<EcType>): Boolean {
         if(types.size != params.size) return false
         for(i in types.indices) {
@@ -40,5 +40,6 @@ class FunctionOverride(val id: String, val params: Array<FunctionParameter>, val
     fun hasBeenCalled() = called
     fun setCalled() {
         called = true
+        GlobalFunctions.calledFunctionOverrides.put(id, true)
     }
 }

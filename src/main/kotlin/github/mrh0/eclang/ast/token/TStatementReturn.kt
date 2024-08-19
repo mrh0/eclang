@@ -12,7 +12,6 @@ import github.mrh0.eclang.types.EcType
 class TStatementReturn(location: Loc, val next: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val ir = next.process(cd, hint)
-        println("Test $hint | ${ir.first}")
         if (!hint.accepts(location, ir.first)) throw EcReturnTypeError(location, hint, ir.first)
         return Pair(ir.first, IRStatementReturn(location, ir.second))
     }

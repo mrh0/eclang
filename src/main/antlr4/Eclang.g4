@@ -159,6 +159,7 @@ use:
 
 funcPrefix:
       'start'
+    | 'export'
     ;
 
 funcWrappers:

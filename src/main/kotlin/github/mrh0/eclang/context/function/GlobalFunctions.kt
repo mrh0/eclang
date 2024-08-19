@@ -7,6 +7,7 @@ import github.mrh0.eclang.types.EcType
 
 object GlobalFunctions {
     private val functions: MutableMap<String, FunctionOverrides> = mutableMapOf()
+    val calledFunctionOverrides: MutableMap<String, Boolean> = mutableMapOf()
 
     private fun getSourceName(name: String, index: Int): String = "${name}_$index"
 
@@ -26,8 +27,7 @@ object GlobalFunctions {
         }
 
         val usedSourceName = sourceName ?: getSourceName(name, fos.getNumberOfOverrides());
-        val res = FunctionOverride(usedSourceName, params, returnType, block)
-        //println("$name $sourceName ${types.map { it.toString() }}")
+        val res = FunctionOverride(location, usedSourceName, params, returnType, block)
         fos.add(res)
         return usedSourceName
     }

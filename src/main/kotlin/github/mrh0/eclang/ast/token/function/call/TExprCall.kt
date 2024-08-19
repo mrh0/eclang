@@ -5,6 +5,8 @@ import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.function.GlobalFunctions
+import github.mrh0.eclang.error.EcAmbiguousSignature
+import github.mrh0.eclang.error.EcNoMatchingCallSignature
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.function.call.IRGlobalFunctionCall
 import github.mrh0.eclang.ir.function.call.IRArgument
@@ -21,14 +23,19 @@ class TExprCall (location: Loc, val name: String, val args: List<ITok>) : Tok(lo
         val processedArgs = args.map { it.process(cd, hint) }
         val argTypes = processedArgs.map { it.first }.toTypedArray()
 
-        val matching = overrides.getMatching(location, argTypes)[0] // TODO: Select based on return type
+        val matching = overrides.getMatching(location, argTypes)
+        if (matching.isEmpty()) throw EcNoMatchingCallSignature(location, name, argTypes)
+        if (matching.size > 1) throw EcAmbiguousSignature(location, name, argTypes, matching.map { it.location })
+        val first = matching[0]
+
+        first.setCalled()
 
         return Pair(
-            matching.ret,
+            first.ret,
             IRGlobalFunctionCall(
                 location,
                 name,
-                matching.id,
+                first.id,
                 IRArguments(location, processedArgs.map { IRArgument(location, it.second) })
             )
         )

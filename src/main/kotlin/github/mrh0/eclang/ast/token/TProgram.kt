@@ -24,14 +24,9 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
         val recordIRs = records.map { it.process(cd, hint).second }
         functions.forEach { analyzeFunction(it, cd) } //it.process(cd).second
 
-        println("Contexts: ${cd.contextMap}")
-
         val functionIRs: MutableList<IIR> = mutableListOf()
         GlobalFunctions.getAllOverrides(location).forEach { fos ->
             fos.overrides.forEach { fo ->
-
-                //val params = IRParameters(location, fo.params.map { IRParameter(location, it.name, it.type, it.def) })
-                //if (!fo.isExternal()) functionIRs.add(IRFunctionOverride(location, fo.block!!.process(cd, hint).second as IRBlock, fo.id, params, fo.ret))
                 if (!fo.isExternal()) functionIRs.add(fo.buildIR(location, cd, fo.ret))
             }
         }
@@ -53,7 +48,6 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
         val expanded = params.map { it.type.expand() }
         val indices = expanded.map { 0 }.toMutableList()
         val limits = expanded.map { it.size }
-        println("params $expanded")
         while(true) {
             callback(
                 indices.mapIndexed { index, i -> expanded[index][i] }
