@@ -12,7 +12,8 @@ class TNamed (location: Loc, val name: String) : Tok(location) {
         return "$${name}"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        println("Context: ${cd.ctx().contextName}")
         return Pair(cd.getVar(location, name).getType(), IRNamed(location, name, cd.ctx().getIndex(location, name)))
     }
 }

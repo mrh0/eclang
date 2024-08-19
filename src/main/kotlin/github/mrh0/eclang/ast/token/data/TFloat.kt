@@ -13,7 +13,7 @@ class TFloat(location: Loc, private val value: Double) : Tok(location) {
         return "${value}f"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         return EcTypeFloat to IRFloat(location, value)
     }
 }

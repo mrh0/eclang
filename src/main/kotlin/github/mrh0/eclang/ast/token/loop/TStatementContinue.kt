@@ -9,7 +9,7 @@ import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 
 class TStatementContinue (location: Loc) : Tok(location) {
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         return Pair(EcTypeNone, IRBreak(location))
     }
 

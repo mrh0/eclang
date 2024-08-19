@@ -9,8 +9,8 @@ import github.mrh0.eclang.ir.IRStatement
 import github.mrh0.eclang.types.EcType
 
 class TStatement(location: Loc, val next: ITok) : Tok(location) {
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        val ir = next.process(cd)
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        val ir = next.process(cd, hint)
         return Pair(ir.first, IRStatement(location, ir.second))
     }
 

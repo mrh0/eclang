@@ -13,9 +13,9 @@ import github.mrh0.eclang.types.EcTypeUnion
 class TTypeUnion(location: Loc, val types: List<ITok>) : Tok(location) {
     override fun toString() = "#Union($types)"
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val set = mutableSetOf<EcType>()
-        val processedTypes = types.map { it.process(cd).first }
+        val processedTypes = types.map { it.process(cd, hint).first }
         processedTypes.forEach {
             if (it is EcTypeUnion) set.addAll(it.expand()) else set.add(it)
         }

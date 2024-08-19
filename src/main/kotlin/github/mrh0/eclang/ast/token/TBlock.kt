@@ -14,8 +14,8 @@ class TBlock(location: Loc, val statements: MutableList<ITok>) : Tok(location) {
         return "$statements"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        val ir = statements.map { it.process(cd).second }
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        val ir = statements.map { it.process(cd, hint).second }
         return Pair(EcTypeNone, IRBlock(location, ir))
     }
 }

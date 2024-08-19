@@ -17,8 +17,8 @@ class TNot(location: Loc, val expr: ITok) : Tok(location) {
         return "TNot($expr)"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        val e = expr.process(cd);
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        val e = expr.process(cd, hint);
         return when (e.first) {
             is EcTypeBool -> Pair(EcTypeBool, IRNotBool(location, e.second))
             is EcTypeInt -> Pair(EcTypeBool, IRNotInt(location, e.second))

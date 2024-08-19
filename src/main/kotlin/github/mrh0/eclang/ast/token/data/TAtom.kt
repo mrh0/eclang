@@ -13,7 +13,7 @@ class TAtom(location: Loc, private val value: String) : Tok(location) {
         return "TAtom(${value})"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         return EcTypeAtom to IRAtom(location, value)
     }
 }

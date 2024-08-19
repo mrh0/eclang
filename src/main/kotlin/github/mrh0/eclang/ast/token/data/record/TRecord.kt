@@ -15,7 +15,7 @@ class TRecord(location: Loc, val name: String, val names: List<String>, val type
         return "TRecord(${names.mapIndexed { index, it -> it to types[index] }})"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        return EcTypeNone to IRRecord(location, name, names.mapIndexed { index, it -> it to types[index].process(cd).second as IRType })
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        return EcTypeNone to IRRecord(location, name, names.mapIndexed { index, it -> it to types[index].process(cd, hint).second as IRType })
     }
 }

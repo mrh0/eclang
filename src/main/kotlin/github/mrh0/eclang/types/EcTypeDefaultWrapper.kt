@@ -8,5 +8,5 @@ class EcTypeDefaultWrapper(private val wrappedType: EcType) : EcType("IEc", "Def
         return type.accepts(location, type)
     }
 
-    override fun expand(): List<EcType> = listOf(wrappedType, EcTypeNone)
+    override fun expand(): List<EcType> = wrappedType.expand() + EcTypeNone
 }

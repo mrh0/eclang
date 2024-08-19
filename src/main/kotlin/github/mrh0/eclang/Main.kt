@@ -7,6 +7,7 @@ import github.mrh0.eclang.ast.Visitor
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.output.c.CSourceBuilder
+import github.mrh0.eclang.types.EcTypeNone
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import java.io.File
@@ -31,7 +32,7 @@ fun main(args: Array<String>) {
         println(tree)
 
         val cd = CompileData()
-        val (_, ir) = tree.process(cd)
+        val (_, ir) = tree.process(cd, EcTypeNone)
         println(ir)
         cd.finalize()
 

@@ -5,5 +5,5 @@ import github.mrh0.eclang.types.EcType
 
 interface ITok {
     // Hint is for inferring types
-    fun process(cd: CompileData /*, hint: GsType*/): Pair<EcType, IIR>
+    fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR>
 }

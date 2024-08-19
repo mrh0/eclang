@@ -17,9 +17,9 @@ class TStatementCall (location: Loc, val name: String, val args: List<ITok>) : T
         return "TCall(${name}, $args)"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val overrides = GlobalFunctions.getOverridesByName(location, name)
-        val processedArgs = args.map { it.process(cd) }
+        val processedArgs = args.map { it.process(cd, hint) }
         val argTypes = processedArgs.map { it.first }.toTypedArray()
 
         val matching = overrides.getMatching(location, argTypes)[0] // TODO: Select based on return type

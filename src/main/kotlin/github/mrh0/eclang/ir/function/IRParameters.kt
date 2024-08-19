@@ -4,20 +4,19 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.ir.IR
 import github.mrh0.eclang.output.c.CSourceBuilder
+import github.mrh0.eclang.types.EcTypeNone
 
 class IRParameters(location: Loc, val args: List<IRParameter>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
-        if (args.size == 0) {
+        if (args.isEmpty()) {
             sb.put("void")
             return
         }
         args.forEachIndexed { index, iir ->
+            if (index != 0 && iir.type != EcTypeNone) sb.put(", ")
             iir.toC(sb, c)
-            if (index < args.size-1) sb.put(", ")
         }
     }
 
-    override fun toString(): String {
-        return "$args"
-    }
+    override fun toString() = "$args"
 }

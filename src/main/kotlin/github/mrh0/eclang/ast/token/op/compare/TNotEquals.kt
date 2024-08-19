@@ -16,9 +16,9 @@ class TNotEquals(location: Loc, private val left: ITok, private val right: ITok)
         return "($left != $right)"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        val l = left.process(cd);
-        val r = right.process(cd);
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        val l = left.process(cd, hint);
+        val r = right.process(cd, hint);
         return when {
             l.first is EcTypeInt && r.first is EcTypeInt -> Pair(EcTypeBool, IRNotEqualsIntInt(location, l.second, r.second))
             else -> Pair(EcTypeBool, IRNotEqualsFallback(location, l.second, r.second))

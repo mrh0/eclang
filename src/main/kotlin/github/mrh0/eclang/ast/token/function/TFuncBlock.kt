@@ -18,12 +18,15 @@ import github.mrh0.eclang.types.EcTypeNone
 class TFuncBlock (location: Loc, val block: TBlock, name: String, params: TParameters, returns: ITok) : TFunc(location, name, params, returns) {
     override fun toString() = "$name($params, $block)"
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> = throw NotImplementedError("Should not be implemented")
+
+    /*
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         cd.newContext(name)
-        val argPairs = params.get().map { it.name to it.process(cd).first }.toTypedArray()
+        val argPairs = params.get().map { it.name to it.process(cd, hint).first }.toTypedArray()
         argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
-        val returnType = returns.process(cd).first
-        val ir = block.process(cd)
+        val returnType = returns.process(cd, hint).first
+        val ir = block.process(cd, hint)
 
         val overrides = GlobalFunctions.getOverridesByName(location, name).overrides
         val functionOverrides = overrides.map { override ->
@@ -32,6 +35,7 @@ class TFuncBlock (location: Loc, val block: TBlock, name: String, params: TParam
 
         return EcTypeNone to IRFunctionOverrides(location, name, functionOverrides)
     }
+    */
 
     override fun getSourceName(): String? {
         return if (name == "main") "main" else null // TODO: Change

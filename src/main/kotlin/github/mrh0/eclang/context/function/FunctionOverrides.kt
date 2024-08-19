@@ -14,4 +14,6 @@ class FunctionOverrides(val name: String, val returnType: EcType) {
     }
     fun getType() = EcTypeUnion(overrides.map { it.getType() }.toHashSet())
     fun getNumberOfOverrides() = overrides.size
+
+    override fun toString() = "FOS($name, $returnType, $overrides)"
 }

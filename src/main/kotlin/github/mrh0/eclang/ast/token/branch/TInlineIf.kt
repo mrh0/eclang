@@ -11,10 +11,10 @@ import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
 
 class TInlineIf(location: Loc, private val condition: ITok, private val body: ITok, private val elseBody: ITok) : Tok(location) {
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        val conditionPair = condition.process(cd)
-        val bodyPair = body.process(cd)
-        val elseBodyPair = elseBody.process(cd)
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        val conditionPair = condition.process(cd, hint)
+        val bodyPair = body.process(cd, hint)
+        val elseBodyPair = elseBody.process(cd, hint)
         if(!EcTypeBool.accepts(location, conditionPair.first)) throw EcError(location, "Expected if statement condition to be a boolean.")
         if(!bodyPair.first.accepts(location, elseBodyPair.first)) throw EcError(location, "Expected both if and else body to return same type.")
 

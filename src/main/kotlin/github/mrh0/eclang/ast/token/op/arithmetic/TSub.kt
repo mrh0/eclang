@@ -15,9 +15,9 @@ class TSub(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
         return "($left - $right)"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        val l = left.process(cd);
-        val r = right.process(cd);
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        val l = left.process(cd, hint);
+        val r = right.process(cd, hint);
         return when {
             l.first is EcTypeInt && r.first is EcTypeInt -> Pair(EcTypeInt, IRSubIntInt(location, l.second, r.second))
             else -> throw EcOpTypeError(location, "-", l.first, r.first)

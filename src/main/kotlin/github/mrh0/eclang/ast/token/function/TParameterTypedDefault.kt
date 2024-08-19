@@ -15,10 +15,10 @@ import github.mrh0.eclang.types.EcTypeNone
 import github.mrh0.eclang.types.EcTypeUnion
 
 
-class TParameterTypedDefault(location: Loc, val name: String, val type: ITok, val def: ITok) : Tok(location) {
+class TParameterTypedDefault(location: Loc, name: String, val type: ITok, val def: ITok) : TParameter(location, name) {
     override fun toString() = "$name:$type"
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> = throw NotImplementedError()/*{
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> = throw NotImplementedError()/*{
         val defPair = def.process(cd)
         if (!defPair.second.deterministic()) throw EcError(location, "Default value of $name must be deterministic.")
         val typePair = type.process(cd)
@@ -26,10 +26,10 @@ class TParameterTypedDefault(location: Loc, val name: String, val type: ITok, va
         return typePair.first to IRParameter(location, name, EcTypeDefaultWrapper(typePair.first), defPair.second)
     }*/
 
-    fun toFunctionParameter(cd: CompileData): FunctionParameter {
-        val defPair = def.process(cd)
+    override fun toFunctionParameter(cd: CompileData): FunctionParameter {
+        val defPair = def.process(cd, EcTypeNone)
         if (!defPair.second.deterministic()) throw EcError(location, "Default value of $name must be deterministic.")
-        val typePair = type.process(cd)
+        val typePair = type.process(cd, EcTypeNone)
         if (!typePair.first.accepts(location, defPair.first)) throw EcAssignTypeError(location, name, typePair.first, defPair.first)
         return FunctionParameter(name, EcTypeDefaultWrapper(typePair.first), defPair.second)
     }

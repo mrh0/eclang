@@ -13,7 +13,7 @@ class TBoolean(location: Loc, private val value: Boolean) : Tok(location) {
         return "$value"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         return EcTypeBool to IRBool(location, value)
     }
 }

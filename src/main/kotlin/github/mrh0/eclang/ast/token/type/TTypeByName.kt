@@ -11,7 +11,7 @@ import github.mrh0.eclang.types.EcType
 class TTypeByName(location: Loc, val type: String) : Tok(location) {
     override fun toString() = "#$type"
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val builtIn = BuiltInTypes.getType(type)
         return Pair(builtIn, IRType(location, builtIn))
     }

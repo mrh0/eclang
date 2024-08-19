@@ -13,7 +13,7 @@ class TString(location: Loc, private val value: String) : Tok(location) {
         return "'${value}'"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         return EcTypeString to IRString(location, value)
     }
 }

@@ -13,14 +13,14 @@ import github.mrh0.eclang.types.EcTypeBool
 import github.mrh0.eclang.types.EcTypeNone
 
 class TStatementIf(location: Loc, private val conditions: List<ITok>, private val bodies: List<ITok>, private val elseBody: ITok?) : Tok(location) {
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        val conditionPairs = conditions.map { it.process(cd) }
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        val conditionPairs = conditions.map { it.process(cd, hint) }
         conditionPairs.forEach { if(!EcTypeBool.accepts(location, it.first)) throw EcError(location, "Expected if statement condition to be a boolean.") }
         val conditionIRs = conditionPairs.map { it.second }
-        val bodyIRs = bodies.map { it.process(cd).second }
+        val bodyIRs = bodies.map { it.process(cd, hint).second }
 
         if(elseBody != null) {
-            return Pair(EcTypeNone, IRStatementIfElse(location, conditionIRs, bodyIRs, elseBody.process(cd).second))
+            return Pair(EcTypeNone, IRStatementIfElse(location, conditionIRs, bodyIRs, elseBody.process(cd, hint).second))
         }
         return Pair(EcTypeNone, IRStatementIf(location, conditionIRs, bodyIRs))
     }

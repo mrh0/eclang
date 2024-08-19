@@ -7,16 +7,16 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TBlock
 import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.types.EcType
+import github.mrh0.eclang.types.EcTypeNone
 
 abstract class TFunc(location: Loc, val name: String, val params: TParameters, val returns: ITok) : Tok(location) {
     override fun toString() = "SHOULD NOT HAPPEN"
 
     fun processSignature(cd: CompileData): Pair<List<FunctionParameter>, EcType> {
         val argPairs = params.get().map {
-            val v = it.process(cd)
-            FunctionParameter(it.name, v.first, v.second)
+            it.toFunctionParameter(cd)
         }
-        val returnType = returns.process(cd).first
+        val returnType = returns.process(cd, EcTypeNone).first
 
         return argPairs to returnType
     }

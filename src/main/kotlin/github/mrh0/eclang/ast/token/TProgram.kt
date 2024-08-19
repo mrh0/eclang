@@ -19,16 +19,20 @@ import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 
 class TProgram(location: Loc, private val functions: List<TFunc>, val records: List<TRecord>, val uses: List<ITok>) : Tok(location) {
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        uses.map { it.process(cd) }
-        val recordIRs = records.map { it.process(cd).second }
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        uses.map { it.process(cd, hint) }
+        val recordIRs = records.map { it.process(cd, hint).second }
         functions.forEach { analyzeFunction(it, cd) } //it.process(cd).second
+
+        println("Contexts: ${cd.contextMap}")
 
         val functionIRs: MutableList<IIR> = mutableListOf()
         GlobalFunctions.getAllOverrides(location).forEach { fos ->
             fos.overrides.forEach { fo ->
-                val params = IRParameters(location, fo.params.map { IRParameter(location, it.name, it.type, it.def) })
-                if (!fo.isExternal()) functionIRs.add(IRFunctionOverride(location, fo.block!!.process(cd).second as IRBlock, fo.id, params, fo.ret))
+
+                //val params = IRParameters(location, fo.params.map { IRParameter(location, it.name, it.type, it.def) })
+                //if (!fo.isExternal()) functionIRs.add(IRFunctionOverride(location, fo.block!!.process(cd, hint).second as IRBlock, fo.id, params, fo.ret))
+                if (!fo.isExternal()) functionIRs.add(fo.buildIR(location, cd, fo.ret))
             }
         }
 
@@ -49,11 +53,12 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
         val expanded = params.map { it.type.expand() }
         val indices = expanded.map { 0 }.toMutableList()
         val limits = expanded.map { it.size }
-        println(params)
+        println("params $expanded")
         while(true) {
             callback(
                 indices.mapIndexed { index, i -> expanded[index][i] }
                 .mapIndexed { index, type -> FunctionParameter(params[index].name, type, null) }
+                .filter { it.type != EcTypeNone } // Remove defaults
                 .toTypedArray()
             )
             if (indexPermutation(indices, limits, 0)) break
@@ -62,14 +67,13 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
 
     private fun analyzeFunction(func: TFunc, cd: CompileData) {
         val res = func.processSignature(cd)
-        val retType = res.second
 
         permutateFunctionArguments(res.first) { list ->
             GlobalFunctions.addOverride(
                 func.location,
                 func.name,
                 list,
-                retType,
+                res.second, // Ret type
                 if (func is TFuncBlock) func.block else null,
                 func.getSourceName()
             )

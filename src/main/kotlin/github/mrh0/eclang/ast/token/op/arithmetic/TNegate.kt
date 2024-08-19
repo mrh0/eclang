@@ -15,8 +15,8 @@ class TNegate(location: Loc, val expr: ITok) : Tok(location) {
         return "TNegate($expr)"
     }
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> {
-        val e = expr.process(cd);
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        val e = expr.process(cd, hint);
         return when (e.first) {
             is EcTypeInt -> Pair(EcTypeInt, IRNegateInt(location, e.second))
             else -> throw EcOpTypeError(location, "-", e.first)

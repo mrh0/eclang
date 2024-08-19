@@ -11,7 +11,7 @@ import github.mrh0.eclang.types.EcTypeNone
 
 class TParameters(location: Loc, val args: MutableList<TParameter>) : Tok(location) {
     fun get() = args.map { it }
-    override fun process(cd: CompileData): Pair<EcType, IIR> = throw NotImplementedError()
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> = throw NotImplementedError()
         // EcTypeNone to IRParameters(location, args.map { it.process(cd).second as IRParameter })
 
     fun toFunctionParameters(cd: CompileData) {

@@ -15,13 +15,13 @@ import github.mrh0.eclang.types.EcTypeNone
 import github.mrh0.eclang.types.EcTypeUnion
 
 
-class TParameterTyped(location: Loc, val name: String, val type: ITok) : Tok(location) {
+class TParameterTyped(location: Loc, name: String, val type: ITok) : TParameter(location, name) {
     override fun toString() = "$name:$type"
 
-    override fun process(cd: CompileData): Pair<EcType, IIR> = throw NotImplementedError()
+    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> = throw NotImplementedError()
 
-    fun toFunctionParameter(cd: CompileData): FunctionParameter {
-        val typePair = type.process(cd)
-        return FunctionParameter(name, EcTypeDefaultWrapper(typePair.first), null)
+    override fun toFunctionParameter(cd: CompileData): FunctionParameter {
+        val typePair = type.process(cd, EcTypeNone)
+        return FunctionParameter(name, typePair.first, null)
     }
 }
