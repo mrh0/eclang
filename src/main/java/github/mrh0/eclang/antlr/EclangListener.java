@@ -1,4 +1,4 @@
-// Generated from C:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
+// Generated from W:/Development/GitHub/eclang/src/main/antlr4/Eclang.g4 by ANTLR 4.13.1
 package github.mrh0.eclang.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -703,6 +703,16 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitFuncPrefix(EclangParser.FuncPrefixContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EclangParser#funcWrappers}.
+	 * @param ctx the parse tree
+	 */
+	void enterFuncWrappers(EclangParser.FuncWrappersContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EclangParser#funcWrappers}.
+	 * @param ctx the parse tree
+	 */
+	void exitFuncWrappers(EclangParser.FuncWrappersContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code functionExternal}
 	 * labeled alternative in {@link EclangParser#func}.

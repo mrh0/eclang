@@ -15,7 +15,7 @@ import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 
-class TFuncBlock (location: Loc, val block: TBlock, name: String, params: TParameters, returns: ITok) : TFunc(location, name, params, returns) {
+class TFuncBlock (location: Loc, val block: TBlock, name: String, params: TParameters, returns: ITok?) : TFunc(location, name, params, returns) {
     override fun toString() = "$name($params, $block)"
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> = throw NotImplementedError("Should not be implemented")

@@ -1,4 +1,4 @@
-// Generated from C:/Development/GitHub/eclang/src/main/antlr4\Eclang.g4 by ANTLR 4.10.1
+// Generated from W:/Development/GitHub/eclang/src/main/antlr4/Eclang.g4 by ANTLR 4.13.1
 package github.mrh0.eclang.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -417,6 +417,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFuncPrefix(EclangParser.FuncPrefixContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EclangParser#funcWrappers}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFuncWrappers(EclangParser.FuncWrappersContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code functionExternal}
 	 * labeled alternative in {@link EclangParser#func}.

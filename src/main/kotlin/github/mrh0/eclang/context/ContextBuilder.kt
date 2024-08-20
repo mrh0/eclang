@@ -13,7 +13,6 @@ class ContextBuilder(val contextName: String) {
     private var index: Int = 0
 
     fun define(location: Loc, variable: IVar): Int {
-        //println("Defining $name:$index for $contextName")
         if(map.containsKey(variable.getName())) throw EcError(location, "${variable.getName()} is already defined in context $contextName")
         vars.add(variable)
         map[variable.getName()] = index
@@ -44,7 +43,6 @@ class ContextBuilder(val contextName: String) {
     }
 
     fun build(): Context {
-        // println("BuildingContext: $contextName, ${types.size}")
         return Context(contextName, vars.toTypedArray())
     }
 }

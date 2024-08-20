@@ -51,8 +51,7 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
         while(true) {
             callback(
                 indices.mapIndexed { index, i -> expanded[index][i] }
-                .mapIndexed { index, type -> FunctionParameter(params[index].name, type, null) }
-                .filter { it.type != EcTypeNone } // Remove defaults
+                .mapIndexed { index, type -> FunctionParameter(params[index].name, type, if (type == EcTypeNone) null else params[index].def) }
                 .toTypedArray()
             )
             if (indexPermutation(indices, limits, 0)) break

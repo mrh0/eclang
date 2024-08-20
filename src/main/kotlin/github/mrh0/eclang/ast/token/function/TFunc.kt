@@ -9,14 +9,14 @@ import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 
-abstract class TFunc(location: Loc, val name: String, val params: TParameters, val returns: ITok) : Tok(location) {
+abstract class TFunc(location: Loc, val name: String, val params: TParameters, val returns: ITok?) : Tok(location) {
     override fun toString() = "SHOULD NOT HAPPEN"
 
     fun processSignature(cd: CompileData): Pair<List<FunctionParameter>, EcType> {
         val argPairs = params.get().map {
             it.toFunctionParameter(cd)
         }
-        val returnType = returns.process(cd, EcTypeNone).first
+        val returnType = returns?.process(cd, EcTypeNone)?.first ?: EcTypeNone
 
         return argPairs to returnType
     }

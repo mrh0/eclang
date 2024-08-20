@@ -13,10 +13,12 @@ import github.mrh0.eclang.ir.function.IRParameter
 import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeCallSignature
+import github.mrh0.eclang.types.EcTypeNone
 
 class FunctionOverride(val location: Loc, val id: String, val params: Array<FunctionParameter>, val ret: EcType, val block: TBlock?, private var called: Boolean = false) {
+    private val noDefParams = params.filter { it.def == null }
     fun match(location: Loc, types: Array<EcType>): Boolean {
-        if(types.size != params.size) return false
+        if(types.size != noDefParams.size) return false
         for(i in types.indices) {
             if(!types[i].accepts(location, params[i].type)) return false
         }
@@ -31,7 +33,10 @@ class FunctionOverride(val location: Loc, val id: String, val params: Array<Func
 
     fun buildIR(location: Loc, cd: CompileData, hint: EcType): IIR {
         cd.newContext(id)
-        params.forEach { cd.ctx().define(location, Variable(it.name, it.type)) }
+        params.forEach {
+            println("$id ${it.name} ${it.type}")
+            cd.ctx().define(location, Variable(it.name, it.type))
+        }
 
         if (isExternal()) return IRNop(location)
         return IRFunctionOverride(location, block?.process(cd, hint)?.second as IRBlock, id, IRParameters(location, params.map { IRParameter(location, it.name, it.type, it.def) }), ret)
@@ -40,6 +45,6 @@ class FunctionOverride(val location: Loc, val id: String, val params: Array<Func
     fun hasBeenCalled() = called
     fun setCalled() {
         called = true
-        GlobalFunctions.calledFunctionOverrides.put(id, true)
+        GlobalFunctions.calledFunctionOverrides[id] = true
     }
 }

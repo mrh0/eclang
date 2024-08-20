@@ -68,7 +68,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {
-        return TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)) , visit(ctx.returnType))
+        return TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), if(ctx.returnType == null) null else visit(ctx.returnType))
     }
 
     // override fun visitFunctionExpr(ctx: EclangParser.FunctionExprContext): ITok {

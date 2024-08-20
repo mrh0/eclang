@@ -169,9 +169,9 @@ funcWrappers:
     ;
 
 func:
-      'external' 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' ':' returnType=type 'as' externalName=STRING NL   #functionExternal
-    | funcPrefix? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' ':' returnType=type 'do' body=block              #functionBlock
-    | funcPrefix? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL    #functionExpr
+      'external' 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'as' externalName=STRING NL   #functionExternal
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block              #functionBlock
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL    #functionExpr
     ;
 
 program:
