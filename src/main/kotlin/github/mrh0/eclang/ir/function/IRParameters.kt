@@ -13,7 +13,7 @@ class IRParameters(location: Loc, val args: List<IRParameter>) : IR(location) {
             return
         }
         args.forEachIndexed { index, iir ->
-            if (index != 0 && iir.type != EcTypeNone) sb.put(", ")
+            if (index != 0 && iir.def == null) sb.put(", ")
             iir.toC(sb, c)
         }
     }

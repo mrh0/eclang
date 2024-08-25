@@ -10,7 +10,8 @@ fn main(): Int do
     y("")
     ret 0
 
-fn test(a: Int | String, b: Int | String, c: Int = 5): Int do
+fn test(a: Int, b: Int | String, c: Int = a): Int do
+    val d: Int = 5
     ret c
 
 fn x(a: Int) do

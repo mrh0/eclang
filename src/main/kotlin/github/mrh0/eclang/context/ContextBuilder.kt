@@ -12,11 +12,11 @@ class ContextBuilder(val contextName: String) {
     private val map: MutableMap<String, Int> = mutableMapOf()
     private var index: Int = 0
 
-    fun define(location: Loc, variable: IVar): Int {
+    fun define(location: Loc, variable: IVar): IVar {
         if(map.containsKey(variable.getName())) throw EcError(location, "${variable.getName()} is already defined in context $contextName")
         vars.add(variable)
-        map[variable.getName()] = index
-        return index++
+        map[variable.getName()] = index++
+        return variable
     }
 
     fun defineAnonymous(location: Loc, variable: IVar): Int {

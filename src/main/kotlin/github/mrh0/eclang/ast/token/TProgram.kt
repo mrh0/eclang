@@ -17,8 +17,9 @@ import github.mrh0.eclang.ir.function.IRParameter
 import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
+import github.mrh0.eclang.types.internal.IEcTypeDefaultArgumentWrapper
 
-class TProgram(location: Loc, private val functions: List<TFunc>, val records: List<TRecord>, val uses: List<ITok>) : Tok(location) {
+class TProgram(location: Loc, private val functions: List<TFunc>, private val records: List<TRecord>, private val uses: List<ITok>) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         uses.map { it.process(cd, hint) }
         val recordIRs = records.map { it.process(cd, hint).second }
@@ -51,7 +52,13 @@ class TProgram(location: Loc, private val functions: List<TFunc>, val records: L
         while(true) {
             callback(
                 indices.mapIndexed { index, i -> expanded[index][i] }
-                .mapIndexed { index, type -> FunctionParameter(params[index].name, type, if (type == EcTypeNone) null else params[index].def) }
+                .mapIndexed { index, type ->
+                    FunctionParameter(
+                        params[index].name,
+                        if (type is IEcTypeDefaultArgumentWrapper) type.getContained() else type,
+                        if (type is IEcTypeDefaultArgumentWrapper) null else params[index].def
+                    )
+                }
                 .toTypedArray()
             )
             if (indexPermutation(indices, limits, 0)) break

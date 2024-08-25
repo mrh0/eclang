@@ -5,12 +5,13 @@ struct Test {
 };
 int main (void) {
 	printf("Hello World");
-	test_6(0, "");
+	test_1(0, "");
 	y_1("");
 	return 0;
 }
-int test_6 (int a, char* b) {
-	return 1;
+int test_1 (int a, char* b) {
+	const int d = 5;
+	return a;
 }
 void x_0 (int a) {
 	printf("Int");

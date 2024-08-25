@@ -3,8 +3,9 @@ package github.mrh0.eclang.context.function
 import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.token.TBlock
+import github.mrh0.eclang.context.state.InlineConstant
 import github.mrh0.eclang.context.state.Variable
-import github.mrh0.eclang.error.EcError
+import github.mrh0.eclang.error.EcAssignTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.ir.IRNop
@@ -13,7 +14,6 @@ import github.mrh0.eclang.ir.function.IRParameter
 import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeCallSignature
-import github.mrh0.eclang.types.EcTypeNone
 
 class FunctionOverride(val location: Loc, val id: String, val params: Array<FunctionParameter>, val ret: EcType, val block: TBlock?, private var called: Boolean = false) {
     private val noDefParams = params.filter { it.def == null }
@@ -35,11 +35,26 @@ class FunctionOverride(val location: Loc, val id: String, val params: Array<Func
         cd.newContext(id)
         params.forEach {
             println("$id ${it.name} ${it.type}")
-            cd.ctx().define(location, Variable(it.name, it.type))
+            if (it.def == null) cd.ctx().define(location, Variable(it.name, it.type))
+            else {
+                val defPair = it.def.process(cd, hint)
+                //if (!defPair.second.deterministic()) throw EcError(location, "Default value of ${it.name} must be deterministic.")
+                if (!it.type.accepts(location, defPair.first)) throw EcAssignTypeError(location, it.name, it.type, defPair.first)
+                cd.ctx().define(location, InlineConstant(it.name, it.type, defPair.second))
+            }
         }
 
         if (isExternal()) return IRNop(location)
-        return IRFunctionOverride(location, block?.process(cd, hint)?.second as IRBlock, id, IRParameters(location, params.map { IRParameter(location, it.name, it.type, it.def) }), ret)
+        return IRFunctionOverride(
+            location,
+            block?.process(cd, hint)?.second as IRBlock,
+            id,
+            IRParameters(
+                location,
+                params.map { IRParameter(location, it.name, it.type, it.def?.process(cd, hint)?.second) }
+            ),
+            ret
+        )
     }
 
     fun hasBeenCalled() = called
