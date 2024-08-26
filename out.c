@@ -7,6 +7,10 @@ int main (void) {
 	printf("Hello World");
 	test_1(0, "");
 	y_1("");
+	z_0(1);
+	if (true) {
+		printf("Test");
+	}
 	return 0;
 }
 int test_1 (int a, char* b) {
@@ -21,4 +25,7 @@ void x_1 (char* a) {
 }
 void y_1 (char* a) {
 	x_1(a);
+}
+int z_0 (int a) {
+	return a+1;
 }

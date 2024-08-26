@@ -1,4 +1,4 @@
-external fn log(value: String): None as "printf"
+external fn "printf" as log(value: String): None
 
 rec Test as
     a: Int
@@ -8,6 +8,9 @@ fn main(): Int do
     log "Hello World"
     test(0, "")
     y("")
+    z(1)
+    if true do
+        log "Test"
     ret 0
 
 fn test(a: Int, b: Int | String, c: Int = a): Int do
@@ -22,3 +25,5 @@ fn x(a: String) do
 
 fn y(a: Int | String) do
     x(a)
+
+fn z(a: Int): Int = a + 1

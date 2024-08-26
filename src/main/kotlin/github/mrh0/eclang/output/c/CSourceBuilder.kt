@@ -24,6 +24,7 @@ class CSourceBuilder : SourceBuilder() {
     }
 
     fun popScope(es: Boolean = false): BlockScope {
+        for (i in 1 until scopeStack.size) put('\t')
         if(es) putLine("};") else putLine("}")
         return scopeStack.pop()
     }

@@ -136,10 +136,14 @@ statement:
     | 'val' NAME (':' type)? '=' expr NL                    #statementDefineConst
     | 'val' NAME (':' type)? '=' functionCall NL            #statementDefineConst
     | 'val' NAME ',' NAME (',' NAME)* '=' functionCall NL   #statementDefineConstDestructureTuple
+    | 'var' NAME '=' 'rec' NAME '(' (NAME '=' expr)* ')'    #statementDefineRecord
+    | 'val' NAME '=' 'rec' NAME '(' (NAME '=' expr)* ')'    #statementDefineRecordConst
     | NAME '=' expr NL                                      #statementAssignment
 
     | 'break' NL                                            #statementBreak
     | 'continue' NL                                         #statementContinue
+
+    | 'defer' statement NL                                  #statementDefer
 
     | 'if' '('? conditions+=expr ')'? 'do' bodies+=block ('eif' '('? conditions+=expr ')'? 'do' bodies+=block)* ('else' elseBody=block)?    #statementIf
     | 'while' '('? condition=expr ')'? 'do' body=block ('else' elseBody=block)?                                                             #statementWhile
@@ -169,9 +173,9 @@ funcWrappers:
     ;
 
 func:
-      'external' 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'as' externalName=STRING NL   #functionExternal
+      'external' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL #functionExternal
     | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block              #functionBlock
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL    #functionExpr
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL    #functionInline
     ;
 
 program:

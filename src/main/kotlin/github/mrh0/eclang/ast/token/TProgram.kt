@@ -5,16 +5,12 @@ import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.data.record.TRecord
+import github.mrh0.eclang.ast.token.function.IFuncBody
 import github.mrh0.eclang.ast.token.function.TFunc
-import github.mrh0.eclang.ast.token.function.TFuncBlock
 import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.context.function.GlobalFunctions
 import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.ir.IRProgram
-import github.mrh0.eclang.ir.function.IRFunctionOverride
-import github.mrh0.eclang.ir.function.IRParameter
-import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 import github.mrh0.eclang.types.internal.IEcTypeDefaultArgumentWrapper
@@ -74,7 +70,7 @@ class TProgram(location: Loc, private val functions: List<TFunc>, private val re
                 func.name,
                 list,
                 res.second, // Ret type
-                if (func is TFuncBlock) func.block else null,
+                if (func is IFuncBody) func.getBody() else null,
                 func.getSourceName()
             )
         }

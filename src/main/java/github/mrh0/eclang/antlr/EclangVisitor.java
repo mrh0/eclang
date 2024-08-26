@@ -328,6 +328,20 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementDefineConstDestructureTuple(EclangParser.StatementDefineConstDestructureTupleContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code statementDefineRecord}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementDefineRecord(EclangParser.StatementDefineRecordContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code statementDefineRecordConst}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementDefineRecordConst(EclangParser.StatementDefineRecordConstContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code statementAssignment}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
@@ -348,6 +362,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStatementContinue(EclangParser.StatementContinueContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code statementDefer}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementDefer(EclangParser.StatementDeferContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementIf}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -438,12 +459,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFunctionBlock(EclangParser.FunctionBlockContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code functionExpr}
+	 * Visit a parse tree produced by the {@code functionInline}
 	 * labeled alternative in {@link EclangParser#func}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFunctionExpr(EclangParser.FunctionExprContext ctx);
+	T visitFunctionInline(EclangParser.FunctionInlineContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#program}.
 	 * @param ctx the parse tree

@@ -71,9 +71,9 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), if(ctx.returnType == null) null else visit(ctx.returnType))
     }
 
-    // override fun visitFunctionExpr(ctx: EclangParser.FunctionExprContext): ITok {
-    //     return TFunc(loc(ctx), cvisit(ctx.expr()), ctx.funcPrefix()?.text ?: "", ctx.name.text, visit(ctx.args), visit(ctx.returnType))
-    // }
+    override fun visitFunctionInline(ctx: EclangParser.FunctionInlineContext): ITok {
+        return TFuncInline(loc(ctx), cvisit(ctx.expr()), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), if(ctx.returnType == null) null else visit(ctx.returnType))
+    }
 
     override fun visitFunctionExternal(ctx: EclangParser.FunctionExternalContext): ITok {
         return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), visit(ctx.returnType), Util.getStringContent(ctx.externalName.text))
@@ -104,7 +104,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitExprCallFunction(ctx: EclangParser.ExprCallFunctionContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
 
     // Expressions
-    override fun visitExprNest(ctx: EclangParser.ExprNestContext): ITok = visit(ctx.expr())
+    override fun visitExprNest(ctx: EclangParser.ExprNestContext): ITok = TExprNest(loc(ctx), visit(ctx.expr()))
     // override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
 
     // Primitives

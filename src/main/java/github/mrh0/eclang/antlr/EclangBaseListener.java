@@ -569,6 +569,30 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterStatementDefineRecord(EclangParser.StatementDefineRecordContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementDefineRecord(EclangParser.StatementDefineRecordContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStatementDefineRecordConst(EclangParser.StatementDefineRecordConstContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementDefineRecordConst(EclangParser.StatementDefineRecordConstContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterStatementAssignment(EclangParser.StatementAssignmentContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -600,6 +624,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitStatementContinue(EclangParser.StatementContinueContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStatementDefer(EclangParser.StatementDeferContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementDefer(EclangParser.StatementDeferContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -761,13 +797,13 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFunctionExpr(EclangParser.FunctionExprContext ctx) { }
+	@Override public void enterFunctionInline(EclangParser.FunctionInlineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitFunctionExpr(EclangParser.FunctionExprContext ctx) { }
+	@Override public void exitFunctionInline(EclangParser.FunctionInlineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
