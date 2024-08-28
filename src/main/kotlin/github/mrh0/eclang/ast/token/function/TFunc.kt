@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.function
 
+import github.mrh0.eclang.Util.testIdentifier
 import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
@@ -13,6 +14,7 @@ abstract class TFunc(location: Loc, val name: String, val params: TParameters, v
     override fun toString() = "SHOULD NOT HAPPEN"
 
     fun processSignature(cd: CompileData): Pair<List<FunctionParameter>, EcType> {
+        testIdentifier(location, name)
         val argPairs = params.get().map {
             it.toFunctionParameter(cd)
         }

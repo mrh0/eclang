@@ -6,6 +6,7 @@ import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.Visitor
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.context.Context
+import github.mrh0.eclang.output.c.CSource
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.EcTypeNone
 import org.antlr.v4.runtime.ANTLRInputStream
@@ -36,13 +37,12 @@ fun main(args: Array<String>) {
         println(ir)
         cd.finalize()
 
-        val outputBuilder = CSourceBuilder();
-        ir.toC(outputBuilder, Context.IDENTITY)
+        val out = CSource().build(ir)
 
         println("Output:")
-        println(outputBuilder.toString())
+        println(out)
 
-        File("./out.c").writeText(outputBuilder.toString())
+        File("./out.c").writeText(out)
     }
     println(timeTaken);
 }

@@ -15,9 +15,9 @@ class IRInlineIf(location: Loc, private val condition: IIR, private val body: II
         sb.put('(')
         condition.toC(sb, c)
         sb.put(") ? (")
-        condition.toC(sb, c)
+        body.toC(sb, c)
         sb.put(") : (")
-        condition.toC(sb, c)
+        elseBody.toC(sb, c)
         sb.put(')')
     }
 }

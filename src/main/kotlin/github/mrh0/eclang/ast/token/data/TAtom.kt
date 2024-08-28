@@ -1,8 +1,10 @@
 package github.mrh0.eclang.ast.token.data
 
+import github.mrh0.eclang.Util.testIdentifier
 import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
+import github.mrh0.eclang.context.atom.AtomInstance
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.data.IRAtom
 import github.mrh0.eclang.types.EcTypeAtom
@@ -14,6 +16,8 @@ class TAtom(location: Loc, private val value: String) : Tok(location) {
     }
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        return EcTypeAtom to IRAtom(location, value)
+        testIdentifier(location, value)
+        val instance = AtomInstance.get(value)
+        return EcTypeAtom(instance) to IRAtom(location, instance)
     }
 }

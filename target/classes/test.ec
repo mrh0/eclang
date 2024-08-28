@@ -9,9 +9,14 @@ fn main(): Int do
     test(0, "")
     y("")
     z(1)
+
     if true do
-        log "Test"
-    ret 0
+        log "Test1"
+    eif false do
+        log "Test2"
+    else
+        log "Test3"
+    ret if (true) 1 else 0
 
 fn test(a: Int, b: Int | String, c: Int = a): Int do
     val d: Int = 5

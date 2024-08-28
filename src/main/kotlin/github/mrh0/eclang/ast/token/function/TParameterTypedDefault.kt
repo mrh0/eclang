@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.function
 
+import github.mrh0.eclang.Util.testIdentifier
 import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
@@ -19,6 +20,7 @@ class TParameterTypedDefault(location: Loc, name: String, val type: ITok, val de
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> = throw NotImplementedError()
 
     override fun toFunctionParameter(cd: CompileData): FunctionParameter {
+        testIdentifier(location, name)
         //val defPair = def.process(cd, EcTypeNone)
         //if (!defPair.second.deterministic()) throw EcError(location, "Default value of $name must be deterministic.")
         val typePair = type.process(cd, EcTypeNone)

@@ -103,6 +103,7 @@ expr:
     | expr '[' expr ']'                                             #exprAccessor
     | lambda                                                        #exprLambda
     | functionCall                                                  #exprFunctionCall
+    | 'match' match=expr 'with' lefts+=primitive '->' rights+=expr ('|' lefts+=primitive '->' rights+=expr)* #exprMatch
     ;
 
 type:
@@ -111,6 +112,7 @@ type:
     | types+=type '&' types+=type ('&' types+=type)*                #typeTuple
     | '(' type (',' type)* ')' '=>' type                            #typeCallSignature
     | '(' type ')'                                                  #typeNest
+    | ATOM                                                          #typeAtom
     ;
 
 record:

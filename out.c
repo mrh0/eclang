@@ -9,9 +9,15 @@ int main (void) {
 	y_1("");
 	z_0(1);
 	if (true) {
-		printf("Test");
+		printf("Test1");
 	}
-	return 0;
+	else if (false) {
+		printf("Test2");
+	}
+	else {
+		printf("Test3");
+	}
+	return (true) ? (1) : (0);
 }
 int test_1 (int a, char* b) {
 	const int d = 5;
