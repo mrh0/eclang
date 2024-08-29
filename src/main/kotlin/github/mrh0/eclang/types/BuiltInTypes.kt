@@ -9,7 +9,8 @@ object BuiltInTypes {
         EcTypeFloat,
         EcTypeBool,
         EcTypeString,
-        EcTypeNone
+        EcTypeNone,
+        EcTypeAtom
     )
     val builtInNamespaceMap: Map<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.toString() }
     val builtInNameMap: Map<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.identifier }

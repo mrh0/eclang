@@ -9,7 +9,7 @@ fn main(): Int do
     test(0, "")
     y("")
     z(1)
-
+    val k = :test_atom
     if true do
         log "Test1"
     eif false do

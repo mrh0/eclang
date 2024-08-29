@@ -5,5 +5,7 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 
 interface IIR {
     fun toC(sb: CSourceBuilder, c: Context)
+    fun toCPre(sb: CSourceBuilder, c: Context)
+    fun toCPost(sb: CSourceBuilder, c: Context)
     fun deterministic() = false
 }

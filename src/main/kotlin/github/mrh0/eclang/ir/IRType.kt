@@ -3,9 +3,7 @@ package github.mrh0.eclang.ir
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.output.c.CSourceBuilder
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeNone
-import github.mrh0.eclang.types.EcTypeString
+import github.mrh0.eclang.types.*
 import github.mrh0.eclang.types.numbers.EcTypeInt
 
 class IRType(location: Loc, val type: EcType) : IR(location) {
@@ -13,6 +11,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeInt -> "int"
         is EcTypeString -> "char*"
         is EcTypeNone -> "void"
+        is EcTypeAtom, is EcTypeAtomInstance -> "char*"
         else -> throw NotImplementedError("Native type '$t' is not implemented.")
     }
 

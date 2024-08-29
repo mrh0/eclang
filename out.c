@@ -1,4 +1,7 @@
 #include <stdio.h>
+// Atoms
+const char* __ec_atom_test_atom = "test_atom";
+// Code
 struct Test {
 	int a;
 	int b;
@@ -8,6 +11,7 @@ int main (void) {
 	test_1(0, "");
 	y_1("");
 	z_0(1);
+	const char* k = __ec_atom_test_atom;
 	if (true) {
 		printf("Test1");
 	}

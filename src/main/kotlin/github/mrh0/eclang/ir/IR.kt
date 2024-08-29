@@ -8,4 +8,8 @@ abstract class IR(val location: Loc) : IIR {
     override fun toC(sb: CSourceBuilder, c: Context) {
         TODO("${this.javaClass.simpleName}.toC not yet implemented")
     }
+
+    override fun toCPre(sb: CSourceBuilder, c: Context) {}
+
+    override fun toCPost(sb: CSourceBuilder, c: Context) {}
 }

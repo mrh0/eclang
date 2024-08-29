@@ -7,7 +7,7 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.atom.AtomInstance
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.data.IRAtom
-import github.mrh0.eclang.types.EcTypeAtom
+import github.mrh0.eclang.types.EcTypeAtomInstance
 import github.mrh0.eclang.types.EcType
 
 class TAtom(location: Loc, private val value: String) : Tok(location) {
@@ -18,6 +18,6 @@ class TAtom(location: Loc, private val value: String) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         testIdentifier(location, value)
         val instance = AtomInstance.get(value)
-        return EcTypeAtom(instance) to IRAtom(location, instance)
+        return EcTypeAtomInstance(instance) to IRAtom(location, instance)
     }
 }

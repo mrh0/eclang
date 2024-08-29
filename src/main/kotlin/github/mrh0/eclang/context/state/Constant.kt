@@ -8,6 +8,7 @@ import github.mrh0.eclang.ir.IRNamedConstant
 import github.mrh0.eclang.types.EcType
 
 class Constant(private val name: String, private val type: EcType) : IVar {
+    override fun toString() = "$name: $type"
     override fun getName() = name
     override fun getType() = type
     override fun toIR(location: Loc, cd: CompileData, hint: EcType): IIR = IRNamedConstant(location, name, cd.ctx().getIndex(location, name))
