@@ -100,19 +100,23 @@ expr:
     | NAME '(' args+=expr? (',' args+=expr)* ')'                    #exprCallFunction
     | values+=expr '&' values+=expr ('&' values+=expr)*             #exprTuple
     | expr '.' NAME                                                 #exprAccessName
+    | expr '.' NAME '(' ')'                                         #exprAccessFunctionCallNoArgs
+    | expr '.' NAME '('? args+=expr ')'?                            #exprAccessFunctionCallWithArgs
+    | expr '.' NAME '(' args+=expr (',' args+=expr)* ')'            #exprAccessFunctionCallWithArgs
     | expr '[' expr ']'                                             #exprAccessor
     | lambda                                                        #exprLambda
     | functionCall                                                  #exprFunctionCall
-    | 'match' match=expr 'with' lefts+=primitive '->' rights+=expr ('|' lefts+=primitive '->' rights+=expr)* #exprMatch
+//    | 'case' '('? match=expr ')'? 'when' lefts+=primitive '->' rights+=expr ('|' lefts+=primitive '->' rights+=expr)* #exprMatch
     ;
 
 type:
-      NAME                                                          #typeByName
-    | types+=type '|' types+=type ('|' types+=type)*                #typeUnion
-    | types+=type '&' types+=type ('&' types+=type)*                #typeTuple
-    | '(' type (',' type)* ')' '=>' type                            #typeCallSignature
-    | '(' type ')'                                                  #typeNest
-    | ATOM                                                          #typeAtom
+      NAME                                                                  #typeByName
+    | type '?'                                                              #typeNullable
+    | types+=type '|' types+=type ('|' types+=type)*                        #typeEnum
+    | types+=type '&' types+=type ('&' types+=type)*                        #typeUnion
+    | '(' type (',' type)* ')' '=>' type                                    #typeCallSignature
+    | '(' type ')'                                                          #typeNest
+    | ATOM                                                                  #typeAtom
     ;
 
 record:
@@ -175,7 +179,7 @@ funcWrappers:
     ;
 
 func:
-      'external' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL #functionExternal
+      'ext' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL #functionExternal
     | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block              #functionBlock
     | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL    #functionInline
     ;

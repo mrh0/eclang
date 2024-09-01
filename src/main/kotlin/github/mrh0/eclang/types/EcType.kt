@@ -3,9 +3,9 @@ package github.mrh0.eclang.types
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.error.EcError
 
-abstract class EcType(val namespace: String, val identifier: String) {
+abstract class EcType(val identifier: String) {
     override fun toString(): String {
-        return "$namespace.$identifier"
+        return identifier
     }
 
     open fun accepts(location: Loc, type: EcType): Boolean = true
@@ -16,4 +16,6 @@ abstract class EcType(val namespace: String, val identifier: String) {
     }
 
     open fun expand(): List<EcType> = listOf(this)
+
+    open fun getNamespace() = "EC"
 }

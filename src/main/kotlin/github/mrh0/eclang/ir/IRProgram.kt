@@ -11,7 +11,7 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>)
         sb.putLine()
 
         sb.commentLine("Atoms")
-        AtomInstance.getAll().forEach { sb.put("const char* ${it.getId()} = \"${it.label}\";") }
+        AtomInstance.getAll().forEach { sb.putLine("const char* ${it.getId()} = \"${it.label}\";") }
         sb.putLine()
 
         sb.commentLine("Code")

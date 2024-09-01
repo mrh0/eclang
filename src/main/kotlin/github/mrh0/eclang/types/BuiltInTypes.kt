@@ -10,10 +10,10 @@ object BuiltInTypes {
         EcTypeBool,
         EcTypeString,
         EcTypeNone,
-        EcTypeAtom
+        EcTypeAtom,
+        EcTypeNull
     )
     val builtInNamespaceMap: Map<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.toString() }
     val builtInNameMap: Map<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.identifier }
     fun getType(test: String): EcType = builtInNameMap.getOrElse(test) { builtInNamespaceMap.getOrElse(test) { throw Exception("No such type $test") } }
 }
-

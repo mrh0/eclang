@@ -7,8 +7,6 @@ import github.mrh0.eclang.ir.IIR
 class CSource {
     fun build(ir: IIR): String {
         val outputBuilder = CSourceBuilder();
-
-
         ir.toC(outputBuilder, Context.IDENTITY)
         return outputBuilder.toString()
     }

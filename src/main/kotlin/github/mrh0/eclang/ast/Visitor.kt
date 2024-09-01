@@ -21,8 +21,7 @@ import github.mrh0.eclang.ast.token.op.compare.TEquals
 import github.mrh0.eclang.ast.token.op.compare.TNotEquals
 import github.mrh0.eclang.ast.token.op.logical.TNot
 import github.mrh0.eclang.ast.token.op.logical.TNotNot
-import github.mrh0.eclang.ast.token.type.TTypeByName
-import github.mrh0.eclang.ast.token.type.TTypeUnion
+import github.mrh0.eclang.ast.token.type.*
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import java.io.File
@@ -58,13 +57,18 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // }
 
     // Records
-
     override fun visitRecord(ctx: EclangParser.RecordContext): ITok = TRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types))
 
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
 
     override fun visitTypeUnion(ctx: EclangParser.TypeUnionContext): ITok = TTypeUnion(loc(ctx), visit(ctx.types))
+
+    override fun visitTypeEnum(ctx: EclangParser.TypeEnumContext): ITok = TTypeEnum(loc(ctx), visit(ctx.types))
+
+    override fun visitTypeNullable(ctx: EclangParser.TypeNullableContext): ITok = TTypeNullable(loc(ctx), visit(ctx.type()))
+
+    override fun visitTypeAtom(ctx: EclangParser.TypeAtomContext): ITok = TTypeAtom(loc(ctx), ctx.text)
 
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {

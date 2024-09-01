@@ -257,6 +257,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterExprAccessFunctionCallNoArgs(EclangParser.ExprAccessFunctionCallNoArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprAccessFunctionCallNoArgs(EclangParser.ExprAccessFunctionCallNoArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterExprLambda(EclangParser.ExprLambdaContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -276,6 +288,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprAs(EclangParser.ExprAsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprAccessFunctionCallWithArgs(EclangParser.ExprAccessFunctionCallWithArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprAccessFunctionCallWithArgs(EclangParser.ExprAccessFunctionCallWithArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -413,13 +437,25 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterTypeTuple(EclangParser.TypeTupleContext ctx) { }
+	@Override public void enterTypeEnum(EclangParser.TypeEnumContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitTypeTuple(EclangParser.TypeTupleContext ctx) { }
+	@Override public void exitTypeEnum(EclangParser.TypeEnumContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTypeNullable(EclangParser.TypeNullableContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeNullable(EclangParser.TypeNullableContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -444,6 +480,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTypeCallSignature(EclangParser.TypeCallSignatureContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTypeAtom(EclangParser.TypeAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeAtom(EclangParser.TypeAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

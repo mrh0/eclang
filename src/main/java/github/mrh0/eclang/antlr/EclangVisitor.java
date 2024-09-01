@@ -148,6 +148,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprNamed(EclangParser.ExprNamedContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprAccessFunctionCallNoArgs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprAccessFunctionCallNoArgs(EclangParser.ExprAccessFunctionCallNoArgsContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprLambda}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -161,6 +168,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprAs(EclangParser.ExprAsContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code exprAccessFunctionCallWithArgs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprAccessFunctionCallWithArgs(EclangParser.ExprAccessFunctionCallWithArgsContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprBinOp}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -239,12 +253,19 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeUnion(EclangParser.TypeUnionContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code typeTuple}
+	 * Visit a parse tree produced by the {@code typeEnum}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitTypeTuple(EclangParser.TypeTupleContext ctx);
+	T visitTypeEnum(EclangParser.TypeEnumContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeNullable}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeNullable(EclangParser.TypeNullableContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeByName}
 	 * labeled alternative in {@link EclangParser#type}.
@@ -259,6 +280,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTypeCallSignature(EclangParser.TypeCallSignatureContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeAtom}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeAtom(EclangParser.TypeAtomContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeNest}
 	 * labeled alternative in {@link EclangParser#type}.

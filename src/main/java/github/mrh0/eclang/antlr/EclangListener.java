@@ -242,6 +242,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprNamed(EclangParser.ExprNamedContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprAccessFunctionCallNoArgs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprAccessFunctionCallNoArgs(EclangParser.ExprAccessFunctionCallNoArgsContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprAccessFunctionCallNoArgs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprAccessFunctionCallNoArgs(EclangParser.ExprAccessFunctionCallNoArgsContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprLambda}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -265,6 +277,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprAs(EclangParser.ExprAsContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprAccessFunctionCallWithArgs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprAccessFunctionCallWithArgs(EclangParser.ExprAccessFunctionCallWithArgsContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprAccessFunctionCallWithArgs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprAccessFunctionCallWithArgs(EclangParser.ExprAccessFunctionCallWithArgsContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprBinOp}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -398,17 +422,29 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitTypeUnion(EclangParser.TypeUnionContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code typeTuple}
+	 * Enter a parse tree produced by the {@code typeEnum}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
 	 */
-	void enterTypeTuple(EclangParser.TypeTupleContext ctx);
+	void enterTypeEnum(EclangParser.TypeEnumContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code typeTuple}
+	 * Exit a parse tree produced by the {@code typeEnum}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
 	 */
-	void exitTypeTuple(EclangParser.TypeTupleContext ctx);
+	void exitTypeEnum(EclangParser.TypeEnumContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code typeNullable}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeNullable(EclangParser.TypeNullableContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code typeNullable}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeNullable(EclangParser.TypeNullableContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code typeByName}
 	 * labeled alternative in {@link EclangParser#type}.
@@ -433,6 +469,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTypeCallSignature(EclangParser.TypeCallSignatureContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code typeAtom}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeAtom(EclangParser.TypeAtomContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code typeAtom}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeAtom(EclangParser.TypeAtomContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code typeNest}
 	 * labeled alternative in {@link EclangParser#type}.
