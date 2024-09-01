@@ -21,6 +21,7 @@ eclang is a system language compiler which generates human-readable C source and
 - First class null safety.
 - First class memory management, defer, arenas, deep-clone on return.
 - Modernized syntax (Inspired by languages such as Python, Kotlin, Go, Elixir).
+- Error handling
 
 ## Functions
 

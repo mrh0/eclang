@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <string.h>
+
 // Atoms
 const char* __ec_atom_test1 = "test1";
 const char* __ec_atom_test2 = "test2";
@@ -18,7 +20,7 @@ int main (void) {
 	z_0(1);
 	const char* k = __ec_atom_test_atom;
 	a_0(aa_0());
-	if (true) {
+	if (strcmp("Test", "NotTest") == 0) {
 		printf("Test1");
 	}
 	else if (false) {

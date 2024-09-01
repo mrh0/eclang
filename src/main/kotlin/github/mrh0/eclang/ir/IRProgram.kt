@@ -7,7 +7,8 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 
 class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.putStatement("#include <stdio.h>")
+        sb.putLine("#include <stdio.h>")
+        sb.putLine("#include <string.h>")
         sb.putLine()
 
         sb.commentLine("Atoms")

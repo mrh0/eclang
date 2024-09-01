@@ -6,8 +6,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.arithmetic.add.IRAddIntInt
-import github.mrh0.eclang.ir.arithmetic.add.IRAddNumbers
+import github.mrh0.eclang.ir.arithmetic.add.IRAdd
 import github.mrh0.eclang.ir.arithmetic.add.IRAddStringWithAny
 import github.mrh0.eclang.types.numbers.EcTypeInt
 import github.mrh0.eclang.types.EcType
@@ -25,8 +24,7 @@ class TAdd(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
         val r = right.process(cd, hint);
         return when {
             // Numbers
-            l.first is EcTypeInt && r.first is EcTypeInt -> Pair(EcTypeInt, IRAddIntInt(location, l.second, r.second))
-            l.first is EcTypeNumber || r.first is EcTypeNumber -> Pair(EcTypeFloat, IRAddNumbers(location, l.second, r.second))
+            l.first is EcTypeNumber || r.first is EcTypeNumber -> Pair(l.first, IRAdd(location, l.second, r.second))
             // Strings
             l.first is EcTypeString || r.first is EcTypeString -> Pair(EcTypeString, IRAddStringWithAny(location, l.second, r.second))
             else -> throw EcOpTypeError(location, "+", l.first, r.first)

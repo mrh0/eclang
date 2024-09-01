@@ -17,8 +17,7 @@ import github.mrh0.eclang.ast.token.loop.TStatementWhile
 import github.mrh0.eclang.ast.token.op.arithmetic.TAdd
 import github.mrh0.eclang.ast.token.op.arithmetic.TNegate
 import github.mrh0.eclang.ast.token.op.arithmetic.TSub
-import github.mrh0.eclang.ast.token.op.compare.TEquals
-import github.mrh0.eclang.ast.token.op.compare.TNotEquals
+import github.mrh0.eclang.ast.token.op.compare.*
 import github.mrh0.eclang.ast.token.op.logical.TNot
 import github.mrh0.eclang.ast.token.op.logical.TNotNot
 import github.mrh0.eclang.ast.token.type.*
@@ -129,6 +128,10 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         "-" -> TSub(loc(ctx), visit(ctx.left), visit(ctx.right))
 
         "==" -> TEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
+        ">=" -> TGreaterOrEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
+        ">" -> TGreaterThan(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "<=" -> TLessOrEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "<" -> TLessThan(loc(ctx), visit(ctx.left), visit(ctx.right))
         "!=" -> TNotEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
         else -> throw NotImplementedError("Binary Operator '${ctx.binOp().text}' is not implemented.")
     }

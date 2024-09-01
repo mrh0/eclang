@@ -13,7 +13,7 @@ fn main(): Int do
     z(1)
     val k = :test_atom
     a(aa())
-    if true do
+    if "Test" == "NotTest" do
         log "Test1"
     eif false do
         log "Test2"
@@ -24,7 +24,7 @@ fn main(): Int do
 fn n(a: Int?): Int? do
     ret a
 
-fn aa(): :Test1 | :Test2 = :Test1
+fn aa(): :Test1 = :Test1
 
 fn a(atom: :Test1 | :Test2 | :Test3): Atom do
     ret atom
