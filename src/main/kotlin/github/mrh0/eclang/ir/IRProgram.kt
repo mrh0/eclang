@@ -9,6 +9,8 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>)
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.putLine("#include <stdio.h>")
         sb.putLine("#include <string.h>")
+        sb.putLine("#include <math.h>")
+        sb.putLine("#include <gc/gc.h>")
         sb.putLine()
 
         sb.commentLine("Atoms")

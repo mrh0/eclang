@@ -14,12 +14,9 @@ import github.mrh0.eclang.ast.token.function.call.TStatementCall
 import github.mrh0.eclang.ast.token.loop.TStatementBreak
 import github.mrh0.eclang.ast.token.loop.TStatementContinue
 import github.mrh0.eclang.ast.token.loop.TStatementWhile
-import github.mrh0.eclang.ast.token.op.arithmetic.TAdd
-import github.mrh0.eclang.ast.token.op.arithmetic.TNegate
-import github.mrh0.eclang.ast.token.op.arithmetic.TSub
+import github.mrh0.eclang.ast.token.op.arithmetic.*
 import github.mrh0.eclang.ast.token.op.compare.*
-import github.mrh0.eclang.ast.token.op.logical.TNot
-import github.mrh0.eclang.ast.token.op.logical.TNotNot
+import github.mrh0.eclang.ast.token.op.logical.*
 import github.mrh0.eclang.ast.token.type.*
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
@@ -126,6 +123,10 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitExprBinOp(ctx: EclangParser.ExprBinOpContext): ITok = when (ctx.binOp().text) {
         "+" -> TAdd(loc(ctx), visit(ctx.left), visit(ctx.right))
         "-" -> TSub(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "*" -> TMul(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "/" -> TDiv(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "**" -> TPow(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "%" -> TMod(loc(ctx), visit(ctx.left), visit(ctx.right))
 
         "==" -> TEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
         ">=" -> TGreaterOrEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
@@ -133,6 +134,10 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         "<=" -> TLessOrEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
         "<" -> TLessThan(loc(ctx), visit(ctx.left), visit(ctx.right))
         "!=" -> TNotEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
+
+        "&&", "and" -> TAnd(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "||", "or" -> TOr(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "^^", "xor" -> TXOr(loc(ctx), visit(ctx.left), visit(ctx.right))
         else -> throw NotImplementedError("Binary Operator '${ctx.binOp().text}' is not implemented.")
     }
 

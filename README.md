@@ -11,17 +11,17 @@
 4. [Conditionals](#conditionals)
 5. [Type System](#type-system)
 
-eclang is a system language compiler which generates human-readable C source and aims for full interoperability with C.
+eclang is a garbage collected system language compiler which generates human-readable C source and aims for full interoperability with C.
 
 ## Goals
 
 - Full interoperability with C.
 - Generating human-readable C source.
-- First class functions, Function overrides, Functional paradigms.
-- First class null safety.
-- First class memory management, defer, arenas, deep-clone on return.
+- Function overrides, Functional paradigms.
+- Null safety.
+- Garbage collection.
 - Modernized syntax (Inspired by languages such as Python, Kotlin, Go, Elixir).
-- Error handling
+- Error handling.
 
 ## Functions
 

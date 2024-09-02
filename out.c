@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 // Atoms
 const char* __ec_atom_test1 = "test1";

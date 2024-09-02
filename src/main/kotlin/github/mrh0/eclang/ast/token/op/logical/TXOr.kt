@@ -1,4 +1,4 @@
-package github.mrh0.eclang.ast.token.op.arithmetic
+package github.mrh0.eclang.ast.token.op.logical
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.CompileData
@@ -8,15 +8,18 @@ import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.arithmetic.add.IRAdd
 import github.mrh0.eclang.ir.arithmetic.add.IRAddStringWithAny
+import github.mrh0.eclang.ir.logical.or.IROr
+import github.mrh0.eclang.ir.logical.xor.IRXOr
 import github.mrh0.eclang.types.numbers.EcTypeInt
 import github.mrh0.eclang.types.EcType
+import github.mrh0.eclang.types.EcTypeBool
 import github.mrh0.eclang.types.EcTypeString
 import github.mrh0.eclang.types.numbers.EcTypeFloat
 import github.mrh0.eclang.types.numbers.EcTypeNumber
 
-class TAdd(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
+class TXOr(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
     override fun toString(): String {
-        return "($left + $right)"
+        return "($left xor $right)"
     }
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
@@ -24,11 +27,8 @@ class TAdd(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
         val r = right.process(cd, hint);
         return when {
             // Numbers
-            l.first is EcTypeInt || r.first is EcTypeInt -> Pair(EcTypeInt, IRAdd(location, l.second, r.second))
-            l.first is EcTypeNumber || r.first is EcTypeNumber -> Pair(l.first, IRAdd(location, l.second, r.second))
-            // Strings
-            l.first is EcTypeString || r.first is EcTypeString -> Pair(EcTypeString, IRAddStringWithAny(location, l.second, r.second))
-            else -> throw EcOpTypeError(location, "+", l.first, r.first)
+            l.first is EcTypeBool || r.first is EcTypeBool -> Pair(EcTypeBool, IRXOr(location, l.second, r.second))
+            else -> throw EcOpTypeError(location, "xor", l.first, r.first)
         }
     }
 }
