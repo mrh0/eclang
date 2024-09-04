@@ -151,7 +151,7 @@ statement:
 
     | 'defer' statement NL                                  #statementDefer
 
-    | 'if' '('? conditions+=expr ')'? 'do' bodies+=block ('eif' '('? conditions+=expr ')'? 'do' bodies+=block)* ('else' elseBody=block)?    #statementIf
+    | 'if' '('? conditions+=expr ')'? 'do' bodies+=block ('else' 'if' '('? conditions+=expr ')'? 'do' bodies+=block)* ('else' elseBody=block)?    #statementIf
     | 'while' '('? condition=expr ')'? 'do' body=block ('else' elseBody=block)?                                                             #statementWhile
     | 'for' '('? NAME 'in' expr ('where' expr)? orderExpression? ')'? 'do' body=block ('else' elseBody=block)?                              #statementForIn
 
@@ -159,6 +159,7 @@ statement:
 
     | 'ret' functionCall NL                                 #statementCallFunctionReturn
     | 'ret' expr NL                                         #statementReturn
+    | 'pool' 'in' body=block                                #statementPoolLocal
     ;
 
 use:
@@ -179,7 +180,7 @@ funcWrappers:
     ;
 
 func:
-      'ext' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL #functionExternal
+      'extern' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL #functionExternal
     | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block              #functionBlock
     | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL    #functionInline
     ;

@@ -742,6 +742,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementReturn(EclangParser.StatementReturnContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code statementPoolLocal}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementPoolLocal}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code useModule}
 	 * labeled alternative in {@link EclangParser#use}.
 	 * @param ctx the parse tree

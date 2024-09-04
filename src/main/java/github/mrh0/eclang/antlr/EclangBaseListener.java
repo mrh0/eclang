@@ -761,6 +761,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterUseModule(EclangParser.UseModuleContext ctx) { }
 	/**
 	 * {@inheritDoc}

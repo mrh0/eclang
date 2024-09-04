@@ -1,6 +1,6 @@
 package github.mrh0.eclang.ast
 
-import github.mrh0.eclang.Util
+import github.mrh0.eclang.util.Util
 import github.mrh0.eclang.antlr.EclangBaseVisitor
 import github.mrh0.eclang.antlr.EclangParser
 import github.mrh0.eclang.ast.token.*

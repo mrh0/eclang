@@ -19,11 +19,6 @@ class ContextBuilder(val contextName: String) {
         return variable
     }
 
-    fun defineAnonymous(location: Loc, variable: IVar): Int {
-        vars.add(variable)
-        return index++
-    }
-
     fun getRaw(location: Loc, name: String): IVar? = if(map.containsKey(name)) vars[map[name]!!] else null
 
     fun get(location: Loc, name: String): IVar {

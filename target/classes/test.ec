@@ -1,5 +1,5 @@
-ext fn "printf" as log(value: String): None
-ext fn "printf" as log(format: String, value: String): None
+extern fn "printf" as log(value: String): None
+extern fn "printf" as log(format: String, value: String): None
 
 rec Test as
     a: Int
@@ -14,11 +14,13 @@ fn main(): Int do
     val k = :test_atom
     a(aa())
     if "Test" == "NotTest" do
+        val ff: String = "DFE"
         log "Test1"
-    eif false do
+    else if false do
         log "Test2"
     else
         log "Test3"
+    log ff
     ret if (true) 1 else 0
 
 fn n(a: Int?): Int? do

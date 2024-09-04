@@ -16,16 +16,28 @@ class IRFunctionOverride(location: Loc, private val block: IRBlock, val id: Stri
     }
 
     override fun toC(sb: CSourceBuilder, c: Context) {
-        if (!GlobalFunctions.calledFunctionOverrides.containsKey(id) && id != "main") return // TODO: do this better
+        if (!GlobalFunctions.calledFunctionOverrides.containsKey(id)) return // TODO: do this better
         sb.putStatement()
         IRType(location, returnType).toC(sb, c)
         sb.put(' ')
         sb.put(id)
-        sb.put(" (")
+        sb.put('(')
         params.toC(sb, c)
         sb.put(") ")
         sb.pushScope(BlockScope())
         block.toC(sb, c)
         sb.popScope()
+    }
+
+    fun toCDeclaration(sb: CSourceBuilder, c: Context) {
+        if (!GlobalFunctions.calledFunctionOverrides.containsKey(id)) return // TODO: do this better
+        sb.putStatement()
+        IRType(location, returnType).toC(sb, c)
+        sb.put(' ')
+        sb.put(id)
+        sb.put('(')
+        params.toC(sb, c)
+        sb.put(')')
+        sb.endStatement()
     }
 }

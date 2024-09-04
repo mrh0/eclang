@@ -1,4 +1,4 @@
-package github.mrh0.eclang
+package github.mrh0.eclang.util
 
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.error.EcProtectedPrefixError

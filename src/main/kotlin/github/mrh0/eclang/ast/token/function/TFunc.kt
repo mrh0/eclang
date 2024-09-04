@@ -1,11 +1,10 @@
 package github.mrh0.eclang.ast.token.function
 
-import github.mrh0.eclang.Util.testIdentifier
+import github.mrh0.eclang.util.Util.testIdentifier
 import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.ast.token.TBlock
 import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
