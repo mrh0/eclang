@@ -29,6 +29,7 @@ struct Test {
 
 // Code
 int main_0(void) {
+	x_0(0);
 	printf("Hello World");
 	printf("Hello %s", "World");
 	test_1(0, "");
@@ -46,7 +47,6 @@ int main_0(void) {
 	else {
 		printf("Test3");
 	}
-	printf(ff);
 	return (true) ? (1) : (0);
 }
 char* aa_0(void) {
@@ -82,4 +82,5 @@ int main(int argc, const char *const argv[]) {
     
     apr_pool_destroy(pool);
     apr_terminate();
+    return result;
 }

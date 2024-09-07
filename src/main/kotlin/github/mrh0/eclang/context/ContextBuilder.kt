@@ -8,36 +8,23 @@ import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.context.state.IVar
 
 class ContextBuilder(val contextName: String) {
-    private val vars: MutableList<IVar> = mutableListOf()
-    private val map: MutableMap<String, Int> = mutableMapOf()
-    private var index: Int = 0
+    val stack: ContextStack = ContextStack()
 
-    fun define(location: Loc, variable: IVar): IVar {
-        if(map.containsKey(variable.getName())) throw EcError(location, "${variable.getName()} is already defined in context $contextName")
-        vars.add(variable)
-        map[variable.getName()] = index++
-        return variable
-    }
+    fun define(location: Loc, variable: IVar): IVar = stack.define(location, variable)
 
-    fun getRaw(location: Loc, name: String): IVar? = if(map.containsKey(name)) vars[map[name]!!] else null
+    fun getRaw(location: Loc, name: String): IVar? = stack.getRaw(location, name)
 
-    fun get(location: Loc, name: String): IVar {
-        return if(map.containsKey(name)) vars[map[name]!!] else throw EcNotDefinedError(location, name)
-    }
+    fun get(location: Loc, name: String): IVar = stack.get(location, name)
 
-    fun getIndex(location: Loc, name: String): Int {
-        return if(map.containsKey(name)) map[name]!! else throw EcNotDefinedError(location, name)
-    }
+    fun getIndex(location: Loc, name: String): Int = stack.getIndex(location, name)
 
-    fun assign(location: Loc, name: String, type: EcType): Int {
-        if(!map.containsKey(name))
-            throw EcNotDefinedError(location, name)
-        if(type != get(location, name).getType())
-            throw EcAssignTypeError(location, name, get(location, name).getType(), type)
-        return map[name]!!
-    }
+    fun assign(location: Loc, name: String, type: EcType): Int = stack.assign(location, name, type)
 
     fun build(): Context {
-        return Context(contextName, vars.toTypedArray())
+        return Context(contextName, stack.getVars())
     }
+
+    fun push() = stack.push()
+
+    fun pop() = stack.pop()
 }

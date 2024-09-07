@@ -15,7 +15,10 @@ class TBlock(location: Loc, val statements: List<ITok>) : Tok(location) {
     }
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
+        cd.ctx().push()
         val ir = statements.map { it.process(cd, hint).second }
-        return Pair(EcTypeNone, IRBlock(location, ir))
+        val res = Pair(EcTypeNone, IRBlock(location, ir))
+        cd.ctx().pop()
+        return res
     }
 }

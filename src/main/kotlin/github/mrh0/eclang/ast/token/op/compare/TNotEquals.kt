@@ -24,7 +24,7 @@ class TNotEquals(location: Loc, private val left: ITok, private val right: ITok)
             l.first is EcTypeNumber && r.first is EcTypeNumber -> Pair(EcTypeBool, IRNotEquals(location, l.second, r.second))
             l.first is EcTypeAtom && r.first is EcTypeAtom -> Pair(EcTypeBool, IRNotEquals(location, l.second, r.second))
             l.first is EcTypeAtomInstance && r.first is EcTypeAtomInstance -> Pair(EcTypeBool, IRNotEquals(location, l.second, r.second))
-            l.first is EcTypeString && r.first is EcTypeString -> Pair(EcTypeBool, IRNotEqualsStringString(location, l.second, r.second))
+            l.first is EcTypeCString && r.first is EcTypeCString -> Pair(EcTypeBool, IRNotEqualsStringString(location, l.second, r.second))
             l == r -> Pair(EcTypeBool, IRNotEqualsFallback(location, l.second, r.second))
             else -> throw EcOpTypeError(location, "!=", l.first, r.first)
         }

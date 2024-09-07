@@ -6,6 +6,7 @@ rec Test as
     b: Int
 
 fn main(): Int do
+    0.x()
     log "Hello World"
     log ("Hello %s", "World")
     test(0, "")
@@ -20,7 +21,6 @@ fn main(): Int do
         log "Test2"
     else
         log "Test3"
-    log ff
     ret if (true) 1 else 0
 
 fn n(a: Int?): Int? do

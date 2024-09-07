@@ -92,34 +92,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitBinOp(EclangParser.BinOpContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code lambdaNoArgs}
-	 * labeled alternative in {@link EclangParser#lambda}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLambdaNoArgs(EclangParser.LambdaNoArgsContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code lambdaArgs}
-	 * labeled alternative in {@link EclangParser#lambda}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLambdaArgs(EclangParser.LambdaArgsContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code functionCallNoArgs}
-	 * labeled alternative in {@link EclangParser#functionCall}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFunctionCallNoArgs(EclangParser.FunctionCallNoArgsContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code functionCallWithArgs}
-	 * labeled alternative in {@link EclangParser#functionCall}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFunctionCallWithArgs(EclangParser.FunctionCallWithArgsContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code exprNest}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -133,6 +105,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprInlineIf(EclangParser.ExprInlineIfContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code exprFunctionCallWithArgs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprFunctionCallWithArgs(EclangParser.ExprFunctionCallWithArgsContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprHere}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -148,33 +127,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprNamed(EclangParser.ExprNamedContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code exprAccessFunctionCallNoArgs}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprAccessFunctionCallNoArgs(EclangParser.ExprAccessFunctionCallNoArgsContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code exprLambda}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprLambda(EclangParser.ExprLambdaContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code exprAs}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitExprAs(EclangParser.ExprAsContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code exprAccessFunctionCallWithArgs}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprAccessFunctionCallWithArgs(EclangParser.ExprAccessFunctionCallWithArgsContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprBinOp}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -204,19 +162,19 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprTuple(EclangParser.ExprTupleContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code exprCallFunction}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprCallFunction(EclangParser.ExprCallFunctionContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code exprPrimitive}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitExprPrimitive(EclangParser.ExprPrimitiveContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code exprFunctionCallNoArgs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprFunctionCallNoArgs(EclangParser.ExprFunctionCallNoArgsContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprAccessName}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -238,13 +196,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprUnOp(EclangParser.ExprUnOpContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code exprFunctionCall}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprFunctionCall(EclangParser.ExprFunctionCallContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeUnion}
 	 * labeled alternative in {@link EclangParser#type}.
@@ -335,26 +286,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementDefine(EclangParser.StatementDefineContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code statementDefineDestructureTuple}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStatementDefineDestructureTuple(EclangParser.StatementDefineDestructureTupleContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code statementDefineConst}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitStatementDefineConst(EclangParser.StatementDefineConstContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code statementDefineConstDestructureTuple}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStatementDefineConstDestructureTuple(EclangParser.StatementDefineConstDestructureTupleContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementDefineRecord}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -419,19 +356,19 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementForIn(EclangParser.StatementForInContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code statementCallFunction}
+	 * Visit a parse tree produced by the {@code statementFunctionCallNoArgs}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitStatementCallFunction(EclangParser.StatementCallFunctionContext ctx);
+	T visitStatementFunctionCallNoArgs(EclangParser.StatementFunctionCallNoArgsContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code statementCallFunctionReturn}
+	 * Visit a parse tree produced by the {@code statementFunctionCallWithArgs}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitStatementCallFunctionReturn(EclangParser.StatementCallFunctionReturnContext ctx);
+	T visitStatementFunctionCallWithArgs(EclangParser.StatementFunctionCallWithArgsContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementReturn}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -446,6 +383,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code deferedStatement}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDeferedStatement(EclangParser.DeferedStatementContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code useModule}
 	 * labeled alternative in {@link EclangParser#use}.
@@ -467,18 +411,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitUseFromModule(EclangParser.UseFromModuleContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link EclangParser#funcPrefix}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFuncPrefix(EclangParser.FuncPrefixContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link EclangParser#funcWrappers}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFuncWrappers(EclangParser.FuncWrappersContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code functionExternal}
 	 * labeled alternative in {@link EclangParser#func}.

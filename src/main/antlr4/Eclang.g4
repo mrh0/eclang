@@ -71,19 +71,8 @@ binOp:
       '+' | '-' | '*' | '/' | '%' | '**'
     | '<' | '>' | '<=' | '>=' | '==' | '!='
     |'&&' | 'and' | '||' | 'or' | '^^' | 'xor'
+    | '===' | '!=='
     | '<<' | '>>' | '&' | '|' | '^'
-    ;
-
-lambda:
-    '(' ')' '=>' expr                                               #lambdaNoArgs
-    | '('? params+=parameter ')'? '=>' expr                            #lambdaArgs
-    | '(' params+=parameter (',' params+=parameter)+ ')' '=>' expr        #lambdaArgs
-    ;
-
-functionCall:
-      NAME '(' ')'                                          #functionCallNoArgs
-    | NAME '('? args+=expr ')'?                             #functionCallWithArgs
-    | NAME '(' args+=expr (',' args+=expr)* ')'             #functionCallWithArgs
     ;
 
 expr:
@@ -97,15 +86,13 @@ expr:
     | expr 'is' NAME                                                #exprIs
     | expr '!is' NAME                                               #exprIsNot
     | expr 'as' NAME                                                #exprAs
-    | NAME '(' args+=expr? (',' args+=expr)* ')'                    #exprCallFunction
     | values+=expr '&' values+=expr ('&' values+=expr)*             #exprTuple
     | expr '.' NAME                                                 #exprAccessName
-    | expr '.' NAME '(' ')'                                         #exprAccessFunctionCallNoArgs
-    | expr '.' NAME '('? args+=expr ')'?                            #exprAccessFunctionCallWithArgs
-    | expr '.' NAME '(' args+=expr (',' args+=expr)* ')'            #exprAccessFunctionCallWithArgs
     | expr '[' expr ']'                                             #exprAccessor
-    | lambda                                                        #exprLambda
-    | functionCall                                                  #exprFunctionCall
+    | NAME '(' ')'                                                  #exprFunctionCallNoArgs
+    | NAME '(' args+=expr (',' args+=expr)* ')'                     #exprFunctionCallWithArgs
+    | args+=expr '.' NAME '(' ')'                                   #exprFunctionCallNoArgs
+    | args+=expr '.' NAME '(' args+=expr (',' args+=expr)* ')'      #exprFunctionCallWithArgs
 //    | 'case' '('? match=expr ')'? 'when' lefts+=primitive '->' rights+=expr ('|' lefts+=primitive '->' rights+=expr)* #exprMatch
     ;
 
@@ -121,6 +108,7 @@ type:
 
 record:
       'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
+    | 'declare' 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
     ;
 
 parameter:
@@ -137,11 +125,7 @@ orderExpression:
 
 statement:
       'var' NAME (':' type)? '=' expr NL                    #statementDefine
-    | 'var' NAME (':' type)? '=' functionCall NL            #statementDefine
-    | 'var' NAME ',' NAME (',' NAME)* '=' functionCall NL   #statementDefineDestructureTuple
     | 'val' NAME (':' type)? '=' expr NL                    #statementDefineConst
-    | 'val' NAME (':' type)? '=' functionCall NL            #statementDefineConst
-    | 'val' NAME ',' NAME (',' NAME)* '=' functionCall NL   #statementDefineConstDestructureTuple
     | 'var' NAME '=' 'rec' NAME '(' (NAME '=' expr)* ')'    #statementDefineRecord
     | 'val' NAME '=' 'rec' NAME '(' (NAME '=' expr)* ')'    #statementDefineRecordConst
     | NAME '=' expr NL                                      #statementAssignment
@@ -155,11 +139,15 @@ statement:
     | 'while' '('? condition=expr ')'? 'do' body=block ('else' elseBody=block)?                                                             #statementWhile
     | 'for' '('? NAME 'in' expr ('where' expr)? orderExpression? ')'? 'do' body=block ('else' elseBody=block)?                              #statementForIn
 
-    | functionCall NL                                       #statementCallFunction
+    | NAME '(' ')' NL                                                 #statementFunctionCallNoArgs
+    | NAME '('? args+=expr ')'? NL                                    #statementFunctionCallWithArgs
+    | NAME '(' args+=expr (',' args+=expr)* ')' NL                    #statementFunctionCallWithArgs
+    | args+=expr '.' NAME '(' ')' NL                                  #statementFunctionCallNoArgs
+    | args+=expr '.' NAME '(' args+=expr (',' args+=expr)* ')' NL     #statementFunctionCallWithArgs
 
-    | 'ret' functionCall NL                                 #statementCallFunctionReturn
     | 'ret' expr NL                                         #statementReturn
-    | 'pool' 'in' body=block                                #statementPoolLocal
+    | 'pool' NAME ('from' NAME)? 'in' body=block            #statementPoolLocal
+    | 'defer' statement                                     #deferedStatement
     ;
 
 use:
@@ -168,19 +156,8 @@ use:
     | 'use' exports+=NAME (',' exports+=NAME)* 'from' from=STRING NL    #useFromModule
     ;
 
-funcPrefix:
-      'start'
-    | 'export'
-    ;
-
-funcWrappers:
-    'on' 'err' NAME? 'ret' expr
-    'on' 'null' 'ret' expr
-    'on' 'null' 'throw' expr?
-    ;
-
 func:
-      'extern' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL #functionExternal
+      'declare' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL #functionExternal
     | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block              #functionBlock
     | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL    #functionInline
     ;

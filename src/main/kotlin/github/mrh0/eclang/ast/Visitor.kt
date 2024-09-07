@@ -95,13 +95,11 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return TParameterTypedDefault(loc(ctx), ctx.NAME().text, visit(ctx.type()), visit(ctx.expr()))
     }
 
-    override fun visitFunctionCallNoArgs(ctx: EclangParser.FunctionCallNoArgsContext): ITok = TStatementCall(loc(ctx), ctx.NAME().text, arrayListOf())
-    override fun visitFunctionCallWithArgs(ctx: EclangParser.FunctionCallWithArgsContext): ITok = TStatementCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
+    override fun visitExprFunctionCallNoArgs(ctx: EclangParser.ExprFunctionCallNoArgsContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
+    override fun visitExprFunctionCallWithArgs(ctx: EclangParser.ExprFunctionCallWithArgsContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
 
-    override fun visitStatementCallFunction(ctx: EclangParser.StatementCallFunctionContext): ITok = visit(ctx.functionCall())
-    override fun visitStatementCallFunctionReturn(ctx: EclangParser.StatementCallFunctionReturnContext): ITok = TStatementReturn(loc(ctx), visit(ctx.functionCall()))
-
-    override fun visitExprCallFunction(ctx: EclangParser.ExprCallFunctionContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
+    override fun visitStatementFunctionCallNoArgs(ctx: EclangParser.StatementFunctionCallNoArgsContext): ITok = TStatementCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
+    override fun visitStatementFunctionCallWithArgs(ctx: EclangParser.StatementFunctionCallWithArgsContext): ITok = TStatementCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
 
     // Expressions
     override fun visitExprNest(ctx: EclangParser.ExprNestContext): ITok = TExprNest(loc(ctx), visit(ctx.expr()))
@@ -129,11 +127,13 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         "%" -> TMod(loc(ctx), visit(ctx.left), visit(ctx.right))
 
         "==" -> TEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "===" -> TEqualsEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
         ">=" -> TGreaterOrEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
         ">" -> TGreaterThan(loc(ctx), visit(ctx.left), visit(ctx.right))
         "<=" -> TLessOrEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
         "<" -> TLessThan(loc(ctx), visit(ctx.left), visit(ctx.right))
         "!=" -> TNotEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
+        "!==" -> TNotEqualsEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
 
         "&&", "and" -> TAnd(loc(ctx), visit(ctx.left), visit(ctx.right))
         "||", "or" -> TOr(loc(ctx), visit(ctx.left), visit(ctx.right))

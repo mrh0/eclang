@@ -1,4 +1,4 @@
-package github.mrh0.eclang.ast.token.op.logical
+package github.mrh0.eclang.ast.token.op
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.CompileData
@@ -6,13 +6,14 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.logical.xor.IRXOr
+import github.mrh0.eclang.ir.arithmetic.add.IRAdd
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
+import github.mrh0.eclang.types.EcTypeNullable
 
-class TXOr(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
+class TNullishCoalescing(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
     override fun toString(): String {
-        return "($left xor $right)"
+        return "($left ?? $right)"
     }
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
@@ -20,8 +21,8 @@ class TXOr(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
         val r = right.process(cd, hint);
         return when {
             // Numbers
-            l.first is EcTypeBool || r.first is EcTypeBool -> Pair(EcTypeBool, IRXOr(location, l.second, r.second))
-            else -> throw EcOpTypeError(location, "xor", l.first, r.first)
+            l.first is EcTypeNullable && l.first.accepts(location, r.first) -> Pair(EcTypeBool, IRAdd(location, l.second, r.second))
+            else -> throw EcOpTypeError(location, "??", l.first, r.first)
         }
     }
 }

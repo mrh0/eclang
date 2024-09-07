@@ -10,7 +10,7 @@ import github.mrh0.eclang.ir.compare.less.IRLessThan
 import github.mrh0.eclang.ir.compare.less.IRLessThanStringString
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
-import github.mrh0.eclang.types.EcTypeString
+import github.mrh0.eclang.types.EcTypeCString
 import github.mrh0.eclang.types.numbers.EcTypeNumber
 
 class TLessThan(location: Loc, private val left: ITok, private val right: ITok) : Tok(location) {
@@ -23,7 +23,7 @@ class TLessThan(location: Loc, private val left: ITok, private val right: ITok) 
         val r = right.process(cd, hint);
         return when {
             l.first is EcTypeNumber && r.first is EcTypeNumber -> Pair(EcTypeBool, IRLessThan(location, l.second, r.second))
-            l.first is EcTypeString && r.first is EcTypeString -> Pair(EcTypeBool, IRLessThanStringString(location, l.second, r.second))
+            l.first is EcTypeCString && r.first is EcTypeCString -> Pair(EcTypeBool, IRLessThanStringString(location, l.second, r.second))
             else -> throw EcOpTypeError(location, "==", l.first, r.first)
         }
     }

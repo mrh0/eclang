@@ -25,7 +25,7 @@ class TEquals(location: Loc, private val left: ITok, private val right: ITok) : 
             l.first is EcTypeBool && r.first is EcTypeBool -> Pair(EcTypeBool, IREquals(location, l.second, r.second))
             l.first is EcTypeAtom && r.first is EcTypeAtom -> Pair(EcTypeBool, IREquals(location, l.second, r.second))
             l.first is EcTypeAtomInstance && r.first is EcTypeAtomInstance -> Pair(EcTypeBool, IREquals(location, l.second, r.second))
-            l.first is EcTypeString && r.first is EcTypeString -> Pair(EcTypeBool, IREqualsStringString(location, l.second, r.second))
+            l.first is EcTypeCString && r.first is EcTypeCString -> Pair(EcTypeBool, IREqualsStringString(location, l.second, r.second))
             l == r -> Pair(EcTypeBool, IREqualsFallback(location, l.second, r.second))
             else -> throw EcOpTypeError(location, "==", l.first, r.first)
         }

@@ -2,6 +2,6 @@ package github.mrh0.eclang.types
 
 import github.mrh0.eclang.ast.Loc
 
-object EcTypeString : EcType("String") {
+object EcTypeCString : EcType("CString") {
     override fun accepts(location: Loc, type: EcType): Boolean = type == this
 }

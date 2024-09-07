@@ -8,7 +8,7 @@ object BuiltInTypes {
         EcTypeInt,
         EcTypeFloat,
         EcTypeBool,
-        EcTypeString,
+        EcTypeCString,
         EcTypeNone,
         EcTypeAtom,
         EcTypeNull

@@ -8,11 +8,9 @@ import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.compare.greater.IRGreaterThan
 import github.mrh0.eclang.ir.compare.greater.IRGreaterThanStringString
-import github.mrh0.eclang.ir.compare.less.IRLessThan
-import github.mrh0.eclang.ir.compare.less.IRLessThanStringString
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
-import github.mrh0.eclang.types.EcTypeString
+import github.mrh0.eclang.types.EcTypeCString
 import github.mrh0.eclang.types.numbers.EcTypeNumber
 
 class TGreaterThan(location: Loc, private val left: ITok, private val right: ITok) : Tok(location) {
@@ -25,7 +23,7 @@ class TGreaterThan(location: Loc, private val left: ITok, private val right: ITo
         val r = right.process(cd, hint);
         return when {
             l.first is EcTypeNumber && r.first is EcTypeNumber -> Pair(EcTypeBool, IRGreaterThan(location, l.second, r.second))
-            l.first is EcTypeString && r.first is EcTypeString -> Pair(EcTypeBool, IRGreaterThanStringString(location, l.second, r.second))
+            l.first is EcTypeCString && r.first is EcTypeCString -> Pair(EcTypeBool, IRGreaterThanStringString(location, l.second, r.second))
             else -> throw EcOpTypeError(location, "==", l.first, r.first)
         }
     }

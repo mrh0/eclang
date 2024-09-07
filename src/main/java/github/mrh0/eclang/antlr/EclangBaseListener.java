@@ -161,54 +161,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLambdaNoArgs(EclangParser.LambdaNoArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitLambdaNoArgs(EclangParser.LambdaNoArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterLambdaArgs(EclangParser.LambdaArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitLambdaArgs(EclangParser.LambdaArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFunctionCallNoArgs(EclangParser.FunctionCallNoArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFunctionCallNoArgs(EclangParser.FunctionCallNoArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFunctionCallWithArgs(EclangParser.FunctionCallWithArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFunctionCallWithArgs(EclangParser.FunctionCallWithArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterExprNest(EclangParser.ExprNestContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -228,6 +180,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprInlineIf(EclangParser.ExprInlineIfContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprFunctionCallWithArgs(EclangParser.ExprFunctionCallWithArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprFunctionCallWithArgs(EclangParser.ExprFunctionCallWithArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -257,30 +221,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExprAccessFunctionCallNoArgs(EclangParser.ExprAccessFunctionCallNoArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprAccessFunctionCallNoArgs(EclangParser.ExprAccessFunctionCallNoArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterExprLambda(EclangParser.ExprLambdaContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprLambda(EclangParser.ExprLambdaContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterExprAs(EclangParser.ExprAsContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -288,18 +228,6 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprAs(EclangParser.ExprAsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterExprAccessFunctionCallWithArgs(EclangParser.ExprAccessFunctionCallWithArgsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprAccessFunctionCallWithArgs(EclangParser.ExprAccessFunctionCallWithArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -353,18 +281,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExprCallFunction(EclangParser.ExprCallFunctionContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprCallFunction(EclangParser.ExprCallFunctionContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterExprPrimitive(EclangParser.ExprPrimitiveContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -372,6 +288,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprPrimitive(EclangParser.ExprPrimitiveContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprFunctionCallNoArgs(EclangParser.ExprFunctionCallNoArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprFunctionCallNoArgs(EclangParser.ExprFunctionCallNoArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -408,18 +336,6 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprUnOp(EclangParser.ExprUnOpContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterExprFunctionCall(EclangParser.ExprFunctionCallContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprFunctionCall(EclangParser.ExprFunctionCallContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -581,18 +497,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStatementDefineDestructureTuple(EclangParser.StatementDefineDestructureTupleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitStatementDefineDestructureTuple(EclangParser.StatementDefineDestructureTupleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterStatementDefineConst(EclangParser.StatementDefineConstContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -600,18 +504,6 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitStatementDefineConst(EclangParser.StatementDefineConstContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterStatementDefineConstDestructureTuple(EclangParser.StatementDefineConstDestructureTupleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitStatementDefineConstDestructureTuple(EclangParser.StatementDefineConstDestructureTupleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -725,25 +617,25 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStatementCallFunction(EclangParser.StatementCallFunctionContext ctx) { }
+	@Override public void enterStatementFunctionCallNoArgs(EclangParser.StatementFunctionCallNoArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitStatementCallFunction(EclangParser.StatementCallFunctionContext ctx) { }
+	@Override public void exitStatementFunctionCallNoArgs(EclangParser.StatementFunctionCallNoArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStatementCallFunctionReturn(EclangParser.StatementCallFunctionReturnContext ctx) { }
+	@Override public void enterStatementFunctionCallWithArgs(EclangParser.StatementFunctionCallWithArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitStatementCallFunctionReturn(EclangParser.StatementCallFunctionReturnContext ctx) { }
+	@Override public void exitStatementFunctionCallWithArgs(EclangParser.StatementFunctionCallWithArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -768,6 +660,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDeferedStatement(EclangParser.DeferedStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDeferedStatement(EclangParser.DeferedStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -804,30 +708,6 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitUseFromModule(EclangParser.UseFromModuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFuncPrefix(EclangParser.FuncPrefixContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFuncPrefix(EclangParser.FuncPrefixContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFuncWrappers(EclangParser.FuncWrappersContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFuncWrappers(EclangParser.FuncWrappersContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -9,7 +9,7 @@ import github.mrh0.eclang.types.numbers.EcTypeInt
 class IRType(location: Loc, val type: EcType) : IR(location) {
     fun translateNative(t: EcType): String = when(t) {
         is EcTypeInt -> "int"
-        is EcTypeString -> "char*"
+        is EcTypeCString -> "char*"
         is EcTypeNone -> "void"
         is EcTypeAtom, is EcTypeAtomInstance -> "char*"
         else -> throw NotImplementedError("Native type '$t' is not implemented.")
