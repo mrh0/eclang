@@ -11,8 +11,13 @@ static char* __ec_atom_test2 = "test2";
 static char* __ec_atom_test3 = "test3";
 static char* __ec_atom_test_atom = "test_atom";
 
+// Built-In
+void* __ec_nc(void* left, void* right) {
+    return left == NULL ? right : left;
+}
 // Declarations
 int main_0(void);
+char* n_0(char* a);
 char* aa_0(void);
 char* a_0(char* atom);
 int test_1(int a, char* b);
@@ -37,8 +42,9 @@ int main_0(void) {
 	z_0(1);
 	const char* k = __ec_atom_test_atom;
 	a_0(aa_0());
+	n_0("Null");
 	if (strcmp("Test", "NotTest") == 0) {
-		const char* ff = "DFE";
+		char* ff = "DFE";
 		printf("Test1");
 	}
 	else if (false) {
@@ -49,6 +55,9 @@ int main_0(void) {
 	}
 	return (true) ? (1) : (0);
 }
+char* n_0(char* a) {
+	return (char*)__ec_nc(a, "");
+}
 char* aa_0(void) {
 	return __ec_atom_test1;
 }
@@ -56,7 +65,7 @@ char* a_0(char* atom) {
 	return atom;
 }
 int test_1(int a, char* b) {
-	const int d = 5;
+	int d = 5;
 	return a;
 }
 void x_0(int a) {

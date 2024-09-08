@@ -6,7 +6,9 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
+import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.ir.arithmetic.add.IRAdd
+import github.mrh0.eclang.ir.branch.IRNullishCoalescing
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
 import github.mrh0.eclang.types.EcTypeNullable
@@ -21,7 +23,7 @@ class TNullishCoalescing(location: Loc, val left: ITok, val right: ITok) : Tok(l
         val r = right.process(cd, hint);
         return when {
             // Numbers
-            l.first is EcTypeNullable && l.first.accepts(location, r.first) -> Pair(EcTypeBool, IRAdd(location, l.second, r.second))
+            l.first is EcTypeNullable && l.first.accepts(location, r.first) -> Pair((l.first as EcTypeNullable).wrapped, IRNullishCoalescing(location, l.second, r.second, IRType(location, (l.first as EcTypeNullable).wrapped)))
             else -> throw EcOpTypeError(location, "??", l.first, r.first)
         }
     }

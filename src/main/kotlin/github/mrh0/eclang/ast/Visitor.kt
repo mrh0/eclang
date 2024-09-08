@@ -14,6 +14,7 @@ import github.mrh0.eclang.ast.token.function.call.TStatementCall
 import github.mrh0.eclang.ast.token.loop.TStatementBreak
 import github.mrh0.eclang.ast.token.loop.TStatementContinue
 import github.mrh0.eclang.ast.token.loop.TStatementWhile
+import github.mrh0.eclang.ast.token.op.TNullishCoalescing
 import github.mrh0.eclang.ast.token.op.arithmetic.*
 import github.mrh0.eclang.ast.token.op.compare.*
 import github.mrh0.eclang.ast.token.op.logical.*
@@ -75,7 +76,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return TFuncInline(loc(ctx), cvisit(ctx.expr()), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), if(ctx.returnType == null) null else visit(ctx.returnType))
     }
 
-    override fun visitFunctionExternal(ctx: EclangParser.FunctionExternalContext): ITok {
+    override fun visitFunctionDeclare(ctx: EclangParser.FunctionDeclareContext): ITok {
         return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), visit(ctx.returnType), Util.getStringContent(ctx.externalName.text))
     }
 
@@ -135,6 +136,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         "!=" -> TNotEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
         "!==" -> TNotEqualsEquals(loc(ctx), visit(ctx.left), visit(ctx.right))
 
+        "??" -> TNullishCoalescing(loc(ctx), visit(ctx.left), visit(ctx.right))
+
         "&&", "and" -> TAnd(loc(ctx), visit(ctx.left), visit(ctx.right))
         "||", "or" -> TOr(loc(ctx), visit(ctx.left), visit(ctx.right))
         "^^", "xor" -> TXOr(loc(ctx), visit(ctx.left), visit(ctx.right))
@@ -149,8 +152,13 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     }
 
     // Variable
+    //override fun visitGlobalDefine(ctx: EclangParser.GlobalDefineContext): ITok = TStatementDefine(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
+    //override fun visitGlobalDefineConst(ctx: EclangParser.GlobalDefineConstContext): ITok = TStatementDefineConst(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
+
     override fun visitStatementDefine(ctx: EclangParser.StatementDefineContext): ITok = TStatementDefine(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitStatementDefineConst(ctx: EclangParser.StatementDefineConstContext): ITok = TStatementDefineConst(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
+    override fun visitStatementDefineTyped(ctx: EclangParser.StatementDefineTypedContext): ITok = TStatementDefineTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
+    override fun visitStatementDefineConstTyped(ctx: EclangParser.StatementDefineConstTypedContext): ITok = TStatementDefineConstTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
     override fun visitStatementAssignment(ctx: EclangParser.StatementAssignmentContext): ITok = TStatementAssign(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitExprNamed(ctx: EclangParser.ExprNamedContext): ITok = TNamed(loc(ctx), ctx.NAME().text)
 

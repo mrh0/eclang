@@ -20,7 +20,7 @@ class FunctionOverride(val location: Loc, val id: String, val params: Array<Func
     fun match(location: Loc, types: Array<EcType>): Boolean {
         if(types.size != noDefParams.size) return false
         for(i in types.indices) {
-            if(!types[i].accepts(location, params[i].type)) return false
+            if(!params[i].type.accepts(location, types[i])) return false
         }
         return true
     }

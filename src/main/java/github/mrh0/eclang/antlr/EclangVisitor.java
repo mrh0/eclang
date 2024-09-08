@@ -273,12 +273,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitParameterDefault(EclangParser.ParameterDefaultContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link EclangParser#orderExpression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitOrderExpression(EclangParser.OrderExpressionContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code statementDefine}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
@@ -292,6 +286,20 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStatementDefineConst(EclangParser.StatementDefineConstContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code statementDefineTyped}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementDefineTyped(EclangParser.StatementDefineTypedContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code statementDefineConstTyped}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementDefineConstTyped(EclangParser.StatementDefineConstTypedContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementDefineRecord}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -384,13 +392,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code deferedStatement}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitDeferedStatement(EclangParser.DeferedStatementContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code useModule}
 	 * labeled alternative in {@link EclangParser#use}.
 	 * @param ctx the parse tree
@@ -412,12 +413,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitUseFromModule(EclangParser.UseFromModuleContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code functionExternal}
+	 * Visit a parse tree produced by the {@code functionDeclare}
 	 * labeled alternative in {@link EclangParser#func}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFunctionExternal(EclangParser.FunctionExternalContext ctx);
+	T visitFunctionDeclare(EclangParser.FunctionDeclareContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code functionBlock}
 	 * labeled alternative in {@link EclangParser#func}.
@@ -432,6 +433,34 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFunctionInline(EclangParser.FunctionInlineContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalDefine(EclangParser.GlobalDefineContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalDefineConst}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalDefineConst(EclangParser.GlobalDefineConstContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalDeclareDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalDeclareDefine(EclangParser.GlobalDeclareDefineContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalDeclareDefineConst}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalDeclareDefineConst(EclangParser.GlobalDeclareDefineConstContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#program}.
 	 * @param ctx the parse tree

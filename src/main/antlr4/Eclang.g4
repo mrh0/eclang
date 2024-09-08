@@ -71,7 +71,7 @@ binOp:
       '+' | '-' | '*' | '/' | '%' | '**'
     | '<' | '>' | '<=' | '>=' | '==' | '!='
     |'&&' | 'and' | '||' | 'or' | '^^' | 'xor'
-    | '===' | '!=='
+    | '===' | '!==' | '??'
     | '<<' | '>>' | '&' | '|' | '^'
     ;
 
@@ -117,37 +117,32 @@ parameter:
     | NAME '=' expr                         #parameterDefault
     ;
 
-orderExpression:
-      'orderby' expr
-    | 'orderasc'
-    | 'orderdesc'
-    ;
-
 statement:
-      'var' NAME (':' type)? '=' expr NL                    #statementDefine
-    | 'val' NAME (':' type)? '=' expr NL                    #statementDefineConst
-    | 'var' NAME '=' 'rec' NAME '(' (NAME '=' expr)* ')'    #statementDefineRecord
-    | 'val' NAME '=' 'rec' NAME '(' (NAME '=' expr)* ')'    #statementDefineRecordConst
-    | NAME '=' expr NL                                      #statementAssignment
+      'var' NAME '=' expr NL                                                            #statementDefine
+    | 'val' NAME '=' expr NL                                                            #statementDefineConst
+    | 'var' NAME (':' type)? '=' expr NL                                                #statementDefineTyped
+    | 'val' NAME (':' type)? '=' expr NL                                                #statementDefineConstTyped
+    | 'var' NAME (':' type)? '=' NAME? '{' NAME '=' expr (',' NAME '=' expr) '}'        #statementDefineRecord
+    | 'val' NAME (':' type)? '=' NAME? '{' NAME '=' expr (',' NAME '=' expr) '}'        #statementDefineRecordConst
+    | NAME '=' expr NL                                                                  #statementAssignment
 
-    | 'break' NL                                            #statementBreak
-    | 'continue' NL                                         #statementContinue
+    | 'break' NL                                                                        #statementBreak
+    | 'continue' NL                                                                     #statementContinue
 
-    | 'defer' statement NL                                  #statementDefer
+    | 'defer' statement NL                                                              #statementDefer
 
-    | 'if' '('? conditions+=expr ')'? 'do' bodies+=block ('else' 'if' '('? conditions+=expr ')'? 'do' bodies+=block)* ('else' elseBody=block)?    #statementIf
-    | 'while' '('? condition=expr ')'? 'do' body=block ('else' elseBody=block)?                                                             #statementWhile
-    | 'for' '('? NAME 'in' expr ('where' expr)? orderExpression? ')'? 'do' body=block ('else' elseBody=block)?                              #statementForIn
+    | 'if' '('? conditions+=expr ')'? 'do' bodies+=block ('else' 'if' '('? conditions+=expr ')'? 'do' bodies+=block)* ('else' elseBody=block)?      #statementIf
+    | 'while' '('? condition=expr ')'? 'do' body=block ('else' elseBody=block)?                                                                     #statementWhile
+    | 'for' '('? NAME 'in' expr ('where' expr)? ')'? 'do' body=block ('else' elseBody=block)?                                                       #statementForIn
 
-    | NAME '(' ')' NL                                                 #statementFunctionCallNoArgs
-    | NAME '('? args+=expr ')'? NL                                    #statementFunctionCallWithArgs
-    | NAME '(' args+=expr (',' args+=expr)* ')' NL                    #statementFunctionCallWithArgs
-    | args+=expr '.' NAME '(' ')' NL                                  #statementFunctionCallNoArgs
-    | args+=expr '.' NAME '(' args+=expr (',' args+=expr)* ')' NL     #statementFunctionCallWithArgs
+    | NAME '(' ')' NL                                                   #statementFunctionCallNoArgs
+    | NAME '('? args+=expr ')'? NL                                      #statementFunctionCallWithArgs
+    | NAME '(' args+=expr (',' args+=expr)* ')' NL                      #statementFunctionCallWithArgs
+    | args+=expr '.' NAME '(' ')' NL                                    #statementFunctionCallNoArgs
+    | args+=expr '.' NAME '(' args+=expr (',' args+=expr)* ')' NL       #statementFunctionCallWithArgs
 
-    | 'ret' expr NL                                         #statementReturn
-    | 'pool' NAME ('from' NAME)? 'in' body=block            #statementPoolLocal
-    | 'defer' statement                                     #deferedStatement
+    | 'ret' expr NL                                                     #statementReturn
+    | 'pool' NAME ('from' NAME)? 'in' body=block                        #statementPoolLocal
     ;
 
 use:
@@ -157,13 +152,20 @@ use:
     ;
 
 func:
-      'declare' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL #functionExternal
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block              #functionBlock
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL    #functionInline
+      'declare' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL   #functionDeclare
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block                         #functionBlock
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL                  #functionInline
+    ;
+
+global:
+      'var' NAME (':' type)? '=' expr NL                            #globalDefine
+    | 'val' NAME (':' type)? '=' expr NL                            #globalDefineConst
+    | 'declare' 'var' NAME (':' type)? '=' expr NL                  #globalDeclareDefine
+    | 'declare' 'val' NAME (':' type)? '=' expr NL                  #globalDeclareDefineConst
     ;
 
 program:
       use*
-      (functions+=func | records+=record)+
+      (functions+=func | records+=record | globals+=global)*
       EOF
     ;

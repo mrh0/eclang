@@ -13,4 +13,6 @@ class EcTypeUnion(private val types: MutableSet<EcType>) : EcType("Union") {
     }
 
     override fun expand(): List<EcType> = types.toList()
+
+    override fun canBeInstantiated() = false
 }

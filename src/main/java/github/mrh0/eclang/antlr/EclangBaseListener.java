@@ -473,18 +473,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterOrderExpression(EclangParser.OrderExpressionContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitOrderExpression(EclangParser.OrderExpressionContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterStatementDefine(EclangParser.StatementDefineContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -504,6 +492,30 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitStatementDefineConst(EclangParser.StatementDefineConstContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStatementDefineTyped(EclangParser.StatementDefineTypedContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementDefineTyped(EclangParser.StatementDefineTypedContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStatementDefineConstTyped(EclangParser.StatementDefineConstTypedContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementDefineConstTyped(EclangParser.StatementDefineConstTypedContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -665,18 +677,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterDeferedStatement(EclangParser.DeferedStatementContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitDeferedStatement(EclangParser.DeferedStatementContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterUseModule(EclangParser.UseModuleContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -713,13 +713,13 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFunctionExternal(EclangParser.FunctionExternalContext ctx) { }
+	@Override public void enterFunctionDeclare(EclangParser.FunctionDeclareContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitFunctionExternal(EclangParser.FunctionExternalContext ctx) { }
+	@Override public void exitFunctionDeclare(EclangParser.FunctionDeclareContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -744,6 +744,54 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitFunctionInline(EclangParser.FunctionInlineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalDefine(EclangParser.GlobalDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalDefine(EclangParser.GlobalDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalDefineConst(EclangParser.GlobalDefineConstContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalDefineConst(EclangParser.GlobalDefineConstContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalDeclareDefine(EclangParser.GlobalDeclareDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalDeclareDefine(EclangParser.GlobalDeclareDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalDeclareDefineConst(EclangParser.GlobalDeclareDefineConstContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalDeclareDefineConst(EclangParser.GlobalDeclareDefineConstContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

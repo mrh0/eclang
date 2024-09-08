@@ -21,6 +21,14 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>)
         AtomInstance.getAll().forEach { sb.putLine("static char* ${it.getId()} = \"${it.label}\";") }
         sb.putLine()
 
+        sb.commentLine("Built-In")
+        sb.put("""
+        void* __ec_nc(void* left, void* right) {
+            return left == NULL ? right : left;
+        }
+        """.trimIndent())
+        sb.putLine()
+
         sb.commentLine("Declarations")
         functions.forEach { if (it is IRFunctionOverride) it.toCDeclaration(sb, c) }
         sb.putLine()

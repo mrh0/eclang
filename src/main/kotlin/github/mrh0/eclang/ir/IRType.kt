@@ -12,6 +12,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeCString -> "char*"
         is EcTypeNone -> "void"
         is EcTypeAtom, is EcTypeAtomInstance -> "char*"
+        is EcTypeNullable -> translateNative(t.wrapped)
         else -> throw NotImplementedError("Native type '$t' is not implemented.")
     }
 
