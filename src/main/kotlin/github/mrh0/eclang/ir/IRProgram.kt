@@ -7,7 +7,7 @@ import github.mrh0.eclang.ir.function.IRFunctionOverride
 import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>) : IR(location) {
+class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>, val globals: List<IIR>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.putLine("#include <stdio.h>")
         sb.putLine("#include <string.h>")
@@ -18,7 +18,7 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>)
         sb.putLine()
 
         sb.commentLine("Atoms")
-        AtomInstance.getAll().forEach { sb.putLine("static char* ${it.getId()} = \"${it.label}\";") }
+        AtomInstance.getAll().forEach { sb.putLine("char* ${it.getId()} = \"${it.label}\";") }
         sb.putLine()
 
         sb.commentLine("Built-In")
@@ -27,6 +27,7 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>)
             return left == NULL ? right : left;
         }
         """.trimIndent())
+        sb.putLine()
         sb.putLine()
 
         sb.commentLine("Declarations")
@@ -37,9 +38,14 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>)
         records.forEach { it.toC(sb, c) }
         sb.putLine()
 
+        sb.commentLine("Globals")
+        globals.forEach { it.toC(sb, c) }
+        sb.putLine()
+
         sb.commentLine("Code")
         functions.forEach { it.toC(sb, c) }
         sb.putLine()
+
 
         sb.commentLine("Main Entry")
 

@@ -1,5 +1,6 @@
 package github.mrh0.eclang.context
 
+import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.error.EcAssignTypeError
 import github.mrh0.eclang.error.EcError
@@ -11,6 +12,8 @@ class ContextBuilder(val contextName: String) {
     val stack: ContextStack = ContextStack()
 
     fun define(location: Loc, variable: IVar): IVar = stack.define(location, variable)
+
+    fun defer(location: Loc, tok: ITok) = stack.defer(location, tok)
 
     fun getRaw(location: Loc, name: String): IVar? = stack.getRaw(location, name)
 
@@ -27,4 +30,8 @@ class ContextBuilder(val contextName: String) {
     fun push() = stack.push()
 
     fun pop() = stack.pop()
+
+    fun getDeferred() = stack.getDeferred()
+
+    fun getNewDeferred() = stack.getNewDeferred()
 }

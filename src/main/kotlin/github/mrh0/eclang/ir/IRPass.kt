@@ -4,16 +4,14 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRNamed(location: Loc, private val name: String) : IR(location) {
+class IRPass(location: Loc, private val comment: String?) : IR(location) {
     override fun toString(): String {
-        return "$$name"
+        return "Pass"
     }
 
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.put(name)
+        if (comment != null) sb.comment(comment)
     }
 
-    override fun deterministic(): Boolean {
-        return super.deterministic()
-    }
+    override fun deterministic(): Boolean = true
 }

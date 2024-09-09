@@ -128,6 +128,7 @@ statement:
 
     | 'break' NL                                                                        #statementBreak
     | 'continue' NL                                                                     #statementContinue
+    | 'pass' NL                                                                         #statementPass
 
     | 'defer' statement NL                                                              #statementDefer
 
@@ -152,16 +153,18 @@ use:
     ;
 
 func:
-      'declare' 'fn' externalName=STRING 'as' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL   #functionDeclare
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block                         #functionBlock
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL                  #functionInline
+      'declare' 'fn' (externalName=STRING 'as')? name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL    #functionDeclare
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block                             #functionBlock
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL                      #functionInline
     ;
 
 global:
-      'var' NAME (':' type)? '=' expr NL                            #globalDefine
-    | 'val' NAME (':' type)? '=' expr NL                            #globalDefineConst
-    | 'declare' 'var' NAME (':' type)? '=' expr NL                  #globalDeclareDefine
-    | 'declare' 'val' NAME (':' type)? '=' expr NL                  #globalDeclareDefineConst
+      'var' NAME '=' expr NL                                                                            #globalDefine
+    | 'val' NAME '=' expr NL                                                                            #globalDefineConst
+    | 'var' NAME (':' type)? '=' expr NL                                                                #globalDefineTyped
+    | 'val' NAME (':' type)? '=' expr NL                                                                #globalDefineConstTyped
+    | 'declare' 'var' (externalName=STRING 'as')? name=NAME ':' type '=' expr NL                        #globalDeclareDefine
+    | 'declare' 'val' (externalName=STRING 'as')? name=NAME ':' type '=' expr NL                        #globalDeclareDefineConst
     ;
 
 program:

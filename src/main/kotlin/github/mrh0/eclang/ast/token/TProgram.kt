@@ -15,10 +15,12 @@ import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 import github.mrh0.eclang.types.internal.IEcTypeDefaultArgumentWrapper
 
-class TProgram(location: Loc, private val functions: List<TFunc>, private val records: List<TRecord>, private val uses: List<ITok>) : Tok(location) {
+class TProgram(location: Loc, private val functions: List<TFunc>, private val records: List<TRecord>, private val uses: List<ITok>, private val globals: List<ITok>) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         uses.map { it.process(cd, hint) }
         val recordIRs = records.map { it.process(cd, hint).second }
+        val globalIRs = globals.map { it.process(cd, hint).second }
+
         functions.forEach { analyzeFunction(it, cd) } //it.process(cd).second
 
         val functionIRs: MutableList<IIR> = mutableListOf()
@@ -28,7 +30,7 @@ class TProgram(location: Loc, private val functions: List<TFunc>, private val re
             }
         }
 
-        return EcTypeNone to IRProgram(location, functionIRs, recordIRs)
+        return EcTypeNone to IRProgram(location, functionIRs, recordIRs, globalIRs)
     }
 
     private fun indexPermutation(list: MutableList<Int>, limit: List<Int>, index: Int): Boolean {

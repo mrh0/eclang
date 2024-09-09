@@ -4,9 +4,9 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRNamedConstant(location: Loc, private val name: String, private val index: Int) : IR(location) {
+class IRNamedConstant(location: Loc, private val name: String) : IR(location) {
     override fun toString(): String {
-        return "$$index"
+        return "$$name"
     }
 
     override fun toC(sb: CSourceBuilder, c: Context) {

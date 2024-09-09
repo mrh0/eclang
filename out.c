@@ -6,15 +6,16 @@
 #include <apr_pools.h>
 
 // Atoms
-static char* __ec_atom_test1 = "test1";
-static char* __ec_atom_test2 = "test2";
-static char* __ec_atom_test3 = "test3";
-static char* __ec_atom_test_atom = "test_atom";
+char* __ec_atom_test1 = "test1";
+char* __ec_atom_test2 = "test2";
+char* __ec_atom_test3 = "test3";
+char* __ec_atom_test_atom = "test_atom";
 
 // Built-In
 void* __ec_nc(void* left, void* right) {
     return left == NULL ? right : left;
 }
+
 // Declarations
 int main_0(void);
 char* n_0(char* a);
@@ -32,6 +33,10 @@ struct Test {
 	int b;
 };
 
+// Globals
+static const int G = 69;
+static int G2 = 420;
+
 // Code
 int main_0(void) {
 	x_0(0);
@@ -41,6 +46,7 @@ int main_0(void) {
 	y_1("");
 	z_0(1);
 	const char* k = __ec_atom_test_atom;
+	const int p = G+G2;
 	a_0(aa_0());
 	n_0("Null");
 	if (strcmp("Test", "NotTest") == 0) {

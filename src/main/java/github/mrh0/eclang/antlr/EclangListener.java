@@ -564,6 +564,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementContinue(EclangParser.StatementContinueContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code statementPass}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementPass(EclangParser.StatementPassContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementPass}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementPass(EclangParser.StatementPassContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code statementDefer}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
@@ -755,6 +767,30 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitGlobalDefineConst(EclangParser.GlobalDefineConstContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code globalDefineTyped}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void enterGlobalDefineTyped(EclangParser.GlobalDefineTypedContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code globalDefineTyped}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void exitGlobalDefineTyped(EclangParser.GlobalDefineTypedContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code globalDefineConstTyped}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void enterGlobalDefineConstTyped(EclangParser.GlobalDefineConstTypedContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code globalDefineConstTyped}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void exitGlobalDefineConstTyped(EclangParser.GlobalDefineConstTypedContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code globalDeclareDefine}
 	 * labeled alternative in {@link EclangParser#global}.

@@ -336,6 +336,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementContinue(EclangParser.StatementContinueContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code statementPass}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementPass(EclangParser.StatementPassContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code statementDefer}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
@@ -447,6 +454,20 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitGlobalDefineConst(EclangParser.GlobalDefineConstContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalDefineTyped}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalDefineTyped(EclangParser.GlobalDefineTypedContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalDefineConstTyped}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalDefineConstTyped(EclangParser.GlobalDefineConstTypedContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code globalDeclareDefine}
 	 * labeled alternative in {@link EclangParser#global}.

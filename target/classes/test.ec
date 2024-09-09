@@ -2,6 +2,7 @@ declare fn "printf" as log(value: CString): None
 declare fn "printf" as log(format: CString, value: CString): None
 
 val G: Int = 69
+var G2: Int = 420
 
 rec Test as
     a: Int
@@ -15,6 +16,7 @@ fn main(): Int do
     y("")
     z(1)
     val k = :test_atom
+    val p = G + G2
     a(aa())
     n("Null")
     if "Test" == "NotTest" do
