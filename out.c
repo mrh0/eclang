@@ -18,6 +18,7 @@ void* __ec_nc(void* left, void* right) {
 
 // Declarations
 int main_0(void);
+int defTest_0(void);
 char* n_0(char* a);
 char* aa_0(void);
 char* a_0(char* atom);
@@ -49,6 +50,7 @@ int main_0(void) {
 	const int p = G+G2;
 	a_0(aa_0());
 	n_0("Null");
+	defTest_0();
 	if (strcmp("Test", "NotTest") == 0) {
 		char* ff = "DFE";
 		printf("Test1");
@@ -60,6 +62,23 @@ int main_0(void) {
 		printf("Test3");
 	}
 	return (true) ? (1) : (0);
+}
+int defTest_0(void) {
+	printf("2");
+	if (true) {
+		printf("4");
+		printf("3");
+	}
+	else {
+		printf(("test"));
+		int __ec_ret = 1;
+		printf("1");
+		printf("5");
+		return __ec_ret;
+	}
+	int __ec_ret = 0;
+	printf("1");
+	return __ec_ret;
 }
 char* n_0(char* a) {
 	return (char*)__ec_nc(a, "");

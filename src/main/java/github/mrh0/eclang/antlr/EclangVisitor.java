@@ -11,6 +11,18 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  */
 public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	/**
+	 * Visit a parse tree produced by {@link EclangParser#open}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOpen(EclangParser.OpenContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EclangParser#close}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitClose(EclangParser.CloseContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code numberInt}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
@@ -127,12 +139,33 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprNamed(EclangParser.ExprNamedContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprCreateRecord}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprCreateRecord(EclangParser.ExprCreateRecordContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprAs}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitExprAs(EclangParser.ExprAsContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code exprCreateRecordNamedTyped}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprCreateRecordNamedTyped(EclangParser.ExprCreateRecordNamedTypedContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code exprCreateRecordTyped}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprCreateRecordTyped(EclangParser.ExprCreateRecordTypedContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprBinOp}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -196,6 +229,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprUnOp(EclangParser.ExprUnOpContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code exprCreateRecordNamed}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprCreateRecordNamed(EclangParser.ExprCreateRecordNamedContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeUnion}
 	 * labeled alternative in {@link EclangParser#type}.
@@ -300,20 +340,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStatementDefineConstTyped(EclangParser.StatementDefineConstTypedContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code statementDefineRecord}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStatementDefineRecord(EclangParser.StatementDefineRecordContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code statementDefineRecordConst}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStatementDefineRecordConst(EclangParser.StatementDefineRecordConstContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementAssignment}
 	 * labeled alternative in {@link EclangParser#statement}.

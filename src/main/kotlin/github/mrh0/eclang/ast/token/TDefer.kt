@@ -15,6 +15,6 @@ class TDefer (location: Loc, val statement: ITok) : Tok(location) {
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         cd.ctx().defer(location, statement)
-        return EcTypeNone to IRPass(location, "defer")
+        return EcTypeNone to IRPass(location, null)
     }
 }

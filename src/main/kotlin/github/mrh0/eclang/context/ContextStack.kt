@@ -67,6 +67,11 @@ class ContextStack {
         top.returned = true
     }
 
+    fun hasReturned(): Boolean {
+        val top = scopeStack.last()
+        return top.returned
+    }
+
     fun getVars() = vars.toTypedArray()
 
     fun getDeferred(): MutableList<ITok> {

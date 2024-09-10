@@ -17,7 +17,8 @@ class TBlock(location: Loc, val statements: List<ITok>) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         cd.ctx().push()
         val ir = statements.map { it.process(cd, hint).second }
-        val res = Pair(EcTypeNone, IRBlock(location, ir))
+        val deferredIr = if (!cd.ctx().hasReturned()) cd.ctx().getNewDeferred().map { it.process(cd, hint).second } else listOf()
+        val res = Pair(EcTypeNone, IRBlock(location, ir, deferredIr))
         cd.ctx().pop()
         return res
     }

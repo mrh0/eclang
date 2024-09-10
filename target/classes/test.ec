@@ -12,13 +12,17 @@ fn main(): Int do
     0.x()
     log "Hello World"
     log ("Hello %s", "World")
-    test(0, "")
+    test(
+        0,
+        ""
+    )
     y("")
     z(1)
     val k = :test_atom
     val p = G + G2
     a(aa())
     n("Null")
+    defTest()
     if "Test" == "NotTest" do
         val ff: CString = "DFE"
         log "Test1"
@@ -27,6 +31,20 @@ fn main(): Int do
     else
         log "Test3"
     ret if (true) 1 else 0
+
+fn defTest(): Int do
+    defer log("1")
+    log("2")
+    if true do
+        defer log("3")
+        log("4")
+    else
+        defer log("5")
+        log(
+            "test"
+        )
+        ret 1
+    ret 0
 
 fn n(a: CString?): CString do
     ret a ?? ""

@@ -43,6 +43,8 @@ WHITESPACE: [ \t]+ -> skip;
 EMPTYLINE: NL -> skip;
 COMMENT: '//' ~[\r\n]* -> skip;
 BLOCKCOMMENT: '/*' .*? '*/' -> skip;
+open: INDENT;
+close: DEDENT;
 
 number:
       INT           #numberInt
@@ -80,6 +82,7 @@ expr:
     | left=expr binOp right=expr                                    #exprBinOp
     | unOp expr                                                     #exprUnOp
     | '(' expr ')'                                                  #exprNest
+    | '(' INDENT expr NL DEDENT ')'                                 #exprNest
     | primitive                                                     #exprPrimitive
     | NAME                                                          #exprNamed
     | 'if' '(' condition=expr ')' body=expr 'else' elseBody=expr    #exprInlineIf
@@ -93,6 +96,10 @@ expr:
     | NAME '(' args+=expr (',' args+=expr)* ')'                     #exprFunctionCallWithArgs
     | args+=expr '.' NAME '(' ')'                                   #exprFunctionCallNoArgs
     | args+=expr '.' NAME '(' args+=expr (',' args+=expr)* ')'      #exprFunctionCallWithArgs
+    |  recordType=NAME '{' names+=NAME '=' expr (',' names+=NAME '=' expr)* '}' #exprCreateRecordNamedTyped
+    | '{' names+=NAME '=' expr (',' names+=NAME '=' expr)* '}'                  #exprCreateRecordNamed
+    | recordType=NAME '{' expr (',' expr)* '}'                                  #exprCreateRecordTyped
+    | '{' expr (',' expr)* '}'                                                  #exprCreateRecord
 //    | 'case' '('? match=expr ')'? 'when' lefts+=primitive '->' rights+=expr ('|' lefts+=primitive '->' rights+=expr)* #exprMatch
     ;
 
@@ -122,15 +129,13 @@ statement:
     | 'val' NAME '=' expr NL                                                            #statementDefineConst
     | 'var' NAME (':' type)? '=' expr NL                                                #statementDefineTyped
     | 'val' NAME (':' type)? '=' expr NL                                                #statementDefineConstTyped
-    | 'var' NAME (':' type)? '=' NAME? '{' NAME '=' expr (',' NAME '=' expr) '}'        #statementDefineRecord
-    | 'val' NAME (':' type)? '=' NAME? '{' NAME '=' expr (',' NAME '=' expr) '}'        #statementDefineRecordConst
     | NAME '=' expr NL                                                                  #statementAssignment
 
     | 'break' NL                                                                        #statementBreak
     | 'continue' NL                                                                     #statementContinue
     | 'pass' NL                                                                         #statementPass
 
-    | 'defer' statement NL                                                              #statementDefer
+    | 'defer' statement                                                                 #statementDefer
 
     | 'if' '('? conditions+=expr ')'? 'do' bodies+=block ('else' 'if' '('? conditions+=expr ')'? 'do' bodies+=block)* ('else' elseBody=block)?      #statementIf
     | 'while' '('? condition=expr ')'? 'do' body=block ('else' elseBody=block)?                                                                     #statementWhile
@@ -138,9 +143,15 @@ statement:
 
     | NAME '(' ')' NL                                                   #statementFunctionCallNoArgs
     | NAME '('? args+=expr ')'? NL                                      #statementFunctionCallWithArgs
+    | NAME '(' INDENT args+=expr NL DEDENT ')' NL                       #statementFunctionCallWithArgs
     | NAME '(' args+=expr (',' args+=expr)* ')' NL                      #statementFunctionCallWithArgs
+    | NAME '(' INDENT args+=expr (',' NL args+=expr)* NL DEDENT ')' NL  #statementFunctionCallWithArgs
+
     | args+=expr '.' NAME '(' ')' NL                                    #statementFunctionCallNoArgs
+    | args+=expr '.' NAME '(' args+=expr ')' NL                         #statementFunctionCallNoArgs
+    | args+=expr '.' NAME '(' INDENT args+=expr NL DEDENT ')' NL        #statementFunctionCallNoArgs
     | args+=expr '.' NAME '(' args+=expr (',' args+=expr)* ')' NL       #statementFunctionCallWithArgs
+    | args+=expr '.' NAME '(' INDENT args+=expr (',' NL args+=expr)* NL DEDENT ')' NL       #statementFunctionCallWithArgs
 
     | 'ret' expr NL                                                     #statementReturn
     | 'pool' NAME ('from' NAME)? 'in' body=block                        #statementPoolLocal

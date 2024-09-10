@@ -34,4 +34,7 @@ class ContextBuilder(val contextName: String) {
     fun getDeferred() = stack.getDeferred()
 
     fun getNewDeferred() = stack.getNewDeferred()
+
+    fun hasReturned() = stack.hasReturned()
+    fun setReturned() = stack.setReturned()
 }

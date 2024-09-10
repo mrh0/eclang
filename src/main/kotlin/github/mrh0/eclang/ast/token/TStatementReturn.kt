@@ -15,6 +15,7 @@ class TStatementReturn(location: Loc, val next: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val ir = next.process(cd, hint)
         if (!hint.accepts(location, ir.first)) throw EcReturnTypeError(location, hint, ir.first)
+        cd.ctx().setReturned()
 
         if (cd.ctx().getDeferred().isEmpty()) return Pair(ir.first, IRStatementReturn(location, ir.second))
         return ir.first to IRStatementReturnDefer(

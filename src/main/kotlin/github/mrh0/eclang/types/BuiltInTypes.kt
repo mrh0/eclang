@@ -13,7 +13,11 @@ object BuiltInTypes {
         EcTypeAtom,
         EcTypeNull
     )
-    val builtInNamespaceMap: Map<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.toString() }
-    val builtInNameMap: Map<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.identifier }
-    fun getType(test: String): EcType = builtInNameMap.getOrElse(test) { builtInNamespaceMap.getOrElse(test) { throw Exception("No such type $test") } }
+    val builtInNamespaceMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.toString() }.toMutableMap()
+    val builtInNameMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.identifier }.toMutableMap()
+    fun defineType(namespace: String, identifier: String, type: EcType) {
+        builtInNamespaceMap["$namespace.$identifier"] = type
+        builtInNameMap[identifier] = type
+    }
+    fun getType(test: String): EcType = builtInNamespaceMap.getOrElse(test) { builtInNameMap.getOrElse(test) { throw Exception("No such type $test") } }
 }

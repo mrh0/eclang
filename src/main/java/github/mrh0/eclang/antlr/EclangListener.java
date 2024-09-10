@@ -8,6 +8,26 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  */
 public interface EclangListener extends ParseTreeListener {
 	/**
+	 * Enter a parse tree produced by {@link EclangParser#open}.
+	 * @param ctx the parse tree
+	 */
+	void enterOpen(EclangParser.OpenContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EclangParser#open}.
+	 * @param ctx the parse tree
+	 */
+	void exitOpen(EclangParser.OpenContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EclangParser#close}.
+	 * @param ctx the parse tree
+	 */
+	void enterClose(EclangParser.CloseContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EclangParser#close}.
+	 * @param ctx the parse tree
+	 */
+	void exitClose(EclangParser.CloseContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code numberInt}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
@@ -206,6 +226,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprNamed(EclangParser.ExprNamedContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprCreateRecord}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprCreateRecord(EclangParser.ExprCreateRecordContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprCreateRecord}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprCreateRecord(EclangParser.ExprCreateRecordContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprAs}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -217,6 +249,30 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprAs(EclangParser.ExprAsContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprCreateRecordNamedTyped}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprCreateRecordNamedTyped(EclangParser.ExprCreateRecordNamedTypedContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprCreateRecordNamedTyped}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprCreateRecordNamedTyped(EclangParser.ExprCreateRecordNamedTypedContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprCreateRecordTyped}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprCreateRecordTyped(EclangParser.ExprCreateRecordTypedContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprCreateRecordTyped}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprCreateRecordTyped(EclangParser.ExprCreateRecordTypedContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprBinOp}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -325,6 +381,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprUnOp(EclangParser.ExprUnOpContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprCreateRecordNamed}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprCreateRecordNamed(EclangParser.ExprCreateRecordNamedContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprCreateRecordNamed}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprCreateRecordNamed(EclangParser.ExprCreateRecordNamedContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code typeUnion}
 	 * labeled alternative in {@link EclangParser#type}.
@@ -503,30 +571,6 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitStatementDefineConstTyped(EclangParser.StatementDefineConstTypedContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code statementDefineRecord}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void enterStatementDefineRecord(EclangParser.StatementDefineRecordContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code statementDefineRecord}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void exitStatementDefineRecord(EclangParser.StatementDefineRecordContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code statementDefineRecordConst}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void enterStatementDefineRecordConst(EclangParser.StatementDefineRecordConstContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code statementDefineRecordConst}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void exitStatementDefineRecordConst(EclangParser.StatementDefineRecordConstContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code statementAssignment}
 	 * labeled alternative in {@link EclangParser#statement}.
