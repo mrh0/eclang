@@ -4,7 +4,7 @@ import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.ast.token.data.record.TRecord
+import github.mrh0.eclang.ast.token.type.TTypeRecord
 import github.mrh0.eclang.ast.token.function.IFuncBody
 import github.mrh0.eclang.ast.token.function.TFunc
 import github.mrh0.eclang.context.function.FunctionParameter
@@ -14,8 +14,9 @@ import github.mrh0.eclang.ir.IRProgram
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 import github.mrh0.eclang.types.internal.IEcTypeDefaultArgumentWrapper
+import github.mrh0.eclang.util.Util.testIdentifier
 
-class TProgram(location: Loc, private val functions: List<TFunc>, private val records: List<TRecord>, private val uses: List<ITok>, private val globals: List<ITok>) : Tok(location) {
+class TProgram(location: Loc, private val functions: List<TFunc>, private val records: List<TTypeRecord>, private val uses: List<ITok>, private val globals: List<ITok>) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         uses.map { it.process(cd, hint) }
         val recordIRs = records.map { it.process(cd, hint).second }
@@ -64,12 +65,13 @@ class TProgram(location: Loc, private val functions: List<TFunc>, private val re
     }
 
     private fun analyzeFunction(func: TFunc, cd: CompileData) {
+        val fixedName = testIdentifier(location, func.name)
         val res = func.processSignature(cd)
 
         permutateFunctionArguments(res.first) { list ->
             GlobalFunctions.addOverride(
                 func.location,
-                func.name,
+                fixedName,
                 list,
                 res.second, // Ret type
                 if (func is IFuncBody) func.getBody() else null,

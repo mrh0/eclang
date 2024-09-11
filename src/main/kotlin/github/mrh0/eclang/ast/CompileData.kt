@@ -5,6 +5,7 @@ import github.mrh0.eclang.context.ContextBuilder
 import github.mrh0.eclang.context.state.IVar
 
 class CompileData {
+    val namespace: String = "Ec"
     private val contextMap: MutableMap<String, Context> = mutableMapOf()
     private val global = ContextBuilder("__GLOBAL__")
     private var currentContextBuilder: ContextBuilder = global

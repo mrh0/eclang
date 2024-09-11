@@ -16,10 +16,13 @@ fn main(): Int do
         0,
         ""
     )
+    val testRec: Test = { 0, 0 }
     y("")
     z(1)
     val k = :test_atom
     val p = G + G2
+    val char: Char = 'a'
+    val char2: Char = '\r'
     a(aa())
     n("Null")
     defTest()

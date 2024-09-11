@@ -11,10 +11,11 @@ object BuiltInTypes {
         EcTypeCString,
         EcTypeNone,
         EcTypeAtom,
-        EcTypeNull
+        EcTypeNull,
+        EcTypeChar
     )
-    val builtInNamespaceMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.toString() }.toMutableMap()
-    val builtInNameMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.identifier }.toMutableMap()
+    private val builtInNamespaceMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.toString() }.toMutableMap()
+    private val builtInNameMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.identifier }.toMutableMap()
     fun defineType(namespace: String, identifier: String, type: EcType) {
         builtInNamespaceMap["$namespace.$identifier"] = type
         builtInNameMap[identifier] = type

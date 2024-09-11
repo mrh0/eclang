@@ -12,9 +12,9 @@ import github.mrh0.eclang.context.state.Variable
 
 class TStatementDefine(location: Loc, private val varName: String, private val expr: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        testIdentifier(location, varName)
+        val fixedName = testIdentifier(location, varName)
         val ir = expr.process(cd, hint)
-        val ivar = cd.ctx().define(location, Variable(varName, ir.first))
+        val ivar = cd.ctx().define(location, Variable(fixedName, ir.first))
         return Pair(ir.first, IRStatementDefine(location, ivar, ir.second))
     }
 

@@ -269,30 +269,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExprCreateRecordNamedTyped(EclangParser.ExprCreateRecordNamedTypedContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprCreateRecordNamedTyped(EclangParser.ExprCreateRecordNamedTypedContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterExprCreateRecordTyped(EclangParser.ExprCreateRecordTypedContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprCreateRecordTyped(EclangParser.ExprCreateRecordTypedContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterExprBinOp(EclangParser.ExprBinOpContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -324,18 +300,6 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprIs(EclangParser.ExprIsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterExprTuple(EclangParser.ExprTupleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprTuple(EclangParser.ExprTupleContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

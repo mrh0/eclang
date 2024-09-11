@@ -44,10 +44,13 @@ int main_0(void) {
 	printf("Hello World");
 	printf("Hello %s", "World");
 	test_1(0, "");
+	struct Test testRec = (struct Test){0, 0};
 	y_1("");
 	z_0(1);
 	const char* k = __ec_atom_test_atom;
 	const int p = G+G2;
+	char _char = 'a';
+	char char2 = '\r';
 	a_0(aa_0());
 	n_0("Null");
 	defTest_0();

@@ -153,20 +153,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprAs(EclangParser.ExprAsContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code exprCreateRecordNamedTyped}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprCreateRecordNamedTyped(EclangParser.ExprCreateRecordNamedTypedContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code exprCreateRecordTyped}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprCreateRecordTyped(EclangParser.ExprCreateRecordTypedContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code exprBinOp}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -187,13 +173,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprIs(EclangParser.ExprIsContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code exprTuple}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprTuple(EclangParser.ExprTupleContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprPrimitive}
 	 * labeled alternative in {@link EclangParser#expr}.

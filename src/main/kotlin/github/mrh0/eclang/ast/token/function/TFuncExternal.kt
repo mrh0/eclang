@@ -13,10 +13,10 @@ class TFuncExternal(location: Loc, name: String, params: TParameters, returns: I
     override fun toString() = "external:$name'$externalName'($params)"
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        cd.newContext(name)
+        /*cd.newContext(name)
         val argPairs = params.get().map { it.name to it.process(cd, hint).first }.toTypedArray()
         argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
-        val returnType = returns?.process(cd, hint)?.first ?: EcTypeNone
+        val returnType = returns?.process(cd, hint)?.first ?: EcTypeNone*/
         return EcTypeNone to IRFunctionExternal(location, name, externalName)
     }
 

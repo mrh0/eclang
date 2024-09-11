@@ -18,11 +18,11 @@ class TParameterTypedDefault(location: Loc, name: String, val type: ITok, val de
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> = throw NotImplementedError()
 
     override fun toFunctionParameter(cd: CompileData): FunctionParameter {
-        testIdentifier(location, name)
+        val fixedName = testIdentifier(location, name)
         //val defPair = def.process(cd, EcTypeNone)
         //if (!defPair.second.deterministic()) throw EcError(location, "Default value of $name must be deterministic.")
         val typePair = type.process(cd, EcTypeNone)
         //if (!typePair.first.accepts(location, defPair.first)) throw EcAssignTypeError(location, name, typePair.first, defPair.first)
-        return FunctionParameter(name, EcTypeUnion(mutableSetOf(typePair.first, IEcTypeDefaultArgumentWrapper(typePair.first))) , def)
+        return FunctionParameter(fixedName, EcTypeUnion(mutableSetOf(typePair.first, IEcTypeDefaultArgumentWrapper(typePair.first))) , def)
     }
 }

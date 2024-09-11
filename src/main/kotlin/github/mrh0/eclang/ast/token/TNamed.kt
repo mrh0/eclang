@@ -13,8 +13,8 @@ class TNamed (location: Loc, val name: String) : Tok(location) {
     }
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        testIdentifier(location, name)
-        val v = cd.getVar(location, name)
+        val fixedName = testIdentifier(location, name)
+        val v = cd.getVar(location, fixedName)
         return v.getType() to v.toIR(location, cd, hint)
     }
 }

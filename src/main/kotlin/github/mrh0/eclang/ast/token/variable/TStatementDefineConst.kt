@@ -12,9 +12,9 @@ import github.mrh0.eclang.ir.IRStatementDefineConst
 
 class TStatementDefineConst(location: Loc, private val varName: String, private val expr: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        testIdentifier(location, varName)
+        val fixedName = testIdentifier(location, varName)
         val ir = expr.process(cd, hint)
-        val index = cd.ctx().define(location, Constant(varName, ir.first))
+        val index = cd.ctx().define(location, Constant(fixedName, ir.first))
         return Pair(ir.first, IRStatementDefineConst(location, index, ir.second))
     }
 

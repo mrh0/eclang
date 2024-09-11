@@ -250,30 +250,6 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprAs(EclangParser.ExprAsContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code exprCreateRecordNamedTyped}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprCreateRecordNamedTyped(EclangParser.ExprCreateRecordNamedTypedContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprCreateRecordNamedTyped}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprCreateRecordNamedTyped(EclangParser.ExprCreateRecordNamedTypedContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code exprCreateRecordTyped}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprCreateRecordTyped(EclangParser.ExprCreateRecordTypedContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprCreateRecordTyped}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprCreateRecordTyped(EclangParser.ExprCreateRecordTypedContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code exprBinOp}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -309,18 +285,6 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprIs(EclangParser.ExprIsContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code exprTuple}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprTuple(EclangParser.ExprTupleContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprTuple}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprTuple(EclangParser.ExprTupleContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprPrimitive}
 	 * labeled alternative in {@link EclangParser#expr}.

@@ -43,8 +43,6 @@ WHITESPACE: [ \t]+ -> skip;
 EMPTYLINE: NL -> skip;
 COMMENT: '//' ~[\r\n]* -> skip;
 BLOCKCOMMENT: '/*' .*? '*/' -> skip;
-open: INDENT;
-close: DEDENT;
 
 number:
       INT           #numberInt
@@ -81,7 +79,6 @@ expr:
       'here'                                                        #exprHere
     | left=expr binOp right=expr                                    #exprBinOp
     | unOp expr                                                     #exprUnOp
-    | '(' expr ')'                                                  #exprNest
     | '(' INDENT expr NL DEDENT ')'                                 #exprNest
     | primitive                                                     #exprPrimitive
     | NAME                                                          #exprNamed
@@ -89,17 +86,25 @@ expr:
     | expr 'is' NAME                                                #exprIs
     | expr '!is' NAME                                               #exprIsNot
     | expr 'as' NAME                                                #exprAs
-    | values+=expr '&' values+=expr ('&' values+=expr)*             #exprTuple
+
     | expr '.' NAME                                                 #exprAccessName
     | expr '[' expr ']'                                             #exprAccessor
+    | expr '[' INDENT expr NL DEDENT ']'                            #exprAccessor
+
     | NAME '(' ')'                                                  #exprFunctionCallNoArgs
     | NAME '(' args+=expr (',' args+=expr)* ')'                     #exprFunctionCallWithArgs
+    | NAME '(' INDENT args+=expr (',' NL args+=expr)* NL DEDENT ')' #exprFunctionCallWithArgs
     | args+=expr '.' NAME '(' ')'                                   #exprFunctionCallNoArgs
     | args+=expr '.' NAME '(' args+=expr (',' args+=expr)* ')'      #exprFunctionCallWithArgs
-    |  recordType=NAME '{' names+=NAME '=' expr (',' names+=NAME '=' expr)* '}' #exprCreateRecordNamedTyped
-    | '{' names+=NAME '=' expr (',' names+=NAME '=' expr)* '}'                  #exprCreateRecordNamed
-    | recordType=NAME '{' expr (',' expr)* '}'                                  #exprCreateRecordTyped
-    | '{' expr (',' expr)* '}'                                                  #exprCreateRecord
+    | args+=expr '.' NAME '(' INDENT args+=expr (',' NL args+=expr)* NL DEDENT ')'                      #exprFunctionCallWithArgs
+
+    | recordType=NAME? '{' names+=NAME '=' expr (',' names+=NAME '=' expr)* '}'                         #exprCreateRecordNamed
+    | recordType=NAME? '{' INDENT names+=NAME '=' expr (',' NL names+=NAME '=' expr)* NL DEDENT '}'     #exprCreateRecordNamed
+    | recordType=NAME? '{' expr (',' expr)* '}'                                                         #exprCreateRecord
+    | recordType=NAME? '{' INDENT expr (',' NL expr)* NL DEDENT '}'                                     #exprCreateRecord
+
+    | '(' expr ')'                                                                                      #exprNest
+    | '(' INDENT expr NL DEDENT ')'                                                                     #exprNest
 //    | 'case' '('? match=expr ')'? 'when' lefts+=primitive '->' rights+=expr ('|' lefts+=primitive '->' rights+=expr)* #exprMatch
     ;
 

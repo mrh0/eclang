@@ -7,7 +7,9 @@ import github.mrh0.eclang.ast.token.*
 import github.mrh0.eclang.ast.token.branch.TInlineIf
 import github.mrh0.eclang.ast.token.branch.TStatementIf
 import github.mrh0.eclang.ast.token.data.*
-import github.mrh0.eclang.ast.token.data.record.TRecord
+import github.mrh0.eclang.ast.token.data.record.TCreateRecord
+import github.mrh0.eclang.ast.token.data.record.TCreateRecordTyped
+import github.mrh0.eclang.ast.token.type.TTypeRecord
 import github.mrh0.eclang.ast.token.function.*
 import github.mrh0.eclang.ast.token.function.call.TExprCall
 import github.mrh0.eclang.ast.token.function.call.TStatementCall
@@ -55,7 +57,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // }
 
     // Records
-    override fun visitRecord(ctx: EclangParser.RecordContext): ITok = TRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types))
+    override fun visitRecord(ctx: EclangParser.RecordContext): ITok = TTypeRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types))
 
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
@@ -115,6 +117,9 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitPrimitiveBool(ctx: EclangParser.PrimitiveBoolContext): ITok = TBoolean(loc(ctx), ctx.BOOL().text == "true")
     override fun visitPrimitiveString(ctx: EclangParser.PrimitiveStringContext): ITok = TString(loc(ctx), Util.getStringContent(ctx.text))
     override fun visitPrimitiveAtom(ctx: EclangParser.PrimitiveAtomContext): ITok = TAtom(loc(ctx), ctx.text.substring(1).lowercase())
+    override fun visitPrimitiveChar(ctx: EclangParser.PrimitiveCharContext): ITok = TChar(loc(ctx), ctx.text)
+
+    override fun visitExprCreateRecord(ctx: EclangParser.ExprCreateRecordContext): ITok = if (ctx.recordType == null) TCreateRecord(loc(ctx), visit(ctx.expr())) else TCreateRecordTyped(loc(ctx), ctx.recordType.text, visit(ctx.expr()))
 
     //Natives
     // override fun visitExprTuple(ctx: EclangParser.ExprTupleContext): ITok = TTuple(loc(ctx), visit(ctx.values))

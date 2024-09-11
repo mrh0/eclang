@@ -14,11 +14,11 @@ import github.mrh0.eclang.ir.IRGlobalDefine
 
 class TGlobalDefineTyped(location: Loc, private val varName: String, private val expr: ITok, private val type: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        testIdentifier(location, varName)
+        val fixedName = testIdentifier(location, varName)
         val typeIr = type.process(cd, hint)
         val ir = expr.process(cd, typeIr.first)
-        if (!typeIr.first.accepts(location, ir.first)) throw EcDefineTypeError(location, varName, typeIr.first, ir.first)
-        val ivar = cd.getGlobal().define(location, Variable(varName, typeIr.first))
+        if (!typeIr.first.accepts(location, ir.first)) throw EcDefineTypeError(location, fixedName, typeIr.first, ir.first)
+        val ivar = cd.getGlobal().define(location, Variable(fixedName, typeIr.first))
         return Pair(ir.first, IRGlobalDefine(location, ivar, ir.second))
     }
 
