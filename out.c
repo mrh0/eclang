@@ -17,6 +17,7 @@ void* __ec_nc(void* left, void* right) {
 }
 
 // Declarations
+void otherFileFunc_0(void);
 int main_0(void);
 int defTest_0(int input);
 char* n_0(char* a);
@@ -27,7 +28,6 @@ void x_0(int a);
 void x_1(char* a);
 void y_1(char* a);
 int z_0(int a);
-void otherFileFunc_0(void);
 
 // Records
 struct Test {
@@ -40,6 +40,8 @@ static const int G = 69;
 static int G2 = 420;
 
 // Code
+void otherFileFunc_0(void) {
+}
 int main_0(void) {
 	x_0(0);
 	printf("Hello World");
@@ -109,8 +111,6 @@ void y_1(char* a) {
 }
 int z_0(int a) {
 	return a+1;
-}
-void otherFileFunc_0(void) {
 }
 
 // Main Entry

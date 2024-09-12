@@ -20,25 +20,34 @@ import github.mrh0.eclang.util.Util
 import github.mrh0.eclang.util.Util.testIdentifier
 import java.nio.file.Path
 
-class TProgram(location: Loc, private val functions: MutableList<TFunc>, private val records: MutableList<TTypeRecord>, private val uses: MutableList<TGlobalUse>, private val globals: MutableList<ITok>) : Tok(location) {
+class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val recordsIn: List<TTypeRecord>, private val usesIn: List<TGlobalUse>, private val globalsIn: List<ITok>) : Tok(location) {
     companion object {
         val useMap: MutableMap<String, Boolean> = mutableMapOf()
+        val functions: MutableList<TFunc> = mutableListOf()
+        val records: MutableList<TTypeRecord> = mutableListOf()
+        val uses: MutableList<TGlobalUse> = mutableListOf()
+        val globals: MutableList<ITok> = mutableListOf()
     }
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        uses.forEach {
+        usesIn.forEach {
             if (useMap[it.path] != true) {
                 useMap[it.path] = true
                 val file = Path.of(Util::class.java.classLoader.getResource(it.path)!!.toURI()).toFile()
                 val tree = Compiler.tokenizeFile(file)
-                functions.addAll(tree.functions)
-                records.addAll(tree.records)
-                uses.addAll(tree.uses)
-                globals.addAll(tree.globals)
+                functions.addAll(tree.functionsIn)
+                records.addAll(tree.recordsIn)
+                uses.addAll(tree.usesIn)
+                globals.addAll(tree.globalsIn)
             }
         }
+
+        functions.addAll(functionsIn)
+        records.addAll(recordsIn)
+        uses.addAll(usesIn)
+        globals.addAll(globalsIn)
+
         val recordIRs = records.map { it.process(cd, hint).second }
         val globalIRs = globals.map { it.process(cd, hint).second }
-
         functions.forEach { analyzeFunction(it, cd) } //it.process(cd).second
 
         val functionIRs: MutableList<IIR> = mutableListOf()
