@@ -1,0 +1,2 @@
+fn otherFileFunc() do
+    pass

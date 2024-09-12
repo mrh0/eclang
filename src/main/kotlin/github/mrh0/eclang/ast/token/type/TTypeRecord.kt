@@ -19,7 +19,7 @@ class TTypeRecord(location: Loc, val name: String, val names: List<String>, val 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val pairs = names.mapIndexed { index, it -> it to types[index].process(cd, hint) }
         val type = EcTypeRecord(name, pairs.map { it.first to it.second.first })
-        BuiltInTypes.defineType(cd.namespace, name, type)
+        BuiltInTypes.defineType(location, cd.namespace, name, type)
         return type to IRRecord(location, name, pairs.map { it.first to it.second.second as IRType })
     }
 }

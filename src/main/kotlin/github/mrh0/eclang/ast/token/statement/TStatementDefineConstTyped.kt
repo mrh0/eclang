@@ -1,4 +1,4 @@
-package github.mrh0.eclang.ast.token.variable
+package github.mrh0.eclang.ast.token.statement
 
 import github.mrh0.eclang.util.Util.testIdentifier
 import github.mrh0.eclang.ast.CompileData

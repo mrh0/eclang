@@ -21,14 +21,7 @@ fun main(args: Array<String>) {
     val file = Path.of(Util::class.java.classLoader.getResource("test.ec")!!.toURI()).toFile()
 
     val timeTaken = measureTime {
-        val stream = FileInputStream(file)
-        val input = ANTLRInputStream(stream)
-
-        val lexer = EclangLexer(input)
-        val tokens = CommonTokenStream(lexer)
-        val parser = EclangParser(tokens)
-
-        val tree: ITok = Visitor(file).visitProgram(parser.program())
+        val tree: ITok = Compiler.tokenizeFile(file)
         println(tree)
 
         val cd = CompileData()

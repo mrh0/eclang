@@ -8,26 +8,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  */
 public interface EclangListener extends ParseTreeListener {
 	/**
-	 * Enter a parse tree produced by {@link EclangParser#open}.
-	 * @param ctx the parse tree
-	 */
-	void enterOpen(EclangParser.OpenContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link EclangParser#open}.
-	 * @param ctx the parse tree
-	 */
-	void exitOpen(EclangParser.OpenContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link EclangParser#close}.
-	 * @param ctx the parse tree
-	 */
-	void enterClose(EclangParser.CloseContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link EclangParser#close}.
-	 * @param ctx the parse tree
-	 */
-	void exitClose(EclangParser.CloseContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code numberInt}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
@@ -680,42 +660,6 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code useModule}
-	 * labeled alternative in {@link EclangParser#use}.
-	 * @param ctx the parse tree
-	 */
-	void enterUseModule(EclangParser.UseModuleContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code useModule}
-	 * labeled alternative in {@link EclangParser#use}.
-	 * @param ctx the parse tree
-	 */
-	void exitUseModule(EclangParser.UseModuleContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code useAllFromModule}
-	 * labeled alternative in {@link EclangParser#use}.
-	 * @param ctx the parse tree
-	 */
-	void enterUseAllFromModule(EclangParser.UseAllFromModuleContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code useAllFromModule}
-	 * labeled alternative in {@link EclangParser#use}.
-	 * @param ctx the parse tree
-	 */
-	void exitUseAllFromModule(EclangParser.UseAllFromModuleContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code useFromModule}
-	 * labeled alternative in {@link EclangParser#use}.
-	 * @param ctx the parse tree
-	 */
-	void enterUseFromModule(EclangParser.UseFromModuleContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code useFromModule}
-	 * labeled alternative in {@link EclangParser#use}.
-	 * @param ctx the parse tree
-	 */
-	void exitUseFromModule(EclangParser.UseFromModuleContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code functionDeclare}
 	 * labeled alternative in {@link EclangParser#func}.
 	 * @param ctx the parse tree
@@ -823,6 +767,28 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitGlobalDeclareDefineConst(EclangParser.GlobalDeclareDefineConstContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code globalTypeDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void enterGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code globalTypeDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void exitGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EclangParser#use}.
+	 * @param ctx the parse tree
+	 */
+	void enterUse(EclangParser.UseContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EclangParser#use}.
+	 * @param ctx the parse tree
+	 */
+	void exitUse(EclangParser.UseContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EclangParser#program}.
 	 * @param ctx the parse tree

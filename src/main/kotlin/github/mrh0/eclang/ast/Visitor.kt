@@ -13,6 +13,7 @@ import github.mrh0.eclang.ast.token.type.TTypeRecord
 import github.mrh0.eclang.ast.token.function.*
 import github.mrh0.eclang.ast.token.function.call.TExprCall
 import github.mrh0.eclang.ast.token.function.call.TStatementCall
+import github.mrh0.eclang.ast.token.global.*
 import github.mrh0.eclang.ast.token.loop.TStatementBreak
 import github.mrh0.eclang.ast.token.loop.TStatementContinue
 import github.mrh0.eclang.ast.token.loop.TStatementWhile
@@ -21,7 +22,7 @@ import github.mrh0.eclang.ast.token.op.arithmetic.*
 import github.mrh0.eclang.ast.token.op.compare.*
 import github.mrh0.eclang.ast.token.op.logical.*
 import github.mrh0.eclang.ast.token.type.*
-import github.mrh0.eclang.ast.token.variable.*
+import github.mrh0.eclang.ast.token.statement.*
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import java.io.File
@@ -45,7 +46,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     fun loc(ctx: ParserRuleContext) = Loc(ctx.start, file)
 
     // Program
-    override fun visitProgram(ctx: EclangParser.ProgramContext): ITok = TProgram(loc(ctx), visit(ctx.functions), visit(ctx.records), visit(ctx.use()), visit(ctx.global()))
+    override fun visitProgram(ctx: EclangParser.ProgramContext): ITok = TProgram(loc(ctx), visit(ctx.functions), visit(ctx.records), visit(ctx.uses), visit(ctx.globals))
 
     // Use
     // override fun visitUseFromModule(ctx: EclangParser.UseFromModuleContext): ITok {
@@ -165,6 +166,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitGlobalDefineConst(ctx: EclangParser.GlobalDefineConstContext): ITok = TGlobalDefineConst(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitGlobalDefineTyped(ctx: EclangParser.GlobalDefineTypedContext): ITok = TGlobalDefineTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
     override fun visitGlobalDefineConstTyped(ctx: EclangParser.GlobalDefineConstTypedContext): ITok = TGlobalDefineConstTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
+    override fun visitGlobalTypeDefine(ctx: EclangParser.GlobalTypeDefineContext): ITok = TGlobalTypeDefine(loc(ctx), ctx.NAME().text, visit(ctx.type()))
+    override fun visitUse(ctx: EclangParser.UseContext): ITok = TGlobalUse(loc(ctx), ctx.from.text.substring(1, ctx.from.text.length-1))
 
     override fun visitStatementDefine(ctx: EclangParser.StatementDefineContext): ITok = TStatementDefine(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitStatementDefineConst(ctx: EclangParser.StatementDefineConstContext): ITok = TStatementDefineConst(loc(ctx), ctx.NAME().text, visit(ctx.expr()))

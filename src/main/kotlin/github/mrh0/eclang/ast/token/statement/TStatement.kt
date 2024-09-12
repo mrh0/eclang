@@ -1,4 +1,4 @@
-package github.mrh0.eclang.ast.token
+package github.mrh0.eclang.ast.token.statement
 
 import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok

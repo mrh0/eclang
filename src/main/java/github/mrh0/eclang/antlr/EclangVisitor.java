@@ -11,18 +11,6 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  */
 public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	/**
-	 * Visit a parse tree produced by {@link EclangParser#open}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitOpen(EclangParser.OpenContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link EclangParser#close}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitClose(EclangParser.CloseContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code numberInt}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
@@ -404,27 +392,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code useModule}
-	 * labeled alternative in {@link EclangParser#use}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitUseModule(EclangParser.UseModuleContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code useAllFromModule}
-	 * labeled alternative in {@link EclangParser#use}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitUseAllFromModule(EclangParser.UseAllFromModuleContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code useFromModule}
-	 * labeled alternative in {@link EclangParser#use}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitUseFromModule(EclangParser.UseFromModuleContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code functionDeclare}
 	 * labeled alternative in {@link EclangParser#func}.
 	 * @param ctx the parse tree
@@ -487,6 +454,19 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitGlobalDeclareDefineConst(EclangParser.GlobalDeclareDefineConstContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalTypeDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EclangParser#use}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitUse(EclangParser.UseContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#program}.
 	 * @param ctx the parse tree

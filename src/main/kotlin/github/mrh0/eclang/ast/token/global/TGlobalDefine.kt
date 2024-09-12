@@ -1,4 +1,4 @@
-package github.mrh0.eclang.ast.token.variable
+package github.mrh0.eclang.ast.token.global
 
 import github.mrh0.eclang.util.Util.testIdentifier
 import github.mrh0.eclang.ast.CompileData
@@ -6,7 +6,6 @@ import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.IRStatementDefine
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.context.state.Variable
 import github.mrh0.eclang.ir.IRGlobalDefine

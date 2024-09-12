@@ -17,30 +17,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterOpen(EclangParser.OpenContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitOpen(EclangParser.OpenContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterClose(EclangParser.CloseContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitClose(EclangParser.CloseContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterNumberInt(EclangParser.NumberIntContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -701,42 +677,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterUseModule(EclangParser.UseModuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitUseModule(EclangParser.UseModuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterUseAllFromModule(EclangParser.UseAllFromModuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitUseAllFromModule(EclangParser.UseAllFromModuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterUseFromModule(EclangParser.UseFromModuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitUseFromModule(EclangParser.UseFromModuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterFunctionDeclare(EclangParser.FunctionDeclareContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -840,6 +780,30 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitGlobalDeclareDefineConst(EclangParser.GlobalDeclareDefineConstContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterUse(EclangParser.UseContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitUse(EclangParser.UseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

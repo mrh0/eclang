@@ -1,3 +1,4 @@
+use "lib.ec"
 declare fn "printf" as log(value: CString): None
 declare fn "printf" as log(format: CString, value: CString): None
 
@@ -16,6 +17,7 @@ fn main(): Int do
         0,
         ""
     )
+    otherFileFunc()
     val testRec: Test = { 0, 0 }
     y("")
     z(1)
@@ -25,7 +27,7 @@ fn main(): Int do
     val char2: Char = '\r'
     a(aa())
     n("Null")
-    defTest()
+    defTest(7)
     if "Test" == "NotTest" do
         val ff: CString = "DFE"
         log "Test1"
@@ -35,7 +37,9 @@ fn main(): Int do
         log "Test3"
     ret if (true) 1 else 0
 
-fn defTest(): Int do
+type DefinedType = Int
+
+fn defTest(input: DefinedType): Int do
     defer log("1")
     log("2")
     if true do
@@ -47,7 +51,7 @@ fn defTest(): Int do
             "test"
         )
         ret 1
-    ret 0
+    ret input
 
 fn n(a: CString?): CString do
     ret a ?? ""

@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token
 
+import github.mrh0.eclang.Compiler
 import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
@@ -7,6 +8,7 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.type.TTypeRecord
 import github.mrh0.eclang.ast.token.function.IFuncBody
 import github.mrh0.eclang.ast.token.function.TFunc
+import github.mrh0.eclang.ast.token.global.TGlobalUse
 import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.context.function.GlobalFunctions
 import github.mrh0.eclang.ir.IIR
@@ -14,11 +16,26 @@ import github.mrh0.eclang.ir.IRProgram
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 import github.mrh0.eclang.types.internal.IEcTypeDefaultArgumentWrapper
+import github.mrh0.eclang.util.Util
 import github.mrh0.eclang.util.Util.testIdentifier
+import java.nio.file.Path
 
-class TProgram(location: Loc, private val functions: List<TFunc>, private val records: List<TTypeRecord>, private val uses: List<ITok>, private val globals: List<ITok>) : Tok(location) {
+class TProgram(location: Loc, private val functions: MutableList<TFunc>, private val records: MutableList<TTypeRecord>, private val uses: MutableList<TGlobalUse>, private val globals: MutableList<ITok>) : Tok(location) {
+    companion object {
+        val useMap: MutableMap<String, Boolean> = mutableMapOf()
+    }
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        uses.map { it.process(cd, hint) }
+        uses.forEach {
+            if (useMap[it.path] != true) {
+                useMap[it.path] = true
+                val file = Path.of(Util::class.java.classLoader.getResource(it.path)!!.toURI()).toFile()
+                val tree = Compiler.tokenizeFile(file)
+                functions.addAll(tree.functions)
+                records.addAll(tree.records)
+                uses.addAll(tree.uses)
+                globals.addAll(tree.globals)
+            }
+        }
         val recordIRs = records.map { it.process(cd, hint).second }
         val globalIRs = globals.map { it.process(cd, hint).second }
 

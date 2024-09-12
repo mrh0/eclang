@@ -34,7 +34,6 @@ class FunctionOverride(val location: Loc, val id: String, val params: Array<Func
     fun buildIR(location: Loc, cd: CompileData, hint: EcType): IIR {
         cd.newContext(id)
         params.forEach {
-            println("$id ${it.name} ${it.type}")
             if (it.def == null) cd.ctx().define(location, Variable(it.name, it.type))
             else {
                 val defPair = it.def.process(cd, hint)

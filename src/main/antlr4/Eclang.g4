@@ -162,12 +162,6 @@ statement:
     | 'pool' NAME ('from' NAME)? 'in' body=block                        #statementPoolLocal
     ;
 
-use:
-      'use' from=STRING ('as' as=NAME)? NL                              #useModule
-    | 'use' '*' 'from' from=STRING NL                                   #useAllFromModule
-    | 'use' exports+=NAME (',' exports+=NAME)* 'from' from=STRING NL    #useFromModule
-    ;
-
 func:
       'declare' 'fn' (externalName=STRING 'as')? name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL    #functionDeclare
     | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block                             #functionBlock
@@ -181,10 +175,13 @@ global:
     | 'val' NAME (':' type)? '=' expr NL                                                                #globalDefineConstTyped
     | 'declare' 'var' (externalName=STRING 'as')? name=NAME ':' type '=' expr NL                        #globalDeclareDefine
     | 'declare' 'val' (externalName=STRING 'as')? name=NAME ':' type '=' expr NL                        #globalDeclareDefineConst
+    | 'type' NAME '=' type NL                                                                           #globalTypeDefine
+    ;
+
+use:
+      'use' from=STRING NL
     ;
 
 program:
-      use*
-      (functions+=func | records+=record | globals+=global)*
-      EOF
+      (functions+=func | records+=record | globals+=global | uses+=use)* EOF
     ;

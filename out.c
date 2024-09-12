@@ -18,7 +18,7 @@ void* __ec_nc(void* left, void* right) {
 
 // Declarations
 int main_0(void);
-int defTest_0(void);
+int defTest_0(int input);
 char* n_0(char* a);
 char* aa_0(void);
 char* a_0(char* atom);
@@ -27,6 +27,7 @@ void x_0(int a);
 void x_1(char* a);
 void y_1(char* a);
 int z_0(int a);
+void otherFileFunc_0(void);
 
 // Records
 struct Test {
@@ -44,6 +45,7 @@ int main_0(void) {
 	printf("Hello World");
 	printf("Hello %s", "World");
 	test_1(0, "");
+	otherFileFunc_0();
 	struct Test testRec = (struct Test){0, 0};
 	y_1("");
 	z_0(1);
@@ -53,7 +55,7 @@ int main_0(void) {
 	char char2 = '\r';
 	a_0(aa_0());
 	n_0("Null");
-	defTest_0();
+	defTest_0(7);
 	if (strcmp("Test", "NotTest") == 0) {
 		char* ff = "DFE";
 		printf("Test1");
@@ -66,7 +68,7 @@ int main_0(void) {
 	}
 	return (true) ? (1) : (0);
 }
-int defTest_0(void) {
+int defTest_0(int input) {
 	printf("2");
 	if (true) {
 		printf("4");
@@ -79,7 +81,7 @@ int defTest_0(void) {
 		printf("5");
 		return __ec_ret;
 	}
-	int __ec_ret = 0;
+	int __ec_ret = input;
 	printf("1");
 	return __ec_ret;
 }
@@ -107,6 +109,8 @@ void y_1(char* a) {
 }
 int z_0(int a) {
 	return a+1;
+}
+void otherFileFunc_0(void) {
 }
 
 // Main Entry
