@@ -1,6 +1,5 @@
 use "lib.ec"
-declare fn "printf" as log(value: CString): None
-declare fn "printf" as log(format: CString, value: CString): None
+use "stdio.h"
 
 val G: Int = 69
 var G2: Int = 420
@@ -17,7 +16,6 @@ fn main(): Int do
         0,
         ""
     )
-    otherFileFunc()
     val testRec: Test = { 0, 0 }
     y("")
     z(1)

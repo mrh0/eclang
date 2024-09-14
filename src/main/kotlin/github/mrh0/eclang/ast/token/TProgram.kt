@@ -30,7 +30,7 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
     }
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         usesIn.forEach {
-            if (useMap[it.path] != true) {
+            if (useMap[it.path] != true && it.path.endsWith(".ec")) {
                 useMap[it.path] = true
                 val file = Path.of(Util::class.java.classLoader.getResource(it.path)!!.toURI()).toFile()
                 val tree = Compiler.tokenizeFile(file)
@@ -46,6 +46,8 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
         uses.addAll(usesIn)
         globals.addAll(globalsIn)
 
+        val usesIRs = uses.map { it.process(cd, hint).second }
+
         val recordIRs = records.map { it.process(cd, hint).second }
         val globalIRs = globals.map { it.process(cd, hint).second }
         functions.forEach { analyzeFunction(it, cd) } //it.process(cd).second
@@ -57,7 +59,7 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
             }
         }
 
-        return EcTypeNone to IRProgram(location, functionIRs, recordIRs, globalIRs)
+        return EcTypeNone to IRProgram(location, functionIRs, recordIRs, globalIRs, usesIRs)
     }
 
     private fun indexPermutation(list: MutableList<Int>, limit: List<Int>, index: Int): Boolean {

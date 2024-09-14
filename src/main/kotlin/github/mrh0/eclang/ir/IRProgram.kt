@@ -7,7 +7,7 @@ import github.mrh0.eclang.ir.function.IRFunctionOverride
 import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>, val globals: List<IIR>) : IR(location) {
+class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>, val globals: List<IIR>, val uses: List<IIR>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.putLine("#include <stdio.h>")
         sb.putLine("#include <string.h>")
@@ -15,6 +15,10 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>,
         sb.putLine("#include <stdbool.h>")
         sb.putLine("#include <apr_general.h>")
         sb.putLine("#include <apr_pools.h>")
+        sb.putLine()
+
+        sb.commentLine("Uses")
+        uses.forEach { it.toC(sb, c) }
         sb.putLine()
 
         sb.commentLine("Atoms")
@@ -52,12 +56,12 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>,
         sb.put("""
         int main(int argc, const char *const argv[]) {
             apr_initialize();
-            apr_pool_t *pool;
-            apr_pool_create(&pool, NULL);
+            //apr_pool_t *pool;
+            //apr_pool_create(&pool, NULL);
             
             int result = main_0();
             
-            apr_pool_destroy(pool);
+            //apr_pool_destroy(pool);
             apr_terminate();
             return result;
         }

@@ -113,7 +113,6 @@ type:
     | type '?'                                                              #typeNullable
     | types+=type '|' types+=type ('|' types+=type)*                        #typeEnum
     | types+=type '&' types+=type ('&' types+=type)*                        #typeUnion
-    | '(' type (',' type)* ')' '=>' type                                    #typeCallSignature
     | '(' type ')'                                                          #typeNest
     | ATOM                                                                  #typeAtom
     ;
@@ -121,6 +120,10 @@ type:
 record:
       'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
     | 'declare' 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
+    ;
+
+interface:
+      'inter'
     ;
 
 parameter:

@@ -5,6 +5,10 @@
 #include <apr_general.h>
 #include <apr_pools.h>
 
+// Uses
+// use lib.ec
+#include <stdio.h>
+
 // Atoms
 char* __ec_atom_test1 = "test1";
 char* __ec_atom_test2 = "test2";
@@ -17,7 +21,6 @@ void* __ec_nc(void* left, void* right) {
 }
 
 // Declarations
-void otherFileFunc_0(void);
 int main_0(void);
 int defTest_0(int input);
 char* n_0(char* a);
@@ -40,14 +43,11 @@ static const int G = 69;
 static int G2 = 420;
 
 // Code
-void otherFileFunc_0(void) {
-}
 int main_0(void) {
 	x_0(0);
 	printf("Hello World");
 	printf("Hello %s", "World");
 	test_1(0, "");
-	otherFileFunc_0();
 	struct Test testRec = (struct Test){0, 0};
 	y_1("");
 	z_0(1);
