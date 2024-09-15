@@ -4,6 +4,7 @@ import github.mrh0.eclang.util.Util
 import github.mrh0.eclang.antlr.EclangBaseVisitor
 import github.mrh0.eclang.antlr.EclangParser
 import github.mrh0.eclang.ast.token.*
+import github.mrh0.eclang.ast.token.accessor.TAccessorNamed
 import github.mrh0.eclang.ast.token.branch.TInlineIf
 import github.mrh0.eclang.ast.token.branch.TStatementIf
 import github.mrh0.eclang.ast.token.data.*
@@ -108,6 +109,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     // Expressions
     override fun visitExprNest(ctx: EclangParser.ExprNestContext): ITok = TExprNest(loc(ctx), visit(ctx.expr()))
+
+    override fun visitExprAccessName(ctx: EclangParser.ExprAccessNameContext): ITok = TAccessorNamed(loc(ctx), visit(ctx.expr()), ctx.NAME().text)
     // override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
 
     // Primitives

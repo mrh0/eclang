@@ -170,6 +170,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprNest(EclangParser.ExprNestContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprAccessNameNullishCoalescing}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprAccessNameNullishCoalescing(EclangParser.ExprAccessNameNullishCoalescingContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprAccessNameNullishCoalescing}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprAccessNameNullishCoalescing(EclangParser.ExprAccessNameNullishCoalescingContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprInlineIf}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree

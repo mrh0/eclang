@@ -8,5 +8,5 @@ class EcTypeRecord(val name: String, val props: List<Pair<String, EcType>>) : Ec
 
     override fun isReferenceType(): Boolean = true
 
-    override fun getProperty(name: String): EcType? = map[name]
+    override fun getProperty(location: Loc, name: String): EcType? = map[name]
 }

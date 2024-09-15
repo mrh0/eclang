@@ -2,6 +2,7 @@ package github.mrh0.eclang.types
 
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.error.EcError
+import github.mrh0.eclang.error.EcUndefinedAccessorPropertyError
 
 abstract class EcType(val identifier: String) {
     override fun toString(): String = identifier
@@ -21,5 +22,5 @@ abstract class EcType(val identifier: String) {
 
     open fun canBeInstantiated() = true
 
-    open fun getProperty(name: String): EcType? = null
+    open fun getProperty(location: Loc, name: String): EcType? = throw EcUndefinedAccessorPropertyError(location, name, this)
 }

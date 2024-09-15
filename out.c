@@ -48,11 +48,12 @@ int main_0(void) {
 	printf("Hello %s", "World");
 	test_1(0, "");
 	struct Test testRec = (struct Test){0, 0};
+	const int ee = testRec.a;
 	y_1("");
 	z_0(1);
 	const char* k = __ec_atom_test_atom;
 	const int p = G+G2;
-	float f = 6.0d;
+	float f = 6.0f;
 	char _char = 'a';
 	char char2 = '\r';
 	a_0(aa_0());

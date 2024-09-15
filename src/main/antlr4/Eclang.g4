@@ -91,6 +91,7 @@ expr:
     | expr 'as' 'unsafe' type                                       #exprAs
 
     | expr '.' NAME                                                 #exprAccessName
+    | expr '?.' NAME                                                #exprAccessNameNullishCoalescing
     | expr '[' expr ']'                                             #exprAccessor
     | expr '[' INDENT expr NL DEDENT ']'                            #exprAccessor
 

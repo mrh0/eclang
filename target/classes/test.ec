@@ -16,6 +16,7 @@ fn main(): Int do
         ""
     )
     val testRec: Test = { 0, 0 }
+    val ee = testRec.a
     y("")
     z(1)
     val k = :test_atom

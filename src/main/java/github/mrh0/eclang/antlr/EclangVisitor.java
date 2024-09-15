@@ -106,6 +106,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprNest(EclangParser.ExprNestContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprAccessNameNullishCoalescing}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprAccessNameNullishCoalescing(EclangParser.ExprAccessNameNullishCoalescingContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprInlineIf}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
