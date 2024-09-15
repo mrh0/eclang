@@ -8,6 +8,7 @@ rec Test as
     b: Int
 
 fn main(): Int do
+    val divRes: DivResult = div(245, 5)
     0.x()
     log "Hello World"
     log ("Hello %s", "World")
@@ -36,7 +37,7 @@ fn main(): Int do
         log "Test3"
     ret if (true) 1 else 0
 
-type DefinedType = Int
+declare type DefinedType = Int
 
 fn defTest(input: DefinedType): Int do
     defer log("1")

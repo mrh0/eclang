@@ -6,6 +6,9 @@
 #include <apr_pools.h>
 
 // Uses
+#include <math.h>
+#include <apr_general.h>
+#include <apr_pools.h>
 // use lib.ec
 
 // Atoms
@@ -20,6 +23,8 @@ void* __ec_nc(void* left, void* right) {
 }
 
 // Declarations
+double min_0(double x, double y);
+double max_0(double x, double y);
 int main_0(void);
 int defTest_0(int input);
 char* n_0(char* a);
@@ -31,18 +36,27 @@ void x_1(char* a);
 void y_1(char* a);
 int z_0(int a);
 
-// Records
+// Globals
+// declare val NULL
+// declare val EOF
+// declare rec div_t as DivResult
+// declare rec ldiv_t as LongDivResult
+static const int G = 69;
+static int G2 = 420;
 struct Test {
 	int a;
 	int b;
 };
 
-// Globals
-static const int G = 69;
-static int G2 = 420;
-
 // Code
+double min_0(double x, double y) {
+	return (x<y) ? (x) : (y);
+}
+double max_0(double x, double y) {
+	return (x>y) ? (x) : (y);
+}
 int main_0(void) {
+	struct div_t divRes = div_0(245, 5);
 	x_0(0);
 	printf("Hello World");
 	printf("Hello %s", "World");

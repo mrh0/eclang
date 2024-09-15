@@ -29,7 +29,8 @@ BOOL: 'true' | 'false';
 NAME: [_a-zA-Z][_a-zA-Z0-9]*;
 ATOM: ':'[a-zA-Z0-9][_a-zA-Z0-9]*;
 
-INT: '0'|[1-9][_0-9]*;
+INT: '0'|'0i'|[1-9][_0-9]*'i'?;
+UINT: '0u'|[1-9][_0-9]*'u';
 FLOAT: '0f'|[1-9][0-9]*('.'[0-9]*)?'f'?;
 DOUBLE: '0d'|[1-9][0-9]*('.'[0-9]*)?'d'?;
 HEX: '0x'[0-9a-fA-F]*;
@@ -66,7 +67,7 @@ block:
     ;
 
 unOp:
-    'not' | '!' | '!!' | '~' | '-'
+    'not' | '!' | '!!' | '~' | '-' | '@'
     ;
 
 binOp:
@@ -81,6 +82,9 @@ expr:
       'here'                                                        #exprHere
     | left=expr binOp right=expr                                    #exprBinOp
     | unOp expr                                                     #exprUnOp
+    | 'sizeof' '('? type ')'?                                       #exprSizeOf
+    | 'sizeof' '(' INDENT type NL DEDENT ')'                        #exprSizeOf
+    | '(' expr ')'                                                  #exprNest
     | '(' INDENT expr NL DEDENT ')'                                 #exprNest
     | primitive                                                     #exprPrimitive
     | NAME                                                          #exprNamed
@@ -88,7 +92,7 @@ expr:
     | expr 'is' NAME                                                #exprIs
     | expr '!is' NAME                                               #exprIsNot
     | expr 'as' type                                                #exprAs
-    | expr 'as' 'unsafe' type                                       #exprAs
+    | expr 'as' 'unsafe' type                                       #exprAsUnsafe
 
     | expr '.' NAME                                                 #exprAccessName
     | expr '?.' NAME                                                #exprAccessNameNullishCoalescing
@@ -121,11 +125,6 @@ type:
     | ATOM                                                                  #typeAtom
     ;
 
-record:
-      'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
-    | 'declare' 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
-    ;
-
 interface:
       'inter'
     ;
@@ -146,7 +145,7 @@ statement:
     | 'break' NL                                                                        #statementBreak
     | 'continue' NL                                                                     #statementContinue
     | 'pass' NL                                                                         #statementPass
-
+    | 'yeild'                                                                           #statementYeild
     | 'defer' statement                                                                 #statementDefer
 
     | 'if' '('? conditions+=expr ')'? 'do' bodies+=block ('else' 'if' '('? conditions+=expr ')'? 'do' bodies+=block)* ('else' elseBody=block)?      #statementIf
@@ -180,9 +179,11 @@ global:
     | 'val' NAME '=' expr NL                                                                            #globalDefineConst
     | 'var' NAME (':' type)? '=' expr NL                                                                #globalDefineTyped
     | 'val' NAME (':' type)? '=' expr NL                                                                #globalDefineConstTyped
-    | 'declare' 'var' (externalName=STRING 'as')? name=NAME ':' type '=' expr NL                        #globalDeclareDefine
-    | 'declare' 'val' (externalName=STRING 'as')? name=NAME ':' type '=' expr NL                        #globalDeclareDefineConst
-    | 'type' NAME '=' type NL                                                                           #globalTypeDefine
+    | 'declare' 'var' (externalName=STRING 'as')? name=NAME ':' type NL                                 #globalDeclareDefine
+    | 'declare' 'val' (externalName=STRING 'as')? name=NAME ':' type NL                                 #globalDeclareConst
+    | 'declare' 'type' NAME '=' type NL                                                                 #globalTypeDefine
+    | 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                          #globalRecordDefine
+    | 'declare' 'rec' (externalName=STRING 'as')? name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT    #globalRecordDeclareDefine
     ;
 
 use:
@@ -190,5 +191,5 @@ use:
     ;
 
 program:
-      (functions+=func | records+=record | globals+=global | uses+=use)* EOF
+      (functions+=func | globals+=global | uses+=use)* EOF
     ;

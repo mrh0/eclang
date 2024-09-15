@@ -20,7 +20,7 @@ import github.mrh0.eclang.util.Util
 import github.mrh0.eclang.util.Util.testIdentifier
 import java.nio.file.Path
 
-class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val recordsIn: List<TTypeRecord>, private val usesIn: List<TGlobalUse>, private val globalsIn: List<ITok>) : Tok(location) {
+class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val usesIn: List<TGlobalUse>, private val globalsIn: List<ITok>) : Tok(location) {
     companion object {
         val useMap: MutableMap<String, Boolean> = mutableMapOf()
         val functions: MutableList<TFunc> = mutableListOf()
@@ -35,20 +35,17 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
                 val file = Path.of(Util::class.java.classLoader.getResource(it.path)!!.toURI()).toFile()
                 val tree = Compiler.tokenizeFile(file)
                 functions.addAll(tree.functionsIn)
-                records.addAll(tree.recordsIn)
                 uses.addAll(tree.usesIn)
                 globals.addAll(tree.globalsIn)
             }
         }
 
         functions.addAll(functionsIn)
-        records.addAll(recordsIn)
         uses.addAll(usesIn)
         globals.addAll(globalsIn)
 
         val usesIRs = uses.map { it.process(cd, hint).second }
 
-        val recordIRs = records.map { it.process(cd, hint).second }
         val globalIRs = globals.map { it.process(cd, hint).second }
         functions.forEach { analyzeFunction(it, cd) } //it.process(cd).second
 
@@ -59,7 +56,7 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
             }
         }
 
-        return EcTypeNone to IRProgram(location, functionIRs, recordIRs, globalIRs, usesIRs)
+        return EcTypeNone to IRProgram(location, functionIRs, globalIRs, usesIRs)
     }
 
     private fun indexPermutation(list: MutableList<Int>, limit: List<Int>, index: Int): Boolean {

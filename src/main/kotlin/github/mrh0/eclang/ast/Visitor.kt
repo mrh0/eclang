@@ -18,6 +18,7 @@ import github.mrh0.eclang.ast.token.global.*
 import github.mrh0.eclang.ast.token.loop.TStatementBreak
 import github.mrh0.eclang.ast.token.loop.TStatementContinue
 import github.mrh0.eclang.ast.token.loop.TStatementWhile
+import github.mrh0.eclang.ast.token.op.TAddressOf
 import github.mrh0.eclang.ast.token.op.TNullishCoalescing
 import github.mrh0.eclang.ast.token.op.arithmetic.*
 import github.mrh0.eclang.ast.token.op.compare.*
@@ -47,7 +48,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     fun loc(ctx: ParserRuleContext) = Loc(ctx.start, file)
 
     // Program
-    override fun visitProgram(ctx: EclangParser.ProgramContext): ITok = TProgram(loc(ctx), visit(ctx.functions), visit(ctx.records), visit(ctx.uses), visit(ctx.globals))
+    override fun visitProgram(ctx: EclangParser.ProgramContext): ITok = TProgram(loc(ctx), visit(ctx.functions), visit(ctx.uses), visit(ctx.globals))
 
     // Use
     // override fun visitUseFromModule(ctx: EclangParser.UseFromModuleContext): ITok {
@@ -59,7 +60,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // }
 
     // Records
-    override fun visitRecord(ctx: EclangParser.RecordContext): ITok = TTypeRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types))
+    override fun visitGlobalRecordDefine(ctx: EclangParser.GlobalRecordDefineContext): ITok = TTypeRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types))
+    override fun visitGlobalRecordDeclareDefine(ctx: EclangParser.GlobalRecordDeclareDefineContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), Util.getStringContent(ctx.externalName?.text))
 
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
@@ -82,7 +84,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     }
 
     override fun visitFunctionDeclare(ctx: EclangParser.FunctionDeclareContext): ITok {
-        return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), visit(ctx.returnType), Util.getStringContent(ctx.externalName.text))
+        return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), if(ctx.returnType == null) null else visit(ctx.returnType), Util.getStringContent(ctx.externalName?.text))
     }
 
     override fun visitBlock(ctx: EclangParser.BlockContext): ITok = TBlock(loc(ctx), visit(ctx.statements))
@@ -120,7 +122,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitNumberFloat(ctx: EclangParser.NumberFloatContext): ITok = TFloat(loc(ctx), ctx.text.toFloat())
     override fun visitNumberDouble(ctx: EclangParser.NumberDoubleContext): ITok = TDouble(loc(ctx), ctx.text.toDouble())
     override fun visitPrimitiveBool(ctx: EclangParser.PrimitiveBoolContext): ITok = TBoolean(loc(ctx), ctx.BOOL().text == "true")
-    override fun visitPrimitiveString(ctx: EclangParser.PrimitiveStringContext): ITok = TString(loc(ctx), Util.getStringContent(ctx.text))
+    override fun visitPrimitiveString(ctx: EclangParser.PrimitiveStringContext): ITok = TString(loc(ctx), Util.getStringContent(ctx.text) ?: "")
     override fun visitPrimitiveAtom(ctx: EclangParser.PrimitiveAtomContext): ITok = TAtom(loc(ctx), ctx.text.substring(1).lowercase())
     override fun visitPrimitiveChar(ctx: EclangParser.PrimitiveCharContext): ITok = TChar(loc(ctx), ctx.text)
 
@@ -159,19 +161,23 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         "-" -> TNegate(loc(ctx), visit(ctx.expr()))
         "!!" -> TNotNot(loc(ctx), visit(ctx.expr()))
         "!", "not" -> TNot(loc(ctx), visit(ctx.expr()))
+        "@" -> TAddressOf(loc(ctx), visit(ctx.expr()))
         else -> throw NotImplementedError("Unary Operator '${ctx.unOp().text}' is not implemented.")
     }
 
+    override fun visitExprAs(ctx: EclangParser.ExprAsContext): ITok = TCast(loc(ctx), visit(ctx.expr()), visit(ctx.type()))
+    override fun visitExprAsUnsafe(ctx: EclangParser.ExprAsUnsafeContext): ITok = TCastUnsafe(loc(ctx), visit(ctx.expr()), visit(ctx.type()))
     // Variable
     //override fun visitGlobalDefine(ctx: EclangParser.GlobalDefineContext): ITok = TStatementDefine(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
     //override fun visitGlobalDefineConst(ctx: EclangParser.GlobalDefineConstContext): ITok = TStatementDefineConst(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
 
     override fun visitGlobalDefine(ctx: EclangParser.GlobalDefineContext): ITok = TGlobalDefine(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitGlobalDefineConst(ctx: EclangParser.GlobalDefineConstContext): ITok = TGlobalDefineConst(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
+    override fun visitGlobalDeclareConst(ctx: EclangParser.GlobalDeclareConstContext): ITok = TGlobalDeclareConst(loc(ctx), ctx.NAME().text, visit(ctx.type()), Util.getStringContent(ctx.text))
     override fun visitGlobalDefineTyped(ctx: EclangParser.GlobalDefineTypedContext): ITok = TGlobalDefineTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
     override fun visitGlobalDefineConstTyped(ctx: EclangParser.GlobalDefineConstTypedContext): ITok = TGlobalDefineConstTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
     override fun visitGlobalTypeDefine(ctx: EclangParser.GlobalTypeDefineContext): ITok = TGlobalTypeDefine(loc(ctx), ctx.NAME().text, visit(ctx.type()))
-    override fun visitUse(ctx: EclangParser.UseContext): ITok = TGlobalUse(loc(ctx), ctx.from.text.substring(1, ctx.from.text.length-1))
+    override fun visitUse(ctx: EclangParser.UseContext): ITok = TGlobalUse(loc(ctx), Util.getStringContent(ctx.from.text) ?: "")
 
     override fun visitStatementDefine(ctx: EclangParser.StatementDefineContext): ITok = TStatementDefine(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitStatementDefineConst(ctx: EclangParser.StatementDefineConstContext): ITok = TStatementDefineConst(loc(ctx), ctx.NAME().text, visit(ctx.expr()))

@@ -8,7 +8,6 @@ import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.arithmetic.negate.IRNegate
 import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.numbers.EcTypeInt
 import github.mrh0.eclang.types.numbers.EcTypeNumber
 
 class TNegate(location: Loc, val expr: ITok) : Tok(location) {

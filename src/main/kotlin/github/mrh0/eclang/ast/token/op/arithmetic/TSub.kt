@@ -7,7 +7,7 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.arithmetic.sub.IRSub
-import github.mrh0.eclang.types.numbers.EcTypeInt
+import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.numbers.EcTypeNumber
 

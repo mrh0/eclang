@@ -10,7 +10,7 @@ import github.mrh0.eclang.ir.logical.not.IRNotBool
 import github.mrh0.eclang.ir.logical.not.IRNotInt
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
-import github.mrh0.eclang.types.numbers.EcTypeInt
+import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 
 class TNot(location: Loc, val expr: ITok) : Tok(location) {
     override fun toString(): String {

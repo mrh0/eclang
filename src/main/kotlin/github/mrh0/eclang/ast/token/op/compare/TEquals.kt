@@ -6,7 +6,6 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.error.EcOpTypeError
 import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.compare.equals.IREqualsFallback
 import github.mrh0.eclang.ir.compare.equals.IREquals
 import github.mrh0.eclang.ir.compare.equals.IREqualsStringString
 import github.mrh0.eclang.types.*
@@ -26,7 +25,6 @@ class TEquals(location: Loc, private val left: ITok, private val right: ITok) : 
             l.first is EcTypeAtom && r.first is EcTypeAtom -> Pair(EcTypeBool, IREquals(location, l.second, r.second))
             l.first is EcTypeAtomInstance && r.first is EcTypeAtomInstance -> Pair(EcTypeBool, IREquals(location, l.second, r.second))
             l.first is EcTypeCString && r.first is EcTypeCString -> Pair(EcTypeBool, IREqualsStringString(location, l.second, r.second))
-            l == r -> Pair(EcTypeBool, IREqualsFallback(location, l.second, r.second))
             else -> throw EcOpTypeError(location, "==", l.first, r.first)
         }
     }

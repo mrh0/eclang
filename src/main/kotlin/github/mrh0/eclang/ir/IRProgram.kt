@@ -7,7 +7,7 @@ import github.mrh0.eclang.ir.function.IRFunctionOverride
 import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>, val globals: List<IIR>, val uses: List<IIR>) : IR(location) {
+class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>, val uses: List<IIR>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.putLine("#include <stdio.h>")
         sb.putLine("#include <string.h>")
@@ -36,10 +36,6 @@ class IRProgram(location: Loc, val functions: List<IIR>, val records: List<IIR>,
 
         sb.commentLine("Declarations")
         functions.forEach { if (it is IRFunctionOverride) it.toCDeclaration(sb, c) }
-        sb.putLine()
-
-        sb.commentLine("Records")
-        records.forEach { it.toC(sb, c) }
         sb.putLine()
 
         sb.commentLine("Globals")

@@ -173,6 +173,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterExprAsUnsafe(EclangParser.ExprAsUnsafeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprAsUnsafe(EclangParser.ExprAsUnsafeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterExprNest(EclangParser.ExprNestContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -300,6 +312,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprIs(EclangParser.ExprIsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprSizeOf(EclangParser.ExprSizeOfContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprSizeOf(EclangParser.ExprSizeOfContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -449,18 +473,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterRecord(EclangParser.RecordContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitRecord(EclangParser.RecordContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterInterface(EclangParser.InterfaceContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -600,6 +612,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitStatementPass(EclangParser.StatementPassContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStatementYeild(EclangParser.StatementYeildContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementYeild(EclangParser.StatementYeildContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -797,13 +821,13 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterGlobalDeclareDefineConst(EclangParser.GlobalDeclareDefineConstContext ctx) { }
+	@Override public void enterGlobalDeclareConst(EclangParser.GlobalDeclareConstContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitGlobalDeclareDefineConst(EclangParser.GlobalDeclareDefineConstContext ctx) { }
+	@Override public void exitGlobalDeclareConst(EclangParser.GlobalDeclareConstContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -816,6 +840,30 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalRecordDefine(EclangParser.GlobalRecordDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalRecordDefine(EclangParser.GlobalRecordDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalRecordDeclareDefine(EclangParser.GlobalRecordDeclareDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalRecordDeclareDefine(EclangParser.GlobalRecordDeclareDefineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

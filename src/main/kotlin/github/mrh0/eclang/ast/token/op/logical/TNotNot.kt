@@ -9,13 +9,12 @@ import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.compare.equals.IREquals
 import github.mrh0.eclang.ir.data.IRBool
 import github.mrh0.eclang.ir.data.IRInt
-import github.mrh0.eclang.ir.data.IRValue
 import github.mrh0.eclang.ir.logical.notnot.IRNotNotInt
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
 import github.mrh0.eclang.types.EcTypeNull
 import github.mrh0.eclang.types.EcTypeNullable
-import github.mrh0.eclang.types.numbers.EcTypeInt
+import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 
 class TNotNot(location: Loc, val expr: ITok) : Tok(location) {
     override fun toString(): String {

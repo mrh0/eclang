@@ -1,9 +1,13 @@
 package github.mrh0.eclang.types
 
 import github.mrh0.eclang.ast.Loc
-import github.mrh0.eclang.error.EcDefineTypeError
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.types.numbers.*
+import github.mrh0.eclang.types.numbers.signed.EcTypeChar
+import github.mrh0.eclang.types.numbers.signed.EcTypeInt
+import github.mrh0.eclang.types.numbers.signed.EcTypeLong
+import github.mrh0.eclang.types.numbers.signed.EcTypeShort
+import github.mrh0.eclang.types.numbers.unsigned.EcTypeByte
 
 object BuiltInTypes {
     private val builtInPrimitiveIdentityTypes: List<EcType> = listOf(
@@ -18,7 +22,8 @@ object BuiltInTypes {
         EcTypeAtom,
         EcTypeNull,
         EcTypeChar,
-        EcTypeByte
+        EcTypeByte,
+        EcTypePool
     )
     private val builtInNamespaceMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.toString() }.toMutableMap()
     private val builtInNameMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.identifier }.toMutableMap()

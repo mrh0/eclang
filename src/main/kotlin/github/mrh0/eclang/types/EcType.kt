@@ -7,7 +7,7 @@ import github.mrh0.eclang.error.EcUndefinedAccessorPropertyError
 abstract class EcType(val identifier: String) {
     override fun toString(): String = identifier
 
-    open fun accepts(location: Loc, type: EcType): Boolean = true
+    open fun accepts(location: Loc, type: EcType): Boolean = type == this
 
     open fun cast(location: Loc, to: EcType): EcType {
         if(!this.accepts(location, to)) throw EcError(location, "Cannot cast $this to $to")

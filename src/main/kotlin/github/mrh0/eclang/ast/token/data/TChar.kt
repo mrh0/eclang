@@ -5,10 +5,8 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.data.IRChar
-import github.mrh0.eclang.ir.data.IRString
 import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeCString
-import github.mrh0.eclang.types.EcTypeChar
+import github.mrh0.eclang.types.numbers.signed.EcTypeChar
 
 class TChar(location: Loc, private val value: String) : Tok(location) {
     override fun toString(): String {
