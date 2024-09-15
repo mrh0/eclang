@@ -20,6 +20,7 @@ fn main(): Int do
     z(1)
     val k = :test_atom
     val p = G + G2
+    val f: Float = 6f
     val char: Char = 'a'
     val char2: Char = '\r'
     a(aa())

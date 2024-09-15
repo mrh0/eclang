@@ -4,7 +4,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.*
-import github.mrh0.eclang.types.numbers.EcTypeInt
+import github.mrh0.eclang.types.numbers.*
 
 class IRType(location: Loc, val type: EcType) : IR(location) {
     fun translateNative(t: EcType): String = when(t) {
@@ -15,6 +15,11 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeNullable -> translateNative(t.wrapped)
         is EcTypeRecord -> "struct ${t.name}"
         is EcTypeChar -> "char"
+        is EcTypeFloat -> "float"
+        is EcTypeDouble -> "double"
+        is EcTypeLong -> "long"
+        is EcTypeShort -> "short"
+        is EcTypeByte -> "unsigned char"
         else -> throw NotImplementedError("Native type '$t' is not implemented.")
     }
 

@@ -7,7 +7,6 @@
 
 // Uses
 // use lib.ec
-#include <stdio.h>
 
 // Atoms
 char* __ec_atom_test1 = "test1";
@@ -53,6 +52,7 @@ int main_0(void) {
 	z_0(1);
 	const char* k = __ec_atom_test_atom;
 	const int p = G+G2;
+	float f = 6.0d;
 	char _char = 'a';
 	char char2 = '\r';
 	a_0(aa_0());
@@ -116,12 +116,12 @@ int z_0(int a) {
 // Main Entry
 int main(int argc, const char *const argv[]) {
     apr_initialize();
-    apr_pool_t *pool;
-    apr_pool_create(&pool, NULL);
+    //apr_pool_t *pool;
+    //apr_pool_create(&pool, NULL);
     
     int result = main_0();
     
-    apr_pool_destroy(pool);
+    //apr_pool_destroy(pool);
     apr_terminate();
     return result;
 }

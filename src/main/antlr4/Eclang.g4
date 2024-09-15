@@ -31,6 +31,7 @@ ATOM: ':'[a-zA-Z0-9][_a-zA-Z0-9]*;
 
 INT: '0'|[1-9][_0-9]*;
 FLOAT: '0f'|[1-9][0-9]*('.'[0-9]*)?'f'?;
+DOUBLE: '0d'|[1-9][0-9]*('.'[0-9]*)?'d'?;
 HEX: '0x'[0-9a-fA-F]*;
 BIN: '0b'[0-1]*;
 
@@ -47,6 +48,7 @@ BLOCKCOMMENT: '/*' .*? '*/' -> skip;
 number:
       INT           #numberInt
     | FLOAT         #numberFloat
+    | DOUBLE        #numberDouble
     | HEX           #numberHex
     | BIN           #numberBin
     ;
@@ -85,7 +87,8 @@ expr:
     | 'if' '(' condition=expr ')' body=expr 'else' elseBody=expr    #exprInlineIf
     | expr 'is' NAME                                                #exprIs
     | expr '!is' NAME                                               #exprIsNot
-    | expr 'as' NAME                                                #exprAs
+    | expr 'as' type                                                #exprAs
+    | expr 'as' 'unsafe' type                                       #exprAs
 
     | expr '.' NAME                                                 #exprAccessName
     | expr '[' expr ']'                                             #exprAccessor

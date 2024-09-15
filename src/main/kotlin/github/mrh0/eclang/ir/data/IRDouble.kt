@@ -4,10 +4,10 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRFloat(location: Loc, val value: Float) : IRValue(location) {
+class IRDouble(location: Loc, val value: Double) : IRValue(location) {
     override fun toString(): String = "f$value"
 
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.put("${value}f")
+        sb.put("${value}d")
     }
 }

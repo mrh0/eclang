@@ -32,6 +32,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitNumberFloat(EclangParser.NumberFloatContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code numberDouble}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 */
+	void enterNumberDouble(EclangParser.NumberDoubleContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code numberDouble}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 */
+	void exitNumberDouble(EclangParser.NumberDoubleContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code numberHex}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
@@ -386,18 +398,6 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitTypeByName(EclangParser.TypeByNameContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code typeCallSignature}
-	 * labeled alternative in {@link EclangParser#type}.
-	 * @param ctx the parse tree
-	 */
-	void enterTypeCallSignature(EclangParser.TypeCallSignatureContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code typeCallSignature}
-	 * labeled alternative in {@link EclangParser#type}.
-	 * @param ctx the parse tree
-	 */
-	void exitTypeCallSignature(EclangParser.TypeCallSignatureContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code typeAtom}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
@@ -431,6 +431,16 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitRecord(EclangParser.RecordContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EclangParser#interface}.
+	 * @param ctx the parse tree
+	 */
+	void enterInterface(EclangParser.InterfaceContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EclangParser#interface}.
+	 * @param ctx the parse tree
+	 */
+	void exitInterface(EclangParser.InterfaceContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code parameterTyped}
 	 * labeled alternative in {@link EclangParser#parameter}.

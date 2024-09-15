@@ -25,6 +25,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitNumberFloat(EclangParser.NumberFloatContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code numberDouble}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNumberDouble(EclangParser.NumberDoubleContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code numberHex}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
@@ -232,13 +239,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeByName(EclangParser.TypeByNameContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code typeCallSignature}
-	 * labeled alternative in {@link EclangParser#type}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTypeCallSignature(EclangParser.TypeCallSignatureContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code typeAtom}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
@@ -258,6 +258,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitRecord(EclangParser.RecordContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EclangParser#interface}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInterface(EclangParser.InterfaceContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code parameterTyped}
 	 * labeled alternative in {@link EclangParser#parameter}.

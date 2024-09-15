@@ -20,4 +20,6 @@ abstract class EcType(val identifier: String) {
     open fun isReferenceType() = false
 
     open fun canBeInstantiated() = true
+
+    open fun getProperty(name: String): EcType? = null
 }
