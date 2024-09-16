@@ -266,6 +266,30 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprAs(EclangParser.ExprAsContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprOffsetOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprOffsetOf(EclangParser.ExprOffsetOfContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprOffsetOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprOffsetOf(EclangParser.ExprOffsetOfContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprAlignOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprAlignOf(EclangParser.ExprAlignOfContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprAlignOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprAlignOf(EclangParser.ExprAlignOfContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprBinOp}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -313,6 +337,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprSizeOf(EclangParser.ExprSizeOfContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprAddressOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprAddressOf(EclangParser.ExprAddressOfContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprAddressOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprAddressOf(EclangParser.ExprAddressOfContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprPrimitive}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -397,6 +433,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTypeUnion(EclangParser.TypeUnionContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code typeAddressByName}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeAddressByName(EclangParser.TypeAddressByNameContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code typeAddressByName}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeAddressByName(EclangParser.TypeAddressByNameContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code typeEnum}
 	 * labeled alternative in {@link EclangParser#type}.

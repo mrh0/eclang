@@ -66,6 +66,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
 
+    override fun visitTypeAddressByName(ctx: EclangParser.TypeAddressByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
+
     override fun visitTypeUnion(ctx: EclangParser.TypeUnionContext): ITok = TTypeUnion(loc(ctx), visit(ctx.types))
 
     override fun visitTypeEnum(ctx: EclangParser.TypeEnumContext): ITok = TTypeEnum(loc(ctx), visit(ctx.types))
@@ -161,7 +163,6 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         "-" -> TNegate(loc(ctx), visit(ctx.expr()))
         "!!" -> TNotNot(loc(ctx), visit(ctx.expr()))
         "!", "not" -> TNot(loc(ctx), visit(ctx.expr()))
-        "@" -> TAddressOf(loc(ctx), visit(ctx.expr()))
         else -> throw NotImplementedError("Unary Operator '${ctx.unOp().text}' is not implemented.")
     }
 

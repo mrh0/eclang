@@ -13,6 +13,8 @@ class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>,
         sb.putLine("#include <string.h>")
         sb.putLine("#include <math.h>")
         sb.putLine("#include <stdbool.h>")
+        sb.putLine("#include <stddef.h>")
+        sb.putLine("#include <stdalign.h>")
         sb.putLine("#include <apr_general.h>")
         sb.putLine("#include <apr_pools.h>")
         sb.putLine()

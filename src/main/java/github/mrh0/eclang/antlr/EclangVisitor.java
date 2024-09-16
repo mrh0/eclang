@@ -162,6 +162,20 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprAs(EclangParser.ExprAsContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprOffsetOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprOffsetOf(EclangParser.ExprOffsetOfContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code exprAlignOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprAlignOf(EclangParser.ExprAlignOfContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprBinOp}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -189,6 +203,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprSizeOf(EclangParser.ExprSizeOfContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code exprAddressOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprAddressOf(EclangParser.ExprAddressOfContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprPrimitive}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -238,6 +259,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTypeUnion(EclangParser.TypeUnionContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeAddressByName}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeAddressByName(EclangParser.TypeAddressByNameContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeEnum}
 	 * labeled alternative in {@link EclangParser#type}.

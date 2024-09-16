@@ -2,11 +2,16 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdalign.h>
 #include <apr_general.h>
 #include <apr_pools.h>
 
 // Uses
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include <apr_general.h>
 #include <apr_pools.h>
 // use lib.ec
@@ -39,7 +44,7 @@ int z_0(int a);
 // Globals
 // declare val NULL
 // declare val EOF
-// declare rec div_t as DivResult
+// declare rec div_t as IntDivResult
 // declare rec ldiv_t as LongDivResult
 static const int G = 69;
 static int G2 = 420;

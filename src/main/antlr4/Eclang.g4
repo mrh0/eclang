@@ -67,7 +67,7 @@ block:
     ;
 
 unOp:
-    'not' | '!' | '!!' | '~' | '-' | '@'
+    'not' | '!' | '!!' | '~' | '-'
     ;
 
 binOp:
@@ -84,6 +84,11 @@ expr:
     | unOp expr                                                     #exprUnOp
     | 'sizeof' '('? type ')'?                                       #exprSizeOf
     | 'sizeof' '(' INDENT type NL DEDENT ')'                        #exprSizeOf
+    | 'alignof' '('? type ')'?                                      #exprAlignOf
+    | 'alignof' '(' INDENT type NL DEDENT ')'                       #exprAlignOf
+    | 'offsetof' '(' INDENT type NL DEDENT ')'                      #exprOffsetOf
+    | 'offsetof' '(' INDENT type NL DEDENT ')'                      #exprOffsetOf
+    | '@' NAME                                                      #exprAddressOf
     | '(' expr ')'                                                  #exprNest
     | '(' INDENT expr NL DEDENT ')'                                 #exprNest
     | primitive                                                     #exprPrimitive
@@ -118,6 +123,7 @@ expr:
 
 type:
       NAME                                                                  #typeByName
+    | '@' NAME                                                              #typeAddressByName
     | type '?'                                                              #typeNullable
     | types+=type '|' types+=type ('|' types+=type)*                        #typeEnum
     | types+=type '&' types+=type ('&' types+=type)*                        #typeUnion

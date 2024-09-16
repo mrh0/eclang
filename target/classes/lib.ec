@@ -1,4 +1,7 @@
 use "math.h"
+use "stdio.h"
+use "stdlib.h"
+use "ctype.h"
 use "apr_general.h"
 use "apr_pools.h"
 
@@ -8,7 +11,6 @@ declare fn "printf" as log(format: CString, value: CString): None
 // apr
 
 // stdio
-
 declare val "NULL" as NULL: Null
 declare val "EOF" as EOF: Int
 
@@ -50,13 +52,14 @@ declare fn "atol" as toLong(string: CString): Long
 
 declare fn abort()
 declare fn exit(status: Int)
+fn exit() = exit(0)
 declare fn "getenv" as getEnv(name: CString): CString
 declare fn "system" as executeSystemCommand(name: CString): Int
 
 declare fn abs(x: Int): Int
 declare fn "labs" as abs(x: Long): Long
 
-declare rec "div_t" as DivResult as
+declare rec "div_t" as IntDivResult as
      quot: Int
      rem: Int
 
@@ -64,8 +67,10 @@ declare rec "ldiv_t" as LongDivResult as
      quot: Long
      rem: Long
 
-declare fn div(numer: Int, denom: Int): DivResult
+declare fn div(numer: Int, denom: Int): IntDivResult
 declare fn "ldiv" as div(numer: Long, denom: Long): LongDivResult
 
 declare fn "rand" as randomInt(): Int
 declare fn "srand" as randomInt(seed: Int): Int
+
+// ctype

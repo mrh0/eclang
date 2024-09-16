@@ -8,7 +8,7 @@ rec Test as
     b: Int
 
 fn main(): Int do
-    val divRes: DivResult = div(245, 5)
+    val divRes: IntDivResult = div(245, 5)
     0.x()
     log "Hello World"
     log ("Hello %s", "World")
