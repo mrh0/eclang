@@ -66,7 +66,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
 
-    override fun visitTypeAddressByName(ctx: EclangParser.TypeAddressByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
+    override fun visitTypeAddressByName(ctx: EclangParser.TypeAddressByNameContext): ITok = TTypeAddressByName(loc(ctx), ctx.text)
 
     override fun visitTypeUnion(ctx: EclangParser.TypeUnionContext): ITok = TTypeUnion(loc(ctx), visit(ctx.types))
 
@@ -115,6 +115,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitExprNest(ctx: EclangParser.ExprNestContext): ITok = TExprNest(loc(ctx), visit(ctx.expr()))
 
     override fun visitExprAccessName(ctx: EclangParser.ExprAccessNameContext): ITok = TAccessorNamed(loc(ctx), visit(ctx.expr()), ctx.NAME().text)
+
+    override fun visitExprAddressOf(ctx: EclangParser.ExprAddressOfContext): ITok = TAddressOf(loc(ctx), visit(ctx.expr()))
     // override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
 
     // Primitives
@@ -163,6 +165,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         "-" -> TNegate(loc(ctx), visit(ctx.expr()))
         "!!" -> TNotNot(loc(ctx), visit(ctx.expr()))
         "!", "not" -> TNot(loc(ctx), visit(ctx.expr()))
+        "@" -> TAddressOf(loc(ctx), visit(ctx.expr()))
         else -> throw NotImplementedError("Unary Operator '${ctx.unOp().text}' is not implemented.")
     }
 

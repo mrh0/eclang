@@ -88,7 +88,8 @@ expr:
     | 'alignof' '(' INDENT type NL DEDENT ')'                       #exprAlignOf
     | 'offsetof' '(' INDENT type NL DEDENT ')'                      #exprOffsetOf
     | 'offsetof' '(' INDENT type NL DEDENT ')'                      #exprOffsetOf
-    | '@' NAME                                                      #exprAddressOf
+    | 'addrof' '('? expr ')'?                                       #exprAddressOf
+    | 'addrof' '(' INDENT expr NL DEDENT ')'                        #exprAddressOf
     | '(' expr ')'                                                  #exprNest
     | '(' INDENT expr NL DEDENT ')'                                 #exprNest
     | primitive                                                     #exprPrimitive

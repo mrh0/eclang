@@ -65,6 +65,7 @@ int main_0(void) {
 	x_0(0);
 	printf("Hello World");
 	printf("Hello %s", "World");
+	int* addr = &G2;
 	test_1(0, "");
 	struct Test testRec = (struct Test){0, 0};
 	const int ee = testRec.a;

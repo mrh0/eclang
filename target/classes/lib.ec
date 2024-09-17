@@ -33,7 +33,7 @@ declare fn exp(x: Double): Double
 declare fn log(x: Double): Double
 declare fn log10(x: Double): Double
 // declare fn modf(): Double
-// declare fn pow(x: Double, y: Double): Double
+declare fn pow(x: Double, y: Double): Double
 declare fn sqrt(x: Double): Double
 declare fn ceil(x: Double): Double
 declare fn "fabs" as abs(x: Double): Double

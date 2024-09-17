@@ -12,6 +12,7 @@ fn main(): Int do
     0.x()
     log "Hello World"
     log ("Hello %s", "World")
+    val addr: @Int = addrof G2
     test(
         0,
         ""

@@ -13,15 +13,14 @@ import github.mrh0.eclang.types.EcTypePointer
 import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 import github.mrh0.eclang.util.Util
 
-class TAddressOf(location: Loc, val name: String) : Tok(location) {
+class TAddressOf(location: Loc, val expr: ITok) : Tok(location) {
     override fun toString(): String {
-        return "TAddressOf($name)"
+        return "TAddressOf($expr)"
     }
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        val fixedName = Util.testIdentifier(location, name)
-        val v = cd.getVar(location, fixedName)
-        val type = EcTypePointer(v.getType())
-        return type to IRAddressOf(location, v.toIR(location, cd, hint))
+        val res = expr.process(cd, hint)
+        val type = EcTypePointer(res.first)
+        return type to IRAddressOf(location, res.second)
     }
 }
