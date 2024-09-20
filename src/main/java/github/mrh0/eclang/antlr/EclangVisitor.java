@@ -532,6 +532,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitGlobalRecordDeclareDefine(EclangParser.GlobalRecordDeclareDefineContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code globalTypeRecordDeclareDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalTypeRecordDeclareDefine(EclangParser.GlobalTypeRecordDeclareDefineContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link EclangParser#use}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

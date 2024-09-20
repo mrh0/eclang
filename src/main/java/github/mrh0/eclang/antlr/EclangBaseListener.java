@@ -917,6 +917,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterGlobalTypeRecordDeclareDefine(EclangParser.GlobalTypeRecordDeclareDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalTypeRecordDeclareDefine(EclangParser.GlobalTypeRecordDeclareDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterUse(EclangParser.UseContext ctx) { }
 	/**
 	 * {@inheritDoc}

@@ -10,7 +10,7 @@ import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypePointer
 import github.mrh0.eclang.util.Util
 
-class TTypeAddressByName(location: Loc, val type: String) : Tok(location) {
+class TTypePointerByName(location: Loc, val type: String) : Tok(location) {
     override fun toString() = type
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {

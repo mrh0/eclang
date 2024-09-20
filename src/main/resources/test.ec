@@ -13,6 +13,7 @@ fn main(): Int do
     log "Hello World"
     log ("Hello %s", "World")
     val addr: @Int = addrof G2
+    val addr2: Int = @addr
     test(
         0,
         ""

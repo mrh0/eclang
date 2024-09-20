@@ -59,15 +59,15 @@ declare fn "system" as executeSystemCommand(name: CString): Int
 declare fn abs(x: Int): Int
 declare fn "labs" as abs(x: Long): Long
 
-declare rec "div_t" as IntDivResult as
+declare type rec "div_t" as IntDivResult as
      quot: Int
      rem: Int
 
-declare rec "ldiv_t" as LongDivResult as
+declare type rec "ldiv_t" as LongDivResult as
      quot: Long
      rem: Long
 
-declare fn div(numer: Int, denom: Int): IntDivResult
+declare fn "div" as div(numer: Int, denom: Int): IntDivResult
 declare fn "ldiv" as div(numer: Long, denom: Long): LongDivResult
 
 declare fn "rand" as randomInt(): Int

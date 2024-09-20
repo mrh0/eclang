@@ -44,8 +44,8 @@ int z_0(int a);
 // Globals
 // declare val NULL
 // declare val EOF
-// declare rec div_t as IntDivResult
-// declare rec ldiv_t as LongDivResult
+// declare type rec div_t as IntDivResult
+// declare type rec ldiv_t as LongDivResult
 static const int G = 69;
 static int G2 = 420;
 struct Test {
@@ -61,11 +61,12 @@ double max_0(double x, double y) {
 	return (x>y) ? (x) : (y);
 }
 int main_0(void) {
-	struct div_t divRes = div_0(245, 5);
+	div_t divRes = div(245, 5);
 	x_0(0);
 	printf("Hello World");
 	printf("Hello %s", "World");
 	int* addr = &G2;
+	int addr2 = *addr;
 	test_1(0, "");
 	struct Test testRec = (struct Test){0, 0};
 	const int ee = testRec.a;

@@ -67,7 +67,7 @@ block:
     ;
 
 unOp:
-    'not' | '!' | '!!' | '~' | '-'
+    'not' | '!' | '!!' | '~' | '-' | '@'
     ;
 
 binOp:
@@ -191,6 +191,7 @@ global:
     | 'declare' 'type' NAME '=' type NL                                                                 #globalTypeDefine
     | 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                          #globalRecordDefine
     | 'declare' 'rec' (externalName=STRING 'as')? name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT    #globalRecordDeclareDefine
+    | 'declare' 'type' 'rec' (externalName=STRING 'as')? name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT    #globalTypeRecordDeclareDefine
     ;
 
 use:

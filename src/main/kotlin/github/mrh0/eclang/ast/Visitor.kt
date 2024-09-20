@@ -19,6 +19,7 @@ import github.mrh0.eclang.ast.token.loop.TStatementBreak
 import github.mrh0.eclang.ast.token.loop.TStatementContinue
 import github.mrh0.eclang.ast.token.loop.TStatementWhile
 import github.mrh0.eclang.ast.token.op.TAddressOf
+import github.mrh0.eclang.ast.token.op.TReadPointer
 import github.mrh0.eclang.ast.token.op.TNullishCoalescing
 import github.mrh0.eclang.ast.token.op.arithmetic.*
 import github.mrh0.eclang.ast.token.op.compare.*
@@ -62,11 +63,12 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // Records
     override fun visitGlobalRecordDefine(ctx: EclangParser.GlobalRecordDefineContext): ITok = TTypeRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types))
     override fun visitGlobalRecordDeclareDefine(ctx: EclangParser.GlobalRecordDeclareDefineContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), Util.getStringContent(ctx.externalName?.text))
+    override fun visitGlobalTypeRecordDeclareDefine(ctx: EclangParser.GlobalTypeRecordDeclareDefineContext): ITok  = TTypeDefDeclareRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), Util.getStringContent(ctx.externalName?.text))
 
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
 
-    override fun visitTypeAddressByName(ctx: EclangParser.TypeAddressByNameContext): ITok = TTypeAddressByName(loc(ctx), ctx.text)
+    override fun visitTypeAddressByName(ctx: EclangParser.TypeAddressByNameContext): ITok = TTypePointerByName(loc(ctx), ctx.text)
 
     override fun visitTypeUnion(ctx: EclangParser.TypeUnionContext): ITok = TTypeUnion(loc(ctx), visit(ctx.types))
 
@@ -165,7 +167,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         "-" -> TNegate(loc(ctx), visit(ctx.expr()))
         "!!" -> TNotNot(loc(ctx), visit(ctx.expr()))
         "!", "not" -> TNot(loc(ctx), visit(ctx.expr()))
-        "@" -> TAddressOf(loc(ctx), visit(ctx.expr()))
+        "@" -> TReadPointer(loc(ctx), visit(ctx.expr()))
         else -> throw NotImplementedError("Unary Operator '${ctx.unOp().text}' is not implemented.")
     }
 

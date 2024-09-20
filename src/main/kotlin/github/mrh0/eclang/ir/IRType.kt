@@ -19,6 +19,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeAtom, is EcTypeAtomInstance -> "char*"
         is EcTypeNullable -> translateNative(t.wrapped)
         is EcTypeRecord -> "struct ${t.getSourceName()}"
+        is EcTypeDefRecord -> t.getSourceName()
         is EcTypeChar -> "char"
         is EcTypeFloat -> "float"
         is EcTypeDouble -> "double"

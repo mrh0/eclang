@@ -900,6 +900,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitGlobalRecordDeclareDefine(EclangParser.GlobalRecordDeclareDefineContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code globalTypeRecordDeclareDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void enterGlobalTypeRecordDeclareDefine(EclangParser.GlobalTypeRecordDeclareDefineContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code globalTypeRecordDeclareDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void exitGlobalTypeRecordDeclareDefine(EclangParser.GlobalTypeRecordDeclareDefineContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link EclangParser#use}.
 	 * @param ctx the parse tree
 	 */
