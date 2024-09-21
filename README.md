@@ -289,6 +289,7 @@ In this example:
 ```plaintext
 rec Duck as
     name: CString
+    coolness: Int
     
 rec Goose as
     name: CString
