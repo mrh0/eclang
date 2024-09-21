@@ -219,6 +219,18 @@ In this example, `Test` is a record with two fields: `a` and `b`, both of type `
 
 ## Type System
 
+### Type Casting
+Safe casting
+```plaintext
+val intValue: Int = 56
+val longValue: Long = intValue as Long
+```
+Unsafe casting allows you to cast any type to any other type without restriction
+```plaintext
+val intValue: Int = 56
+val pointer: @Int = intValue as unsafe @Int
+```
+
 ### Define Custom Types
 
 Define custom named types:
@@ -271,6 +283,33 @@ fn a(atom: :log | :dont_log) do
 In this example:
 - `k` is inferred to be of type `Atom`.
 - The function `a` accepts one of two possible atom type and logs the atom name if the `:log` atom is passed
+
+### Duck Typing
+
+```plaintext
+rec Duck as
+    name: CString
+    
+rec Goose as
+    name: CString
+    agression: Int
+
+fn quack(bird: Duck & Goose) do
+    log bird.name
+```
+
+### Interfaces (Not Yet Implemented)
+
+```plaintext
+inter ExampleInterface as
+    a: Int
+    b: Int
+
+rec ExampleRecord impl ExampleInterface as
+    a: Int
+    b: Int
+    c: CString
+```
 
 ---
 
