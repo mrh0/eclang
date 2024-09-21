@@ -293,7 +293,7 @@ rec Duck as
     
 rec Goose as
     name: CString
-    agression: Int
+    loudness: Int
 
 fn quack(bird: Duck & Goose) do
     log bird.name
@@ -354,6 +354,20 @@ int defTest_0(int input) {
 }
 ```
 
-### Memory Pools
+### Memory Pools (Not Yet Implemented)
 
-(WIP)
+```plaintext
+fn memory(): Int do
+    mem aPool
+    defer free aPool
+    
+    ...
+```
+or
+```plaintext
+fn memory(parentPool: Pool): Int do
+    mem aPool from parentPool
+    defer free aPool
+    
+    ...
+```
