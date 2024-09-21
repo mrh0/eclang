@@ -29,6 +29,19 @@ eclang is a system language compiler which generates human-readable C source and
 gcc out.c -o out -I/usr/include/apr-1.0 -L/usr/lib -lapr-1
 ```
 
+## Imports and Standard Library
+
+Include a c header or source file with the `use` keyword.
+```
+use "stdio.h"
+```
+or ec files
+```
+use "lib.ec"
+```
+
+See: [lib.ec](https://github.com/mrh0/eclang/blob/main/src/main/resources/lib.ec)
+
 ## Functions
 
 ### Syntax
@@ -95,6 +108,14 @@ fn x(a: CString) do
 ```
 
 Here, the function `x` is overloaded to handle both `Int` and `CString` types.
+
+The first argument of a function can be used as a self, and called with the following syntax:
+
+```plaintext
+10.x()
+val a: Int = 12
+a.x()
+```
 
 ## Conditionals
 
@@ -165,6 +186,30 @@ rec Test as
 In this example, `Test` is a record with two fields: `a` and `b`, both of type `Int`.
 
 ## Type System
+
+### Define Custom Types
+
+Define custom named types:
+
+```plaintext
+declare type DefinedType = Int
+```
+
+### Pointer Types
+
+Pointer types are defined with the at sign `@`. Addresses are given by the `addrof` keyword.
+
+```plaintext
+val variable: Int = 10
+val addr: @Int = addrof variable
+val otherVariable: Int = @addr
+```
+Generates the following C code:
+```c
+int variable = 10;
+int* addr = &variable;
+int otherVariable = *addr;
+```
 
 ### Nullable Types
 
