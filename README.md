@@ -96,7 +96,7 @@ Here, the function `x` is overloaded to handle both `Int` and `String` types.
 ```plaintext
 if condition do
     // code block
-eif condition do
+else if condition do
     // code block
 else
     // code block
@@ -107,7 +107,7 @@ else
 ```plaintext
 if true do
     log "Test1"
-eif false do
+else if false do
     log "Test2"
 else
     log "Test3"
@@ -121,14 +121,14 @@ External functions allow you to interface with functions outside of the language
 ### Syntax
 
 ```plaintext
-ext fn "external_name" as alias_name(parameter_list): return_type
+declare fn "external_name" as alias_name(parameter_list): return_type
 ```
 
 ### Examples
 
 ```plaintext
-ext fn "printf" as log(value: String): None
-ext fn "printf" as log(format: String, value: String): None
+declare fn "printf" as log(value: String): None
+declare fn "printf" as log(format: String, value: String): None
 ```
 
 In the example above:
