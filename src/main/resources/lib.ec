@@ -8,6 +8,10 @@ use "apr_pools.h"
 declare fn "printf" as log(value: CString): None
 declare fn "printf" as log(format: CString, value: CString): None
 
+rec String as
+    len: Int
+    data: CString
+
 // apr
 
 // stdio

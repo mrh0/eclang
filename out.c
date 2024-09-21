@@ -42,6 +42,10 @@ void y_1(char* a);
 int z_0(int a);
 
 // Globals
+struct String {
+	int len;
+	char* data;
+};
 // declare val NULL
 // declare val EOF
 // declare type rec div_t as IntDivResult

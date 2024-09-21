@@ -56,11 +56,18 @@ fn main(): Int do
     log "Hello World"
     ret 0
 ```
+The generated C code:
+```
+int main_0(void) {
+    printf("Hello World");
+    return 0;
+}
+```
 
 #### Function with Multiple Parameters and Default Values
 
 ```plaintext
-fn test(a: Int, b: Int & String, c: Int = a): Int do
+fn test(a: Int, b: Int & CString, c: Int = a): Int do
     ret c
 ```
 
@@ -83,11 +90,11 @@ This function returns the input integer `a` incremented by `1`.
 fn x(a: Int) do
     log "Int"
 
-fn x(a: String) do
+fn x(a: CString) do
     log "Str"
 ```
 
-Here, the function `x` is overloaded to handle both `Int` and `String` types.
+Here, the function `x` is overloaded to handle both `Int` and `CString` types.
 
 ## Conditionals
 
@@ -127,13 +134,13 @@ declare fn "external_name" as alias_name(parameter_list): return_type
 ### Examples
 
 ```plaintext
-declare fn "printf" as log(value: String): None
-declare fn "printf" as log(format: String, value: String): None
+declare fn "printf" as log(value: CString): None
+declare fn "printf" as log(format: CString, value: String): None
 ```
 
 In the example above:
-- `log(value: String): None` logs a string without formatting.
-- `log(format: String, value: String): None` logs a formatted string.
+- `log(value: CString): None` logs a string without formatting.
+- `log(format: CString, value: CString): None` logs a formatted string.
 
 ## Record Structs
 
@@ -162,10 +169,17 @@ In this example, `Test` is a record with two fields: `a` and `b`, both of type `
 ### Nullable Types
 
 Nullable types allow a variable to have either a value of the specified type or be `Null`.
+NullishCoalescing operator `??` can be used to transform a null type with a default value.
 
 ```plaintext
-fn n(a: Int?): Int? do
-    ret a
+fn n(a: CString?): Int do
+    ret a ?? ""
+```
+The above example generates the following C code.
+```c
+char* n_0(char* a) {
+	return (char*)__ec_nc(a, "");
+}
 ```
 
 ### Example: Type Inference and Atoms
@@ -182,3 +196,43 @@ In this example:
 - The function `a` accepts one of two possible atom type and logs the atom name if the `:log` atom is passed
 
 ---
+
+## Memory management
+
+### Defer keyword
+
+Deferring can be used to clean up memory at the end of scope
+
+```plaintext
+fn defTest(input: DefinedType): Int do
+    defer log("1")
+    log("2")
+    if true do
+        defer log("3")
+        log("4")
+    else
+        defer log("5")
+        log("test")
+        ret 1
+    ret input
+```
+Ethe above generates the following C code
+```c
+int defTest_0(int input) {
+	printf("2");
+	if (true) {
+		printf("4");
+		printf("3");
+	}
+	else {
+		printf(("test"));
+		int __ec_ret = 1;
+		printf("1");
+		printf("5");
+		return __ec_ret;
+	}
+	int __ec_ret = input;
+	printf("1");
+	return __ec_ret;
+}
+```
