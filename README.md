@@ -97,6 +97,38 @@ fn z(a: Int): Int = a + 1
 
 This function returns the input integer `a` incremented by `1`.
 
+### Operators
+
+
+#### Logical Operators
+`not` `!` `!!` `and` `&&` `or` `||` `xor` `^^`
+
+#### Arithmetic Operators
+`+` `-` `*` `/` `%` `**`
+
+#### Compare Operators
+`==` `!=` `===` `!==` `<` `>` `<=` `>=`
+
+```plaintext
+val a: CString = "Hello"
+val b: CString = "Hello"
+val c: Bool = a == b // true
+val d: Bool = a === b // false
+```
+The above compiles into the following C code:
+```c
+char* a = "Hello";
+char* b = "Hello";
+bool c = strcmp(a, b) == 0; // strcmp from string.h
+bool d = a==b;
+```
+
+#### Binary Operators (Not Yet Implemented)
+`<<` `>>` `<<<` `>>>` `&` `|` `^`
+
+#### Nullish Coalescing Operators
+`??`
+
 #### Function Overloading
 
 ```plaintext
@@ -281,3 +313,7 @@ int defTest_0(int input) {
 	return __ec_ret;
 }
 ```
+
+### Memory Pools
+
+(WIP)

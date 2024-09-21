@@ -8,6 +8,10 @@ rec Test as
     b: Int
 
 fn main(): Int do
+    val a: CString = "Hello"
+    val b: CString = "Hello"
+    val c: Bool = a == b // true
+    val d: Bool = a === b // false
     val divRes: IntDivResult = div(245, 5)
     0.x()
     log "Hello World"

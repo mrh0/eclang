@@ -65,6 +65,10 @@ double max_0(double x, double y) {
 	return (x>y) ? (x) : (y);
 }
 int main_0(void) {
+	char* a = "Hello";
+	char* b = "Hello";
+	bool c = strcmp(a, b) == 0;
+	bool d = a==b;
 	div_t divRes = div(245, 5);
 	x_0(0);
 	printf("Hello World");

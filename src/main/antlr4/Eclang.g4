@@ -172,7 +172,7 @@ statement:
     | args+=expr '.' NAME '(' INDENT args+=expr (',' NL args+=expr)* NL DEDENT ')' NL       #statementFunctionCallWithArgs
 
     | 'ret' expr NL                                                     #statementReturn
-    | 'pool' NAME ('from' NAME)? 'in' body=block                        #statementPoolLocal
+    | 'mem' NAME ('from' NAME)? 'in' body=block                        #statementPoolLocal
     ;
 
 func:
