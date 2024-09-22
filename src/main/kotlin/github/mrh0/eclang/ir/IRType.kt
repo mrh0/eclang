@@ -16,6 +16,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeInt -> "int"
         is EcTypeCString -> "char*"
         is EcTypeNone -> "void"
+        is EcTypeAny -> "void"
         is EcTypeBool -> "bool"
         is EcTypeAtom, is EcTypeAtomInstance -> "char*"
         is EcTypeNullable -> translateNative(t.wrapped)
@@ -27,7 +28,6 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeLong -> "long"
         is EcTypeShort -> "short"
         is EcTypeByte -> "unsigned char"
-        is EcTypePool -> "apr_pool_t*"
         is EcTypePointer -> "${translateNative(t.wrapped)}*"
         else -> throw NotImplementedError("Native type '$t' is not implemented.")
     }

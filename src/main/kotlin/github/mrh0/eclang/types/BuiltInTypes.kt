@@ -23,7 +23,7 @@ object BuiltInTypes {
         EcTypeNull,
         EcTypeChar,
         EcTypeByte,
-        EcTypePool
+        EcTypeAny
     )
     private val builtInNamespaceMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.toString() }.toMutableMap()
     private val builtInNameMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.identifier }.toMutableMap()

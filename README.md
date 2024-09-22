@@ -333,7 +333,7 @@ fn defTest(input: DefinedType): Int do
         ret 1
     ret input
 ```
-Ethe above generates the following C code
+The above generates the following C code:
 ```c
 int defTest_0(int input) {
 	printf("2");
@@ -368,6 +368,6 @@ or
 fn memory(parentPool: Pool): Int do
     mem aPool from parentPool
     defer free aPool
-    
+    alloc 100 * sizeof CString as CString
     ...
 ```

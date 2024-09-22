@@ -8,16 +8,26 @@ use "apr_pools.h"
 declare fn "printf" as log(value: CString): None
 declare fn "printf" as log(format: CString, value: CString): None
 
+declare type Size = Long
+declare val "NULL" as NULL: Null
+declare val "EOF" as EOF: Int
+
 rec String as
     len: Int
     data: CString
 
 // apr
+declare type rec "apr_pool_t" as Pool
+declare type rec "apr_status_t" as PoolStatus
+
+val ROOT_POOL: @Pool? = NULL
+
+declare fn "apr_pool_create" as createPool(pool: @Pool)
+declare fn "apr_pool_create" as createPool(pool: @Pool, parent: @Pool?): PoolStatus
+declare fn "apr_pool_destroy" as destroyPool(pool: @Pool)
+declare fn "apr_palloc" as alloc(pool: @Pool, size: Size): @Any
 
 // stdio
-declare val "NULL" as NULL: Null
-declare val "EOF" as EOF: Int
-
 declare fn printf(value: CString): None
 declare fn printf(format: CString, value: CString): None
 

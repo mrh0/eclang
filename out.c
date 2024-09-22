@@ -42,12 +42,15 @@ void y_1(char* a);
 int z_0(int a);
 
 // Globals
+// declare val NULL
+// declare val EOF
 struct String {
 	int len;
 	char* data;
 };
-// declare val NULL
-// declare val EOF
+// declare type rec apr_pool_t as Pool
+// declare type rec apr_status_t as PoolStatus
+static const apr_pool_t* ROOT_POOL = eclareval"NULL"asNULL:Null;
 // declare type rec div_t as IntDivResult
 // declare type rec ldiv_t as LongDivResult
 static const int G = 69;

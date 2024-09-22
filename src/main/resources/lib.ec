@@ -8,16 +8,26 @@ use "apr_pools.h"
 declare fn "printf" as log(value: CString): None
 declare fn "printf" as log(format: CString, value: CString): None
 
+declare type Size = Long
+declare val "NULL" as NULL: Null
+declare val "EOF" as EOF: Int
+
 rec String as
     len: Int
     data: CString
 
 // apr
+declare type rec "apr_pool_t" as Pool
+declare type rec "apr_status_t" as PoolStatus
+
+val ROOT_POOL: @Pool? = NULL
+
+declare fn "apr_pool_create" as createPool(pool: @Pool)
+declare fn "apr_pool_create" as createPool(pool: @Pool, parent: @Pool?): PoolStatus
+declare fn "apr_pool_destroy" as destroyPool(pool: @Pool)
+declare fn "apr_palloc" as alloc(pool: @Pool, size: Size): @Any
 
 // stdio
-declare val "NULL" as NULL: Null
-declare val "EOF" as EOF: Int
-
 declare fn printf(value: CString): None
 declare fn printf(format: CString, value: CString): None
 
@@ -78,3 +88,30 @@ declare fn "rand" as randomInt(): Int
 declare fn "srand" as randomInt(seed: Int): Int
 
 // ctype
+
+// string
+declare fn memchr(str: @Any, c: Int, n: Size): @Any
+declare fn memcmp(str1: @Any, str2: @Any, n: Size): @Any
+declare fn memcpy(dest: @Any, src: @Any, n: Size): @Any
+declare fn memset(str: @Any, c: Int, n: Size): @Any
+declare fn "strcat" as append(dest: CString, src: CString): CString
+declare fn "strncat" as append(dest: CString, src: CString, n: Size): CString
+declare fn strchr(str: CString, c: Int): CString
+declare fn "strcmp" as compare(dest: CString, src: CString): CString
+declare fn "strncmp" as compare(dest: CString, src: CString, n: Size): CString
+// declare fn "strcoll"
+declare fn "strcpy" as copy(dest: CString, src: CString): CString
+declare fn "strncpy" as copy(dest: CString, src: CString, n: Size): CString
+// declare fn "strcspn"
+// declare fn "strerror"
+declare fn "strlen" as lengthOf(str: CString): Size
+// declare fn "strpbrk"
+// declare fn "strrchr"
+// declare fn "strspn"
+declare fn "strstr" as (dest: CString, src: CString): CString
+// declare fn "strtok"
+// declare fn "strxfrm"
+
+fn clone(str: CString, pool: @Pool?) do
+    alloc(pool ?? ROOT_POOL, )
+    strcpy
