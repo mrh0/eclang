@@ -182,6 +182,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprNest(EclangParser.ExprNestContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprCastNotNull}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprCastNotNull(EclangParser.ExprCastNotNullContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprCastNotNull}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprCastNotNull(EclangParser.ExprCastNotNullContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprAccessNameNullishCoalescing}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -743,18 +755,6 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitStatementReturn(EclangParser.StatementReturnContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code statementPoolLocal}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void enterStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code statementPoolLocal}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void exitStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code functionDeclare}
 	 * labeled alternative in {@link EclangParser#func}.

@@ -113,6 +113,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprNest(EclangParser.ExprNestContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprCastNotNull}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprCastNotNull(EclangParser.ExprCastNotNullContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprAccessNameNullishCoalescing}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -440,13 +447,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStatementReturn(EclangParser.StatementReturnContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code statementPoolLocal}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStatementPoolLocal(EclangParser.StatementPoolLocalContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code functionDeclare}
 	 * labeled alternative in {@link EclangParser#func}.

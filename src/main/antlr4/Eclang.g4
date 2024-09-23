@@ -82,13 +82,17 @@ expr:
       'here'                                                        #exprHere
     | left=expr binOp right=expr                                    #exprBinOp
     | unOp expr                                                     #exprUnOp
-    | 'sizeof' '('? type ')'?                                       #exprSizeOf
+    | 'sizeof' type                                                 #exprSizeOf
+    | 'sizeof' '(' type ')'                                         #exprSizeOf
     | 'sizeof' '(' INDENT type NL DEDENT ')'                        #exprSizeOf
-    | 'alignof' '('? type ')'?                                      #exprAlignOf
+    | 'alignof' type                                                #exprAlignOf
+    | 'alignof' '(' type ')'                                        #exprAlignOf
     | 'alignof' '(' INDENT type NL DEDENT ')'                       #exprAlignOf
+    | 'offsetof' type                                               #exprOffsetOf
+    | 'offsetof' '(' type ')'                                       #exprOffsetOf
     | 'offsetof' '(' INDENT type NL DEDENT ')'                      #exprOffsetOf
-    | 'offsetof' '(' INDENT type NL DEDENT ')'                      #exprOffsetOf
-    | 'addrof' '('? expr ')'?                                       #exprAddressOf
+    | 'addrof' expr                                                 #exprAddressOf
+    | 'addrof' '(' expr ')'                                         #exprAddressOf
     | 'addrof' '(' INDENT expr NL DEDENT ')'                        #exprAddressOf
     | '(' expr ')'                                                  #exprNest
     | '(' INDENT expr NL DEDENT ')'                                 #exprNest
@@ -98,7 +102,10 @@ expr:
     | expr 'is' NAME                                                #exprIs
     | expr '!is' NAME                                               #exprIsNot
     | expr 'as' type                                                #exprAs
+    | expr 'as' '(' type ')'                                        #exprAs
     | expr 'as' 'unsafe' type                                       #exprAsUnsafe
+    | expr 'as' 'unsafe' '(' type ')'                               #exprAsUnsafe
+    | expr '!'                                                      #exprCastNotNull
 
     | expr '.' NAME                                                 #exprAccessName
     | expr '?.' NAME                                                #exprAccessNameNullishCoalescing
@@ -124,7 +131,7 @@ expr:
 
 type:
       NAME                                                                  #typeByName
-    | '@' NAME                                                              #typeAddressByName
+    | '@' type                                                              #typeAddressByName
     | type '?'                                                              #typeNullable
     | types+=type '|' types+=type ('|' types+=type)*                        #typeEnum
     | types+=type '&' types+=type ('&' types+=type)*                        #typeUnion
@@ -133,7 +140,7 @@ type:
     ;
 
 interface:
-      'inter'
+      'inter' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT
     ;
 
 parameter:
@@ -160,19 +167,14 @@ statement:
     | 'for' '('? NAME 'in' expr ('where' expr)? ')'? 'do' body=block ('else' elseBody=block)?                                                       #statementForIn
 
     | NAME '(' ')' NL                                                   #statementFunctionCallNoArgs
-    | NAME '('? args+=expr ')'? NL                                      #statementFunctionCallWithArgs
-    | NAME '(' INDENT args+=expr NL DEDENT ')' NL                       #statementFunctionCallWithArgs
     | NAME '(' args+=expr (',' args+=expr)* ')' NL                      #statementFunctionCallWithArgs
     | NAME '(' INDENT args+=expr (',' NL args+=expr)* NL DEDENT ')' NL  #statementFunctionCallWithArgs
 
     | args+=expr '.' NAME '(' ')' NL                                    #statementFunctionCallNoArgs
-    | args+=expr '.' NAME '(' args+=expr ')' NL                         #statementFunctionCallNoArgs
-    | args+=expr '.' NAME '(' INDENT args+=expr NL DEDENT ')' NL        #statementFunctionCallNoArgs
     | args+=expr '.' NAME '(' args+=expr (',' args+=expr)* ')' NL       #statementFunctionCallWithArgs
     | args+=expr '.' NAME '(' INDENT args+=expr (',' NL args+=expr)* NL DEDENT ')' NL       #statementFunctionCallWithArgs
 
     | 'ret' expr NL                                                     #statementReturn
-    | 'mem' NAME ('from' NAME)? 'in' body=block                        #statementPoolLocal
     ;
 
 func:

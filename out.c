@@ -30,6 +30,8 @@ void* __ec_nc(void* left, void* right) {
 // Declarations
 double min_0(double x, double y);
 double max_0(double x, double y);
+char* clone_0(char* str, apr_pool_t* pool);
+char* clone_1(char* str);
 int main_0(void);
 int defTest_0(int input);
 char* n_0(char* a);
@@ -50,7 +52,7 @@ struct String {
 };
 // declare type rec apr_pool_t as Pool
 // declare type rec apr_status_t as PoolStatus
-static const apr_pool_t* ROOT_POOL = eclareval"NULL"asNULL:Null;
+static apr_pool_t* ROOT_POOL = NULL;
 // declare type rec div_t as IntDivResult
 // declare type rec ldiv_t as LongDivResult
 static const int G = 69;
@@ -67,7 +69,18 @@ double min_0(double x, double y) {
 double max_0(double x, double y) {
 	return (x>y) ? (x) : (y);
 }
+char* clone_0(char* str, apr_pool_t* pool) {
+	const long n = strlen(str);
+	const char* newStr = (char*)apr_palloc((apr_pool_t*)__ec_nc(pool, ROOT_POOL), (long)sizeof(char*)*(n+1));
+	strncpy(newStr, str, n);
+	return newStr;
+}
+char* clone_1(char* str) {
+	return clone_0(str, NULL);
+}
 int main_0(void) {
+	apr_pool_create(&ROOT_POOL, NULL);
+	printf("%s", clone_1("Cloned String"));
 	char* a = "Hello";
 	char* b = "Hello";
 	bool c = strcmp(a, b) == 0;
@@ -110,7 +123,7 @@ int defTest_0(int input) {
 		printf("3");
 	}
 	else {
-		printf(("test"));
+		printf("test");
 		int __ec_ret = 1;
 		printf("1");
 		printf("5");

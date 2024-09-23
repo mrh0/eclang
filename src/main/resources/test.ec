@@ -8,15 +8,18 @@ rec Test as
     b: Int
 
 fn main(): Int do
+    createPool(addrof(ROOT_POOL!), NULL)
+    log("%s", "Cloned String".clone())
+
     val a: CString = "Hello"
     val b: CString = "Hello"
     val c: Bool = a == b // true
     val d: Bool = a === b // false
     val divRes: IntDivResult = div(245, 5)
     0.x()
-    log "Hello World"
-    log ("Hello %s", "World")
-    val addr: @Int = addrof G2
+    log("Hello World")
+    log("Hello %s", "World")
+    val addr: @Int = addrof(G2)
     val addr2: Int = @addr
     test(
         0,
@@ -36,11 +39,11 @@ fn main(): Int do
     defTest(7)
     if "Test" == "NotTest" do
         val ff: CString = "DFE"
-        log "Test1"
+        log("Test1")
     else if false do
-        log "Test2"
+        log("Test2")
     else
-        log "Test3"
+        log("Test3")
     ret if (true) 1 else 0
 
 declare type DefinedType = Int
@@ -75,10 +78,10 @@ fn test(a: Int, b: Int & CString, c: Int = a): Int do
     ret c
 
 fn x(a: Int) do
-    log "Int"
+    log("Int")
 
 fn x(a: CString) do
-    log "Str"
+    log("Str")
 
 fn y(a: Int & CString) do
     x(a)

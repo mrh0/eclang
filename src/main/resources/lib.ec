@@ -20,11 +20,11 @@ rec String as
 declare type rec "apr_pool_t" as Pool
 declare type rec "apr_status_t" as PoolStatus
 
-val ROOT_POOL: @Pool? = NULL
+var ROOT_POOL: @Pool? = NULL
 
-declare fn "apr_pool_create" as createPool(pool: @Pool)
-declare fn "apr_pool_create" as createPool(pool: @Pool, parent: @Pool?): PoolStatus
-declare fn "apr_pool_destroy" as destroyPool(pool: @Pool)
+declare fn "apr_pool_create" as createPool(pool: @@Pool, parent: @Pool?): PoolStatus
+fn createPool(pool: @@Pool): PoolStatus = createPool(pool, NULL)
+declare fn "apr_pool_destroy" as freePool(pool: @Pool)
 declare fn "apr_palloc" as alloc(pool: @Pool, size: Size): @Any
 
 // stdio
@@ -108,10 +108,14 @@ declare fn "strlen" as lengthOf(str: CString): Size
 // declare fn "strpbrk"
 // declare fn "strrchr"
 // declare fn "strspn"
-declare fn "strstr" as (dest: CString, src: CString): CString
+declare fn "strstr" as strstr(dest: CString, src: CString): CString
 // declare fn "strtok"
 // declare fn "strxfrm"
 
-fn clone(str: CString, pool: @Pool?) do
-    alloc(pool ?? ROOT_POOL, )
-    strcpy
+fn clone(str: CString, pool: @Pool?): CString do
+    val n = str.lengthOf()
+    val newStr = alloc(pool ?? ROOT_POOL, sizeof(CString) * (n+1) as Size) as unsafe CString
+    copy(newStr, str, n)
+    ret newStr
+
+fn clone(str: CString): CString = clone(str, NULL)

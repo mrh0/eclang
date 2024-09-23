@@ -16,10 +16,11 @@ eclang is a system language compiler which generates human-readable C source and
 ## Goals
 
 - Full interoperability with C.
+- Duck-typing, interfaces.
 - Generating human-readable C source.
 - Function overrides, Functional paradigms.
 - Null safety.
-- Manual memory management, defer, deep-clone on return, APR (Apache Portable Runtime).
+- Pool memory management, defer, deep-clone, APR (Apache Portable Runtime).
 - Modernized syntax (Inspired by languages such as Python, Kotlin, Go, Elixir).
 - Error handling.
 
@@ -261,7 +262,7 @@ Nullable types allow a variable to have either a value of the specified type or 
 NullishCoalescing operator `??` can be used to transform a null type with a default value.
 
 ```plaintext
-fn n(a: CString?): Int do
+fn n(a: CString?): CString do
     ret a ?? ""
 ```
 The above example generates the following C code.
@@ -269,6 +270,11 @@ The above example generates the following C code.
 char* n_0(char* a) {
 	return (char*)__ec_nc(a, "");
 }
+```
+Or ignore the nullable type with a `!` suffix.
+```plaintext
+fn n(a: CString?): CString do
+    ret a!
 ```
 
 ### Example: Type Inference and Atoms
@@ -354,20 +360,23 @@ int defTest_0(int input) {
 }
 ```
 
-### Memory Pools (Not Yet Implemented)
+### Memory Pools
 
+The global variable `ROOT_POOL: @Pool?` is intended to be the default pool to use when no pool is specified when invoking a function with takes a Pool as an optional.
+`ROOT_POOL` is not initialized by default so your program needs to do it at the start of your main function or always provide a user defined Pool.
 ```plaintext
-fn memory(): Int do
-    mem aPool
-    defer free aPool
-    
-    ...
+fn main(): Int do
+    createPool(addrof(ROOT_POOL!), NULL)
+    defer freePool(ROOT_POOL!)
+    log ("%s", "Cloned String".clone())
 ```
-or
+Where clone from [lib.ec](https://github.com/mrh0/eclang/blob/main/src/main/resources/lib.ec) is implemented as such:
 ```plaintext
-fn memory(parentPool: Pool): Int do
-    mem aPool from parentPool
-    defer free aPool
-    alloc 100 * sizeof CString as CString
-    ...
+fn clone(str: CString, pool: @Pool?): CString do
+    val n = str.lengthOf() // string.h strlen
+    val newStr = alloc(pool ?? ROOT_POOL, sizeof(CString) * (n+1) as Size) as unsafe CString
+    copy(newStr, str, n) // string.h strncpy
+    ret newStr
+
+fn clone(str: CString): CString = clone(str, NULL)
 ```
