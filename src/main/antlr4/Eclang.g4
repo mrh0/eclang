@@ -159,7 +159,7 @@ statement:
     | 'break' NL                                                                        #statementBreak
     | 'continue' NL                                                                     #statementContinue
     | 'pass' NL                                                                         #statementPass
-    | 'yeild'                                                                           #statementYeild
+    | 'yield'                                                                           #statementYield
     | 'defer' statement                                                                 #statementDefer
 
     | 'if' '('? conditions+=expr ')'? 'do' bodies+=block ('else' 'if' '('? conditions+=expr ')'? 'do' bodies+=block)* ('else' elseBody=block)?      #statementIf
