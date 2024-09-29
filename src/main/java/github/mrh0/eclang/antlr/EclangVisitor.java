@@ -302,6 +302,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeAtom(EclangParser.TypeAtomContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code typeGeneric}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeGeneric(EclangParser.TypeGenericContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code typeNest}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
@@ -392,12 +399,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementPass(EclangParser.StatementPassContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code statementYeild}
+	 * Visit a parse tree produced by the {@code statementYield}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitStatementYeild(EclangParser.StatementYeildContext ctx);
+	T visitStatementYield(EclangParser.StatementYieldContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementDefer}
 	 * labeled alternative in {@link EclangParser#statement}.

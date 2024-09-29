@@ -14,9 +14,11 @@ import github.mrh0.eclang.ir.function.IRParameter
 import github.mrh0.eclang.ir.function.IRParameters
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeCallSignature
+import github.mrh0.eclang.types.EcTypeGeneric
 
 class FunctionOverride(val location: Loc, val id: String, val params: Array<FunctionParameter>, val ret: EcType, val block: TBlock?, private var called: Boolean = false) {
     private val noDefParams = params.filter { it.def == null }
+    val hasGenerics = params.any { it.type is EcTypeGeneric }
     fun match(location: Loc, types: Array<EcType>): Boolean {
         if(types.size != noDefParams.size) return false
         for(i in types.indices) {

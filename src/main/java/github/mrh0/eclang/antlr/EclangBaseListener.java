@@ -521,6 +521,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterTypeGeneric(EclangParser.TypeGenericContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeGeneric(EclangParser.TypeGenericContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterTypeNest(EclangParser.TypeNestContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -677,13 +689,13 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStatementYeild(EclangParser.StatementYeildContext ctx) { }
+	@Override public void enterStatementYield(EclangParser.StatementYieldContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitStatementYeild(EclangParser.StatementYeildContext ctx) { }
+	@Override public void exitStatementYield(EclangParser.StatementYieldContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

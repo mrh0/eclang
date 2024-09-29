@@ -12,6 +12,10 @@ declare type Size = Long
 declare val "NULL" as NULL: Null
 declare val "EOF" as EOF: Int
 
+declare type IntegerNumber = Char & Short & Int & Long
+declare type FloatingNumber = Float & Double
+declare type Number = IntegerNumber & FloatingNumber
+
 rec String as
     len: Int
     data: CString
@@ -119,3 +123,5 @@ fn clone(str: CString, pool: @Pool?): CString do
     ret newStr
 
 fn clone(str: CString): CString = clone(str, NULL)
+
+fn catch(test: <A>): CString = ""

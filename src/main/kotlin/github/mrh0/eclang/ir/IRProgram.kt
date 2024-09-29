@@ -32,6 +32,7 @@ class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>,
         void* __ec_nc(void* left, void* right) {
             return left == NULL ? right : left;
         }
+        struct Location { int line; int position; char* path; }
         """.trimIndent())
         sb.putLine()
         sb.putLine()

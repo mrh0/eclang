@@ -506,6 +506,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitTypeAtom(EclangParser.TypeAtomContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code typeGeneric}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeGeneric(EclangParser.TypeGenericContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code typeGeneric}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeGeneric(EclangParser.TypeGenericContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code typeNest}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
@@ -660,17 +672,17 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementPass(EclangParser.StatementPassContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code statementYeild}
+	 * Enter a parse tree produced by the {@code statementYield}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterStatementYeild(EclangParser.StatementYeildContext ctx);
+	void enterStatementYield(EclangParser.StatementYieldContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code statementYeild}
+	 * Exit a parse tree produced by the {@code statementYield}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitStatementYeild(EclangParser.StatementYeildContext ctx);
+	void exitStatementYield(EclangParser.StatementYieldContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code statementDefer}
 	 * labeled alternative in {@link EclangParser#statement}.

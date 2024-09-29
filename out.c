@@ -79,7 +79,8 @@ char* clone_1(char* str) {
 	return clone_0(str, NULL);
 }
 int main_0(void) {
-	apr_pool_create(&ROOT_POOL, NULL);
+	printf(catch_0("Test"));
+	apr_pool_create(&(ROOT_POOL), NULL);
 	printf("%s", clone_1("Cloned String"));
 	char* a = "Hello";
 	char* b = "Hello";
@@ -89,7 +90,7 @@ int main_0(void) {
 	x_0(0);
 	printf("Hello World");
 	printf("Hello %s", "World");
-	int* addr = &G2;
+	int* addr = &(G2);
 	int addr2 = *addr;
 	test_1(0, "");
 	struct Test testRec = (struct Test){0, 0};

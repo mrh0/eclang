@@ -8,6 +8,7 @@ rec Test as
     b: Int
 
 fn main(): Int do
+    log(catch("Test"))
     createPool(addrof(ROOT_POOL!), NULL)
     log("%s", "Cloned String".clone())
 

@@ -83,17 +83,9 @@ expr:
     | left=expr binOp right=expr                                    #exprBinOp
     | unOp expr                                                     #exprUnOp
     | 'sizeof' type                                                 #exprSizeOf
-    | 'sizeof' '(' type ')'                                         #exprSizeOf
-    | 'sizeof' '(' INDENT type NL DEDENT ')'                        #exprSizeOf
     | 'alignof' type                                                #exprAlignOf
-    | 'alignof' '(' type ')'                                        #exprAlignOf
-    | 'alignof' '(' INDENT type NL DEDENT ')'                       #exprAlignOf
     | 'offsetof' type                                               #exprOffsetOf
-    | 'offsetof' '(' type ')'                                       #exprOffsetOf
-    | 'offsetof' '(' INDENT type NL DEDENT ')'                      #exprOffsetOf
     | 'addrof' expr                                                 #exprAddressOf
-    | 'addrof' '(' expr ')'                                         #exprAddressOf
-    | 'addrof' '(' INDENT expr NL DEDENT ')'                        #exprAddressOf
     | '(' expr ')'                                                  #exprNest
     | '(' INDENT expr NL DEDENT ')'                                 #exprNest
     | primitive                                                     #exprPrimitive
@@ -137,6 +129,7 @@ type:
     | types+=type '&' types+=type ('&' types+=type)*                        #typeUnion
     | '(' type ')'                                                          #typeNest
     | ATOM                                                                  #typeAtom
+    | '<' NAME '>'                                                          #typeGeneric
     ;
 
 interface:
@@ -162,9 +155,9 @@ statement:
     | 'yield'                                                                           #statementYield
     | 'defer' statement                                                                 #statementDefer
 
-    | 'if' '('? conditions+=expr ')'? 'do' bodies+=block ('else' 'if' '('? conditions+=expr ')'? 'do' bodies+=block)* ('else' elseBody=block)?      #statementIf
-    | 'while' '('? condition=expr ')'? 'do' body=block ('else' elseBody=block)?                                                                     #statementWhile
-    | 'for' '('? NAME 'in' expr ('where' expr)? ')'? 'do' body=block ('else' elseBody=block)?                                                       #statementForIn
+    | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      #statementIf
+    | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           #statementWhile
+    | 'for' NAME 'in' expr ('where' expr)? 'do' body=block ('else' 'do'? elseBody=block)?                                             #statementForIn
 
     | NAME '(' ')' NL                                                   #statementFunctionCallNoArgs
     | NAME '(' args+=expr (',' args+=expr)* ')' NL                      #statementFunctionCallWithArgs
@@ -178,9 +171,9 @@ statement:
     ;
 
 func:
-      'declare' 'fn' (externalName=STRING 'as')? name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL    #functionDeclare
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block                             #functionBlock
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL                      #functionInline
+      'declare' 'fn' (externalName=STRING 'as')? name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL                    #functionDeclare
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? 'do' body=block                   #functionBlock
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? '=' expression=expr NL            #functionInline
     ;
 
 global:

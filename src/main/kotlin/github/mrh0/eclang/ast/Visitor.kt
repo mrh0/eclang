@@ -10,6 +10,7 @@ import github.mrh0.eclang.ast.token.branch.TStatementIf
 import github.mrh0.eclang.ast.token.data.*
 import github.mrh0.eclang.ast.token.data.record.TCreateRecord
 import github.mrh0.eclang.ast.token.data.record.TCreateRecordTyped
+import github.mrh0.eclang.ast.token.data.record.THere
 import github.mrh0.eclang.ast.token.type.TTypeRecord
 import github.mrh0.eclang.ast.token.function.*
 import github.mrh0.eclang.ast.token.function.call.TExprCall
@@ -76,6 +77,10 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     override fun visitTypeAtom(ctx: EclangParser.TypeAtomContext): ITok = TTypeAtom(loc(ctx), ctx.text)
 
+    override fun visitTypeNest(ctx: EclangParser.TypeNestContext): ITok = visit(ctx.type())
+
+    override fun visitTypeGeneric(ctx: EclangParser.TypeGenericContext): ITok = TTypeGeneric(loc(ctx), ctx.NAME().text)
+
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {
         return TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), if(ctx.returnType == null) null else visit(ctx.returnType))
@@ -118,7 +123,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     override fun visitExprAddressOf(ctx: EclangParser.ExprAddressOfContext): ITok = TAddressOf(loc(ctx), visit(ctx.expr()))
     override fun visitExprSizeOf(ctx: EclangParser.ExprSizeOfContext): ITok = TSizeOf(loc(ctx), visit(ctx.type()))
-    // override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
+    override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
 
     // Primitives
     override fun visitNumberInt(ctx: EclangParser.NumberIntContext): ITok = TInteger(loc(ctx), Integer.valueOf(ctx.text.replace("_", "")))

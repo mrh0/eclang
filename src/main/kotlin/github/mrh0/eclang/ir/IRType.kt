@@ -12,7 +12,7 @@ import github.mrh0.eclang.types.numbers.signed.EcTypeShort
 import github.mrh0.eclang.types.numbers.unsigned.EcTypeByte
 
 class IRType(location: Loc, val type: EcType) : IR(location) {
-    fun translateNative(t: EcType): String = when(t) {
+    private fun translateNative(t: EcType): String = when(t) {
         is EcTypeInt -> "int"
         is EcTypeCString -> "char*"
         is EcTypeNone -> "void"
@@ -29,6 +29,8 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeShort -> "short"
         is EcTypeByte -> "unsigned char"
         is EcTypePointer -> "${translateNative(t.wrapped)}*"
+        is EcTypeBoxed -> "${translateNative(t.wrapped)}*"
+        is EcTypeGeneric -> "<GENERIC>"
         else -> throw NotImplementedError("Native type '$t' is not implemented.")
     }
 

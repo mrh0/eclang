@@ -12,6 +12,10 @@ declare type Size = Long
 declare val "NULL" as NULL: Null
 declare val "EOF" as EOF: Int
 
+declare type IntegerNumber = Char & Short & Int & Long
+declare type FloatingNumber = Float & Double
+declare type Number = IntegerNumber & FloatingNumber
+
 rec String as
     len: Int
     data: CString
@@ -23,6 +27,7 @@ declare type rec "apr_status_t" as PoolStatus
 var ROOT_POOL: @Pool? = NULL
 
 declare fn "apr_pool_create" as createPool(pool: @@Pool, parent: @Pool?): PoolStatus
+fn createPool(pool: @@Pool): PoolStatus = createPool(pool, NULL)
 declare fn "apr_pool_destroy" as freePool(pool: @Pool)
 declare fn "apr_palloc" as alloc(pool: @Pool, size: Size): @Any
 
@@ -118,3 +123,5 @@ fn clone(str: CString, pool: @Pool?): CString do
     ret newStr
 
 fn clone(str: CString): CString = clone(str, NULL)
+
+fn catch(test: <A>): CString = ""
