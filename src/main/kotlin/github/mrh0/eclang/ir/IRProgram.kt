@@ -55,14 +55,11 @@ class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>,
         sb.put("""
         int main(int argc, const char *const argv[]) {
             apr_initialize();
-            //apr_pool_t *pool;
-            //apr_pool_create(&pool, NULL);
             
-            int result = main_0();
+            int __ec_ret = main_0();
             
-            //apr_pool_destroy(pool);
             apr_terminate();
-            return result;
+            return __ec_ret;
         }
         """.trimIndent())
     }

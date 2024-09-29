@@ -5,7 +5,9 @@ var G2: Int = 420
 
 rec Test as
     a: Int
-    b: Int
+    b: <Int>
+
+fn catch(test: <A>): <A> = ""
 
 fn main(): Int do
     log(catch("Test"))
@@ -38,6 +40,10 @@ fn main(): Int do
     a(aa())
     n("Null")
     defTest(7)
+    var iter = 5
+    while !!iter do
+        log ("I")
+        iter = iter-1
     if "Test" == "NotTest" do
         val ff: CString = "DFE"
         log("Test1")
@@ -66,7 +72,7 @@ fn defTest(input: DefinedType): Int do
 fn n(a: CString?): CString do
     ret a ?? ""
 
-fn n(a: Int): Int do
+fn n(a = 0): Int do
     ret 0
 
 fn aa(): :Test1 = :Test1

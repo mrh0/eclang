@@ -46,13 +46,11 @@ class ContextStack {
         return if(top.containsKey(name)) top[name]!! else throw EcNotDefinedError(location, name)
     }
 
-    fun assign(location: Loc, name: String, type: EcType): Int {
+    fun assign(location: Loc, name: String, type: EcType): IVar {
         val top = scopeStack.last().vars
-        if(!top.containsKey(name))
-            throw EcNotDefinedError(location, name)
-        if(type != get(location, name).getType())
-            throw EcAssignTypeError(location, name, get(location, name).getType(), type)
-        return top[name]!!
+        if(!top.containsKey(name)) throw EcNotDefinedError(location, name)
+        if(type != get(location, name).getType()) throw EcAssignTypeError(location, name, get(location, name).getType(), type)
+        return vars[top[name]!!]
     }
 
     fun push() {

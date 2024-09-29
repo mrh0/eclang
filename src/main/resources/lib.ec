@@ -124,4 +124,3 @@ fn clone(str: CString, pool: @Pool?): CString do
 
 fn clone(str: CString): CString = clone(str, NULL)
 
-fn catch(test: <A>): CString = ""

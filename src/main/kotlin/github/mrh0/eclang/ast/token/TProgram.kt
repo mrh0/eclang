@@ -82,6 +82,11 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
         val functionIRs: MutableList<IIR> = mutableListOf()
         GlobalFunctions.getAllOverrides(location).forEach { fos ->
             fos.overrides.forEach { fo ->
+                if (!fo.isExternal() && !fo.hasGenerics) fo.buildIR(location, cd, fo.ret)
+            }
+        }
+        GlobalFunctions.getAllOverrides(location).forEach { fos ->
+            fos.overrides.forEach { fo ->
                 if (!fo.isExternal() && !fo.hasGenerics) functionIRs.add(fo.buildIR(location, cd, fo.ret))
             }
         }

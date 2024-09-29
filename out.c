@@ -26,12 +26,14 @@ char* __ec_atom_test_atom = "test_atom";
 void* __ec_nc(void* left, void* right) {
     return left == NULL ? right : left;
 }
+struct Location { int line; int position; char* path; }
 
 // Declarations
 double min_0(double x, double y);
 double max_0(double x, double y);
 char* clone_0(char* str, apr_pool_t* pool);
 char* clone_1(char* str);
+char* catch_0(char* test);
 int main_0(void);
 int defTest_0(int input);
 char* n_0(char* a);
@@ -78,6 +80,9 @@ char* clone_0(char* str, apr_pool_t* pool) {
 char* clone_1(char* str) {
 	return clone_0(str, NULL);
 }
+char* catch_0(char* test) {
+	return "";
+}
 int main_0(void) {
 	printf(catch_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
@@ -105,6 +110,11 @@ int main_0(void) {
 	a_0(aa_0());
 	n_0("Null");
 	defTest_0(7);
+	int iter = 5;
+	while ((iter)>0) {
+		printf("I");
+		iter = iter-1;
+	}
 	if (strcmp("Test", "NotTest") == 0) {
 		char* ff = "DFE";
 		printf("Test1");
@@ -163,12 +173,9 @@ int z_0(int a) {
 // Main Entry
 int main(int argc, const char *const argv[]) {
     apr_initialize();
-    //apr_pool_t *pool;
-    //apr_pool_create(&pool, NULL);
     
-    int result = main_0();
+    int __ec_ret = main_0();
     
-    //apr_pool_destroy(pool);
     apr_terminate();
-    return result;
+    return __ec_ret;
 }

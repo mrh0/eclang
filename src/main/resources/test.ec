@@ -7,12 +7,14 @@ rec Test as
     a: Int
     b: Int
 
+fn catch(test: <A>): <A> = ""
+
 fn main(): Int do
     log(catch("Test"))
     createPool(addrof(ROOT_POOL!), NULL)
     log("%s", "Cloned String".clone())
 
-    val a: CString = "Hello"§
+    val a: CString = "Hello"
     val b: CString = "Hello"
     val c: Bool = a == b // true
     val d: Bool = a === b // false
@@ -38,6 +40,10 @@ fn main(): Int do
     a(aa())
     n("Null")
     defTest(7)
+    var iter = 5
+    while !!iter do
+        log ("I")
+        iter = iter-1
     if "Test" == "NotTest" do
         val ff: CString = "DFE"
         log("Test1")
@@ -66,7 +72,7 @@ fn defTest(input: DefinedType): Int do
 fn n(a: CString?): CString do
     ret a ?? ""
 
-fn n(a: Int): Int do
+fn n(a = 0): Int do
     ret 0
 
 fn aa(): :Test1 = :Test1

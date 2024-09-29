@@ -21,7 +21,7 @@ class ContextBuilder(val contextName: String) {
 
     fun getIndex(location: Loc, name: String): Int = stack.getIndex(location, name)
 
-    fun assign(location: Loc, name: String, type: EcType): Int = stack.assign(location, name, type)
+    fun assign(location: Loc, name: String, type: EcType): IVar = stack.assign(location, name, type)
 
     fun build(): Context {
         return Context(contextName, stack.getVars())

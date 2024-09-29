@@ -100,15 +100,11 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return TStatementReturn(loc(ctx), visit(ctx.expr()))
     }
 
-    override fun visitParameterTyped(ctx: EclangParser.ParameterTypedContext): ITok {
-        return TParameterTyped(loc(ctx), ctx.NAME().text, visit(ctx.type()))
-    }
+    override fun visitParameterTyped(ctx: EclangParser.ParameterTypedContext): ITok = TParameterTyped(loc(ctx), ctx.NAME().text, visit(ctx.type()))
 
-    override fun visitParameterDefault(ctx: EclangParser.ParameterDefaultContext): ITok = TODO()
+    override fun visitParameterDefault(ctx: EclangParser.ParameterDefaultContext): ITok = TParameterDefault(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
 
-    override fun visitParameterTypedDefault(ctx: EclangParser.ParameterTypedDefaultContext): ITok {
-        return TParameterTypedDefault(loc(ctx), ctx.NAME().text, visit(ctx.type()), visit(ctx.expr()))
-    }
+    override fun visitParameterTypedDefault(ctx: EclangParser.ParameterTypedDefaultContext): ITok = TParameterTypedDefault(loc(ctx), ctx.NAME().text, visit(ctx.type()), visit(ctx.expr()))
 
     override fun visitExprFunctionCallNoArgs(ctx: EclangParser.ExprFunctionCallNoArgsContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
     override fun visitExprFunctionCallWithArgs(ctx: EclangParser.ExprFunctionCallWithArgsContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))

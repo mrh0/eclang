@@ -2,6 +2,7 @@ package github.mrh0.eclang.ir
 
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
+import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.*
 import github.mrh0.eclang.types.numbers.*
@@ -30,8 +31,8 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeByte -> "unsigned char"
         is EcTypePointer -> "${translateNative(t.wrapped)}*"
         is EcTypeBoxed -> "${translateNative(t.wrapped)}*"
-        is EcTypeGeneric -> "<GENERIC>"
-        else -> throw NotImplementedError("Native type '$t' is not implemented.")
+        is EcTypeGeneric -> throw EcError(location, "Generic type cannot be used in this context")
+        else -> throw NotImplementedError("Native type '$t' is not implemented")
     }
 
     override fun toC(sb: CSourceBuilder, c: Context) {

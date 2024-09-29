@@ -8,5 +8,6 @@ import github.mrh0.eclang.types.EcType
 interface IVar {
     fun getName(): String
     fun getType(): EcType
+    fun canAssign(): Boolean = false
     fun toIR(location: Loc, cd: CompileData, hint: EcType): IIR
 }

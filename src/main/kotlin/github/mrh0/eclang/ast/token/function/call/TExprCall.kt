@@ -9,6 +9,7 @@ import github.mrh0.eclang.ast.token.function.IFuncBody
 import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.context.function.GlobalFunctions
 import github.mrh0.eclang.error.EcAmbiguousSignatureError
+import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcNoMatchingCallSignatureError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.function.call.IRGlobalFunctionCall
@@ -30,26 +31,43 @@ open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : T
 
         val matching = overrides.getMatching(location, argTypes)
 
-        //if (matching.isEmpty()) throw EcNoMatchingCallSignatureError(location, name, argTypes)
-        //if (matching.size > 1) throw EcAmbiguousSignatureError(location, name, argTypes, matching.map { it.location })
+        if (matching.isEmpty()) throw EcNoMatchingCallSignatureError(location, name, argTypes)
+        val matchingNonGeneric = matching.filter { !it.hasGenerics }
+        if (matchingNonGeneric.size > 1) throw EcAmbiguousSignatureError(location, name, argTypes, matching.map { it.location })
         val first = matching[0]
 
-        println("Hello: $name")
-
         if (first.hasGenerics) {
-            val newArgs: List<FunctionParameter> = first.params.mapIndexed() { index, it -> if (it.type is EcTypeGeneric) FunctionParameter(it.name, argTypes[index], null) else it }
+            val genericMap: MutableMap<String, EcType> = mutableMapOf()
+            first.params.forEachIndexed { index, it ->
+                if (it.type is EcTypeGeneric) {
+                    val existing = genericMap[it.type.name]
+                    if (existing == null) {
+                        genericMap[it.type.name] = argTypes[index]
+                    } else {
+                        if (!existing.accepts(location, argTypes[index])) throw EcNoMatchingCallSignatureError(
+                            location,
+                            name,
+                            arrayOf(argTypes[index])
+                        )
+                    }
+                }
+            }
+
+            val newArgs: List<FunctionParameter> = first.params.map() { if (it.type is EcTypeGeneric) FunctionParameter(it.name, genericMap[it.type.name] ?: TODO("Should never happen."), null) else it }
+            val ret = if (first.ret is EcTypeGeneric) genericMap[first.ret.name] ?: throw EcError(location, "Generic return type '${first.ret.name}' was never established") else first.ret
             permutateFunctionArguments(newArgs) { list ->
                 GlobalFunctions.addOverride(
                     location,
                     name,
                     list,
-                    first.ret, // Ret type
+                    ret, // Ret type
                     first.block,
-                    first.id
+                    first.id,
+                    true
                 )
             }
             return Pair(
-                first.ret,
+                ret,
                 IRGlobalFunctionCall(
                     location,
                     name,
