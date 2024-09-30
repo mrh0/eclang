@@ -123,4 +123,3 @@ fn clone(str: CString, pool: @Pool?): CString do
     ret newStr
 
 fn clone(str: CString): CString = clone(str, NULL)
-

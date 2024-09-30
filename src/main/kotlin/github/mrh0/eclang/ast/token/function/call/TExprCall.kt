@@ -10,6 +10,7 @@ import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.context.function.GlobalFunctions
 import github.mrh0.eclang.error.EcAmbiguousSignatureError
 import github.mrh0.eclang.error.EcError
+import github.mrh0.eclang.error.EcGenericNotEstablishedError
 import github.mrh0.eclang.error.EcNoMatchingCallSignatureError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.function.call.IRGlobalFunctionCall
@@ -54,7 +55,7 @@ open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : T
             }
 
             val newArgs: List<FunctionParameter> = first.params.map() { if (it.type is EcTypeGeneric) FunctionParameter(it.name, genericMap[it.type.name] ?: TODO("Should never happen."), null) else it }
-            val ret = if (first.ret is EcTypeGeneric) genericMap[first.ret.name] ?: throw EcError(location, "Generic return type '${first.ret.name}' was never established") else first.ret
+            val ret = if (first.ret is EcTypeGeneric) genericMap[first.ret.name] ?: throw EcGenericNotEstablishedError(location, first.ret.name) else first.ret
             permutateFunctionArguments(newArgs) { list ->
                 GlobalFunctions.addOverride(
                     location,
@@ -63,6 +64,7 @@ open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : T
                     ret, // Ret type
                     first.block,
                     first.id,
+                    genericMap,
                     true
                 )
             }

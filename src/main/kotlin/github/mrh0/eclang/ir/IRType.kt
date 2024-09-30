@@ -32,6 +32,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypePointer -> "${translateNative(t.wrapped)}*"
         is EcTypeBoxed -> "${translateNative(t.wrapped)}*"
         is EcTypeGeneric -> throw EcError(location, "Generic type cannot be used in this context")
+        is EcTypeArray -> "${t.arg}[]"
         else -> throw NotImplementedError("Native type '$t' is not implemented")
     }
 

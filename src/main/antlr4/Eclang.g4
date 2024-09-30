@@ -116,6 +116,9 @@ expr:
     | recordType=NAME? '{' expr (',' expr)* '}'                                                         #exprCreateRecord
     | recordType=NAME? '{' INDENT expr (',' NL expr)* NL DEDENT '}'                                     #exprCreateRecord
 
+    | '[' expr (',' expr)* ']'                                                                          #exprCreateArray
+    | '[' INDENT expr (',' NL expr)* NL DEDENT ']'                                                      #exprCreateArray
+
     | '(' expr ')'                                                                                      #exprNest
     | '(' INDENT expr NL DEDENT ')'                                                                     #exprNest
 //    | 'case' '('? match=expr ')'? 'when' lefts+=primitive '->' rights+=expr ('|' lefts+=primitive '->' rights+=expr)* #exprMatch
@@ -130,6 +133,8 @@ type:
     | '(' type ')'                                                          #typeNest
     | ATOM                                                                  #typeAtom
     | '<' NAME '>'                                                          #typeGeneric
+    | 'typeof' expr                                                         #typeTypeOf
+    | type '[' ']'                                                          #typeArray
     ;
 
 interface:
@@ -140,6 +145,7 @@ parameter:
       NAME ':' type                         #parameterTyped
     | NAME ':' type '=' expr                #parameterTypedDefault
     | NAME '=' expr                         #parameterDefault
+    | '...'                                 #parameterRest
     ;
 
 statement:

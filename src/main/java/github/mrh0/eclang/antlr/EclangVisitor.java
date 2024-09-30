@@ -113,6 +113,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprNest(EclangParser.ExprNestContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprCreateArray}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprCreateArray(EclangParser.ExprCreateArrayContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprCastNotNull}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -281,12 +288,26 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeEnum(EclangParser.TypeEnumContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code typeArray}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeArray(EclangParser.TypeArrayContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code typeNullable}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitTypeNullable(EclangParser.TypeNullableContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeTypeOf}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeTypeOf(EclangParser.TypeTypeOfContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeByName}
 	 * labeled alternative in {@link EclangParser#type}.
@@ -342,6 +363,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitParameterDefault(EclangParser.ParameterDefaultContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code parameterRest}
+	 * labeled alternative in {@link EclangParser#parameter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterRest(EclangParser.ParameterRestContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementDefine}
 	 * labeled alternative in {@link EclangParser#statement}.

@@ -105,7 +105,8 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
                 list,
                 res.second, // Ret type
                 if (func is IFuncBody) func.getBody() else null,
-                func.getSourceName()
+                func.getSourceName(),
+                null
             )
         }
     }

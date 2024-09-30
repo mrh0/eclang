@@ -81,7 +81,8 @@ char* clone_1(char* str) {
 	return clone_0(str, NULL);
 }
 char* catch_0(char* test) {
-	return "";
+	char* v = "";
+	return v;
 }
 int main_0(void) {
 	printf(catch_0("Test"));

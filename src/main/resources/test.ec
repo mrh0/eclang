@@ -7,7 +7,9 @@ rec Test as
     a: Int
     b: Int
 
-fn catch(test: <A>): <A> = ""
+fn catch(test: <A>): <A> do
+    val v: <A> = ""
+    ret v
 
 fn main(): Int do
     log(catch("Test"))

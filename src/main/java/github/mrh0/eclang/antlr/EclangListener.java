@@ -182,6 +182,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprNest(EclangParser.ExprNestContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprCreateArray}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprCreateArray(EclangParser.ExprCreateArrayContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprCreateArray}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprCreateArray(EclangParser.ExprCreateArrayContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprCastNotNull}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -470,6 +482,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitTypeEnum(EclangParser.TypeEnumContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code typeArray}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeArray(EclangParser.TypeArrayContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code typeArray}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeArray(EclangParser.TypeArrayContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code typeNullable}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
@@ -481,6 +505,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTypeNullable(EclangParser.TypeNullableContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code typeTypeOf}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeTypeOf(EclangParser.TypeTypeOfContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code typeTypeOf}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeTypeOf(EclangParser.TypeTypeOfContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code typeByName}
 	 * labeled alternative in {@link EclangParser#type}.
@@ -575,6 +611,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitParameterDefault(EclangParser.ParameterDefaultContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code parameterRest}
+	 * labeled alternative in {@link EclangParser#parameter}.
+	 * @param ctx the parse tree
+	 */
+	void enterParameterRest(EclangParser.ParameterRestContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code parameterRest}
+	 * labeled alternative in {@link EclangParser#parameter}.
+	 * @param ctx the parse tree
+	 */
+	void exitParameterRest(EclangParser.ParameterRestContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code statementDefine}
 	 * labeled alternative in {@link EclangParser#statement}.

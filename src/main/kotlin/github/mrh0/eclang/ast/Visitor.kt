@@ -81,6 +81,10 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     override fun visitTypeGeneric(ctx: EclangParser.TypeGenericContext): ITok = TTypeGeneric(loc(ctx), ctx.NAME().text)
 
+    override fun visitTypeTypeOf(ctx: EclangParser.TypeTypeOfContext): ITok = TTypeOf(loc(ctx), visit(ctx.expr()))
+
+    override fun visitTypeArray(ctx: EclangParser.TypeArrayContext): ITok = TTypeArray(loc(ctx), visit(ctx.type()))
+
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {
         return TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), if(ctx.returnType == null) null else visit(ctx.returnType))

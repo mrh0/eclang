@@ -7,7 +7,6 @@ class EcTypeArray(val arg: EcType) : EcType("List") {
 
     override fun accepts(location: Loc, type: EcType): Boolean {
         if(type !is EcTypeArray) return false
-        if(!arg.accepts(location, type.arg)) return false
-        return true
+        return arg.accepts(location, type.arg)
     }
 }

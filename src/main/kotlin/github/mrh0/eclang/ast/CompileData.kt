@@ -10,14 +10,15 @@ class CompileData {
     private val contextMap: MutableMap<String, Context> = mutableMapOf()
     private val global = ContextBuilder("__GLOBAL__")
     private var currentContextBuilder: ContextBuilder = global
-    var genericContext: Map<String, EcType> = mapOf()
+    var genericContext: Map<String, EcType>? = null
 
     fun getVar(location: Loc, name: String): IVar {
         return ctx().getRaw(location, name) ?: getGlobal().get(location, name)
     }
 
-    fun newContext(contextName: String): ContextBuilder {
+    fun newContext(contextName: String, generics: Map<String, EcType> = mapOf()): ContextBuilder {
         contextMap[currentContextBuilder.contextName] = currentContextBuilder.build()
+        genericContext = generics
         currentContextBuilder = ContextBuilder(contextName)
         return currentContextBuilder
     }
