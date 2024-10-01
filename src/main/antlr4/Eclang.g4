@@ -145,7 +145,7 @@ parameter:
       NAME ':' type                         #parameterTyped
     | NAME ':' type '=' expr                #parameterTypedDefault
     | NAME '=' expr                         #parameterDefault
-    | '...'                                 #parameterRest
+    | NAME '...' type                       #parameterRest
     ;
 
 statement:

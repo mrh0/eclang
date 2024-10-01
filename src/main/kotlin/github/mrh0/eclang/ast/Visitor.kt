@@ -138,6 +138,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     override fun visitExprCreateRecord(ctx: EclangParser.ExprCreateRecordContext): ITok = if (ctx.recordType == null) TCreateRecord(loc(ctx), visit(ctx.expr())) else TCreateRecordTyped(loc(ctx), ctx.recordType.text, visit(ctx.expr()))
 
+    override fun visitExprCreateArray(ctx: EclangParser.ExprCreateArrayContext): ITok = TCreateArray(loc(ctx), visit(ctx.expr()))
     //Natives
     // override fun visitExprTuple(ctx: EclangParser.ExprTupleContext): ITok = TTuple(loc(ctx), visit(ctx.values))
 
