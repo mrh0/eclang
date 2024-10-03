@@ -14,7 +14,7 @@
 #include <ctype.h>
 #include <apr_general.h>
 #include <apr_pools.h>
-// use lib.ec
+// use ec:lib.ec
 
 // Atoms
 char* __ec_atom_test1 = "test1";

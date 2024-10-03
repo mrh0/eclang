@@ -62,7 +62,7 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
         usesIn.forEach {
             if (useMap[it.path] != true && it.path.endsWith(".ec")) {
                 useMap[it.path] = true
-                val file = Path.of(Util::class.java.classLoader.getResource(it.path)!!.toURI()).toFile()
+                val file = Util.getPath(location, it.path).toFile()
                 val tree = Compiler.tokenizeFile(file)
                 functions.addAll(tree.functionsIn)
                 uses.addAll(tree.usesIn)

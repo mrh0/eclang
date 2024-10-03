@@ -1,4 +1,4 @@
-use "lib.ec"
+use "ec:lib.ec"
 
 val G: Int = 69
 var G2: Int = 420
