@@ -161,9 +161,10 @@ statement:
     | 'yield'                                                                           #statementYield
     | 'defer' statement                                                                 #statementDefer
 
-    | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      #statementIf
-    | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           #statementWhile
-    | 'for' NAME 'in' expr ('where' expr)? 'do' body=block ('else' 'do'? elseBody=block)?                                             #statementForIn
+    | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      	#statementIf
+    | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           	#statementWhile
+    | 'for' NAME 'in' expr '..' expr 'do' body=block ('else' 'do'? elseBody=block)?                                             		#statementForIn
+    | 'for' NAME 'in' expr ('where' expr)? 'do' body=block ('else' 'do'? elseBody=block)?                                             	#statementForIn
 
     | NAME '(' ')' NL                                                   #statementFunctionCallNoArgs
     | NAME '(' args+=expr (',' args+=expr)* ')' NL                      #statementFunctionCallWithArgs
