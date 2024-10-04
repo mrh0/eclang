@@ -26,7 +26,7 @@ char* __ec_atom_test_atom = "test_atom";
 void* __ec_nc(void* left, void* right) {
     return left == NULL ? right : left;
 }
-struct Location { int line; int position; char* path; }
+struct Location { int line; int position; char* path; };
 
 // Declarations
 double min_0(double x, double y);

@@ -24,15 +24,34 @@ eclang is a system language compiler which generates human-readable C source and
 - Modernized syntax (Inspired by languages such as Python, Kotlin, Go, Elixir).
 - Error handling.
 
-## Compile
+## Setup
 
+### Install dependencies (gcc, apr)
+```
+sudo apt update
+sudo apt install gcc
+sudo apt install build-essential
+sudo apt install libapr1 libapr1-dev
+```
+
+### Build eclang.jar
+```
+mvn clean package
+```
+
+### Compile .ec source with eclang.jar
+```
+java -jar ./target/eclang-0.1.0.jar -c source.ec -o 
+```
+
+### Compile generated .c source with gcc
 ```
 gcc out.c -o out -I/usr/include/apr-1.0 -L/usr/lib -lapr-1
 ```
 
 ## Imports and Standard Library
 
-Include a c header or source file with the `use` keyword.
+Include a .h or .c file with the `use` keyword.
 ```
 use "stdio.h"
 ```
