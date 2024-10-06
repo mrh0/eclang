@@ -57,7 +57,7 @@
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
-                <version>1.7.10</version>
+                <version>1.9.20</version>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -123,14 +123,8 @@
     <dependencies>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-runtime</artifactId>
-            <version>1.2.71</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
-            <version>1.7.10</version>
+            <version>1.9.20</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

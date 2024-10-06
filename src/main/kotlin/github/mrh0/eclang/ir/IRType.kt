@@ -13,6 +13,10 @@ import github.mrh0.eclang.types.numbers.signed.EcTypeShort
 import github.mrh0.eclang.types.numbers.unsigned.EcTypeByte
 
 class IRType(location: Loc, val type: EcType) : IR(location) {
+    override fun toString(): String {
+        return type.toString()
+    }
+
     private fun translateNative(t: EcType): String = when(t) {
         is EcTypeInt -> "int"
         is EcTypeCString -> "char*"

@@ -767,6 +767,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementWhile(EclangParser.StatementWhileContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code statementForInRange}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementForInRange(EclangParser.StatementForInRangeContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementForInRange}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementForInRange(EclangParser.StatementForInRangeContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code statementForIn}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree

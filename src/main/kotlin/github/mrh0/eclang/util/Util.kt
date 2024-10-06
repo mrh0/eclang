@@ -28,8 +28,7 @@ object Util {
             if (split.size > 2) throw EcError(location, "Malformed path '$relativePath'")
             if (split[0] == "ec") {
                 val path = split[1]
-                val url = Util::class.java.classLoader.getResource(path) ?: throw EcError(location, "File not found at path '$relativePath'")
-                return Path.of(url.toURI())
+                return Path.of(Util::class.java.classLoader.getResource(path)?.toURI() ?: throw EcError(location, "File not found at path '$relativePath'"))
             }
             else throw EcError(location, "Unknown path prefix '${split[0]}' at '$relativePath'")
         }

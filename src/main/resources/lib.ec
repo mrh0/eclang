@@ -7,6 +7,7 @@ use "apr_pools.h"
 
 declare fn "printf" as log(value: CString): None
 declare fn "printf" as log(format: CString, value: CString): None
+declare fn "printf" as log(format: CString, value: Number): None
 
 declare type Size = Long
 declare val "NULL" as NULL: Null

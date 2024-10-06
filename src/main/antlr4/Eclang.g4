@@ -158,12 +158,12 @@ statement:
     | 'break' NL                                                                        #statementBreak
     | 'continue' NL                                                                     #statementContinue
     | 'pass' NL                                                                         #statementPass
-    | 'yield'                                                                           #statementYield
+    | 'yield' NL                                                                        #statementYield
     | 'defer' statement                                                                 #statementDefer
 
     | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      	#statementIf
     | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           	#statementWhile
-    | 'for' NAME 'in' expr '..' expr 'do' body=block ('else' 'do'? elseBody=block)?                                             		#statementForIn
+    | 'for' NAME 'in' lower=expr 'to' upper=expr 'do' body=block ('else' 'do'? elseBody=block)?                                         #statementForInRange
     | 'for' NAME 'in' expr ('where' expr)? 'do' body=block ('else' 'do'? elseBody=block)?                                             	#statementForIn
 
     | NAME '(' ')' NL                                                   #statementFunctionCallNoArgs
@@ -179,7 +179,7 @@ statement:
 
 func:
       'declare' 'fn' (externalName=STRING 'as')? name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL                    #functionDeclare
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? 'do' body=block                   #functionBlock
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? 'do' body=block		            #functionBlock
     | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? '=' expression=expr NL            #functionInline
     ;
 
