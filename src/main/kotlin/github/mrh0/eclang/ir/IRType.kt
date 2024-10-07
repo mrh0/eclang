@@ -11,6 +11,7 @@ import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 import github.mrh0.eclang.types.numbers.signed.EcTypeLong
 import github.mrh0.eclang.types.numbers.signed.EcTypeShort
 import github.mrh0.eclang.types.numbers.unsigned.EcTypeByte
+import github.mrh0.eclang.types.numbers.unsigned.EcTypeUInt
 
 class IRType(location: Loc, val type: EcType) : IR(location) {
     override fun toString(): String {
@@ -33,6 +34,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeLong -> "long"
         is EcTypeShort -> "short"
         is EcTypeByte -> "unsigned char"
+        is EcTypeUInt -> "unsigned int"
         is EcTypePointer -> "${translateNative(t.wrapped)}*"
         is EcTypeBoxed -> "${translateNative(t.wrapped)}*"
         is EcTypeGeneric -> throw EcError(location, "Generic type cannot be used in this context")

@@ -29,8 +29,14 @@ BOOL: 'true' | 'false';
 NAME: [_a-zA-Z][_a-zA-Z0-9]*;
 ATOM: ':'[a-zA-Z0-9][_a-zA-Z0-9]*;
 
+UINT: '0u'|'0ui'|[1-9][_0-9]*('u'|'ui');
+UCHAR: '0uc'|[1-9][_0-9]*'uc';
+USHORT: '0us'|[1-9][_0-9]*'us';
+ULONG: '0ul'|[1-9][_0-9]*'ul';
+SHORT: '0s'|[1-9][_0-9]*'s';
 INT: '0'|'0i'|[1-9][_0-9]*'i'?;
-UINT: '0u'|[1-9][_0-9]*'u';
+CHARNUM: '0c'|[1-9][_0-9]*'c';
+LONG: '0l'|[1-9][_0-9]*'l';
 FLOAT: '0f'|[1-9][0-9]*('.'[0-9]*)?'f'?;
 DOUBLE: '0d'|[1-9][0-9]*('.'[0-9]*)?'d'?;
 HEX: '0x'[0-9a-fA-F]*;
@@ -47,7 +53,14 @@ COMMENT: '//' ~[\r\n]* -> skip;
 BLOCKCOMMENT: '/*' .*? '*/' -> skip;
 
 number:
-      INT           #numberInt
+      LONG          #numberLong
+    | CHARNUM       #numberChar
+    | SHORT         #numberShort
+    | INT           #numberInt
+    | UINT          #numberUInt
+    | UCHAR         #numberUChar
+    | USHORT        #numberUShort
+    | ULONG         #numberULong
     | FLOAT         #numberFloat
     | DOUBLE        #numberDouble
     | HEX           #numberHex
@@ -163,7 +176,7 @@ statement:
 
     | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      	#statementIf
     | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           	#statementWhile
-    | 'for' NAME 'in' lower=expr 'to' upper=expr 'do' body=block ('else' 'do'? elseBody=block)?                                         #statementForInRange
+    | 'for' ('var' | 'val')? NAME 'in' lower=expr 'to' upper=expr 'do' body=block ('else' 'do'? elseBody=block)?                                         #statementForInRange
     | 'for' NAME 'in' expr ('where' expr)? 'do' body=block ('else' 'do'? elseBody=block)?                                             	#statementForIn
 
     | NAME '(' ')' NL                                                   #statementFunctionCallNoArgs

@@ -127,7 +127,15 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
 
     // Primitives
-    override fun visitNumberInt(ctx: EclangParser.NumberIntContext): ITok = TInteger(loc(ctx), Integer.valueOf(ctx.text.replace("_", "")))
+    override fun visitNumberInt(ctx: EclangParser.NumberIntContext): ITok = TInteger(loc(ctx), ctx.text.replace("_", "").toInt())
+    override fun visitNumberLong(ctx: EclangParser.NumberLongContext): ITok = TLong(loc(ctx), ctx.text.replace("_", "").toLong())
+    override fun visitNumberShort(ctx: EclangParser.NumberShortContext): ITok = TShort(loc(ctx), ctx.text.replace("_", "").toShort())
+    override fun visitNumberChar(ctx: EclangParser.NumberCharContext): ITok = TCharNum(loc(ctx), ctx.text.replace("_", "").toInt())
+
+    override fun visitNumberUInt(ctx: EclangParser.NumberUIntContext): ITok = TUnsignedInteger(loc(ctx), ctx.text.replace("_", "").toInt())
+    override fun visitNumberULong(ctx: EclangParser.NumberULongContext): ITok = TUnsignedLong(loc(ctx), ctx.text.replace("_", "").toLong())
+    override fun visitNumberUShort(ctx: EclangParser.NumberUShortContext): ITok = TUnsignedShort(loc(ctx), ctx.text.replace("_", "").toShort())
+
     override fun visitNumberBin(ctx: EclangParser.NumberBinContext): ITok = TInteger(loc(ctx), ctx.text.substring(2).toInt(2))
     override fun visitNumberHex(ctx: EclangParser.NumberHexContext): ITok = TInteger(loc(ctx), Integer.decode(ctx.text))
     override fun visitNumberFloat(ctx: EclangParser.NumberFloatContext): ITok = TFloat(loc(ctx), ctx.text.toFloat())

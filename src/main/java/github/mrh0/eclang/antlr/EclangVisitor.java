@@ -11,12 +11,61 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  */
 public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	/**
+	 * Visit a parse tree produced by the {@code numberLong}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNumberLong(EclangParser.NumberLongContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code numberChar}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNumberChar(EclangParser.NumberCharContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code numberShort}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNumberShort(EclangParser.NumberShortContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code numberInt}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitNumberInt(EclangParser.NumberIntContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code numberUInt}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNumberUInt(EclangParser.NumberUIntContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code numberUChar}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNumberUChar(EclangParser.NumberUCharContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code numberUShort}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNumberUShort(EclangParser.NumberUShortContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code numberULong}
+	 * labeled alternative in {@link EclangParser#number}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNumberULong(EclangParser.NumberULongContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code numberFloat}
 	 * labeled alternative in {@link EclangParser#number}.
