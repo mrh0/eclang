@@ -58,7 +58,7 @@ class ContextStack {
         scopeStack.add(Scope(top.vars.toMutableMap(), top.deferred.toMutableList()))
     }
 
-    fun pop(): Scope = scopeStack.removeLast()
+    fun pop(): Scope = scopeStack.removeLastOrNull() ?: throw Error("Scope empty")
 
     fun setReturned() {
         val top = scopeStack.last()

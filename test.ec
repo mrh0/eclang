@@ -15,6 +15,17 @@ fn main(): Int do
     log(catch("Test"))
     createPool(addrof(ROOT_POOL!), NULL)
     log("%s", "Cloned String".clone())
+    val array: Int[] = [6,4,2]
+
+    val tchar: Char = 10c
+    val tshort: Short = 10s
+    val tint: Int = 10i
+    val tlong: Long = 10l
+
+    //val tuchar: UChar = 10uc
+    val tushort: UShort = 10us
+    val tuint: UInt = 10ui
+    val tulong: ULong = 10ul
 
     val a: CString = "Hello"
     val b: CString = "Hello"

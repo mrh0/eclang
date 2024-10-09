@@ -129,8 +129,8 @@ expr:
     | recordType=NAME? '{' expr (',' expr)* '}'                                                         #exprCreateRecord
     | recordType=NAME? '{' INDENT expr (',' NL expr)* NL DEDENT '}'                                     #exprCreateRecord
 
-    | '[' expr (',' expr)* ']'                                                                          #exprCreateArray
-    | '[' INDENT expr (',' NL expr)* NL DEDENT ']'                                                      #exprCreateArray
+    | arrayType=NAME? '[' expr (',' expr)* ']'                                                          #exprCreateArray
+    | arrayType=NAME? '[' INDENT expr (',' NL expr)* NL DEDENT ']'                                      #exprCreateArray
 
     | '(' expr ')'                                                                                      #exprNest
     | '(' INDENT expr NL DEDENT ')'                                                                     #exprNest
