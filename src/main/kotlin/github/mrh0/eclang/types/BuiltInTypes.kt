@@ -7,10 +7,7 @@ import github.mrh0.eclang.types.numbers.signed.EcTypeChar
 import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 import github.mrh0.eclang.types.numbers.signed.EcTypeLong
 import github.mrh0.eclang.types.numbers.signed.EcTypeShort
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeUChar
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeUInt
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeULong
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeUShort
+import github.mrh0.eclang.types.numbers.unsigned.*
 
 object BuiltInTypes {
     private val builtInPrimitiveIdentityTypes: List<EcType> = listOf(
@@ -24,12 +21,14 @@ object BuiltInTypes {
         EcTypeDouble,
         EcTypeBool,
         EcTypeCString,
+        EcTypeString,
         EcTypeNone,
         EcTypeAtom,
         EcTypeNull,
         EcTypeChar,
         EcTypeUChar,
-        EcTypeAny
+        EcTypeAny,
+        EcTypeSize
     )
     private val builtInNamespaceMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.toString() }.toMutableMap()
     private val builtInNameMap: MutableMap<String, EcType> = builtInPrimitiveIdentityTypes.associateBy { it.identifier }.toMutableMap()

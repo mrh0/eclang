@@ -8,13 +8,13 @@ rec Test as
     b: Int
 
 fn catch(test: <A>): <A> do
-    val v: <A> = ""
+    val v: <A> = c""
     ret v
 
 fn main(): Int do
-    log(catch("Test"))
-    createPool(addrof(ROOT_POOL!), NULL)
-    log("%s", "Cloned String".clone())
+    log(catch(c"Test"))
+    createPool(addrof(ROOT_POOL!), Null)
+    log(c"Cloned String".clone())
     val array: Int[] = [6,4,2]
 
     val tchar: Char = 10c
@@ -27,23 +27,23 @@ fn main(): Int do
     val tuint: UInt = 10ui
     val tulong: ULong = 10ul
 
-    val a: CString = "Hello"
-    val b: CString = "Hello"
+    val a: CString = c"Hello"
+    val b: CString = c"Hello"
     val c: Bool = a == b // true
     val d: Bool = a === b // false
     val divRes: IntDivResult = div(245, 5)
     0.x()
-    log("Hello World")
-    log("Hello %s", "World")
-    val addr: @Int = addrof(G2)
+    log(c"Hello World")
+    log(c"World")
+    val addr: @Int = addrof G2
     val addr2: Int = @addr
     test(
         0,
-        ""
+        c""
     )
     val testRec: Test = { 0, 0 }
     val ee = testRec.a
-    y("")
+    y(c"")
     z(1)
     val k = :test_atom
     val p = G + G2
@@ -51,39 +51,39 @@ fn main(): Int do
     val char: Char = 'a'
     val char2: Char = '\r'
     a(aa())
-    n("Null")
+    n(c"Null")
     defTest(7)
     var iter = 5
     while !!iter do
-        log ("I")
+        log (c"I")
         iter = iter-1
-    if "Test" == "NotTest" do
-        val ff: CString = "DFE"
-        log("Test1")
+    if c"Test" == c"NotTest" do
+        val ff: CString = c"DFE"
+        log(c"Test1")
     else if false do
-        log("Test2")
+        log(c"Test2")
     else
-        log("Test3")
+        log(c"Test3")
     ret if (true) 1 else 0
 
 declare type DefinedType = Int
 
 fn defTest(input: DefinedType): Int do
-    defer log("1")
-    log("2")
+    defer log(c"1")
+    log(c"2")
     if true do
-        defer log("3")
-        log("4")
+        defer log(c"3")
+        log(c"4")
     else
-        defer log("5")
+        defer log(c"5")
         log(
-            "test"
+            c"test"
         )
         ret 1
     ret input
 
 fn n(a: CString?): CString do
-    ret a ?? ""
+    ret a ?? c""
 
 fn n(a = 0): Int do
     ret 0
@@ -98,10 +98,10 @@ fn test(a: Int, b: Int & CString, c: Int = a): Int do
     ret c
 
 fn x(a: Int) do
-    log("Int")
+    log(c"Int")
 
 fn x(a: CString) do
-    log("Str")
+    log(c"Str")
 
 fn y(a: Int & CString) do
     x(a)

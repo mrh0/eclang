@@ -1,40 +1,34 @@
 use "math.h"
 use "stdio.h"
 use "stdlib.h"
-use "ctype.h"
 use "apr_general.h"
 use "apr_pools.h"
 
-declare fn "printf" as log(value: CString): None
-declare fn "printf" as log(format: CString, value: CString): None
-declare fn "printf" as log(format: CString, value: Number): None
+// stdio
+declare fn "printf" as printf(format: CString, value: CString): None
+declare fn "printf" as printf(format: CString, value: Number): None
 
-declare type Size = Long
-declare val "NULL" as NULL: Null
-declare val "EOF" as EOF: Int
+fn log(value: CString): None do
+    printf(c"%s\n", value)
+fn log(value: String): None do
+    printf(c"%s\n", value.data)
+fn log(value: Number): None do
+    printf(c"%d\n", value)
 
 declare type IntegerNumber = Char & Short & Int & Long
 declare type FloatingNumber = Float & Double
 declare type Number = IntegerNumber & FloatingNumber
 
-rec String as
-    len: Int
-    data: CString
-
 // apr
 declare type rec "apr_pool_t" as Pool
 declare type rec "apr_status_t" as PoolStatus
 
-var ROOT_POOL: @Pool? = NULL
+var ROOT_POOL: @Pool? = Null
 
 declare fn "apr_pool_create" as createPool(pool: @@Pool, parent: @Pool?): PoolStatus
-fn createPool(pool: @@Pool): PoolStatus = createPool(pool, NULL)
+fn createPool(pool: @@Pool): PoolStatus = createPool(pool, Null)
 declare fn "apr_pool_destroy" as freePool(pool: @Pool)
 declare fn "apr_palloc" as alloc(pool: @Pool, size: Size): @Any
-
-// stdio
-declare fn printf(value: CString): None
-declare fn printf(format: CString, value: CString): None
 
 // math
 declare fn acos(x: Double): Double
@@ -92,8 +86,6 @@ declare fn "ldiv" as div(numer: Long, denom: Long): LongDivResult
 declare fn "rand" as randomInt(): Int
 declare fn "srand" as randomInt(seed: Int): Int
 
-// ctype
-
 // string
 declare fn memchr(str: @Any, c: Int, n: Size): @Any
 declare fn memcmp(str1: @Any, str2: @Any, n: Size): @Any
@@ -123,4 +115,4 @@ fn clone(str: CString, pool: @Pool?): CString do
     copy(newStr, str, n)
     ret newStr
 
-fn clone(str: CString): CString = clone(str, NULL)
+fn clone(str: CString): CString = clone(str, Null)

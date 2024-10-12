@@ -4,12 +4,10 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRString(location: Loc, val value: String) : IRValue(location) {
+class IRNull(location: Loc) : IRValue(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.put("(String){${value.length},\"")
-        sb.put(value)
-        sb.put("\"}")
+        sb.put("NULL")
     }
 
-    override fun toString(): String = "'$value'"
+    override fun toString(): String = "Null"
 }

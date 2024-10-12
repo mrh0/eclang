@@ -188,6 +188,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitPrimitiveString(EclangParser.PrimitiveStringContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code primitiveCString}
+	 * labeled alternative in {@link EclangParser#primitive}.
+	 * @param ctx the parse tree
+	 */
+	void enterPrimitiveCString(EclangParser.PrimitiveCStringContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code primitiveCString}
+	 * labeled alternative in {@link EclangParser#primitive}.
+	 * @param ctx the parse tree
+	 */
+	void exitPrimitiveCString(EclangParser.PrimitiveCStringContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code primitiveChar}
 	 * labeled alternative in {@link EclangParser#primitive}.
 	 * @param ctx the parse tree
@@ -254,18 +266,6 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprAsUnsafe(EclangParser.ExprAsUnsafeContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code exprNest}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprNest(EclangParser.ExprNestContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprNest}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprNest(EclangParser.ExprNestContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code exprCreateArray}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -301,18 +301,6 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprAccessNameNullishCoalescing(EclangParser.ExprAccessNameNullishCoalescingContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code exprInlineIf}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprInlineIf(EclangParser.ExprInlineIfContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprInlineIf}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprInlineIf(EclangParser.ExprInlineIfContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprFunctionCallWithArgs}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -362,29 +350,17 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprCreateRecord(EclangParser.ExprCreateRecordContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code exprAs}
+	 * Enter a parse tree produced by the {@code exprNull}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
 	 */
-	void enterExprAs(EclangParser.ExprAsContext ctx);
+	void enterExprNull(EclangParser.ExprNullContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code exprAs}
+	 * Exit a parse tree produced by the {@code exprNull}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
 	 */
-	void exitExprAs(EclangParser.ExprAsContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code exprOffsetOf}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprOffsetOf(EclangParser.ExprOffsetOfContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprOffsetOf}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprOffsetOf(EclangParser.ExprOffsetOfContext ctx);
+	void exitExprNull(EclangParser.ExprNullContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprAlignOf}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -397,18 +373,6 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprAlignOf(EclangParser.ExprAlignOfContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code exprBinOp}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprBinOp(EclangParser.ExprBinOpContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprBinOp}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprBinOp(EclangParser.ExprBinOpContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprAccessor}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -433,42 +397,6 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprIs(EclangParser.ExprIsContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code exprSizeOf}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprSizeOf(EclangParser.ExprSizeOfContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprSizeOf}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprSizeOf(EclangParser.ExprSizeOfContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code exprAddressOf}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprAddressOf(EclangParser.ExprAddressOfContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprAddressOf}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprAddressOf(EclangParser.ExprAddressOfContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code exprPrimitive}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprPrimitive(EclangParser.ExprPrimitiveContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprPrimitive}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprPrimitive(EclangParser.ExprPrimitiveContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprFunctionCallNoArgs}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -505,6 +433,114 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprIsNot(EclangParser.ExprIsNotContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprNest}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprNest(EclangParser.ExprNestContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprNest}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprNest(EclangParser.ExprNestContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprInlineIf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprInlineIf(EclangParser.ExprInlineIfContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprInlineIf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprInlineIf(EclangParser.ExprInlineIfContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprCreateCArray}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprCreateCArray(EclangParser.ExprCreateCArrayContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprCreateCArray}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprCreateCArray(EclangParser.ExprCreateCArrayContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprAs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprAs(EclangParser.ExprAsContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprAs}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprAs(EclangParser.ExprAsContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprOffsetOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprOffsetOf(EclangParser.ExprOffsetOfContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprOffsetOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprOffsetOf(EclangParser.ExprOffsetOfContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprBinOp}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprBinOp(EclangParser.ExprBinOpContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprBinOp}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprBinOp(EclangParser.ExprBinOpContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprSizeOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprSizeOf(EclangParser.ExprSizeOfContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprSizeOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprSizeOf(EclangParser.ExprSizeOfContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprAddressOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprAddressOf(EclangParser.ExprAddressOfContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprAddressOf}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprAddressOf(EclangParser.ExprAddressOfContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprPrimitive}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprPrimitive(EclangParser.ExprPrimitiveContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprPrimitive}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprPrimitive(EclangParser.ExprPrimitiveContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprUnOp}
 	 * labeled alternative in {@link EclangParser#expr}.

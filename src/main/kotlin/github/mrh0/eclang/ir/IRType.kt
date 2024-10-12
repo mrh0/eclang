@@ -10,10 +10,7 @@ import github.mrh0.eclang.types.numbers.signed.EcTypeChar
 import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 import github.mrh0.eclang.types.numbers.signed.EcTypeLong
 import github.mrh0.eclang.types.numbers.signed.EcTypeShort
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeUChar
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeUInt
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeULong
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeUShort
+import github.mrh0.eclang.types.numbers.unsigned.*
 
 class IRType(location: Loc, val type: EcType) : IR(location) {
     override fun toString(): String {
@@ -21,8 +18,10 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
     }
 
     private fun translateNative(t: EcType): String = when(t) {
+        is EcTypeSize -> "size_t"
         is EcTypeInt -> "int"
         is EcTypeCString -> "char*"
+        is EcTypeString -> "String"
         is EcTypeNone -> "void"
         is EcTypeAny -> "void"
         is EcTypeBool -> "bool"
@@ -42,7 +41,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypePointer -> "${translateNative(t.wrapped)}*"
         is EcTypeBoxed -> "${translateNative(t.wrapped)}*"
         is EcTypeGeneric -> throw EcError(location, "Generic type cannot be used in this context")
-        is EcTypeArray -> "${t.arg}[]"
+        is EcTypeCArray -> "${t.arg}[]"
         else -> throw NotImplementedError("Native type '$t' is not implemented")
     }
 

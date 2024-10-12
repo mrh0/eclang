@@ -5,17 +5,15 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.data.IRCString
-import github.mrh0.eclang.ir.data.IRString
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeCString
-import github.mrh0.eclang.types.EcTypeString
 
-class TString(location: Loc, private val value: String) : Tok(location) {
+class TCString(location: Loc, private val value: String) : Tok(location) {
     override fun toString(): String {
-        return "'${value}'"
+        return "c'${value}'"
     }
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        return EcTypeString to IRString(location, value)
+        return EcTypeCString to IRCString(location, value)
     }
 }

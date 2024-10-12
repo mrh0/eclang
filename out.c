@@ -11,7 +11,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <apr_general.h>
 #include <apr_pools.h>
 // use ec:lib.ec
@@ -26,9 +25,11 @@ char* __ec_atom_test_atom = "test_atom";
 void* __ec_nc(void* left, void* right) {
     return left == NULL ? right : left;
 }
-struct Location { int line; int position; char* path; };
+typedef struct { int line; int position; char* path; } Location;
+typedef struct { size_t len; char* data; } String;
 
 // Declarations
+void log_0(char* value);
 double min_0(double x, double y);
 double max_0(double x, double y);
 char* clone_0(char* str, apr_pool_t* pool);
@@ -46,12 +47,6 @@ void y_1(char* a);
 int z_0(int a);
 
 // Globals
-// declare val NULL
-// declare val EOF
-struct String {
-	int len;
-	char* data;
-};
 // declare type rec apr_pool_t as Pool
 // declare type rec apr_status_t as PoolStatus
 static apr_pool_t* ROOT_POOL = NULL;
@@ -65,6 +60,9 @@ struct Test {
 };
 
 // Code
+void log_0(char* value) {
+	printf("%s\n", value);
+}
 double min_0(double x, double y) {
 	return (x<y) ? (x) : (y);
 }
@@ -72,8 +70,8 @@ double max_0(double x, double y) {
 	return (x>y) ? (x) : (y);
 }
 char* clone_0(char* str, apr_pool_t* pool) {
-	const long n = strlen(str);
-	const char* newStr = (char*)apr_palloc((apr_pool_t*)__ec_nc(pool, ROOT_POOL), (long)sizeof(char*)*(n+1));
+	const size_t n = strlen(str);
+	const char* newStr = (char*)apr_palloc((apr_pool_t*)__ec_nc(pool, ROOT_POOL), (size_t)sizeof(char*)*(n+1));
 	strncpy(newStr, str, n);
 	return newStr;
 }
@@ -85,9 +83,9 @@ char* catch_0(char* test) {
 	return v;
 }
 int main_0(void) {
-	printf(catch_0("Test"));
+	log_0(catch_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
-	printf("%s", clone_1("Cloned String"));
+	log_0(clone_1("Cloned String"));
 	Int[] array = (Int[]){6, 4, 2};
 	char tchar = (char)10;
 	short tshort = 10;
@@ -102,9 +100,9 @@ int main_0(void) {
 	bool d = a==b;
 	div_t divRes = div(245, 5);
 	x_0(0);
-	printf("Hello World");
-	printf("Hello %s", "World");
-	int* addr = &(G2);
+	log_0("Hello World");
+	log_0("World");
+	int* addr = &G2;
 	int addr2 = *addr;
 	test_1(0, "");
 	struct Test testRec = (struct Test){0, 0};
@@ -121,36 +119,36 @@ int main_0(void) {
 	defTest_0(7);
 	int iter = 5;
 	while ((iter)>0) {
-		printf("I");
+		log_0("I");
 		iter = iter-1;
 	}
 	if (strcmp("Test", "NotTest") == 0) {
 		char* ff = "DFE";
-		printf("Test1");
+		log_0("Test1");
 	}
 	else if (false) {
-		printf("Test2");
+		log_0("Test2");
 	}
 	else {
-		printf("Test3");
+		log_0("Test3");
 	}
 	return (true) ? (1) : (0);
 }
 int defTest_0(int input) {
-	printf("2");
+	log_0("2");
 	if (true) {
-		printf("4");
-		printf("3");
+		log_0("4");
+		log_0("3");
 	}
 	else {
-		printf("test");
+		log_0("test");
 		int __ec_ret = 1;
-		printf("1");
-		printf("5");
+		log_0("1");
+		log_0("5");
 		return __ec_ret;
 	}
 	int __ec_ret = input;
-	printf("1");
+	log_0("1");
 	return __ec_ret;
 }
 char* n_0(char* a) {
@@ -167,10 +165,10 @@ int test_1(int a, char* b) {
 	return a;
 }
 void x_0(int a) {
-	printf("Int");
+	log_0("Int");
 }
 void x_1(char* a) {
-	printf("Str");
+	log_0("Str");
 }
 void y_1(char* a) {
 	x_1(a);

@@ -45,6 +45,7 @@ BIN: '0b'[0-1]*;
 CHAR: '\''.'\'' | '\'\\'('n'|'r'|'t'|'\\'|'\''|'"'|'0')'\'';
 
 STRING: '"' .*? '"';
+CSTRING: 'c"' .*? '"';
 EMBEDED: [_a-zA-Z][_a-zA-Z0-9]*'`'.*?'`';
 
 WHITESPACE: [ \t]+ -> skip;
@@ -71,6 +72,7 @@ primitive:
       number        #primitiveNumber
     | BOOL          #primitiveBool
     | STRING        #primitiveString
+    | CSTRING       #primitiveCString
     | CHAR          #primitiveChar
     | ATOM          #primitiveAtom
     ;
@@ -93,6 +95,7 @@ binOp:
 
 expr:
       'here'                                                        #exprHere
+    | 'Null'                                                        #exprNull
     | left=expr binOp right=expr                                    #exprBinOp
     | unOp expr                                                     #exprUnOp
     | 'sizeof' type                                                 #exprSizeOf
@@ -131,6 +134,8 @@ expr:
 
     | arrayType=NAME? '[' expr (',' expr)* ']'                                                          #exprCreateArray
     | arrayType=NAME? '[' INDENT expr (',' NL expr)* NL DEDENT ']'                                      #exprCreateArray
+    | arrayType=NAME? 'c[' expr (',' expr)* ']'                                                         #exprCreateCArray
+    | arrayType=NAME? 'c[' INDENT expr (',' NL expr)* NL DEDENT ']'                                     #exprCreateCArray
 
     | '(' expr ')'                                                                                      #exprNest
     | '(' INDENT expr NL DEDENT ')'                                                                     #exprNest
