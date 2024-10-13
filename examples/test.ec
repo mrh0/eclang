@@ -16,6 +16,7 @@ fn main(): Int do
     createPool(addrof(ROOT_POOL!), Null)
     log(c"Cloned String".clone())
     val array: Int[] = [6,4,2]
+    log("Hello World")
 
     val tchar: Char = 10c
     val tshort: Short = 10s

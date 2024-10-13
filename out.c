@@ -30,6 +30,7 @@ typedef struct { size_t len; char* data; } String;
 
 // Declarations
 void log_0(char* value);
+void log_1(String value);
 double min_0(double x, double y);
 double max_0(double x, double y);
 char* clone_0(char* str, apr_pool_t* pool);
@@ -63,6 +64,9 @@ struct Test {
 void log_0(char* value) {
 	printf("%s\n", value);
 }
+void log_1(String value) {
+	printf("%s\n", value.data);
+}
 double min_0(double x, double y) {
 	return (x<y) ? (x) : (y);
 }
@@ -87,6 +91,7 @@ int main_0(void) {
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_1("Cloned String"));
 	Int[] array = (Int[]){6, 4, 2};
+	log_1((String){11,"Hello World"});
 	char tchar = (char)10;
 	short tshort = 10;
 	int tint = 10;
