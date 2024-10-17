@@ -11,13 +11,13 @@ import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.ir.data.IRCreateArray
 import github.mrh0.eclang.types.*
 
-class TCreateArray(location: Loc, private val values: List<ITok>) : Tok(location) {
+class TCreateCArray(location: Loc, private val values: List<ITok>) : Tok(location) {
     override fun toString(): String {
-        return "TCreateArray($values)"
+        return "TCreateCArray($values)"
     }
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        if (hint !is EcTypeArray) throw EcUnableToInferTypeError(location)
+        if (hint !is EcTypeCArray) throw EcUnableToInferTypeError(location)
         val irs = values.map { it.process(cd, hint.arg) }
         irs.forEach { if(!hint.arg.accepts(location, it.first)) throw EcUnexpectedTypeError(location, hint.arg, it.first) }
         return hint to IRCreateArray(location, IRType(location, hint), irs.map { it.second })
