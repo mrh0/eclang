@@ -188,18 +188,6 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitPrimitiveString(EclangParser.PrimitiveStringContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code primitiveCString}
-	 * labeled alternative in {@link EclangParser#primitive}.
-	 * @param ctx the parse tree
-	 */
-	void enterPrimitiveCString(EclangParser.PrimitiveCStringContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code primitiveCString}
-	 * labeled alternative in {@link EclangParser#primitive}.
-	 * @param ctx the parse tree
-	 */
-	void exitPrimitiveCString(EclangParser.PrimitiveCStringContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code primitiveChar}
 	 * labeled alternative in {@link EclangParser#primitive}.
 	 * @param ctx the parse tree
@@ -457,18 +445,6 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprInlineIf(EclangParser.ExprInlineIfContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code exprCreateCArray}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprCreateCArray(EclangParser.ExprCreateCArrayContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprCreateCArray}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprCreateCArray(EclangParser.ExprCreateCArrayContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprAs}
 	 * labeled alternative in {@link EclangParser#expr}.

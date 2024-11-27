@@ -2,7 +2,7 @@ package github.mrh0.eclang.types
 
 import github.mrh0.eclang.ast.Loc
 
-class EcTypeArray(val arg: EcType) : EcType("Array") {
+data class EcTypeArray(val arg: EcType) : EcType("Array") {
     override fun toString() = "$arg[]"
 
     override fun accepts(location: Loc, type: EcType): Boolean {

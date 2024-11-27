@@ -2,7 +2,7 @@ package github.mrh0.eclang.types
 
 import github.mrh0.eclang.ast.Loc
 
-class EcTypeEnum(private val types: MutableSet<EcType>) : EcType("Enum") {
+data class EcTypeEnum(private val types: MutableSet<EcType>) : EcType("Enum") {
     override fun toString() = types.joinToString("|", "(", ")") { it.toString() }
     fun append(type: EcType) = types.add(type)
     override fun accepts(location: Loc, type: EcType): Boolean {

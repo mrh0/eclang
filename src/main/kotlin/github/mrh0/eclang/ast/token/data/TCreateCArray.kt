@@ -9,6 +9,7 @@ import github.mrh0.eclang.error.EcUnexpectedTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.ir.data.IRCreateArray
+import github.mrh0.eclang.ir.data.IRCreateCArray
 import github.mrh0.eclang.types.*
 
 class TCreateCArray(location: Loc, private val values: List<ITok>) : Tok(location) {
@@ -20,6 +21,6 @@ class TCreateCArray(location: Loc, private val values: List<ITok>) : Tok(locatio
         if (hint !is EcTypeCArray) throw EcUnableToInferTypeError(location)
         val irs = values.map { it.process(cd, hint.arg) }
         irs.forEach { if(!hint.arg.accepts(location, it.first)) throw EcUnexpectedTypeError(location, hint.arg, it.first) }
-        return hint to IRCreateArray(location, IRType(location, hint), irs.map { it.second })
+        return hint to IRCreateCArray(location, IRType(location, hint.arg), irs.map { it.second })
     }
 }

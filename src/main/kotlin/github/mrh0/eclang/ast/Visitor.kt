@@ -84,7 +84,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     override fun visitTypeTypeOf(ctx: EclangParser.TypeTypeOfContext): ITok = TTypeOf(loc(ctx), visit(ctx.expr()))
 
-    override fun visitTypeArray(ctx: EclangParser.TypeArrayContext): ITok = TTypeArray(loc(ctx), visit(ctx.type()))
+    override fun visitTypeArray(ctx: EclangParser.TypeArrayContext): ITok =
+        if(ctx.text.endsWith('c')) TTypeCArray(loc(ctx), visit(ctx.type())) else TTypeArray(loc(ctx), visit(ctx.type()))
 
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {
@@ -143,8 +144,9 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitNumberDouble(ctx: EclangParser.NumberDoubleContext): ITok = TDouble(loc(ctx), ctx.text.toDouble())
 
     override fun visitPrimitiveBool(ctx: EclangParser.PrimitiveBoolContext): ITok = TBoolean(loc(ctx), ctx.BOOL().text == "true")
-    override fun visitPrimitiveCString(ctx: EclangParser.PrimitiveCStringContext): ITok = TCString(loc(ctx), Util.getCStringContent(ctx.text) ?: "")
-    override fun visitPrimitiveString(ctx: EclangParser.PrimitiveStringContext): ITok = TString(loc(ctx), Util.getStringContent(ctx.text) ?: "")
+    //override fun visitPrimitiveCString(ctx: EclangParser.PrimitiveCStringContext): ITok = TCString(loc(ctx), Util.getCStringContent(ctx.text) ?: "")
+    override fun visitPrimitiveString(ctx: EclangParser.PrimitiveStringContext): ITok =
+        if(ctx.text.endsWith('c')) TCString(loc(ctx), Util.getCStringContent(ctx.text) ?: "") else TString(loc(ctx), Util.getStringContent(ctx.text) ?: "")
     override fun visitPrimitiveAtom(ctx: EclangParser.PrimitiveAtomContext): ITok = TAtom(loc(ctx), ctx.text.substring(1).lowercase())
     override fun visitPrimitiveChar(ctx: EclangParser.PrimitiveCharContext): ITok = TChar(loc(ctx), ctx.text)
 
@@ -152,7 +154,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     override fun visitExprCreateRecord(ctx: EclangParser.ExprCreateRecordContext): ITok = if (ctx.recordType == null) TCreateRecord(loc(ctx), visit(ctx.expr())) else TCreateRecordTyped(loc(ctx), ctx.recordType.text, visit(ctx.expr()))
 
-    override fun visitExprCreateArray(ctx: EclangParser.ExprCreateArrayContext): ITok = TCreateArray(loc(ctx), visit(ctx.expr()))
+    override fun visitExprCreateArray(ctx: EclangParser.ExprCreateArrayContext): ITok =
+        if(ctx.text.endsWith('c')) TCreateCArray(loc(ctx), visit(ctx.expr())) else TCreateArray(loc(ctx), visit(ctx.expr()))
     //Natives
     // override fun visitExprTuple(ctx: EclangParser.ExprTupleContext): ITok = TTuple(loc(ctx), visit(ctx.values))
 

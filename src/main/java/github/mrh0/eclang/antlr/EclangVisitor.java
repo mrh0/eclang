@@ -116,13 +116,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPrimitiveString(EclangParser.PrimitiveStringContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code primitiveCString}
-	 * labeled alternative in {@link EclangParser#primitive}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPrimitiveCString(EclangParser.PrimitiveCStringContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code primitiveChar}
 	 * labeled alternative in {@link EclangParser#primitive}.
 	 * @param ctx the parse tree
@@ -273,13 +266,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprInlineIf(EclangParser.ExprInlineIfContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code exprCreateCArray}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprCreateCArray(EclangParser.ExprCreateCArrayContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprAs}
 	 * labeled alternative in {@link EclangParser#expr}.

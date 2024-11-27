@@ -197,18 +197,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterPrimitiveCString(EclangParser.PrimitiveCStringContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitPrimitiveCString(EclangParser.PrimitiveCStringContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterPrimitiveChar(EclangParser.PrimitiveCharContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -468,18 +456,6 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprInlineIf(EclangParser.ExprInlineIfContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterExprCreateCArray(EclangParser.ExprCreateCArrayContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprCreateCArray(EclangParser.ExprCreateCArrayContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

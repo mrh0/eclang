@@ -9,11 +9,11 @@ declare fn "printf" as printf(format: CString, value: CString): None
 declare fn "printf" as printf(format: CString, value: Number): None
 
 fn log(value: CString): None do
-    printf(c"%s\n", value)
+    printf("%s\n"c, value)
 fn log(value: String): None do
-    printf(c"%s\n", value.data)
+    printf("%s\n"c, value.data)
 fn log(value: Number): None do
-    printf(c"%d\n", value)
+    printf("%d\n"c, value)
 
 declare type IntegerNumber = Char & Short & Int & Long
 declare type FloatingNumber = Float & Double

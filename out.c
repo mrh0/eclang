@@ -62,10 +62,10 @@ struct Test {
 
 // Code
 void log_0(char* value) {
-	printf("%s\n", value);
+	printf("s\n"", value);
 }
 void log_1(String value) {
-	printf("%s\n", value.data);
+	printf("s\n"", value.data);
 }
 double min_0(double x, double y) {
 	return (x<y) ? (x) : (y);
@@ -87,10 +87,10 @@ char* catch_0(char* test) {
 	return v;
 }
 int main_0(void) {
-	log_0(catch_0("Test"));
+	log_0(catch_0("est""));
 	apr_pool_create(&(ROOT_POOL), NULL);
-	log_0(clone_1("Cloned String"));
-	Int[] array = (Int[]){6, 4, 2};
+	log_0(clone_1("loned String""));
+	int* carray = (int[]){6, 4, 2};
 	log_1((String){11,"Hello World"});
 	char tchar = (char)10;
 	short tshort = 10;
@@ -99,14 +99,14 @@ int main_0(void) {
 	unsigned short tushort = 10;
 	unsigned int tuint = 10;
 	unsigned long tulong = 10;
-	char* a = "Hello";
-	char* b = "Hello";
+	char* a = "ello"";
+	char* b = "ello"";
 	bool c = strcmp(a, b) == 0;
 	bool d = a==b;
 	div_t divRes = div(245, 5);
 	x_0(0);
-	log_0("Hello World");
-	log_0("World");
+	log_0("ello World"");
+	log_0("orld"");
 	int* addr = &G2;
 	int addr2 = *addr;
 	test_1(0, "");
@@ -120,40 +120,40 @@ int main_0(void) {
 	char _char = 'a';
 	char char2 = '\r';
 	a_0(aa_0());
-	n_0("Null");
+	n_0("ull"");
 	defTest_0(7);
 	int iter = 5;
 	while ((iter)>0) {
-		log_0("I");
+		log_0(""");
 		iter = iter-1;
 	}
-	if (strcmp("Test", "NotTest") == 0) {
-		char* ff = "DFE";
-		log_0("Test1");
+	if (strcmp("est"", "otTest"") == 0) {
+		char* ff = "FE"";
+		log_0("est1"");
 	}
 	else if (false) {
-		log_0("Test2");
+		log_0("est2"");
 	}
 	else {
-		log_0("Test3");
+		log_0("est3"");
 	}
 	return (true) ? (1) : (0);
 }
 int defTest_0(int input) {
-	log_0("2");
+	log_0(""");
 	if (true) {
-		log_0("4");
-		log_0("3");
+		log_0(""");
+		log_0(""");
 	}
 	else {
-		log_0("test");
+		log_0("est"");
 		int __ec_ret = 1;
-		log_0("1");
-		log_0("5");
+		log_0(""");
+		log_0(""");
 		return __ec_ret;
 	}
 	int __ec_ret = input;
-	log_0("1");
+	log_0(""");
 	return __ec_ret;
 }
 char* n_0(char* a) {
@@ -170,10 +170,10 @@ int test_1(int a, char* b) {
 	return a;
 }
 void x_0(int a) {
-	log_0("Int");
+	log_0("nt"");
 }
 void x_1(char* a) {
-	log_0("Str");
+	log_0("tr"");
 }
 void y_1(char* a) {
 	x_1(a);

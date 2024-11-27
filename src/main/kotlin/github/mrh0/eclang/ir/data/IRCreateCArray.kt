@@ -13,7 +13,7 @@ class IRCreateCArray(location: Loc, val type: IRType, val entries: List<IIR>) : 
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.put('(')
         type.toC(sb, c)
-        sb.put("){")
+        sb.put("[]){")
         entries.forEachIndexed {
             index, it ->
             if (index != 0) sb.put(", ")

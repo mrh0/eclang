@@ -44,8 +44,7 @@ BIN: '0b'[0-1]*;
 
 CHAR: '\''.'\'' | '\'\\'('n'|'r'|'t'|'\\'|'\''|'"'|'0')'\'';
 
-STRING: '"' .*? '"';
-CSTRING: 'c"' .*? '"';
+STRING: '"' .*? ('"c' | '"');
 EMBEDED: [_a-zA-Z][_a-zA-Z0-9]*'`'.*?'`';
 
 WHITESPACE: [ \t]+ -> skip;
@@ -72,7 +71,6 @@ primitive:
       number        #primitiveNumber
     | BOOL          #primitiveBool
     | STRING        #primitiveString
-    | CSTRING       #primitiveCString
     | CHAR          #primitiveChar
     | ATOM          #primitiveAtom
     ;
@@ -132,10 +130,8 @@ expr:
     | recordType=NAME? '{' expr (',' expr)* '}'                                                         #exprCreateRecord
     | recordType=NAME? '{' INDENT expr (',' NL expr)* NL DEDENT '}'                                     #exprCreateRecord
 
-    | arrayType=NAME? '[' expr (',' expr)* ']'                                                          #exprCreateArray
-    | arrayType=NAME? '[' INDENT expr (',' NL expr)* NL DEDENT ']'                                      #exprCreateArray
-    | arrayType=NAME? 'c[' expr (',' expr)* ']'                                                         #exprCreateCArray
-    | arrayType=NAME? 'c[' INDENT expr (',' NL expr)* NL DEDENT ']'                                     #exprCreateCArray
+    | '[' expr (',' expr)* (']c' | ']')                                                                 #exprCreateArray
+    | '[' INDENT expr (',' NL expr)* NL DEDENT (']c' | ']')                                             #exprCreateArray
 
     | '(' expr ')'                                                                                      #exprNest
     | '(' INDENT expr NL DEDENT ')'                                                                     #exprNest
@@ -152,7 +148,7 @@ type:
     | ATOM                                                                  #typeAtom
     | '<' NAME '>'                                                          #typeGeneric
     | 'typeof' expr                                                         #typeTypeOf
-    | type '[' ']'                                                          #typeArray
+    | type '[' (']c' | ']')                                                 #typeArray
     ;
 
 interface:
@@ -178,6 +174,7 @@ statement:
     | 'pass' NL                                                                         #statementPass
     | 'yield' NL                                                                        #statementYield
     | 'defer' statement                                                                 #statementDefer
+    | 'defer' 'do' body=block                                                           #statementDeferDo
 
     | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      	#statementIf
     | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           	#statementWhile
