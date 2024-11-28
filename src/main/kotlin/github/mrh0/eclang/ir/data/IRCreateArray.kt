@@ -9,16 +9,20 @@ import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.EcType
 
-class IRCreateArray(location: Loc, val type: IRType, val entries: List<IIR>) : IR(location) {
+class IRCreateArray(location: Loc, val arrayType: IRType, val type: IRType, val entries: List<IIR>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.put('(')
-        type.toC(sb, c)
+        arrayType.toC(sb, c)
         sb.put("){")
+        sb.put(entries.size)
+        sb.put(",(")
+        type.toC(sb, c)
+        sb.put("[]){")
         entries.forEachIndexed {
             index, it ->
             if (index != 0) sb.put(", ")
             it.toC(sb, c)
         }
-        sb.put('}')
+        sb.put("}}")
     }
 }

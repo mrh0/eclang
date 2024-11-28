@@ -6,7 +6,7 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 
 class IRString(location: Loc, val value: String) : IRValue(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.put("(String){${value.length},\"")
+        sb.put("(string_t){${value.length},\"")
         sb.put(value)
         sb.put("\"}")
     }

@@ -30,9 +30,9 @@ class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>,
 
         sb.commentLine("Arrays")
         ArrayInstance.getAll().forEach {
-            sb.put("struct ${it.getId()} { long len; ")
+            sb.put("typedef struct { long len; ")
             IRType(location, it.type).toC(sb, c)
-            sb.putLine("* data; }")
+            sb.putLine("* data; } ${it.getId()};")
         }
         sb.putLine()
 
@@ -41,8 +41,8 @@ class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>,
         void* __ec_nc(void* left, void* right) {
             return left == NULL ? right : left;
         }
-        typedef struct { int line; int position; char* path; } Location;
-        typedef struct { size_t len; char* data; } String;
+        typedef struct { int line; int position; char* path; } __ec_location_t;
+        typedef struct { size_t len; char* data; } __ec_string_t;
         """.trimIndent())
         sb.putLine()
         sb.putLine()

@@ -14,5 +14,5 @@ class ArrayInstance private constructor(val type: EcType) {
         fun getAll() = arrays.values
     }
 
-    fun getId() = "__ec_array_${type.hashCode()}"
+    fun getId() = "__ec_array_${type.hashCode()}_t"
 }

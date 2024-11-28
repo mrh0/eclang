@@ -2,6 +2,7 @@ package github.mrh0.eclang.ir
 
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
+import github.mrh0.eclang.context.array.ArrayInstance
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.*
@@ -42,6 +43,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeBoxed -> "${translateNative(t.wrapped)}*"
         is EcTypeGeneric -> throw EcError(location, "Generic type cannot be used in this context")
         is EcTypeCArray -> "${translateNative(t.arg)}*"
+        is EcTypeArray -> ArrayInstance.get(t.arg).getId()
         else -> throw NotImplementedError("Native type '$t' is not implemented")
     }
 

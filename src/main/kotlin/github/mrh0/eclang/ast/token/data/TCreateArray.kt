@@ -4,6 +4,7 @@ import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
+import github.mrh0.eclang.context.array.ArrayInstance
 import github.mrh0.eclang.error.EcUnableToInferTypeError
 import github.mrh0.eclang.error.EcUnexpectedTypeError
 import github.mrh0.eclang.ir.IIR
@@ -20,6 +21,7 @@ class TCreateArray(location: Loc, private val values: List<ITok>) : Tok(location
         if (hint !is EcTypeArray) throw EcUnableToInferTypeError(location)
         val irs = values.map { it.process(cd, hint.arg) }
         irs.forEach { if(!hint.arg.accepts(location, it.first)) throw EcUnexpectedTypeError(location, hint.arg, it.first) }
-        return hint to IRCreateArray(location, IRType(location, hint), irs.map { it.second })
+        ArrayInstance.get(hint.arg)
+        return hint to IRCreateArray(location, IRType(location, hint), IRType(location, hint.arg), irs.map { it.second })
     }
 }

@@ -11,7 +11,7 @@ import github.mrh0.eclang.types.EcType
 
 class IRHere(location: Loc) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.put("(Location){")
+        sb.put("(location_t){")
         sb.put("${location.getLine()}, ${location.getCharPos()}, ${location.getFilename()}")
         sb.put('}')
     }

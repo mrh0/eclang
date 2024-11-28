@@ -21,6 +21,9 @@ char* __ec_atom_test2 = "test2";
 char* __ec_atom_test3 = "test3";
 char* __ec_atom_test_atom = "test_atom";
 
+// Arrays
+typedef struct { long len; int* data; } __ec_array_1473611564;
+
 // Built-In
 void* __ec_nc(void* left, void* right) {
     return left == NULL ? right : left;
@@ -91,6 +94,8 @@ int main_0(void) {
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_1("loned String""));
 	int* carray = (int[]){6, 4, 2};
+	__ec_array_1473611564 array1 = (__ec_array_1473611564){3,(int[]){6, 4, 2}};
+	__ec_array_1473611564 array2 = (__ec_array_1473611564){3,(int[]){6, 4, 2}};
 	log_1((String){11,"Hello World"});
 	char tchar = (char)10;
 	short tshort = 10;
