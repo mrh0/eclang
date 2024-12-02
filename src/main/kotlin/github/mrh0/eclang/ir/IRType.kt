@@ -22,7 +22,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeSize -> "size_t"
         is EcTypeInt -> "int"
         is EcTypeCString -> "char*"
-        is EcTypeString -> "String"
+        is EcTypeString -> "__ec_string_t"
         is EcTypeNone -> "void"
         is EcTypeAny -> "void"
         is EcTypeBool -> "bool"

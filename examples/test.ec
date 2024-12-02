@@ -18,6 +18,11 @@ fn main(): Int do
     val carray: Int[]c = [6,4,2]c
     val array1: Int[] = [6,4,2]
     val array2: Int[] = [6,4,2]
+    log(array1.len)
+
+    for index in array1 do
+        log(array1[index])
+
     log("Hello World")
 
     val tchar: Char = 10c

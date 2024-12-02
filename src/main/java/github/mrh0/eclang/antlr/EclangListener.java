@@ -840,6 +840,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementDefer(EclangParser.StatementDeferContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code statementDeferDo}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementDeferDo(EclangParser.StatementDeferDoContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementDeferDo}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementDeferDo(EclangParser.StatementDeferDoContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code statementIf}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree

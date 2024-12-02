@@ -115,8 +115,8 @@ expr:
 
     | expr '.' NAME                                                 #exprAccessName
     | expr '?.' NAME                                                #exprAccessNameNullishCoalescing
-    | expr '[' expr ']'                                             #exprAccessor
-    | expr '[' INDENT expr NL DEDENT ']'                            #exprAccessor
+    | expr '[' index=expr ']'                                             #exprAccessor
+    | expr '[' INDENT index=expr NL DEDENT ']'                            #exprAccessor
 
     | NAME '(' ')'                                                  #exprFunctionCallNoArgs
     | NAME '(' args+=expr (',' args+=expr)* ')'                     #exprFunctionCallWithArgs
@@ -178,8 +178,9 @@ statement:
 
     | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      	#statementIf
     | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           	#statementWhile
-    | 'for' ('var' | 'val')? NAME 'in' lower=expr 'to' upper=expr 'do' body=block ('else' 'do'? elseBody=block)?                                         #statementForInRange
-    | 'for' NAME 'in' expr ('where' expr)? 'do' body=block ('else' 'do'? elseBody=block)?                                             	#statementForIn
+
+    | 'for' ('var' | 'val')? NAME 'in' lower=expr 'to' upper=expr 'do' body=block ('else' 'do'? elseBody=block)?                        #statementForInRange
+    | 'for' ('var' | 'val')? NAME 'in' iterable=expr ('where' expr)? 'do' body=block ('else' 'do'? elseBody=block)?                              #statementForIn
 
     | NAME '(' ')' NL                                                   #statementFunctionCallNoArgs
     | NAME '(' args+=expr (',' args+=expr)* ')' NL                      #statementFunctionCallWithArgs

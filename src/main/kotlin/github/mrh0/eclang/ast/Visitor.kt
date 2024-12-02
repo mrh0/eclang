@@ -16,10 +16,7 @@ import github.mrh0.eclang.ast.token.function.*
 import github.mrh0.eclang.ast.token.function.call.TExprCall
 import github.mrh0.eclang.ast.token.function.call.TStatementCall
 import github.mrh0.eclang.ast.token.global.*
-import github.mrh0.eclang.ast.token.loop.TStatementBreak
-import github.mrh0.eclang.ast.token.loop.TStatementContinue
-import github.mrh0.eclang.ast.token.loop.TStatementForeachInRange
-import github.mrh0.eclang.ast.token.loop.TStatementWhile
+import github.mrh0.eclang.ast.token.loop.*
 import github.mrh0.eclang.ast.token.op.*
 import github.mrh0.eclang.ast.token.op.arithmetic.*
 import github.mrh0.eclang.ast.token.op.compare.*
@@ -231,6 +228,10 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     override fun visitStatementForInRange(ctx: EclangParser.StatementForInRangeContext): ITok {
         return TStatementForeachInRange(loc(ctx), ctx.NAME().text, visit(ctx.lower), visit(ctx.upper), visit(ctx.body), null)
+    }
+
+    override fun visitStatementForIn(ctx: EclangParser.StatementForInContext): ITok {
+        return TStatementForeachIn(loc(ctx), ctx.NAME().text, visit(ctx.iterable), visit(ctx.body), null)
     }
 
     override fun visitStatementContinue(ctx: EclangParser.StatementContinueContext): ITok = TStatementContinue(loc(ctx))

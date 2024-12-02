@@ -857,6 +857,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterStatementDeferDo(EclangParser.StatementDeferDoContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementDeferDo(EclangParser.StatementDeferDoContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterStatementIf(EclangParser.StatementIfContext ctx) { }
 	/**
 	 * {@inheritDoc}

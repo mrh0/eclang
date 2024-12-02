@@ -22,18 +22,19 @@ char* __ec_atom_test3 = "test3";
 char* __ec_atom_test_atom = "test_atom";
 
 // Arrays
-typedef struct { long len; int* data; } __ec_array_1473611564;
+typedef struct { long len; int* data; } __ec_array_135184888_t;
 
 // Built-In
 void* __ec_nc(void* left, void* right) {
     return left == NULL ? right : left;
 }
-typedef struct { int line; int position; char* path; } Location;
-typedef struct { size_t len; char* data; } String;
+typedef struct { int line; int position; char* path; } __ec_location_t;
+typedef struct { size_t len; char* data; } __ec_string_t;
 
 // Declarations
 void log_0(char* value);
-void log_1(String value);
+void log_1(__ec_string_t value);
+void log_12(size_t value);
 double min_0(double x, double y);
 double max_0(double x, double y);
 char* clone_0(char* str, apr_pool_t* pool);
@@ -65,10 +66,13 @@ struct Test {
 
 // Code
 void log_0(char* value) {
-	printf("s\n"", value);
+	printf("%s\n", value);
 }
-void log_1(String value) {
-	printf("s\n"", value.data);
+void log_1(__ec_string_t value) {
+	printf("%s\n", value.data);
+}
+void log_12(size_t value) {
+	printf("%d\n", value);
 }
 double min_0(double x, double y) {
 	return (x<y) ? (x) : (y);
@@ -90,13 +94,17 @@ char* catch_0(char* test) {
 	return v;
 }
 int main_0(void) {
-	log_0(catch_0("est""));
+	log_0(catch_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
-	log_0(clone_1("loned String""));
+	log_0(clone_1("Cloned String"));
 	int* carray = (int[]){6, 4, 2};
-	__ec_array_1473611564 array1 = (__ec_array_1473611564){3,(int[]){6, 4, 2}};
-	__ec_array_1473611564 array2 = (__ec_array_1473611564){3,(int[]){6, 4, 2}};
-	log_1((String){11,"Hello World"});
+	__ec_array_135184888_t array1 = (__ec_array_135184888_t){3,(int[]){6, 4, 2}};
+	__ec_array_135184888_t array2 = (__ec_array_135184888_t){3,(int[]){6, 4, 2}};
+	log_12(array1.len);
+	for (int entry=0;entry<array1.len;entry++) {
+		log_0("Testing");
+	}
+	log_1((__ec_string_t){11,"Hello World"});
 	char tchar = (char)10;
 	short tshort = 10;
 	int tint = 10;
@@ -104,14 +112,14 @@ int main_0(void) {
 	unsigned short tushort = 10;
 	unsigned int tuint = 10;
 	unsigned long tulong = 10;
-	char* a = "ello"";
-	char* b = "ello"";
+	char* a = "Hello";
+	char* b = "Hello";
 	bool c = strcmp(a, b) == 0;
 	bool d = a==b;
 	div_t divRes = div(245, 5);
 	x_0(0);
-	log_0("ello World"");
-	log_0("orld"");
+	log_0("Hello World");
+	log_0("World");
 	int* addr = &G2;
 	int addr2 = *addr;
 	test_1(0, "");
@@ -125,40 +133,40 @@ int main_0(void) {
 	char _char = 'a';
 	char char2 = '\r';
 	a_0(aa_0());
-	n_0("ull"");
+	n_0("Null");
 	defTest_0(7);
 	int iter = 5;
 	while ((iter)>0) {
-		log_0(""");
+		log_0("I");
 		iter = iter-1;
 	}
-	if (strcmp("est"", "otTest"") == 0) {
-		char* ff = "FE"";
-		log_0("est1"");
+	if (strcmp("Test", "NotTest") == 0) {
+		char* ff = "DFE";
+		log_0("Test1");
 	}
 	else if (false) {
-		log_0("est2"");
+		log_0("Test2");
 	}
 	else {
-		log_0("est3"");
+		log_0("Test3");
 	}
 	return (true) ? (1) : (0);
 }
 int defTest_0(int input) {
-	log_0(""");
+	log_0("2");
 	if (true) {
-		log_0(""");
-		log_0(""");
+		log_0("4");
+		log_0("3");
 	}
 	else {
-		log_0("est"");
+		log_0("test");
 		int __ec_ret = 1;
-		log_0(""");
-		log_0(""");
+		log_0("1");
+		log_0("5");
 		return __ec_ret;
 	}
 	int __ec_ret = input;
-	log_0(""");
+	log_0("1");
 	return __ec_ret;
 }
 char* n_0(char* a) {
@@ -175,10 +183,10 @@ int test_1(int a, char* b) {
 	return a;
 }
 void x_0(int a) {
-	log_0("nt"");
+	log_0("Int");
 }
 void x_1(char* a) {
-	log_0("tr"");
+	log_0("Str");
 }
 void y_1(char* a) {
 	x_1(a);

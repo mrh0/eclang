@@ -15,9 +15,12 @@ fn log(value: String): None do
 fn log(value: Number): None do
     printf("%d\n"c, value)
 
-declare type IntegerNumber = Char & Short & Int & Long
+declare type SignedIntegerNumber = Char & Short & Int & Long
+declare type UnsignedIntegerNumber = UChar & UShort & UInt & ULong & Size
 declare type FloatingNumber = Float & Double
-declare type Number = IntegerNumber & FloatingNumber
+declare type SignedNumber = SignedIntegerNumber & FloatingNumber
+declare type UnsignedNumber = UnsignedIntegerNumber
+declare type Number = SignedNumber & UnsignedNumber
 
 // apr
 declare type rec "apr_pool_t" as Pool

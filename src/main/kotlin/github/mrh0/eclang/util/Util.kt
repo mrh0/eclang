@@ -8,7 +8,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 object Util {
-    fun getCStringContent(token: String?) = token?.substring(2, token.length-1)
+    fun getCStringContent(token: String?) = token?.substring(1, token.length-2)
     fun getStringContent(token: String?) = token?.substring(1, token.length-1)
 
     fun testIdentifier(location: Loc, id: String): String {
