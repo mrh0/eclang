@@ -22,9 +22,7 @@ abstract class EcType(val identifier: String) {
 
     open fun canBeInstantiated() = true
 
-    open fun getProperty(location: Loc, name: String): EcType? = throw EcUndefinedAccessorPropertyError(location, name, this)
+    open fun getProperty(location: Loc, name: String): EcType = throw EcUndefinedAccessorPropertyError(location, name, this)
 
-    open fun accessorString(location: Loc, property: String): EcType? = throw EcUndefinedAccessorPropertyError(location, property, this)
-
-    open fun accessorInteger(location: Loc, index: Long): EcType? = throw EcUndefinedAccessorPropertyError(location, "$index", this)
+    open fun accessor(location: Loc, indexType: EcType): EcType = throw EcUndefinedAccessorPropertyError(location, "[$indexType]", this)
 }

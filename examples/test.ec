@@ -15,9 +15,10 @@ fn main(): Int do
     log(catch("Test"c))
     createPool(addrof(ROOT_POOL!), Null)
     log("Cloned String"c.clone())
-    val carray: Int[]c = [6,4,2]c
-    val array1: Int[] = [6,4,2]
-    val array2: Int[] = [6,4,2]
+    val array1 = ["One", "Two", "Three"]
+    val array2: Int[] = [5, 3, 6, 0]
+    val carray1 = ["One", "Two", "Three"]c
+    val carray2: Int[]c = [5, 3, 6, 0]c
     log(array1.len)
 
     for index in array1 do

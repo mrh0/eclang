@@ -41,7 +41,7 @@ mvn clean package
 
 ### Compile .ec source with eclang.jar
 ```
-java -jar ./target/eclang-0.1.0.jar -c source.ec -o 
+java -jar ./target/eclang-0.1.0.jar -c source.ec -o out.c
 ```
 
 ### Compile generated .c source with gcc
@@ -86,7 +86,7 @@ Functions may also have overloaded definitions, default parameter values, and ty
 
 ```plaintext
 fn main(): Int do
-    log "Hello World"
+    log("Hello World")
     ret 0
 ```
 The generated C code:
@@ -117,6 +117,64 @@ fn z(a: Int): Int = a + 1
 
 This function returns the input integer `a` incremented by `1`.
 
+### Data Types
+
+#### Primitive Signed and Unsigned Numbers
+
+```plaintext
+val char1: Char = 'a'
+val char2: Char = 0
+val char3: Char = 0c
+val uchar1: UChar = 0
+val uchar1: UChar = 0uc
+
+val short1: Short = 0
+val short2: Short = 0s
+val ushort1: UShort = 0
+val ushort2: UShort = 0us
+
+val int1: Int = 0
+val int2: Int = 0i
+val uint1: UInt = 0
+val uint2: UInt = 0u
+val uint3: UInt = 0ui
+
+val long1: Long = 0
+val long2: Long = 0l
+val ulong1: ULong = 0
+val ulong2: ULong = 0ul
+
+val float1: Float = 0
+val float2: Float = 0.0
+val float3: Float = 0f
+val float4: Float = 0.0f
+
+val double1: Double = 0
+val double2: Double = 0.0
+val double3: Double = 0d
+val double4: Double = 0.0d
+```
+
+#### Strings and C-Strings
+
+```plaintext
+val string1 = "Hello World"
+val string2: String = "Hello World"
+
+val cstring1 = "Hello World"c
+val cstring2: String = "Hello World"c
+```
+
+#### Arrays and C-Arrays
+
+```plaintext
+val array1 = ["One", "Two", "Three"]
+val array2: Int[] = [5, 3, 6, 0]
+
+val carray1 = ["One", "Two", "Three"]c
+val carray2: Int[]c = [5, 3, 6, 0]c
+```
+
 ### Operators
 
 
@@ -130,8 +188,8 @@ This function returns the input integer `a` incremented by `1`.
 `==` `!=` `===` `!==` `<` `>` `<=` `>=`
 
 ```plaintext
-val a: CString = "Hello"
-val b: CString = "Hello"
+val a: CString = "Hello"c
+val b: CString = "Hello"c
 val c: Bool = a == b // true
 val d: Bool = a === b // false
 ```
@@ -153,10 +211,10 @@ bool d = a==b;
 
 ```plaintext
 fn x(a: Int) do
-    log "Int"
+    log("Int")
 
-fn x(a: CString) do
-    log "Str"
+fn x(a: String) do
+    log("Str")
 ```
 
 Here, the function `x` is overloaded to handle both `Int` and `CString` types.
@@ -186,11 +244,11 @@ else
 
 ```plaintext
 if true do
-    log "Test1"
+    log("Test1")
 else if false do
-    log "Test2"
+    log("Test2")
 else
-    log "Test3"
+    log("Test3")
 ```
 
 
@@ -302,7 +360,7 @@ fn n(a: CString?): CString do
 val k = :test_atom
 
 fn a(atom: :log | :dont_log) do
-    if atom == :log do log (atom)
+    if atom == :log do log(atom)
 ```
 
 In this example:
@@ -321,7 +379,18 @@ rec Goose as
     loudness: Int
 
 fn quack(bird: Duck & Goose) do
-    log bird.name
+    log(bird.name)
+```
+
+### Generic Typing
+
+```plaintext
+fn quack(bird: <B>) do
+    log(bird)
+
+quack("Hello")
+
+quack(420)
 ```
 
 ### Interfaces (Not Yet Implemented)
@@ -377,6 +446,16 @@ int defTest_0(int input) {
 	printf("1");
 	return __ec_ret;
 }
+```
+
+Defer blocks of code:
+
+```plaintext
+fn defTest(input: DefinedType): Int do
+    defer do
+        log("1")
+        log("2")
+    log("3")
 ```
 
 ### Memory Pools
