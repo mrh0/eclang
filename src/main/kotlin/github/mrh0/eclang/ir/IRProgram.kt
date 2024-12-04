@@ -24,6 +24,17 @@ class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>,
         uses.forEach { it.toC(sb, c) }
         sb.putLine()
 
+        sb.commentLine("Built-In")
+        sb.put("""
+        void* __ec_nc(void* left, void* right) {
+            return left == NULL ? right : left;
+        }
+        typedef struct { int line; int position; char* path; } __ec_location_t;
+        typedef struct { size_t len; char* data; } __ec_string_t;
+        """.trimIndent())
+        sb.putLine()
+        sb.putLine()
+
         sb.commentLine("Atoms")
         AtomInstance.getAll().forEach { sb.putLine("char* ${it.getId()} = \"${it.label}\";") }
         sb.putLine()
@@ -34,17 +45,6 @@ class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>,
             IRType(location, it.type).toC(sb, c)
             sb.putLine("* data; } ${it.getId()};")
         }
-        sb.putLine()
-
-        sb.commentLine("Built-In")
-        sb.put("""
-        void* __ec_nc(void* left, void* right) {
-            return left == NULL ? right : left;
-        }
-        typedef struct { int line; int position; char* path; } __ec_location_t;
-        typedef struct { size_t len; char* data; } __ec_string_t;
-        """.trimIndent())
-        sb.putLine()
         sb.putLine()
 
         sb.commentLine("Declarations")

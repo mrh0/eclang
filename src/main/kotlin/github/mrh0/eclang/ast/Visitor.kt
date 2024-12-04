@@ -4,6 +4,7 @@ import github.mrh0.eclang.util.Util
 import github.mrh0.eclang.antlr.EclangBaseVisitor
 import github.mrh0.eclang.antlr.EclangParser
 import github.mrh0.eclang.ast.token.*
+import github.mrh0.eclang.ast.token.accessor.TAccessor
 import github.mrh0.eclang.ast.token.accessor.TAccessorNamed
 import github.mrh0.eclang.ast.token.branch.TInlineIf
 import github.mrh0.eclang.ast.token.branch.TStatementIf
@@ -118,7 +119,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     // Expressions
     override fun visitExprNest(ctx: EclangParser.ExprNestContext): ITok = TExprNest(loc(ctx), visit(ctx.expr()))
 
-    override fun visitExprAccessName(ctx: EclangParser.ExprAccessNameContext): ITok = TAccessorNamed(loc(ctx), visit(ctx.expr()), ctx.NAME().text)
+    override fun visitExprAccessName(ctx: EclangParser.ExprAccessNameContext): ITok = TAccessorNamed(loc(ctx), visit(ctx.accesssed), ctx.NAME().text)
+    override fun visitExprAccessor(ctx: EclangParser.ExprAccessorContext): ITok = TAccessor(loc(ctx), visit(ctx.accesssed), visit(ctx.index))
 
     override fun visitExprAddressOf(ctx: EclangParser.ExprAddressOfContext): ITok = TAddressOf(loc(ctx), visit(ctx.expr()))
     override fun visitExprSizeOf(ctx: EclangParser.ExprSizeOfContext): ITok = TSizeOf(loc(ctx), visit(ctx.type()))

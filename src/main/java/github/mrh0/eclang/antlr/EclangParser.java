@@ -907,10 +907,11 @@ public class EclangParser extends Parser {
 	}
 	@SuppressWarnings("CheckReturnValue")
 	public static class ExprAccessNameNullishCoalescingContext extends ExprContext {
+		public ExprContext accesssed;
+		public TerminalNode NAME() { return getToken(EclangParser.NAME, 0); }
 		public ExprContext expr() {
 			return getRuleContext(ExprContext.class,0);
 		}
-		public TerminalNode NAME() { return getToken(EclangParser.NAME, 0); }
 		public ExprAccessNameNullishCoalescingContext(ExprContext ctx) { copyFrom(ctx); }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
@@ -1063,6 +1064,7 @@ public class EclangParser extends Parser {
 	}
 	@SuppressWarnings("CheckReturnValue")
 	public static class ExprAccessorContext extends ExprContext {
+		public ExprContext accesssed;
 		public ExprContext index;
 		public List<ExprContext> expr() {
 			return getRuleContexts(ExprContext.class);
@@ -1133,10 +1135,11 @@ public class EclangParser extends Parser {
 	}
 	@SuppressWarnings("CheckReturnValue")
 	public static class ExprAccessNameContext extends ExprContext {
+		public ExprContext accesssed;
+		public TerminalNode NAME() { return getToken(EclangParser.NAME, 0); }
 		public ExprContext expr() {
 			return getRuleContext(ExprContext.class,0);
 		}
-		public TerminalNode NAME() { return getToken(EclangParser.NAME, 0); }
 		public ExprAccessNameContext(ExprContext ctx) { copyFrom(ctx); }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
@@ -2093,6 +2096,7 @@ public class EclangParser extends Parser {
 					case 9:
 						{
 						_localctx = new ExprAccessNameContext(new ExprContext(_parentctx, _parentState));
+						((ExprAccessNameContext)_localctx).accesssed = _prevctx;
 						pushNewRecursionContext(_localctx, _startState, RULE_expr);
 						setState(270);
 						if (!(precpred(_ctx, 18))) throw new FailedPredicateException(this, "precpred(_ctx, 18)");
@@ -2105,6 +2109,7 @@ public class EclangParser extends Parser {
 					case 10:
 						{
 						_localctx = new ExprAccessNameNullishCoalescingContext(new ExprContext(_parentctx, _parentState));
+						((ExprAccessNameNullishCoalescingContext)_localctx).accesssed = _prevctx;
 						pushNewRecursionContext(_localctx, _startState, RULE_expr);
 						setState(273);
 						if (!(precpred(_ctx, 17))) throw new FailedPredicateException(this, "precpred(_ctx, 17)");
@@ -2117,6 +2122,7 @@ public class EclangParser extends Parser {
 					case 11:
 						{
 						_localctx = new ExprAccessorContext(new ExprContext(_parentctx, _parentState));
+						((ExprAccessorContext)_localctx).accesssed = _prevctx;
 						pushNewRecursionContext(_localctx, _startState, RULE_expr);
 						setState(276);
 						if (!(precpred(_ctx, 16))) throw new FailedPredicateException(this, "precpred(_ctx, 16)");
@@ -2131,6 +2137,7 @@ public class EclangParser extends Parser {
 					case 12:
 						{
 						_localctx = new ExprAccessorContext(new ExprContext(_parentctx, _parentState));
+						((ExprAccessorContext)_localctx).accesssed = _prevctx;
 						pushNewRecursionContext(_localctx, _startState, RULE_expr);
 						setState(281);
 						if (!(precpred(_ctx, 15))) throw new FailedPredicateException(this, "precpred(_ctx, 15)");

@@ -18,10 +18,14 @@ class TCreateArray(location: Loc, private val values: List<ITok>) : Tok(location
     }
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        if (hint !is EcTypeArray) throw EcUnableToInferTypeError(location)
-        val irs = values.map { it.process(cd, hint.arg) }
-        irs.forEach { if(!hint.arg.accepts(location, it.first)) throw EcUnexpectedTypeError(location, hint.arg, it.first) }
-        ArrayInstance.get(hint.arg)
-        return hint to IRCreateArray(location, IRType(location, hint), IRType(location, hint.arg), irs.map { it.second })
+        val arrayType: EcTypeArray = if (hint is EcTypeArray) hint else {
+            val ir0 = values[0].process(cd, EcTypeNone)
+            EcTypeArray(ir0.first)
+        }
+
+        val irs = values.map { it.process(cd, arrayType.arg) }
+        irs.forEach { if(!arrayType.arg.accepts(location, it.first)) throw EcUnexpectedTypeError(location, arrayType.arg, it.first) }
+        ArrayInstance.get(arrayType.arg)
+        return arrayType to IRCreateArray(location, IRType(location, arrayType), IRType(location, arrayType.arg), irs.map { it.second })
     }
 }

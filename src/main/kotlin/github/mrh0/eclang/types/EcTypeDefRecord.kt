@@ -8,7 +8,7 @@ class EcTypeDefRecord(val name: String, props: List<Pair<String, EcType>>, priva
 
     override fun isReferenceType(): Boolean = true
 
-    override fun getProperty(location: Loc, name: String): EcType? = map[name]
+    override fun getProperty(location: Loc, name: String): EcType = map[name] ?: super.getProperty(location, name)
 
     fun getSourceName(): String = externalName ?: name
 }

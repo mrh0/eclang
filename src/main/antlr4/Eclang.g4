@@ -113,10 +113,10 @@ expr:
     | expr 'as' 'unsafe' '(' type ')'                               #exprAsUnsafe
     | expr '!'                                                      #exprCastNotNull
 
-    | expr '.' NAME                                                 #exprAccessName
-    | expr '?.' NAME                                                #exprAccessNameNullishCoalescing
-    | expr '[' index=expr ']'                                             #exprAccessor
-    | expr '[' INDENT index=expr NL DEDENT ']'                            #exprAccessor
+    | accesssed=expr '.' NAME                                                 #exprAccessName
+    | accesssed=expr '?.' NAME                                                #exprAccessNameNullishCoalescing
+    | accesssed=expr '[' index=expr ']'                                             #exprAccessor
+    | accesssed=expr '[' INDENT index=expr NL DEDENT ']'                            #exprAccessor
 
     | NAME '(' ')'                                                  #exprFunctionCallNoArgs
     | NAME '(' args+=expr (',' args+=expr)* ')'                     #exprFunctionCallWithArgs

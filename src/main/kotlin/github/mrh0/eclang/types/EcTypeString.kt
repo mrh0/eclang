@@ -9,11 +9,11 @@ object EcTypeString : EcType("String") {
 
     override fun isReferenceType() = true
 
-    override fun getProperty(location: Loc, name: String): EcType? {
+    override fun getProperty(location: Loc, name: String): EcType {
         return when (name) {
             "len" -> EcTypeSize
             "data" -> EcTypeCString
-            else -> null
+            else -> super.getProperty(location, name)
         }
     }
 }

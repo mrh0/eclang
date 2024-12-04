@@ -15,15 +15,6 @@
 #include <apr_pools.h>
 // use ec:lib.ec
 
-// Atoms
-char* __ec_atom_test1 = "test1";
-char* __ec_atom_test2 = "test2";
-char* __ec_atom_test3 = "test3";
-char* __ec_atom_test_atom = "test_atom";
-
-// Arrays
-typedef struct { long len; int* data; } __ec_array_135184888_t;
-
 // Built-In
 void* __ec_nc(void* left, void* right) {
     return left == NULL ? right : left;
@@ -31,10 +22,19 @@ void* __ec_nc(void* left, void* right) {
 typedef struct { int line; int position; char* path; } __ec_location_t;
 typedef struct { size_t len; char* data; } __ec_string_t;
 
+// Atoms
+char* __ec_atom_test1 = "test1";
+char* __ec_atom_test2 = "test2";
+char* __ec_atom_test3 = "test3";
+char* __ec_atom_test_atom = "test_atom";
+
+// Arrays
+typedef struct { long len; __ec_string_t* data; } __ec_array_274722023_t;
+typedef struct { long len; int* data; } __ec_array_1796371666_t;
+
 // Declarations
 void log_0(char* value);
 void log_1(__ec_string_t value);
-void log_12(size_t value);
 double min_0(double x, double y);
 double max_0(double x, double y);
 char* clone_0(char* str, apr_pool_t* pool);
@@ -71,9 +71,6 @@ void log_0(char* value) {
 void log_1(__ec_string_t value) {
 	printf("%s\n", value.data);
 }
-void log_12(size_t value) {
-	printf("%d\n", value);
-}
 double min_0(double x, double y) {
 	return (x<y) ? (x) : (y);
 }
@@ -97,12 +94,10 @@ int main_0(void) {
 	log_0(catch_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_1("Cloned String"));
-	int* carray = (int[]){6, 4, 2};
-	__ec_array_135184888_t array1 = (__ec_array_135184888_t){3,(int[]){6, 4, 2}};
-	__ec_array_135184888_t array2 = (__ec_array_135184888_t){3,(int[]){6, 4, 2}};
-	log_12(array1.len);
-	for (int entry=0;entry<array1.len;entry++) {
-		log_0("Testing");
+	const __ec_array_274722023_t array1 = (__ec_array_274722023_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
+	__ec_array_1796371666_t array2 = (__ec_array_1796371666_t){4,(int[]){5, 3, 6, 0}};
+	for (int index=0;index<array1.len;index++) {
+		log_1(array1.data[index]);
 	}
 	log_1((__ec_string_t){11,"Hello World"});
 	char tchar = (char)10;
