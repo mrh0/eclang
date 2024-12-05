@@ -17,9 +17,9 @@ fn main(): Int do
     log("Cloned String"c.clone())
     val array1 = ["One", "Two", "Three"]
     val array2: Int[] = [5, 3, 6, 0]
-    //val carray1 = ["One", "Two", "Three"]c
-    //val carray2: Int[]c = [5, 3, 6, 0]c
-    //log(array1.len)
+    val carray1 = ["One", "Two", "Three"]c
+    val carray2: Int[]c = [5, 3, 6, 0]c
+    log(array1.len)
 
     for index in array1 do
         log(array1[index])
@@ -84,7 +84,8 @@ fn defTest(input: DefinedType): Int do
         defer log("3"c)
         log("4"c)
     else
-        defer log("5"c)
+        defer do
+            log("5"c)
         log(
             "test"c
         )

@@ -15,6 +15,8 @@ class ContextBuilder(val contextName: String) {
 
     fun defer(location: Loc, tok: ITok) = stack.defer(location, tok)
 
+    fun defer(location: Loc, toks: List<ITok>) = toks.forEach { stack.defer(location, it) } 
+
     fun getRaw(location: Loc, name: String): IVar? = stack.getRaw(location, name)
 
     fun get(location: Loc, name: String): IVar = stack.get(location, name)

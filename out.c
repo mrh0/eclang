@@ -29,12 +29,13 @@ char* __ec_atom_test3 = "test3";
 char* __ec_atom_test_atom = "test_atom";
 
 // Arrays
-typedef struct { long len; __ec_string_t* data; } __ec_array_274722023_t;
-typedef struct { long len; int* data; } __ec_array_1796371666_t;
+typedef struct { long len; __ec_string_t* data; } __ec_array_1527430292_t;
+typedef struct { long len; int* data; } __ec_array_97652294_t;
 
 // Declarations
 void log_0(char* value);
 void log_1(__ec_string_t value);
+void log_12(size_t value);
 double min_0(double x, double y);
 double max_0(double x, double y);
 char* clone_0(char* str, apr_pool_t* pool);
@@ -71,6 +72,9 @@ void log_0(char* value) {
 void log_1(__ec_string_t value) {
 	printf("%s\n", value.data);
 }
+void log_12(size_t value) {
+	printf("%d\n", value);
+}
 double min_0(double x, double y) {
 	return (x<y) ? (x) : (y);
 }
@@ -94,8 +98,11 @@ int main_0(void) {
 	log_0(catch_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_1("Cloned String"));
-	const __ec_array_274722023_t array1 = (__ec_array_274722023_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
-	__ec_array_1796371666_t array2 = (__ec_array_1796371666_t){4,(int[]){5, 3, 6, 0}};
+	const __ec_array_1527430292_t array1 = (__ec_array_1527430292_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
+	__ec_array_97652294_t array2 = (__ec_array_97652294_t){4,(int[]){5, 3, 6, 0}};
+	const __ec_string_t* carray1 = (__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}};
+	int* carray2 = (int[]){5, 3, 6, 0};
+	log_12(array1.len);
 	for (int index=0;index<array1.len;index++) {
 		log_1(array1.data[index]);
 	}
