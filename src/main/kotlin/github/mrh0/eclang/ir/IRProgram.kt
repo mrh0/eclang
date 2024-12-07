@@ -4,6 +4,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.array.ArrayInstance
 import github.mrh0.eclang.context.atom.AtomInstance
+import github.mrh0.eclang.context.optional.OptionalInstance
 import github.mrh0.eclang.ir.function.IRFunctionOverride
 import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
@@ -37,6 +38,14 @@ class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>,
 
         sb.commentLine("Atoms")
         AtomInstance.getAll().forEach { sb.putLine("char* ${it.getId()} = \"${it.label}\";") }
+        sb.putLine()
+
+        sb.commentLine("Optionals")
+        OptionalInstance.getAll().forEach {
+            sb.put("typedef struct { long status; ")
+            IRType(location, it.type).toC(sb, c)
+            sb.putLine(" data; void* error; } ${it.getId()};")
+        }
         sb.putLine()
 
         sb.commentLine("Arrays")

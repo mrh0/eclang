@@ -1,6 +1,5 @@
 package github.mrh0.eclang.context.optional
 
-import github.mrh0.eclang.context.atom.AtomInstance
 import github.mrh0.eclang.types.EcType
 
 class OptionalInstance private constructor(val type: EcType) {
