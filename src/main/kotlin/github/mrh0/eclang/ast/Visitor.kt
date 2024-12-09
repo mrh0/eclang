@@ -26,6 +26,7 @@ import github.mrh0.eclang.ast.token.type.*
 import github.mrh0.eclang.ast.token.statement.*
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
+import org.antlr.v4.runtime.tree.ErrorNode
 import java.io.File
 
 class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
@@ -84,6 +85,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     override fun visitTypeArray(ctx: EclangParser.TypeArrayContext): ITok =
         if(ctx.text.endsWith('c')) TTypeCArray(loc(ctx), visit(ctx.type())) else TTypeArray(loc(ctx), visit(ctx.type()))
+
+    override fun visitTypeThrows(ctx: EclangParser.TypeThrowsContext): ITok = TTypeThrows(loc(ctx), visit(ctx.left), visit(ctx.throwing))
 
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {

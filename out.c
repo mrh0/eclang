@@ -28,6 +28,8 @@ char* __ec_atom_test2 = "test2";
 char* __ec_atom_test3 = "test3";
 char* __ec_atom_test_atom = "test_atom";
 
+// Optionals
+
 // Arrays
 typedef struct { long len; __ec_string_t* data; } __ec_array_1527430292_t;
 typedef struct { long len; int* data; } __ec_array_97652294_t;

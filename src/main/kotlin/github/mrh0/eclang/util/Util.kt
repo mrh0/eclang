@@ -38,4 +38,8 @@ object Util {
 
         return path.toAbsolutePath()
     }
+
+    private val tupleEntryNames: Array<String> = arrayOf("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth",
+        "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "seventeenth", "eighteenth", "nineteenth", "twentieth")
+    fun getTupleEntryName(index: Int, length: Int) = if (index < tupleEntryNames.size) tupleEntryNames[index] else "entry$index"
 }

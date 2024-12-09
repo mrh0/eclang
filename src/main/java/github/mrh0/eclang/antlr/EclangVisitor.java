@@ -365,6 +365,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeTypeOf(EclangParser.TypeTypeOfContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code typeThrows}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeThrows(EclangParser.TypeThrowsContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code typeByName}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree

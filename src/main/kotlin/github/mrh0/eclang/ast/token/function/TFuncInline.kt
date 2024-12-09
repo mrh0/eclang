@@ -14,7 +14,7 @@ class TFuncInline (location: Loc, val expr: ITok, name: String, params: TParamet
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> = throw NotImplementedError("Should not be implemented")
 
     override fun getSourceName(): String? {
-        return if (name == "main") "main" else null // TODO: Change
+        return null
     }
 
     override fun getBody(): TBlock {

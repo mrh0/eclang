@@ -10,7 +10,7 @@ import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.EcType
 
-class IRFunctionOverride(location: Loc, private val block: IRBlock, val id: String, val params: IRParameters, val returnType: EcType) : IR(location) {
+class IRFunctionOverride(location: Loc, private val block: IRBlock, val id: String, val params: IRParameters, val returnType: EcType, val throws: EcType?) : IR(location) {
     override fun toString(): String {
         return "fn($id, $params, $returnType, $block)"
     }
@@ -23,6 +23,11 @@ class IRFunctionOverride(location: Loc, private val block: IRBlock, val id: Stri
         sb.put(id)
         sb.put('(')
         params.toC(sb, c)
+        if (throws != null) {
+            sb.put(", ")
+            IRType(location, throws).toC(sb, c)
+            sb.put(" __ec_throws")
+        }
         sb.put(") ")
         sb.pushScope(BlockScope())
         block.toC(sb, c)

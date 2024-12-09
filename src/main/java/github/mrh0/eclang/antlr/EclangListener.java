@@ -614,6 +614,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitTypeTypeOf(EclangParser.TypeTypeOfContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code typeThrows}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeThrows(EclangParser.TypeThrowsContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code typeThrows}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeThrows(EclangParser.TypeThrowsContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code typeByName}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree

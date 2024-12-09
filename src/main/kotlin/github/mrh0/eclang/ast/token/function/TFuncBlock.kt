@@ -13,7 +13,7 @@ class TFuncBlock (location: Loc, val block: TBlock, name: String, params: TParam
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> = throw NotImplementedError("Should not be implemented")
 
     override fun getSourceName(): String? {
-        return null // TODO: Change
+        return null
     }
 
     override fun getBody(): TBlock = block

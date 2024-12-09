@@ -27,7 +27,7 @@ object GlobalFunctions {
         }
 
         val usedSourceName = sourceName ?: getSourceName(name, fos.getNumberOfOverrides());
-        val res = FunctionOverride(location, usedSourceName, params, returnType, block, generics ?: mapOf())
+        val res = FunctionOverride(location, usedSourceName, params, returnType, block, generics ?: mapOf(), null)
         fos.add(res)
         if (name == "main") calledFunctionOverrides[usedSourceName] = true
         if (called) calledFunctionOverrides[usedSourceName] = true

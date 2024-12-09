@@ -4,12 +4,12 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.array.ArrayInstance
 import github.mrh0.eclang.context.atom.AtomInstance
-import github.mrh0.eclang.context.optional.OptionalInstance
+import github.mrh0.eclang.context.tuple.TupleInstance
 import github.mrh0.eclang.ir.function.IRFunctionOverride
-import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
+import github.mrh0.eclang.util.Util
 
-class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>, val uses: List<IIR>) : IR(location) {
+class IRProgram(location: Loc, private val functions: List<IIR>, private val globals: List<IIR>, private val uses: List<IIR>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.putLine("#include <stdio.h>")
         sb.putLine("#include <string.h>")
@@ -40,11 +40,14 @@ class IRProgram(location: Loc, val functions: List<IIR>, val globals: List<IIR>,
         AtomInstance.getAll().forEach { sb.putLine("char* ${it.getId()} = \"${it.label}\";") }
         sb.putLine()
 
-        sb.commentLine("Optionals")
-        OptionalInstance.getAll().forEach {
-            sb.put("typedef struct { long status; ")
-            IRType(location, it.type).toC(sb, c)
-            sb.putLine(" data; void* error; } ${it.getId()};")
+        sb.commentLine("Tuples")
+        TupleInstance.getAll().forEach { tuple ->
+            sb.put("typedef struct { ")
+            tuple.types.forEachIndexed { index, type ->
+                IRType(location, type).toC(sb, c)
+                sb.put(" ${Util.getTupleEntryName(index, tuple.types.size)}; ")
+            }
+            sb.putLine(" } ${tuple.getId()};")
         }
         sb.putLine()
 

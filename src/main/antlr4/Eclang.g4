@@ -149,6 +149,7 @@ type:
     | '<' NAME '>'                                                          #typeGeneric
     | 'typeof' expr                                                         #typeTypeOf
     | type '[' (']c' | ']')                                                 #typeArray
+    | left=type 'throws' throwing=type                                           #typeThrows
     ;
 
 interface:
@@ -195,8 +196,8 @@ statement:
 
 func:
       'declare' 'fn' (externalName=STRING 'as')? name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL                    #functionDeclare
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? 'do' body=block		            #functionBlock
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? '=' expression=expr NL            #functionInline
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block		            #functionBlock
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL            #functionInline
     ;
 
 global:
