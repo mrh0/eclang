@@ -23,9 +23,9 @@ class CSourceBuilder : SourceBuilder() {
         putLine("{")
     }
 
-    fun popScope(es: Boolean = false): BlockScope {
+    fun popScope(es: Boolean = false, extra: String = ""): BlockScope {
         for (i in 1 until scopeStack.size) put('\t')
-        if(es) putLine("};") else putLine("}")
+        if(es) putLine("};") else putLine("}$extra")
         return scopeStack.pop()
     }
 

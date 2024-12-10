@@ -11,7 +11,7 @@ import github.mrh0.eclang.types.EcType
 
 class IRCreateRecord(location: Loc, val name: String, val entries: List<IIR>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.put("(struct $name){")
+        sb.put("($name){")
         entries.forEachIndexed {
             index, it ->
             if (index != 0) sb.put(", ")

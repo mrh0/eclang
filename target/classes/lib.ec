@@ -119,3 +119,7 @@ fn clone(str: CString, pool: @Pool?): CString do
     ret newStr
 
 fn clone(str: CString): CString = clone(str, Null)
+
+rec Error as
+    code: Int
+    message: String

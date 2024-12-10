@@ -10,7 +10,7 @@ import github.mrh0.eclang.types.EcType
 
 class IRRecord(location: Loc, val name: String, val entries: List<Pair<String, IRType>>) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.putStatement("struct $name ")
+        sb.putStatement("typedef struct ")
         sb.pushScope(BlockScope())
         entries.forEach {
             sb.putStatement()
@@ -19,6 +19,6 @@ class IRRecord(location: Loc, val name: String, val entries: List<Pair<String, I
             sb.put(it.first)
             sb.endStatement()
         }
-        sb.popScope(true)
+        sb.popScope(false, " $name;")
     }
 }

@@ -3,6 +3,7 @@ package github.mrh0.eclang.ir
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.array.ArrayInstance
+import github.mrh0.eclang.context.tuple.TupleInstance
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.*
@@ -30,6 +31,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeNullable -> translateNative(t.wrapped)
         is EcTypeRecord -> "struct ${t.getSourceName()}"
         is EcTypeDefRecord -> t.getSourceName()
+        is EcTypeCatchable -> TupleInstance.get(t.types).getId()
         is EcTypeChar -> "char"
         is EcTypeFloat -> "float"
         is EcTypeDouble -> "double"

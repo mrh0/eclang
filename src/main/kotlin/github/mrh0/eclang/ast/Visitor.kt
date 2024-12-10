@@ -242,6 +242,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitStatementContinue(ctx: EclangParser.StatementContinueContext): ITok = TStatementContinue(loc(ctx))
     override fun visitStatementBreak(ctx: EclangParser.StatementBreakContext): ITok = TStatementBreak(loc(ctx))
     override fun visitStatementPass(ctx: EclangParser.StatementPassContext): ITok = TPass(loc(ctx))
-    override fun visitStatementDefer(ctx: EclangParser.StatementDeferContext): ITok = TDefer(loc(ctx),visit(ctx.statement()))
-    override fun visitStatementDeferDo(ctx: EclangParser.StatementDeferDoContext): ITok = TDefer(loc(ctx),visit(ctx.block()))
+    override fun visitStatementDefer(ctx: EclangParser.StatementDeferContext): ITok = TDefer(loc(ctx), visit(ctx.statement()))
+    override fun visitStatementDeferDo(ctx: EclangParser.StatementDeferDoContext): ITok = TDefer(loc(ctx), visit(ctx.block()))
+
+    override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TStatementThrow(loc(ctx), visit(ctx.expr()))
 }

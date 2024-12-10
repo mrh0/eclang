@@ -7,12 +7,16 @@ rec Test as
     a: Int
     b: Int
 
-fn catch(test: <A>): <A> do
+fn genericTest(test: <A>): <A> do
     val v: <A> = ""c
     ret v
 
+fn throwsTest(i: Int): Int throws Error do
+    ret i+1
+
 fn main(): Int do
-    log(catch("Test"c))
+    throwsTest(7)
+    log(genericTest("Test"c))
     createPool(addrof(ROOT_POOL!), Null)
     log("Cloned String"c.clone())
     val array1 = ["One", "Two", "Three"]

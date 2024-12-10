@@ -28,11 +28,12 @@ char* __ec_atom_test2 = "test2";
 char* __ec_atom_test3 = "test3";
 char* __ec_atom_test_atom = "test_atom";
 
-// Optionals
+// Tuples
+typedef struct { int first; struct Error second;  } __ec_tuple_346224929_t;
 
 // Arrays
-typedef struct { long len; __ec_string_t* data; } __ec_array_1527430292_t;
-typedef struct { long len; int* data; } __ec_array_97652294_t;
+typedef struct { long len; __ec_string_t* data; } __ec_array_1593180232_t;
+typedef struct { long len; int* data; } __ec_array_1117509763_t;
 
 // Declarations
 void log_0(char* value);
@@ -42,7 +43,8 @@ double min_0(double x, double y);
 double max_0(double x, double y);
 char* clone_0(char* str, apr_pool_t* pool);
 char* clone_1(char* str);
-char* catch_0(char* test);
+char* genericTest_0(char* test);
+__ec_tuple_346224929_t throwsTest_0(int i);
 int main_0(void);
 int defTest_0(int input);
 char* n_0(char* a);
@@ -60,12 +62,16 @@ int z_0(int a);
 static apr_pool_t* ROOT_POOL = NULL;
 // declare type rec div_t as IntDivResult
 // declare type rec ldiv_t as LongDivResult
+typedef struct {
+	int code;
+	__ec_string_t message;
+} Error;
 static const int G = 69;
 static int G2 = 420;
-struct Test {
+typedef struct {
 	int a;
 	int b;
-};
+} Test;
 
 // Code
 void log_0(char* value) {
@@ -92,16 +98,20 @@ char* clone_0(char* str, apr_pool_t* pool) {
 char* clone_1(char* str) {
 	return clone_0(str, NULL);
 }
-char* catch_0(char* test) {
+char* genericTest_0(char* test) {
 	char* v = "";
 	return v;
 }
+__ec_tuple_346224929_t throwsTest_0(int i) {
+	return (__ec_tuple_346224929_t){i+1, NULL};
+}
 int main_0(void) {
-	log_0(catch_0("Test"));
+	throwsTest_0(7);
+	log_0(genericTest_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_1("Cloned String"));
-	const __ec_array_1527430292_t array1 = (__ec_array_1527430292_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
-	__ec_array_97652294_t array2 = (__ec_array_97652294_t){4,(int[]){5, 3, 6, 0}};
+	const __ec_array_1593180232_t array1 = (__ec_array_1593180232_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
+	__ec_array_1117509763_t array2 = (__ec_array_1117509763_t){4,(int[]){5, 3, 6, 0}};
 	const __ec_string_t* carray1 = (__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}};
 	int* carray2 = (int[]){5, 3, 6, 0};
 	log_12(array1.len);
@@ -127,7 +137,7 @@ int main_0(void) {
 	int* addr = &G2;
 	int addr2 = *addr;
 	test_1(0, "");
-	struct Test testRec = (struct Test){0, 0};
+	struct Test testRec = (Test){0, 0};
 	const int ee = testRec.a;
 	y_1("");
 	z_0(1);
