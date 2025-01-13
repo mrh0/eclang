@@ -41,22 +41,11 @@ class IRProgram(location: Loc, private val functions: List<IIR>, private val glo
         sb.putLine()
 
         sb.commentLine("Tuples")
-        TupleInstance.getAll().forEach { tuple ->
-            sb.put("typedef struct { ")
-            tuple.types.forEachIndexed { index, type ->
-                IRType(location, type).toC(sb, c)
-                sb.put(" ${Util.getTupleEntryName(index, tuple.types.size)}; ")
-            }
-            sb.putLine(" } ${tuple.getId()};")
-        }
+        TupleInstance.getAll().forEach { it.toC(sb, c) }
         sb.putLine()
 
         sb.commentLine("Arrays")
-        ArrayInstance.getAll().forEach {
-            sb.put("typedef struct { long len; ")
-            IRType(location, it.type).toC(sb, c)
-            sb.putLine("* data; } ${it.getId()};")
-        }
+        ArrayInstance.getAll().forEach { it.toC(sb, c) }
         sb.putLine()
 
         sb.commentLine("Declarations")

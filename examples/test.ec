@@ -24,22 +24,17 @@ fn main(): Int do
     val carray1 = ["One", "Two", "Three"]c
     val carray2: Int[]c = [5, 3, 6, 0]c
     log(array1.len)
-
     for index in array1 do
         log(array1[index])
-
     log("Hello World")
-
     val tchar: Char = 10c
     val tshort: Short = 10s
     val tint: Int = 10i
     val tlong: Long = 10l
-
-    //val tuchar: UChar = 10uc
+    //val uchar: UChar = 10uc
     val tushort: UShort = 10us
     val tuint: UInt = 10ui
     val tulong: ULong = 10ul
-
     val a: CString = "Hello"c
     val b: CString = "Hello"c
     val c: Bool = a == b // true

@@ -14,7 +14,7 @@ class TTypeThrows(location: Loc, val returnType: ITok, val throwsType: ITok) : T
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val returnTypeRes = returnType.process(cd, hint)
         val throwableTypeRes = throwsType.process(cd, hint)
-        val catchable = EcTypeCatchable(returnTypeRes.first, throwableTypeRes.first)
+        val catchable = EcTypeResult(returnTypeRes.first, throwableTypeRes.first)
         return catchable to IRType(location, catchable)
     }
 }
