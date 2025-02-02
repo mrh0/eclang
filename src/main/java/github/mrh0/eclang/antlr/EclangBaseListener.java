@@ -533,18 +533,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExprTry(EclangParser.ExprTryContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprTry(EclangParser.ExprTryContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterExprUnOp(EclangParser.ExprUnOpContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -989,13 +977,25 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStatementTryDo(EclangParser.StatementTryDoContext ctx) { }
+	@Override public void enterStatementTry(EclangParser.StatementTryContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitStatementTryDo(EclangParser.StatementTryDoContext ctx) { }
+	@Override public void exitStatementTry(EclangParser.StatementTryContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStatementTryCatch(EclangParser.StatementTryCatchContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementTryCatch(EclangParser.StatementTryCatchContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

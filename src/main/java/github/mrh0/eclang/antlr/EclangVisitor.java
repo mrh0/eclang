@@ -309,13 +309,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprPrimitive(EclangParser.ExprPrimitiveContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code exprTry}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprTry(EclangParser.ExprTryContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code exprUnOp}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -574,12 +567,19 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementReturn(EclangParser.StatementReturnContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code statementTryDo}
+	 * Visit a parse tree produced by the {@code statementTry}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitStatementTryDo(EclangParser.StatementTryDoContext ctx);
+	T visitStatementTry(EclangParser.StatementTryContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code statementTryCatch}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementTryCatch(EclangParser.StatementTryCatchContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code functionDeclare}
 	 * labeled alternative in {@link EclangParser#func}.

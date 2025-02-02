@@ -17,7 +17,7 @@ class ResultInstance private constructor(val returnType: EcType, val errorType: 
         fun getAll() = arrays.values
     }
 
-    fun getId() = "__ec_result_${returnType.hashCode() + errorType.hashCode()}_t"
+    fun getId() = "__ec_result_${(returnType.hashCode() + errorType.hashCode()).toUInt()}_t"
 
     fun toC(sb: CSourceBuilder, c: Context) {
         sb.put("typedef struct { int code; union { ")

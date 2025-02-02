@@ -31,8 +31,8 @@ char* __ec_atom_test_atom = "test_atom";
 // Tuples
 
 // Arrays
-typedef struct { long len; __ec_string_t* data; } __ec_array_1240232440_t;
-typedef struct { long len; int* data; } __ec_array_116237769_t;
+typedef struct { long len; __ec_string_t* data; } __ec_array_1364767791_t;
+typedef struct { long len; int* data; } __ec_array_1357563986_t;
 
 // Declarations
 void log_0(char* value);
@@ -43,7 +43,8 @@ double max_0(double x, double y);
 char* clone_0(char* str, apr_pool_t* pool);
 char* clone_1(char* str);
 char* genericTest_0(char* test);
-__ec_result_-368488485_t throwsTest_0(int i);
+__ec_result_3647019862_t throwsTest1_0(int i);
+__ec_result_3647019862_t throwsTest2_0(int i);
 int main_0(void);
 int defTest_0(int input);
 char* n_0(char* a);
@@ -101,16 +102,20 @@ char* genericTest_0(char* test) {
 	char* v = "";
 	return v;
 }
-__ec_result_-368488485_t throwsTest_0(int i) {
-	return (__ec_result_-368488485_t){0, .value=i+1};
+__ec_result_3647019862_t throwsTest1_0(int i) {
+	return (__ec_result_3647019862_t){0, .value=i+1};
+}
+__ec_result_3647019862_t throwsTest2_0(int i) {
+	return (__ec_result_3647019862_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
 }
 int main_0(void) {
-	throwsTest_0(7);
+	throwsTest1_0(7);
+	throwsTest2_0(7);
 	log_0(genericTest_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_1("Cloned String"));
-	const __ec_array_1240232440_t array1 = (__ec_array_1240232440_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
-	__ec_array_116237769_t array2 = (__ec_array_116237769_t){4,(int[]){5, 3, 6, 0}};
+	const __ec_array_1364767791_t array1 = (__ec_array_1364767791_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
+	__ec_array_1357563986_t array2 = (__ec_array_1357563986_t){4,(int[]){5, 3, 6, 0}};
 	const __ec_string_t* carray1 = (__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}};
 	int* carray2 = (int[]){5, 3, 6, 0};
 	log_12(array1.len);

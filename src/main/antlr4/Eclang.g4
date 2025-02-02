@@ -135,12 +135,12 @@ expr:
 
     | '(' expr ')'                                                                                      #exprNest
     | '(' INDENT expr NL DEDENT ')'                                                                     #exprNest
-    | 'try' left=expr 'else' right=expr                                                                 #exprTry
-    | 'try' INDENT left=expr NL DEDENT 'else' right=expr                                                #exprTry
-    | 'try' left=expr 'else' INDENT right=expr NL DEDENT                                                #exprTry
-    | 'try' INDENT left=expr NL DEDENT 'else' INDENT right=expr NL DEDENT                               #exprTry
+    //| 'try' left=expr 'else' right=expr                                                                 #exprTry
+    //| 'try' INDENT left=expr NL DEDENT 'else' right=expr                                                #exprTry
+    //| 'try' left=expr 'else' INDENT right=expr NL DEDENT                                                #exprTry
+    //| 'try' INDENT left=expr NL DEDENT 'else' INDENT right=expr NL DEDENT                               #exprTry
 
-//    | 'case' '('? match=expr ')'? 'when' lefts+=primitive '->' rights+=expr ('|' lefts+=primitive '->' rights+=expr)* #exprMatch
+    // 'case' '('? match=expr ')'? 'when' lefts+=primitive '->' rights+=expr ('|' lefts+=primitive '->' rights+=expr)* #exprMatch
     ;
 
 type:
@@ -181,7 +181,7 @@ statement:
     | 'yield' NL                                                                        #statementYield
     | 'defer' statement                                                                 #statementDefer
     | 'defer' 'do' body=block                                                           #statementDeferDo
-    | 'throw' expr                                                                      #statementThrow
+    | 'throw' expr NL                                                                   #statementThrow
 
     | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      	#statementIf
     | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           	#statementWhile
@@ -199,8 +199,9 @@ statement:
 
     | 'ret' expr NL                                                     #statementReturn
 
-    | 'try' left=expr 'else' 'do' elseBody=block                                          #statementTryDo
-    | 'try' INDENT left=expr NL DEDENT 'else' 'do'elseBody=block                          #statementTryDo
+    | 'try' left=expr                                                                           #statementTry
+    | 'try' left=expr 'catch' NAME 'do' elseBody=block                                          #statementTryCatch
+    | 'try' INDENT left=expr NL DEDENT 'catch' NAME 'do'elseBody=block                          #statementTryCatch
     ;
 
 func:

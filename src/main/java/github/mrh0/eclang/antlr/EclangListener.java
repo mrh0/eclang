@@ -518,18 +518,6 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprPrimitive(EclangParser.ExprPrimitiveContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code exprTry}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterExprTry(EclangParser.ExprTryContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code exprTry}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitExprTry(EclangParser.ExprTryContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code exprUnOp}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -972,17 +960,29 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementReturn(EclangParser.StatementReturnContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code statementTryDo}
+	 * Enter a parse tree produced by the {@code statementTry}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterStatementTryDo(EclangParser.StatementTryDoContext ctx);
+	void enterStatementTry(EclangParser.StatementTryContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code statementTryDo}
+	 * Exit a parse tree produced by the {@code statementTry}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitStatementTryDo(EclangParser.StatementTryDoContext ctx);
+	void exitStatementTry(EclangParser.StatementTryContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code statementTryCatch}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementTryCatch(EclangParser.StatementTryCatchContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementTryCatch}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementTryCatch(EclangParser.StatementTryCatchContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code functionDeclare}
 	 * labeled alternative in {@link EclangParser#func}.

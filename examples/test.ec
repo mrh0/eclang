@@ -11,11 +11,15 @@ fn genericTest(test: <A>): <A> do
     val v: <A> = ""c
     ret v
 
-fn throwsTest(i: Int): Int throws Error do
+fn throwsTest1(i: Int): Int throws Error do
     ret i+1
 
+fn throwsTest2(i: Int): Int throws Error do
+    throw Error { 0, "Test" }
+
 fn main(): Int do
-    throwsTest(7)
+    throwsTest1(7)
+    throwsTest2(7)
     log(genericTest("Test"c))
     createPool(addrof(ROOT_POOL!), Null)
     log("Cloned String"c.clone())

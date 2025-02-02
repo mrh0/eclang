@@ -18,7 +18,7 @@ class ArrayInstance private constructor(val type: EcType) {
         fun getAll() = arrays.values
     }
 
-    fun getId() = "__ec_array_${type.hashCode()}_t"
+    fun getId() = "__ec_array_${type.hashCode().toUInt()}_t"
 
     fun toC(sb: CSourceBuilder, c: Context) {
         sb.put("typedef struct { long len; ")
