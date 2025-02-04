@@ -147,14 +147,16 @@ type:
       NAME                                                                  #typeByName
     | '@' type                                                              #typeAddressByName
     | type '?'                                                              #typeNullable
-    | types+=type '|' types+=type ('|' types+=type)*                        #typeEnum
-    | types+=type '&' types+=type ('&' types+=type)*                        #typeUnion
+    | types+=type '&' types+=type ('&' types+=type)*                        #typeEnum
+    | types+=type '|' types+=type ('|' types+=type)*                        #typeUnion
+    | 'anon' types+=type '|' types+=type ('|' types+=type)*                 #typeUnionAnon // Anonymus union
     | '(' type ')'                                                          #typeNest
     | ATOM                                                                  #typeAtom
     | '<' NAME '>'                                                          #typeGeneric
     | 'typeof' expr                                                         #typeTypeOf
     | type '[' (']c' | ']')                                                 #typeArray
-    | left=type 'throws' throwing=type                                           #typeThrows
+    | left=type 'throws' throwing=type                                      #typeThrows
+    | 'const' type                                                          #typeConst // When argument must be known at compile time
     ;
 
 interface:

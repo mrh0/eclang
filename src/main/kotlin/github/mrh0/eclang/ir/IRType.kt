@@ -1,6 +1,7 @@
 package github.mrh0.eclang.ir
 
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.token.type.TTypeUnion
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.array.ArrayInstance
 import github.mrh0.eclang.context.result.ResultInstance
@@ -47,6 +48,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeGeneric -> throw EcError(location, "Generic type cannot be used in this context")
         is EcTypeCArray -> "${translateNative(t.arg)}*"
         is EcTypeArray -> ArrayInstance.get(t.arg).getId()
+        is EcTypeUnion -> "union{${t.types.joinToString(separator = ";", postfix = ";") { translateNative(it) }}}"
         else -> throw NotImplementedError("Native type '$t' is not implemented")
     }
 

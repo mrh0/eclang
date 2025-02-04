@@ -557,13 +557,13 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterTypeUnion(EclangParser.TypeUnionContext ctx) { }
+	@Override public void enterTypeConst(EclangParser.TypeConstContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitTypeUnion(EclangParser.TypeUnionContext ctx) { }
+	@Override public void exitTypeConst(EclangParser.TypeConstContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -576,30 +576,6 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTypeAddressByName(EclangParser.TypeAddressByNameContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterTypeEnum(EclangParser.TypeEnumContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitTypeEnum(EclangParser.TypeEnumContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterTypeArray(EclangParser.TypeArrayContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitTypeArray(EclangParser.TypeArrayContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -629,6 +605,66 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterTypeAtom(EclangParser.TypeAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeAtom(EclangParser.TypeAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTypeGeneric(EclangParser.TypeGenericContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeGeneric(EclangParser.TypeGenericContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTypeUnion(EclangParser.TypeUnionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeUnion(EclangParser.TypeUnionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTypeEnum(EclangParser.TypeEnumContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeEnum(EclangParser.TypeEnumContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTypeArray(EclangParser.TypeArrayContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeArray(EclangParser.TypeArrayContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterTypeThrows(EclangParser.TypeThrowsContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -653,25 +689,13 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterTypeAtom(EclangParser.TypeAtomContext ctx) { }
+	@Override public void enterTypeUnionAnon(EclangParser.TypeUnionAnonContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitTypeAtom(EclangParser.TypeAtomContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterTypeGeneric(EclangParser.TypeGenericContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitTypeGeneric(EclangParser.TypeGenericContext ctx) { }
+	@Override public void exitTypeUnionAnon(EclangParser.TypeUnionAnonContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

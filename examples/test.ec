@@ -7,6 +7,10 @@ rec Test as
     a: Int
     b: Int
 
+rec UnionTest as
+    a: Int
+    b: Number
+
 fn genericTest(test: <A>): <A> do
     val v: <A> = ""c
     ret v
@@ -103,10 +107,10 @@ fn n(a = 0): Int do
 
 fn aa(): :Test1 = :Test1
 
-fn a(atom: :Test1 | :Test2 | :Test3): Atom do
+fn a(atom: :Test1 & :Test2 & :Test3): Atom do
     ret atom
 
-fn test(a: Int, b: Int & CString, c: Int = a): Int do
+fn test(a: Int, b: Int | CString, c: Int = a): Int do
     val d: Int = 5
     ret c
 
@@ -116,7 +120,7 @@ fn x(a: Int) do
 fn x(a: CString) do
     log("Str"c)
 
-fn y(a: Int & CString) do
+fn y(a: Int | CString) do
     x(a)
 
 fn z(a: Int): Int = a + 1

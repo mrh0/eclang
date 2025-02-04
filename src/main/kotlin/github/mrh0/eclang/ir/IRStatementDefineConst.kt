@@ -12,7 +12,7 @@ class IRStatementDefineConst(location: Loc, private val ivar: IVar, private val 
 
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.putStatement()
-        sb.put("const ")
+        sb.put("static const ")
         IRType(location, ivar.getType()).toC(sb, c)
         sb.put(' ')
         sb.put(ivar.getName())

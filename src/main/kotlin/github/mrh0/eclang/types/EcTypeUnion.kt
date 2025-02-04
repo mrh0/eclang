@@ -2,7 +2,7 @@ package github.mrh0.eclang.types
 
 import github.mrh0.eclang.ast.Loc
 
-data class EcTypeUnion(private val types: MutableSet<EcType>) : EcType("Union") {
+data class EcTypeUnion(val types: MutableSet<EcType>) : EcType("Union") {
     override fun toString() = types.joinToString("&", "(", ")") { it.toString() }
     fun append(type: EcType) = types.add(type)
     override fun accepts(location: Loc, type: EcType): Boolean {
