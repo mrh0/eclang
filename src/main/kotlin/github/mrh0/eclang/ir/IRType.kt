@@ -1,11 +1,9 @@
 package github.mrh0.eclang.ir
 
 import github.mrh0.eclang.ast.Loc
-import github.mrh0.eclang.ast.token.type.TTypeUnion
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.array.ArrayInstance
 import github.mrh0.eclang.context.result.ResultInstance
-import github.mrh0.eclang.context.tuple.TupleInstance
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.*
@@ -31,8 +29,8 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeBool -> "bool"
         is EcTypeAtom, is EcTypeAtomInstance -> "char*"
         is EcTypeNullable -> translateNative(t.wrapped)
-        is EcTypeRecord -> "struct ${t.getSourceName()}"
-        is EcTypeDefRecord -> t.getSourceName()
+        is EcTypeRecord -> t.getSourceName()
+        is EcTypeCStruct -> "struct ${t.getSourceName()}"
         is EcTypeResult -> ResultInstance.get(t.returnedType, t.throwableType).getId()
         is EcTypeChar -> "char"
         is EcTypeFloat -> "float"
@@ -48,7 +46,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeGeneric -> throw EcError(location, "Generic type cannot be used in this context")
         is EcTypeCArray -> "${translateNative(t.arg)}*"
         is EcTypeArray -> ArrayInstance.get(t.arg).getId()
-        is EcTypeUnion -> "union{${t.types.joinToString(separator = ";", postfix = ";") { translateNative(it) }}}"
+        is EcTypeUnion -> "union{${t.types.mapIndexed() { i, it -> "${translateNative(it)} v$i" }.joinToString(separator = ";", postfix = ";")}}"
         else -> throw NotImplementedError("Native type '$t' is not implemented")
     }
 

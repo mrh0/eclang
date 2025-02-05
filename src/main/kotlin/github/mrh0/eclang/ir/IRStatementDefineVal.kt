@@ -5,14 +5,14 @@ import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.state.IVar
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRStatementDefineConst(location: Loc, private val ivar: IVar, private val expr: IIR) : IR(location) {
+class IRStatementDefineVal(location: Loc, private val ivar: IVar, private val expr: IIR) : IR(location) {
     override fun toString(): String {
-        return "const($$ivar, $expr)"
+        return "val($$ivar, $expr)"
     }
 
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.putStatement()
-        sb.put("static const ")
+        sb.put("const ")
         IRType(location, ivar.getType()).toC(sb, c)
         sb.put(' ')
         sb.put(ivar.getName())

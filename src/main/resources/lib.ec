@@ -5,8 +5,8 @@ use "apr_general.h"
 use "apr_pools.h"
 
 // stdio
-declare fn "printf" as printf(format: CString, value: CString): None
-declare fn "printf" as printf(format: CString, value: Number): None
+declare fn printf(format: CString, value: CString): None
+declare fn printf(format: CString, value: Number): None
 
 fn log(value: CString): None do
     printf("%s\n"c, value)
@@ -15,23 +15,23 @@ fn log(value: String): None do
 fn log(value: Number): None do
     printf("%d\n"c, value)
 
-declare type SignedIntegerNumber = Char | Short | Int | Long
-declare type UnsignedIntegerNumber = UChar | UShort | UInt | ULong | Size
-declare type FloatingNumber = Float | Double
-declare type SignedNumber = SignedIntegerNumber | FloatingNumber
-declare type UnsignedNumber = UnsignedIntegerNumber
-declare type Number = SignedNumber | UnsignedNumber
+declare type SignedIntegerNumber as Char | Short | Int | Long
+declare type UnsignedIntegerNumber as UChar | UShort | UInt | ULong | Size
+declare type FloatingNumber as Float | Double
+declare type SignedNumber as SignedIntegerNumber | FloatingNumber
+declare type UnsignedNumber as UnsignedIntegerNumber
+declare type Number as SignedNumber | UnsignedNumber
 
 // apr
-declare type rec "apr_pool_t" as Pool
-declare type rec "apr_status_t" as PoolStatus
+declare rec Pool from "apr_pool_t"
+declare rec PoolStatus from "apr_status_t"
 
 var ROOT_POOL: @Pool? = Null
 
-declare fn "apr_pool_create" as createPool(pool: @@Pool, parent: @Pool?): PoolStatus
+declare fn createPool(pool: @@Pool, parent: @Pool?): PoolStatus from "apr_pool_create"
 fn createPool(pool: @@Pool): PoolStatus = createPool(pool, Null)
-declare fn "apr_pool_destroy" as freePool(pool: @Pool)
-declare fn "apr_palloc" as alloc(pool: @Pool, size: Size): @Any
+declare fn freePool(pool: @Pool)  from "apr_pool_destroy"
+declare fn alloc(pool: @Pool, size: Size): @Any from "apr_palloc"
 
 // math
 declare fn acos(x: Double): Double
@@ -52,7 +52,7 @@ declare fn log10(x: Double): Double
 declare fn pow(x: Double, y: Double): Double
 declare fn sqrt(x: Double): Double
 declare fn ceil(x: Double): Double
-declare fn "fabs" as abs(x: Double): Double
+declare fn abs(x: Double): Double from "fabs"
 declare fn floor(x: Double): Double
 // declare fn fmod(x: Double, y: Double): Double
 declare fn round(x: Double): Double
@@ -62,53 +62,55 @@ fn max(x: Double, y: Double): Double = if (x > y) x else y
 fn clamp(v: Double, min: Double, max: Double): Double = max(min(v, max), min)
 
 // stdlib
-declare fn "atof" as toDouble(string: CString): Double
-declare fn "atoi" as toInt(string: CString): Int
-declare fn "atol" as toLong(string: CString): Long
+declare fn toDouble(string: CString): Double from "atof"
+declare fn toInt(string: CString): Int from "atoi"
+declare fn toLong(string: CString): Long from "atol"
 
 declare fn abort()
 declare fn exit(status: Int)
 fn exit() = exit(0)
-declare fn "getenv" as getEnv(name: CString): CString
-declare fn "system" as executeSystemCommand(name: CString): Int
+declare fn getEnv(name: CString): CString from "getenv"
+declare fn  executeSystemCommand(name: CString): Int from "system"
 
 declare fn abs(x: Int): Int
-declare fn "labs" as abs(x: Long): Long
+declare fn abs(x: Long): Long from "labs"
 
-declare type rec "div_t" as IntDivResult as
+declare rec IntDivResult as
      quot: Int
      rem: Int
+     from "div_t"
 
-declare type rec "ldiv_t" as LongDivResult as
+declare rec LongDivResult as
      quot: Long
      rem: Long
+     from "ldiv_t"
 
-declare fn "div" as div(numer: Int, denom: Int): IntDivResult
-declare fn "ldiv" as div(numer: Long, denom: Long): LongDivResult
+declare fn div(numer: Int, denom: Int): IntDivResult from "div"
+declare fn div(numer: Long, denom: Long): LongDivResult from "ldiv"
 
-declare fn "rand" as randomInt(): Int
-declare fn "srand" as randomInt(seed: Int): Int
+declare fn randomInt(): Int from "rand"
+declare fn randomInt(seed: Int): Int from "srand"
 
 // string
-declare fn memchr(str: @Any, c: Int, n: Size): @Any
-declare fn memcmp(str1: @Any, str2: @Any, n: Size): @Any
-declare fn memcpy(dest: @Any, src: @Any, n: Size): @Any
-declare fn memset(str: @Any, c: Int, n: Size): @Any
-declare fn "strcat" as append(dest: CString, src: CString): CString
-declare fn "strncat" as append(dest: CString, src: CString, n: Size): CString
-declare fn strchr(str: CString, c: Int): CString
-declare fn "strcmp" as compare(dest: CString, src: CString): CString
-declare fn "strncmp" as compare(dest: CString, src: CString, n: Size): CString
+// declare fn memchr(str: @Any, c: Int, n: Size): @Any
+// declare fn memcmp(str1: @Any, str2: @Any, n: Size): @Any
+// declare fn memcpy(dest: @Any, src: @Any, n: Size): @Any
+// declare fn memset(str: @Any, c: Int, n: Size): @Any
+// declare fn "strcat" as append(dest: CString, src: CString): CString
+// declare fn "strncat" as append(dest: CString, src: CString, n: Size): CString
+// declare fn strchr(str: CString, c: Int): CString
+// declare fn "strcmp" as compare(dest: CString, src: CString): CString
+// declare fn "strncmp" as compare(dest: CString, src: CString, n: Size): CString
 // declare fn "strcoll"
-declare fn "strcpy" as copy(dest: CString, src: CString): CString
-declare fn "strncpy" as copy(dest: CString, src: CString, n: Size): CString
+// declare fn "strcpy" as copy(dest: CString, src: CString): CString
+// declare fn "strncpy" as copy(dest: CString, src: CString, n: Size): CString
 // declare fn "strcspn"
 // declare fn "strerror"
-declare fn "strlen" as lengthOf(str: CString): Size
+// declare fn "strlen" as lengthOf(str: CString): Size
 // declare fn "strpbrk"
 // declare fn "strrchr"
 // declare fn "strspn"
-declare fn "strstr" as strstr(dest: CString, src: CString): CString
+// declare fn "strstr" as strstr(dest: CString, src: CString): CString
 // declare fn "strtok"
 // declare fn "strxfrm"
 

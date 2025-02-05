@@ -756,17 +756,29 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitParameterRest(EclangParser.ParameterRestContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code statementDefine}
+	 * Enter a parse tree produced by the {@code statementDefineVar}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterStatementDefine(EclangParser.StatementDefineContext ctx);
+	void enterStatementDefineVar(EclangParser.StatementDefineVarContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code statementDefine}
+	 * Exit a parse tree produced by the {@code statementDefineVar}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitStatementDefine(EclangParser.StatementDefineContext ctx);
+	void exitStatementDefineVar(EclangParser.StatementDefineVarContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code statementDefineVal}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementDefineVal(EclangParser.StatementDefineValContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementDefineVal}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementDefineVal(EclangParser.StatementDefineValContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code statementDefineConst}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -780,17 +792,29 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementDefineConst(EclangParser.StatementDefineConstContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code statementDefineTyped}
+	 * Enter a parse tree produced by the {@code statementDefineVarTyped}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterStatementDefineTyped(EclangParser.StatementDefineTypedContext ctx);
+	void enterStatementDefineVarTyped(EclangParser.StatementDefineVarTypedContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code statementDefineTyped}
+	 * Exit a parse tree produced by the {@code statementDefineVarTyped}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitStatementDefineTyped(EclangParser.StatementDefineTypedContext ctx);
+	void exitStatementDefineVarTyped(EclangParser.StatementDefineVarTypedContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code statementDefineValTyped}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementDefineValTyped(EclangParser.StatementDefineValTypedContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementDefineValTyped}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementDefineValTyped(EclangParser.StatementDefineValTypedContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code statementDefineConstTyped}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -1140,6 +1164,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitGlobalRecordDefine(EclangParser.GlobalRecordDefineContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code globalRecordDeclare}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void enterGlobalRecordDeclare(EclangParser.GlobalRecordDeclareContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code globalRecordDeclare}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void exitGlobalRecordDeclare(EclangParser.GlobalRecordDeclareContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code globalRecordDeclareDefine}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
@@ -1152,17 +1188,29 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitGlobalRecordDeclareDefine(EclangParser.GlobalRecordDeclareDefineContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code globalTypeRecordDeclareDefine}
+	 * Enter a parse tree produced by the {@code globalStructDeclare}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
 	 */
-	void enterGlobalTypeRecordDeclareDefine(EclangParser.GlobalTypeRecordDeclareDefineContext ctx);
+	void enterGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code globalTypeRecordDeclareDefine}
+	 * Exit a parse tree produced by the {@code globalStructDeclare}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
 	 */
-	void exitGlobalTypeRecordDeclareDefine(EclangParser.GlobalTypeRecordDeclareDefineContext ctx);
+	void exitGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code globalStructDeclareDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void enterGlobalStructDeclareDefine(EclangParser.GlobalStructDeclareDefineContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code globalStructDeclareDefine}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void exitGlobalStructDeclareDefine(EclangParser.GlobalStructDeclareDefineContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EclangParser#use}.
 	 * @param ctx the parse tree

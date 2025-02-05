@@ -5,9 +5,9 @@ import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.state.IVar
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRStatementDefine(location: Loc, private val ivar: IVar, private val expr: IIR) : IR(location) {
+class IRStatementDefineVar(location: Loc, private val ivar: IVar, private val expr: IIR) : IR(location) {
     override fun toString(): String {
-        return "define($$ivar, $expr)"
+        return "var($$ivar, $expr)"
     }
 
     override fun toC(sb: CSourceBuilder, c: Context) {

@@ -11,6 +11,8 @@ rec UnionTest as
     a: Int
     b: Number
 
+val unionTest: UnionTest = { 0, 0 as Int }
+
 fn genericTest(test: <A>): <A> do
     val v: <A> = ""c
     ret v
@@ -31,6 +33,7 @@ fn main(): Int do
     val array2: Int[] = [5, 3, 6, 0]
     val carray1 = ["One", "Two", "Three"]c
     val carray2: Int[]c = [5, 3, 6, 0]c
+    const staticVal = 6
     log(array1.len)
     for index in array1 do
         log(array1[index])
@@ -82,7 +85,7 @@ fn main(): Int do
         log("Test3"c)
     ret if (true) 1 else 0
 
-declare type DefinedType = Int
+declare type DefinedType as Int
 
 fn defTest(input: DefinedType): Int do
     defer log("1"c)

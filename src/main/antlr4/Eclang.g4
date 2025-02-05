@@ -171,10 +171,13 @@ parameter:
     ;
 
 statement:
-      'var' NAME '=' expr NL                                                            #statementDefine
-    | 'val' NAME '=' expr NL                                                            #statementDefineConst
-    | 'var' NAME (':' type)? '=' expr NL                                                #statementDefineTyped
-    | 'val' NAME (':' type)? '=' expr NL                                                #statementDefineConstTyped
+      'var' NAME '=' expr NL                                                            #statementDefineVar
+    | 'val' NAME '=' expr NL                                                            #statementDefineVal
+    | 'const' NAME '=' expr NL                                                          #statementDefineConst
+    | 'var' NAME ':' type '=' expr NL                                                   #statementDefineVarTyped
+    | 'val' NAME ':' type '=' expr NL                                                   #statementDefineValTyped
+    | 'const' NAME ':' type '=' expr NL                                                 #statementDefineConstTyped
+
     | NAME '=' expr NL                                                                  #statementAssignment
 
     | 'break' NL                                                                        #statementBreak
@@ -207,7 +210,7 @@ statement:
     ;
 
 func:
-      'declare' 'fn' (externalName=STRING 'as')? name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? NL                    #functionDeclare
+      'declare' 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('from' externalName=STRING)? NL                    #functionDeclare
     | 'pub'? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block		            #functionBlock
     | 'pub'? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL            #functionInline
     ;
@@ -217,13 +220,17 @@ global:
     | 'val' NAME '=' expr NL                                                                            #globalDefineConst
     | 'var' NAME (':' type)? '=' expr NL                                                                #globalDefineTyped
     | 'val' NAME (':' type)? '=' expr NL                                                                #globalDefineConstTyped
-    | 'declare' 'var' (externalName=STRING 'as')? name=NAME ':' type NL                                 #globalDeclareDefine
-    | 'declare' 'val' (externalName=STRING 'as')? name=NAME ':' type NL                                 #globalDeclareConst
-    | 'declare' 'type' NAME '=' type NL                                                                 #globalTypeDefine
-    | 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                          #globalRecordDefine
-    | 'declare' 'rec' (externalName=STRING 'as')? name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT    #globalRecordDeclareDefine
-    | 'declare' 'type' 'rec' (externalName=STRING 'as')? name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT    #globalTypeRecordDeclareDefine
-    | 'declare' 'type' 'rec' (externalName=STRING 'as')? name=NAME NL                                   #globalTypeRecordDeclareDefine
+
+    | 'declare' 'var' name=NAME ':' type ('from' externalName=STRING)? NL                               #globalDeclareDefine
+    | 'declare' ('val' | 'const') name=NAME ':' type ('from' externalName=STRING)? NL                   #globalDeclareConst
+    | 'declare' 'type' NAME 'as' type NL                                                                #globalTypeDefine
+
+    | 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                                      #globalRecordDefine
+    | 'declare' 'rec' name=NAME ('from' externalName=STRING)? NL                                                                #globalRecordDeclare
+    | 'declare' 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ ('from' externalName=STRING NL)? DEDENT              #globalRecordDeclareDefine
+
+    | 'declare' 'struct' name=NAME ('from' externalName=STRING)? NL                                                             #globalStructDeclare
+    | 'declare' 'struct' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ ('from' externalName=STRING)? DEDENT           #globalStructDeclareDefine
     ;
 
 use:

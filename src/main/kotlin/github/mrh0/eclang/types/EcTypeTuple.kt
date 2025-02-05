@@ -26,5 +26,4 @@ open class EcTypeTuple(val types: Array<EcType>) : EcType("Tuple") {
     override fun hashCode(): Int {
         return types.contentHashCode()
     }
-
 }
