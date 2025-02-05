@@ -5,8 +5,8 @@ use "apr_general.h"
 use "apr_pools.h"
 
 // stdio
-declare fn printf(format: CString, value: CString): None
-declare fn printf(format: CString, value: Number): None
+declare fn printf as (format: CString, value: CString): None
+declare fn printf as (format: CString, value: Number): None
 
 fn log(value: CString): None do
     printf("%s\n"c, value)
@@ -28,68 +28,66 @@ declare rec PoolStatus from "apr_status_t"
 
 var ROOT_POOL: @Pool? = Null
 
-declare fn createPool(pool: @@Pool, parent: @Pool?): PoolStatus from "apr_pool_create"
+declare fn createPool from "apr_pool_create" as (pool: @@Pool, parent: @Pool?): PoolStatus
 fn createPool(pool: @@Pool): PoolStatus = createPool(pool, Null)
-declare fn freePool(pool: @Pool)  from "apr_pool_destroy"
-declare fn alloc(pool: @Pool, size: Size): @Any from "apr_palloc"
+declare fn freePool from "apr_pool_destroy" as (pool: @Pool)
+declare fn alloc from "apr_palloc" as (pool: @Pool, size: Size): @Any
 
 // math
-declare fn acos(x: Double): Double
-declare fn asin(x: Double): Double
-declare fn atan(x: Double): Double
-declare fn atan2(x: Double): Double
-declare fn cos(x: Double): Double
-declare fn cosh(x: Double): Double
-declare fn sin(x: Double): Double
-declare fn sinh(x: Double): Double
-declare fn tan(x: Double): Double
-declare fn exp(x: Double): Double
-// declare fn frexp(): Double
-// declare fn ldexp(): Double
-declare fn log(x: Double): Double
-declare fn log10(x: Double): Double
-// declare fn modf(): Double
-declare fn pow(x: Double, y: Double): Double
-declare fn sqrt(x: Double): Double
-declare fn ceil(x: Double): Double
-declare fn abs(x: Double): Double from "fabs"
-declare fn floor(x: Double): Double
-// declare fn fmod(x: Double, y: Double): Double
-declare fn round(x: Double): Double
+declare fn acos as (x: Double): Double
+declare fn asin as (x: Double): Double
+declare fn atan as (x: Double): Double
+declare fn atan2 as (x: Double): Double
+declare fn cos as (x: Double): Double
+declare fn cosh as (x: Double): Double
+declare fn sin as (x: Double): Double
+declare fn sinh as (x: Double): Double
+declare fn tan as (x: Double): Double
+declare fn exp as (x: Double): Double
+// declare fn frexp as (): Double
+// declare fn ldexp as (): Double
+declare fn log as (x: Double): Double
+declare fn log10 as (x: Double): Double
+// declare fn modf as (): Double
+declare fn pow as (x: Double, y: Double): Double
+declare fn sqrt as (x: Double): Double
+declare fn ceil as (x: Double): Double
+declare fn abs from "fabs" as (x: Double): Double
+declare fn floor as (x: Double): Double
+// declare fn fmod as (x: Double, y: Double): Double
+declare fn round as (x: Double): Double
 
 fn min(x: Double, y: Double): Double = if (x < y) x else y
 fn max(x: Double, y: Double): Double = if (x > y) x else y
 fn clamp(v: Double, min: Double, max: Double): Double = max(min(v, max), min)
 
 // stdlib
-declare fn toDouble(string: CString): Double from "atof"
-declare fn toInt(string: CString): Int from "atoi"
-declare fn toLong(string: CString): Long from "atol"
+declare fn toDouble from "atof" as (string: CString): Double
+declare fn toInt from "atoi" as (string: CString): Int
+declare fn toLong from "atol" as (string: CString): Long
 
-declare fn abort()
-declare fn exit(status: Int)
+declare fn abort as ()
+declare fn exit as (status: Int)
 fn exit() = exit(0)
-declare fn getEnv(name: CString): CString from "getenv"
-declare fn  executeSystemCommand(name: CString): Int from "system"
+declare fn getEnv from "getenv" as (name: CString): CString
+declare fn executeSystemCommand from "system" as (name: CString): Int
 
-declare fn abs(x: Int): Int
-declare fn abs(x: Long): Long from "labs"
+declare fn abs as (x: Int): Int
+declare fn abs from "labs" as (x: Long): Long
 
-declare rec IntDivResult as
+declare rec IntDivResult from "div_t" as
      quot: Int
      rem: Int
-     from "div_t"
 
-declare rec LongDivResult as
+declare rec LongDivResult from "ldiv_t" as
      quot: Long
      rem: Long
-     from "ldiv_t"
 
-declare fn div(numer: Int, denom: Int): IntDivResult from "div"
-declare fn div(numer: Long, denom: Long): LongDivResult from "ldiv"
+declare fn div from "div" as (numer: Int, denom: Int): IntDivResult
+declare fn div from "ldiv" as (numer: Long, denom: Long): LongDivResult
 
-declare fn randomInt(): Int from "rand"
-declare fn randomInt(seed: Int): Int from "srand"
+declare fn randomInt from "rand" as (): Int
+declare fn randomInt from "srand" as (seed: Int): Int
 
 // string
 // declare fn memchr(str: @Any, c: Int, n: Size): @Any
@@ -115,10 +113,10 @@ declare fn randomInt(seed: Int): Int from "srand"
 // declare fn "strxfrm"
 
 fn clone(str: CString, pool: @Pool?): CString do
-    val n = str.lengthOf()
-    val newStr = alloc(pool ?? ROOT_POOL, sizeof(CString) * (n+1) as Size) as unsafe CString
-    copy(newStr, str, n)
-    ret newStr
+    //val n = str.lengthOf()
+    //val newStr = alloc(pool ?? ROOT_POOL, sizeof(CString) * (n+1) as Size) as unsafe CString
+    //copy(newStr, str, n)
+    ret str
 
 fn clone(str: CString): CString = clone(str, Null)
 

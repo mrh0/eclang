@@ -27,7 +27,7 @@ object Util {
         if (relativePath.contains(":")) {
             val split = relativePath.split(":")
             if (split.size > 2) throw EcError(location, "Malformed path '$relativePath'")
-            if (split[0] == "ec") {
+            if (split[0] == "core") {
                 val path = split[1]
                 return Path.of(Util::class.java.classLoader.getResource(path)?.toURI() ?: throw EcError(location, "File not found at path '$relativePath'"))
             }

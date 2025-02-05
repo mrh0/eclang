@@ -1,4 +1,4 @@
-use "ec:lib.ec"
+use "core:lib.ec"
 
 val G: Int = 69
 var G2: Int = 420
@@ -11,7 +11,7 @@ rec UnionTest as
     a: Int
     b: Number
 
-val unionTest: UnionTest = { 0, 0 as Int }
+val unionTest: UnionTest = { 0, 0i }
 
 fn genericTest(test: <A>): <A> do
     val v: <A> = ""c

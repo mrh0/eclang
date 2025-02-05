@@ -10,4 +10,6 @@ class IEcTypeDefaultArgumentWrapper(private val defType: EcType) : EcType("Defau
     }
 
     fun getContained() = defType
+
+    override fun isReferenceType(): Boolean = defType.isReferenceType()
 }

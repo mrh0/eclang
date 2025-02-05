@@ -27,4 +27,6 @@ data class EcTypeArray(val arg: EcType) : EcType("Array") {
             else -> super.accessor(location, indexType)
         }
     }
+
+    override fun isReferenceType(): Boolean = true
 }

@@ -1164,18 +1164,6 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitGlobalRecordDefine(EclangParser.GlobalRecordDefineContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code globalRecordDeclare}
-	 * labeled alternative in {@link EclangParser#global}.
-	 * @param ctx the parse tree
-	 */
-	void enterGlobalRecordDeclare(EclangParser.GlobalRecordDeclareContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code globalRecordDeclare}
-	 * labeled alternative in {@link EclangParser#global}.
-	 * @param ctx the parse tree
-	 */
-	void exitGlobalRecordDeclare(EclangParser.GlobalRecordDeclareContext ctx);
-	/**
 	 * Enter a parse tree produced by the {@code globalRecordDeclareDefine}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
@@ -1188,17 +1176,17 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitGlobalRecordDeclareDefine(EclangParser.GlobalRecordDeclareDefineContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code globalStructDeclare}
+	 * Enter a parse tree produced by the {@code globalRecordDeclare}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
 	 */
-	void enterGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
+	void enterGlobalRecordDeclare(EclangParser.GlobalRecordDeclareContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code globalStructDeclare}
+	 * Exit a parse tree produced by the {@code globalRecordDeclare}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
 	 */
-	void exitGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
+	void exitGlobalRecordDeclare(EclangParser.GlobalRecordDeclareContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code globalStructDeclareDefine}
 	 * labeled alternative in {@link EclangParser#global}.
@@ -1211,6 +1199,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitGlobalStructDeclareDefine(EclangParser.GlobalStructDeclareDefineContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code globalStructDeclare}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void enterGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code globalStructDeclare}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void exitGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EclangParser#use}.
 	 * @param ctx the parse tree

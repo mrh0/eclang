@@ -686,13 +686,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitGlobalRecordDefine(EclangParser.GlobalRecordDefineContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code globalRecordDeclare}
-	 * labeled alternative in {@link EclangParser#global}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitGlobalRecordDeclare(EclangParser.GlobalRecordDeclareContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code globalRecordDeclareDefine}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
@@ -700,12 +693,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitGlobalRecordDeclareDefine(EclangParser.GlobalRecordDeclareDefineContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code globalStructDeclare}
+	 * Visit a parse tree produced by the {@code globalRecordDeclare}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
+	T visitGlobalRecordDeclare(EclangParser.GlobalRecordDeclareContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code globalStructDeclareDefine}
 	 * labeled alternative in {@link EclangParser#global}.
@@ -713,6 +706,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitGlobalStructDeclareDefine(EclangParser.GlobalStructDeclareDefineContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalStructDeclare}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#use}.
 	 * @param ctx the parse tree
