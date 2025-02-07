@@ -106,13 +106,13 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitBlock(ctx: EclangParser.BlockContext): ITok = TBlock(loc(ctx), visit(ctx.statements))
 
     override fun visitStatementReturn(ctx: EclangParser.StatementReturnContext): ITok {
-        return TStatementReturn(loc(ctx), visit(ctx.expr()))
+        return TStatementReturn(loc(ctx), visit(ctx.return_))
     }
 
     override fun visitParameterTyped(ctx: EclangParser.ParameterTypedContext): ITok = TParameterTyped(loc(ctx), ctx.NAME().text, visit(ctx.type()))
     override fun visitParameterDefault(ctx: EclangParser.ParameterDefaultContext): ITok = TParameterDefault(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitParameterTypedDefault(ctx: EclangParser.ParameterTypedDefaultContext): ITok = TParameterTypedDefault(loc(ctx), ctx.NAME().text, visit(ctx.type()), visit(ctx.expr()))
-
+    override fun visitParameterRest(ctx: EclangParser.ParameterRestContext): ITok = TParameterVarArg(loc(ctx), ctx.NAME().text, visit(ctx.type()))
 
     override fun visitExprFunctionCallNoArgs(ctx: EclangParser.ExprFunctionCallNoArgsContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
     override fun visitExprFunctionCallWithArgs(ctx: EclangParser.ExprFunctionCallWithArgsContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
@@ -251,5 +251,5 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitStatementDefer(ctx: EclangParser.StatementDeferContext): ITok = TDefer(loc(ctx), visit(ctx.statement()))
     override fun visitStatementDeferDo(ctx: EclangParser.StatementDeferDoContext): ITok = TDefer(loc(ctx), visit(ctx.block()))
 
-    override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TStatementThrow(loc(ctx), visit(ctx.expr()))
+    override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TStatementThrow(loc(ctx), visit(ctx.throw_))
 }

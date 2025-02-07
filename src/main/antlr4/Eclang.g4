@@ -181,13 +181,13 @@ statement:
 
     | NAME '=' expr NL                                                                  #statementAssignment
 
-    | 'break' ('when' expr)? NL                                                         #statementBreak
-    | 'continue' ('when' expr)? NL                                                      #statementContinue
-    | 'pass' ('when' expr)? NL                                                          #statementPass
-    | 'yield' ('when' expr)? NL                                                         #statementYield
-    | 'throw' expr ('when' expr)? NL                                                    #statementThrow
-    | 'assert' STRING ('when' expr)? NL                                                 #statementAssert
-    | 'ret' expr ('when' expr)? NL                                                      #statementReturn
+    | 'break' ('when' when=expr)? NL                                                    #statementBreak
+    | 'continue' ('when' when=expr)? NL                                                 #statementContinue
+    | 'pass' ('when' when=expr)? NL                                                     #statementPass
+    | 'yield' ('when' when=expr)? NL                                                    #statementYield
+    | 'throw' throw=expr ('when' when=expr)? NL                                               #statementThrow
+    | 'assert' STRING ('when' when=expr)? NL                                            #statementAssert
+    | 'ret' return=expr ('when' when=expr)? NL                                          #statementReturn
 
     | 'defer' statement                                                                 #statementDefer
     | 'defer' 'do' body=block                                                           #statementDeferDo

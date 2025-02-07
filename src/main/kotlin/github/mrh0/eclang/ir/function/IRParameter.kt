@@ -10,7 +10,7 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
 
-class IRParameter(location: Loc, val name: String, val type: EcType, val def: IIR?) : IR(location) {
+class IRParameter(location: Loc, val name: String, val type: EcType, private val def: IIR?) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         if (def != null) return
         if (type.isReferenceType()) sb.put("const ")

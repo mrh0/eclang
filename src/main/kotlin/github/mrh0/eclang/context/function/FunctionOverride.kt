@@ -16,13 +16,24 @@ import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeCallSignature
 import github.mrh0.eclang.types.EcTypeGeneric
 
-class FunctionOverride(val location: Loc, val id: String, val params: Array<FunctionParameter>, val ret: EcType, val block: TBlock?, val generics: Map<String, EcType>, val throws: EcType?, private var called: Boolean = false) {
+class FunctionOverride(
+    val location: Loc,
+    val id: String,
+    val params: Array<FunctionParameter>,
+    val ret: EcType,
+    val block: TBlock?,
+    private val generics: Map<String, EcType>,
+    val throws: EcType?,
+    private val varArg: EcType?,
+    private var called: Boolean = false
+) {
     private val noDefParams = params.filter { it.def == null }
     val hasGenerics = params.any { it.type is EcTypeGeneric }
     fun match(location: Loc, types: Array<EcType>): Boolean {
-        if(types.size != noDefParams.size) return false
+        if(types.size != noDefParams.size && varArg == null) return false
         for(i in types.indices) {
-            if(!params[i].type.accepts(location, types[i])) return false
+            val pt = params.getOrNull(i)?.type ?: varArg as EcType
+            if(!pt.accepts(location, types[i])) return false
         }
         return true
     }
