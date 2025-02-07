@@ -7,7 +7,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.internal.IEcTypeDefaultArgumentWrapper
+import github.mrh0.eclang.types.internal.EcTypeDefaultParameterWrapper
 import github.mrh0.eclang.types.EcTypeNone
 import github.mrh0.eclang.types.EcTypeUnion
 
@@ -20,6 +20,6 @@ class TParameterDefault(location: Loc, name: String, val def: ITok) : TParameter
     override fun toFunctionParameter(cd: CompileData): FunctionParameter {
         val fixedName = testIdentifier(location, name)
         val typePair = def.process(cd, EcTypeNone)
-        return FunctionParameter(fixedName, EcTypeUnion(mutableSetOf(typePair.first, IEcTypeDefaultArgumentWrapper(typePair.first))) , def)
+        return FunctionParameter(fixedName, EcTypeUnion(mutableSetOf(typePair.first, EcTypeDefaultParameterWrapper(typePair.first))) , def)
     }
 }

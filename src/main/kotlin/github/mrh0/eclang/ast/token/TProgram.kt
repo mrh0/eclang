@@ -15,10 +15,9 @@ import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRProgram
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeNone
-import github.mrh0.eclang.types.internal.IEcTypeDefaultArgumentWrapper
+import github.mrh0.eclang.types.internal.EcTypeDefaultParameterWrapper
 import github.mrh0.eclang.util.Util
 import github.mrh0.eclang.util.Util.testIdentifier
-import java.nio.file.Path
 
 class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val usesIn: List<TGlobalUse>, private val globalsIn: List<ITok>) : Tok(location) {
     companion object {
@@ -48,8 +47,8 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
                         .mapIndexed { index, type ->
                             FunctionParameter(
                                 params[index].name,
-                                if (type is IEcTypeDefaultArgumentWrapper) type.getContained() else type,
-                                if (type is IEcTypeDefaultArgumentWrapper) null else params[index].def
+                                if (type is EcTypeDefaultParameterWrapper) type.getContained() else type,
+                                if (type is EcTypeDefaultParameterWrapper) null else params[index].def
                             )
                         }
                         .toTypedArray()

@@ -156,7 +156,7 @@ type:
     | 'typeof' expr                                                         #typeTypeOf
     | type '[' (']c' | ']')                                                 #typeArray
     | left=type 'throws' throwing=type                                      #typeThrows
-    | 'const' type                                                          #typeConst // When argument must be known at compile time
+    //| 'const' type                                                          #typeConst // When argument must be known at compile time
     ;
 
 interface:
@@ -168,6 +168,7 @@ parameter:
     | NAME ':' type '=' expr                #parameterTypedDefault
     | NAME '=' expr                         #parameterDefault
     | NAME '...' type                       #parameterRest
+    | 'const' parameter                     #parameterConst
     ;
 
 statement:
@@ -180,13 +181,16 @@ statement:
 
     | NAME '=' expr NL                                                                  #statementAssignment
 
-    | 'break' NL                                                                        #statementBreak
-    | 'continue' NL                                                                     #statementContinue
-    | 'pass' NL                                                                         #statementPass
-    | 'yield' NL                                                                        #statementYield
+    | 'break' ('when' expr)? NL                                                         #statementBreak
+    | 'continue' ('when' expr)? NL                                                      #statementContinue
+    | 'pass' ('when' expr)? NL                                                          #statementPass
+    | 'yield' ('when' expr)? NL                                                         #statementYield
+    | 'throw' expr ('when' expr)? NL                                                    #statementThrow
+    | 'assert' STRING ('when' expr)? NL                                                 #statementAssert
+    | 'ret' expr ('when' expr)? NL                                                      #statementReturn
+
     | 'defer' statement                                                                 #statementDefer
     | 'defer' 'do' body=block                                                           #statementDeferDo
-    | 'throw' expr NL                                                                   #statementThrow
 
     | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      	#statementIf
     | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           	#statementWhile
@@ -202,11 +206,9 @@ statement:
     | args+=expr '.' NAME '(' args+=expr (',' args+=expr)* ')' NL       #statementFunctionCallWithArgs
     | args+=expr '.' NAME '(' INDENT args+=expr (',' NL args+=expr)* NL DEDENT ')' NL       #statementFunctionCallWithArgs
 
-    | 'ret' expr NL                                                     #statementReturn
-
     | 'try' left=expr                                                                           #statementTry
     | 'try' left=expr 'catch' NAME 'do' elseBody=block                                          #statementTryCatch
-    | 'try' INDENT left=expr NL DEDENT 'catch' NAME 'do'elseBody=block                          #statementTryCatch
+    | 'try' INDENT left=expr NL DEDENT 'catch' NAME 'do' elseBody=block                          #statementTryCatch
     ;
 
 func:
