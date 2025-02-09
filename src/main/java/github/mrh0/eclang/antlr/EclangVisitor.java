@@ -546,6 +546,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementReturn(EclangParser.StatementReturnContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code statementWhen}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementWhen(EclangParser.StatementWhenContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code statementDefer}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree

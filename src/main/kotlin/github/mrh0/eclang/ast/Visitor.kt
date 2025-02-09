@@ -8,6 +8,7 @@ import github.mrh0.eclang.ast.token.accessor.TAccessor
 import github.mrh0.eclang.ast.token.accessor.TAccessorNamed
 import github.mrh0.eclang.ast.token.branch.TInlineIf
 import github.mrh0.eclang.ast.token.branch.TStatementIf
+import github.mrh0.eclang.ast.token.branch.TTailIf
 import github.mrh0.eclang.ast.token.data.*
 import github.mrh0.eclang.ast.token.data.record.TCreateRecord
 import github.mrh0.eclang.ast.token.data.record.TCreateRecordTyped
@@ -104,10 +105,6 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     }
 
     override fun visitBlock(ctx: EclangParser.BlockContext): ITok = TBlock(loc(ctx), visit(ctx.statements))
-
-    override fun visitStatementReturn(ctx: EclangParser.StatementReturnContext): ITok {
-        return TStatementReturn(loc(ctx), visit(ctx.return_))
-    }
 
     override fun visitParameterTyped(ctx: EclangParser.ParameterTypedContext): ITok = TParameterTyped(loc(ctx), ctx.NAME().text, visit(ctx.type()))
     override fun visitParameterDefault(ctx: EclangParser.ParameterDefaultContext): ITok = TParameterDefault(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
@@ -223,6 +220,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitStatementAssignment(ctx: EclangParser.StatementAssignmentContext): ITok = TStatementAssign(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitExprNamed(ctx: EclangParser.ExprNamedContext): ITok = TNamed(loc(ctx), ctx.NAME().text)
 
+    override fun visitStatementWhen(ctx: EclangParser.StatementWhenContext): ITok = TTailIf(loc(ctx), visit(ctx.expression), visit(ctx.`when`))
+
     // Branches
     override fun visitStatementIf(ctx: EclangParser.StatementIfContext): ITok {
         return TStatementIf(loc(ctx), visit(ctx.conditions), visit(ctx.bodies), if(ctx.elseBody == null) null else visit(ctx.elseBody))
@@ -245,11 +244,12 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return TStatementForeachIn(loc(ctx), ctx.NAME().text, visit(ctx.iterable), visit(ctx.body), null)
     }
 
-    override fun visitStatementContinue(ctx: EclangParser.StatementContinueContext): ITok = TStatementContinue(loc(ctx))
-    override fun visitStatementBreak(ctx: EclangParser.StatementBreakContext): ITok = TStatementBreak(loc(ctx))
-    override fun visitStatementPass(ctx: EclangParser.StatementPassContext): ITok = TPass(loc(ctx))
+    override fun visitStatementContinue(ctx: EclangParser.StatementContinueContext): ITok = TTailIf(loc(ctx), TStatementContinue(loc(ctx)), visit(ctx.`when`))
+    override fun visitStatementBreak(ctx: EclangParser.StatementBreakContext): ITok = TTailIf(loc(ctx), TStatementBreak(loc(ctx)), visit(ctx.`when`))
+    override fun visitStatementPass(ctx: EclangParser.StatementPassContext): ITok = TTailIf(loc(ctx), TPass(loc(ctx)), visit(ctx.`when`))
+    override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TTailIf(loc(ctx), TStatementThrow(loc(ctx), visit(ctx.throw_)), visit(ctx.`when`))
+    override fun visitStatementReturn(ctx: EclangParser.StatementReturnContext): ITok = TTailIf(loc(ctx), TStatementReturn(loc(ctx), visit(ctx.return_)), visit(ctx.`when`))
+
     override fun visitStatementDefer(ctx: EclangParser.StatementDeferContext): ITok = TDefer(loc(ctx), visit(ctx.statement()))
     override fun visitStatementDeferDo(ctx: EclangParser.StatementDeferDoContext): ITok = TDefer(loc(ctx), visit(ctx.block()))
-
-    override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TStatementThrow(loc(ctx), visit(ctx.throw_))
 }

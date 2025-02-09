@@ -167,7 +167,7 @@ parameter:
       NAME ':' type                         #parameterTyped
     | NAME ':' type '=' expr                #parameterTypedDefault
     | NAME '=' expr                         #parameterDefault
-    | NAME '...' type                       #parameterRest
+    | '...' NAME ':' type                   #parameterRest
     | 'const' parameter                     #parameterConst
     ;
 
@@ -181,13 +181,14 @@ statement:
 
     | NAME '=' expr NL                                                                  #statementAssignment
 
-    | 'break' ('when' when=expr)? NL                                                    #statementBreak
-    | 'continue' ('when' when=expr)? NL                                                 #statementContinue
-    | 'pass' ('when' when=expr)? NL                                                     #statementPass
-    | 'yield' ('when' when=expr)? NL                                                    #statementYield
-    | 'throw' throw=expr ('when' when=expr)? NL                                               #statementThrow
-    | 'assert' STRING ('when' when=expr)? NL                                            #statementAssert
-    | 'ret' return=expr ('when' when=expr)? NL                                          #statementReturn
+    | 'break' ('if' when=expr)? NL                                                      #statementBreak
+    | 'continue' ('if' when=expr)? NL                                                   #statementContinue
+    | 'pass' ('if' when=expr)? NL                                                       #statementPass
+    | 'yield' ('if' when=expr)? NL                                                      #statementYield
+    | 'throw' throw=expr ('if' when=expr)? NL                                           #statementThrow
+    | 'assert' STRING ('if' when=expr)? NL                                              #statementAssert
+    | 'ret' return=expr ('if' when=expr)? NL                                            #statementReturn
+    | expression=expr 'if' when=expr NL                                                 #statementTailIf
 
     | 'defer' statement                                                                 #statementDefer
     | 'defer' 'do' body=block                                                           #statementDeferDo
