@@ -37,7 +37,7 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
             return false
         }
 
-        fun permutateFunctionArguments(params: List<FunctionParameter>, callback: (Array<FunctionParameter>) -> Any) {
+        fun permutateFunctionParams(params: List<FunctionParameter>, callback: (Array<FunctionParameter>) -> Any) {
             val expanded = params.map { it.type.expand() }
             val indices = expanded.map { 0 }.toMutableList()
             val limits = expanded.map { it.size }
@@ -93,11 +93,11 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
         return EcTypeNone to IRProgram(location, functionIRs, globalIRs, usesIRs)
     }
 
-    fun analyzeFunction(func: TFunc, cd: CompileData) {
+    private fun analyzeFunction(func: TFunc, cd: CompileData) {
         val fixedName = testIdentifier(location, func.name)
         val res = func.processSignature(cd)
 
-        permutateFunctionArguments(res.first) { list ->
+        permutateFunctionParams(res.first) { list ->
             GlobalFunctions.addOverride(
                 func.location,
                 fixedName,

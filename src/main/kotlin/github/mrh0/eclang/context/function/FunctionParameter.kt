@@ -4,6 +4,6 @@ import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.types.EcType
 
-class FunctionParameter(val name: String, val type: EcType, val def: ITok?) {
+class FunctionParameter(val name: String, val type: EcType, val def: ITok?, val varArg: Boolean = false) {
     override fun toString() = "FP($name: $type, ${def != null})"
 }

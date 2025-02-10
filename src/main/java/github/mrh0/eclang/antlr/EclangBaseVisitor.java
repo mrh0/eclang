@@ -445,7 +445,7 @@ public class EclangBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitParameterRest(EclangParser.ParameterRestContext ctx) { return visitChildren(ctx); }
+	@Override public T visitParameterVarArg(EclangParser.ParameterVarArgContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -557,7 +557,7 @@ public class EclangBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitStatementWhen(EclangParser.StatementWhenContext ctx) { return visitChildren(ctx); }
+	@Override public T visitStatementTailIf(EclangParser.StatementTailIfContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

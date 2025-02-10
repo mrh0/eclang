@@ -167,7 +167,7 @@ parameter:
       NAME ':' type                         #parameterTyped
     | NAME ':' type '=' expr                #parameterTypedDefault
     | NAME '=' expr                         #parameterDefault
-    | '...' NAME ':' type                   #parameterRest
+    | '...' NAME ':' type                   #parameterVarArg
     | 'const' parameter                     #parameterConst
     ;
 

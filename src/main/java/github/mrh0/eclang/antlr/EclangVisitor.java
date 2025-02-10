@@ -434,12 +434,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitParameterDefault(EclangParser.ParameterDefaultContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code parameterRest}
+	 * Visit a parse tree produced by the {@code parameterVarArg}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitParameterRest(EclangParser.ParameterRestContext ctx);
+	T visitParameterVarArg(EclangParser.ParameterVarArgContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code parameterConst}
 	 * labeled alternative in {@link EclangParser#parameter}.
@@ -546,12 +546,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementReturn(EclangParser.StatementReturnContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code statementWhen}
+	 * Visit a parse tree produced by the {@code statementTailIf}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitStatementWhen(EclangParser.StatementWhenContext ctx);
+	T visitStatementTailIf(EclangParser.StatementTailIfContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementDefer}
 	 * labeled alternative in {@link EclangParser#statement}.

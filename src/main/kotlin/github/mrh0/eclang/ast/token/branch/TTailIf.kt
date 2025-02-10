@@ -17,7 +17,7 @@ class TTailIf(location: Loc, private val body: ITok, private val condition: ITok
         val bodyPair = body.process(cd, hint)
         if(!EcTypeBool.accepts(location, conditionPair.first)) throw EcError(location, "Expected when expression condition to be a boolean.")
 
-        return bodyPair.first to IRTailIf(location, conditionPair.second, bodyPair.second)
+        return bodyPair.first to IRTailIf(location, bodyPair.second, conditionPair.second)
     }
 
     override fun toString(): String = "TTailIf($condition, $body)"

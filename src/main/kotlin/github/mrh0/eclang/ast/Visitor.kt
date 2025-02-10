@@ -109,7 +109,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitParameterTyped(ctx: EclangParser.ParameterTypedContext): ITok = TParameterTyped(loc(ctx), ctx.NAME().text, visit(ctx.type()))
     override fun visitParameterDefault(ctx: EclangParser.ParameterDefaultContext): ITok = TParameterDefault(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitParameterTypedDefault(ctx: EclangParser.ParameterTypedDefaultContext): ITok = TParameterTypedDefault(loc(ctx), ctx.NAME().text, visit(ctx.type()), visit(ctx.expr()))
-    override fun visitParameterRest(ctx: EclangParser.ParameterRestContext): ITok = TParameterVarArg(loc(ctx), ctx.NAME().text, visit(ctx.type()))
+    override fun visitParameterVarArg(ctx: EclangParser.ParameterVarArgContext): ITok = TParameterVarArg(loc(ctx), ctx.NAME().text, visit(ctx.type()))
 
     override fun visitExprFunctionCallNoArgs(ctx: EclangParser.ExprFunctionCallNoArgsContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
     override fun visitExprFunctionCallWithArgs(ctx: EclangParser.ExprFunctionCallWithArgsContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args))
@@ -220,16 +220,14 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitStatementAssignment(ctx: EclangParser.StatementAssignmentContext): ITok = TStatementAssign(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitExprNamed(ctx: EclangParser.ExprNamedContext): ITok = TNamed(loc(ctx), ctx.NAME().text)
 
-    override fun visitStatementWhen(ctx: EclangParser.StatementWhenContext): ITok = TTailIf(loc(ctx), visit(ctx.expression), visit(ctx.`when`))
+    override fun visitStatementTailIf(ctx: EclangParser.StatementTailIfContext): ITok = TTailIf(loc(ctx), TStatement(loc(ctx), visit(ctx.expression)), if (ctx.`when` != null) visit(ctx.`when`) else null)
 
     // Branches
     override fun visitStatementIf(ctx: EclangParser.StatementIfContext): ITok {
         return TStatementIf(loc(ctx), visit(ctx.conditions), visit(ctx.bodies), if(ctx.elseBody == null) null else visit(ctx.elseBody))
     }
 
-    override fun visitExprInlineIf(ctx: EclangParser.ExprInlineIfContext): ITok {
-        return TInlineIf(loc(ctx), visit(ctx.condition), visit(ctx.body), visit(ctx.elseBody))
-    }
+    override fun visitExprInlineIf(ctx: EclangParser.ExprInlineIfContext): ITok = TInlineIf(loc(ctx), visit(ctx.condition), visit(ctx.body), visit(ctx.elseBody))
 
     // Loops
     override fun visitStatementWhile(ctx: EclangParser.StatementWhileContext): ITok {
@@ -244,11 +242,11 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return TStatementForeachIn(loc(ctx), ctx.NAME().text, visit(ctx.iterable), visit(ctx.body), null)
     }
 
-    override fun visitStatementContinue(ctx: EclangParser.StatementContinueContext): ITok = TTailIf(loc(ctx), TStatementContinue(loc(ctx)), visit(ctx.`when`))
-    override fun visitStatementBreak(ctx: EclangParser.StatementBreakContext): ITok = TTailIf(loc(ctx), TStatementBreak(loc(ctx)), visit(ctx.`when`))
-    override fun visitStatementPass(ctx: EclangParser.StatementPassContext): ITok = TTailIf(loc(ctx), TPass(loc(ctx)), visit(ctx.`when`))
-    override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TTailIf(loc(ctx), TStatementThrow(loc(ctx), visit(ctx.throw_)), visit(ctx.`when`))
-    override fun visitStatementReturn(ctx: EclangParser.StatementReturnContext): ITok = TTailIf(loc(ctx), TStatementReturn(loc(ctx), visit(ctx.return_)), visit(ctx.`when`))
+    override fun visitStatementContinue(ctx: EclangParser.StatementContinueContext): ITok = TTailIf(loc(ctx), TStatementContinue(loc(ctx)), if (ctx.`when` != null) visit(ctx.`when`) else null)
+    override fun visitStatementBreak(ctx: EclangParser.StatementBreakContext): ITok = TTailIf(loc(ctx), TStatementBreak(loc(ctx)), if (ctx.`when` != null) visit(ctx.`when`) else null)
+    override fun visitStatementPass(ctx: EclangParser.StatementPassContext): ITok = TTailIf(loc(ctx), TPass(loc(ctx)), if (ctx.`when` != null) visit(ctx.`when`) else null)
+    override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TTailIf(loc(ctx), TStatementThrow(loc(ctx), visit(ctx.throw_)), if (ctx.`when` != null) visit(ctx.`when`) else null)
+    override fun visitStatementReturn(ctx: EclangParser.StatementReturnContext): ITok = TTailIf(loc(ctx), TStatementReturn(loc(ctx), visit(ctx.return_)), if (ctx.`when` != null) visit(ctx.`when`) else null)
 
     override fun visitStatementDefer(ctx: EclangParser.StatementDeferContext): ITok = TDefer(loc(ctx), visit(ctx.statement()))
     override fun visitStatementDeferDo(ctx: EclangParser.StatementDeferDoContext): ITok = TDefer(loc(ctx), visit(ctx.block()))

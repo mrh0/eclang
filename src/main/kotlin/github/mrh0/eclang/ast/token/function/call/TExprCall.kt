@@ -4,12 +4,10 @@ import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.ast.token.TProgram.Companion.permutateFunctionArguments
-import github.mrh0.eclang.ast.token.function.IFuncBody
+import github.mrh0.eclang.ast.token.TProgram.Companion.permutateFunctionParams
 import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.context.function.GlobalFunctions
 import github.mrh0.eclang.error.EcAmbiguousSignatureError
-import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcGenericNotEstablishedError
 import github.mrh0.eclang.error.EcNoMatchingCallSignatureError
 import github.mrh0.eclang.ir.IIR
@@ -18,7 +16,6 @@ import github.mrh0.eclang.ir.function.call.IRArgument
 import github.mrh0.eclang.ir.function.call.IRArguments
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeGeneric
-import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 
 open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : Tok(location) {
     override fun toString(): String {
@@ -56,7 +53,7 @@ open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : T
 
             val newArgs: List<FunctionParameter> = first.params.map() { if (it.type is EcTypeGeneric) FunctionParameter(it.name, genericMap[it.type.name] ?: TODO("Should never happen."), null) else it }
             val ret = if (first.ret is EcTypeGeneric) genericMap[first.ret.name] ?: throw EcGenericNotEstablishedError(location, first.ret.name) else first.ret
-            permutateFunctionArguments(newArgs) { list ->
+            permutateFunctionParams(newArgs) { list ->
                 GlobalFunctions.addOverride(
                     location,
                     name,

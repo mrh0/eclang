@@ -20,6 +20,6 @@ class TParameterVarArg(location: Loc, name: String, val type: ITok) : TParameter
     override fun toFunctionParameter(cd: CompileData): FunctionParameter {
         val fixedName = testIdentifier(location, name)
         val typePair = type.process(cd, EcTypeNone)
-        return FunctionParameter(fixedName, typePair.first, null)
+        return FunctionParameter(fixedName, typePair.first, null, true)
     }
 }

@@ -31,8 +31,8 @@ char* __ec_atom_test_atom = "test_atom";
 // Tuples
 
 // Arrays
-typedef struct { long len; __ec_string_t* data; } __ec_array_1629687658_t;
-typedef struct { long len; int* data; } __ec_array_1457410641_t;
+typedef struct { long len; __ec_string_t* data; } __ec_array_1888442711_t;
+typedef struct { long len; int* data; } __ec_array_1704629915_t;
 
 // Declarations
 void log_0(const char* value);
@@ -43,8 +43,8 @@ double max_0(double x, double y);
 char* clone_0(const char* str, const apr_pool_t* pool);
 char* clone_1(const char* str);
 char* genericTest_0(const char* test);
-__ec_result_537835449_t throwsTest1_0(int i);
-__ec_result_537835449_t throwsTest2_0(int i);
+__ec_result_1571047808_t throwsTest1_0(int i);
+__ec_result_1571047808_t throwsTest2_0(int i);
 int main_0(void);
 int defTest_0(int input);
 char* n_0(const char* a);
@@ -104,11 +104,11 @@ char* genericTest_0(const char* test) {
 	char* v = "";
 	return v;
 }
-__ec_result_537835449_t throwsTest1_0(int i) {
-	return (__ec_result_537835449_t){0, .value=i+1};
+__ec_result_1571047808_t throwsTest1_0(int i) {
+	return (__ec_result_1571047808_t){0, .value=i+1};
 }
-__ec_result_537835449_t throwsTest2_0(int i) {
-	return (__ec_result_537835449_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
+__ec_result_1571047808_t throwsTest2_0(int i) {
+	return (__ec_result_1571047808_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
 }
 int main_0(void) {
 	throwsTest1_0(7);
@@ -116,12 +116,14 @@ int main_0(void) {
 	log_0(genericTest_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_1("Cloned String"));
-	const __ec_array_1629687658_t array1 = (__ec_array_1629687658_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
-	__ec_array_1457410641_t array2 = (__ec_array_1457410641_t){4,(int[]){5, 3, 6, 0}};
+	const __ec_array_1888442711_t array1 = (__ec_array_1888442711_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
+	__ec_array_1704629915_t array2 = (__ec_array_1704629915_t){4,(int[]){5, 3, 6, 0}};
 	const __ec_string_t* carray1 = (__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}};
 	int* carray2 = (int[]){5, 3, 6, 0};
 	static const int staticVal = 6;
-	log_12(array1.len);
+	if (true) {
+		log_12(array1.len);
+	}
 	for (int index=0;index<array1.len;index++) {
 		log_1(array1.data[index]);
 	}

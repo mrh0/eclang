@@ -749,13 +749,13 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterParameterRest(EclangParser.ParameterRestContext ctx) { }
+	@Override public void enterParameterVarArg(EclangParser.ParameterVarArgContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitParameterRest(EclangParser.ParameterRestContext ctx) { }
+	@Override public void exitParameterVarArg(EclangParser.ParameterVarArgContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -941,13 +941,13 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStatementWhen(EclangParser.StatementWhenContext ctx) { }
+	@Override public void enterStatementTailIf(EclangParser.StatementTailIfContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitStatementWhen(EclangParser.StatementWhenContext ctx) { }
+	@Override public void exitStatementTailIf(EclangParser.StatementTailIfContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

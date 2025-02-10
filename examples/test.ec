@@ -34,7 +34,7 @@ fn main(): Int do
     val carray1 = ["One", "Two", "Three"]c
     val carray2: Int[]c = [5, 3, 6, 0]c
     const staticVal = 6
-    log(array1.len)
+    log(array1.len) if true
     for index in array1 do
         log(array1[index])
     log("Hello World")

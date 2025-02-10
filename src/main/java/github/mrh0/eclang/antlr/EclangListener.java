@@ -732,17 +732,17 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitParameterDefault(EclangParser.ParameterDefaultContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code parameterRest}
+	 * Enter a parse tree produced by the {@code parameterVarArg}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void enterParameterRest(EclangParser.ParameterRestContext ctx);
+	void enterParameterVarArg(EclangParser.ParameterVarArgContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code parameterRest}
+	 * Exit a parse tree produced by the {@code parameterVarArg}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
 	 */
-	void exitParameterRest(EclangParser.ParameterRestContext ctx);
+	void exitParameterVarArg(EclangParser.ParameterVarArgContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code parameterConst}
 	 * labeled alternative in {@link EclangParser#parameter}.
@@ -924,17 +924,17 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementReturn(EclangParser.StatementReturnContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code statementWhen}
+	 * Enter a parse tree produced by the {@code statementTailIf}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterStatementWhen(EclangParser.StatementWhenContext ctx);
+	void enterStatementTailIf(EclangParser.StatementTailIfContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code statementWhen}
+	 * Exit a parse tree produced by the {@code statementTailIf}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitStatementWhen(EclangParser.StatementWhenContext ctx);
+	void exitStatementTailIf(EclangParser.StatementTailIfContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code statementDefer}
 	 * labeled alternative in {@link EclangParser#statement}.
