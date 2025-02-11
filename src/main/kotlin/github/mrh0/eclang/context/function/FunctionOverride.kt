@@ -66,7 +66,8 @@ class FunctionOverride(
                 params.map { IRParameter(location, it.name, it.type, it.def?.process(cd, hint)?.second) }
             ),
             ret,
-            throws
+            throws,
+            varArg
         )
     }
 

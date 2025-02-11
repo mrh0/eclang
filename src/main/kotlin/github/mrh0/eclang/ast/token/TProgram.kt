@@ -48,7 +48,8 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
                             FunctionParameter(
                                 params[index].name,
                                 if (type is EcTypeDefaultParameterWrapper) type.getContained() else type,
-                                if (type is EcTypeDefaultParameterWrapper) null else params[index].def
+                                if (type is EcTypeDefaultParameterWrapper) null else params[index].def,
+                                params[index].varArg
                             )
                         }
                         .toTypedArray()

@@ -3122,7 +3122,7 @@ public class EclangParser extends Parser {
 	}
 	@SuppressWarnings("CheckReturnValue")
 	public static class StatementContinueContext extends StatementContext {
-		public ExprContext when;
+		public ExprContext condition;
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
 		public ExprContext expr() {
 			return getRuleContext(ExprContext.class,0);
@@ -3145,7 +3145,7 @@ public class EclangParser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class StatementReturnContext extends StatementContext {
 		public ExprContext return_;
-		public ExprContext when;
+		public ExprContext condition;
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
 		public List<ExprContext> expr() {
 			return getRuleContexts(ExprContext.class);
@@ -3170,7 +3170,7 @@ public class EclangParser extends Parser {
 	}
 	@SuppressWarnings("CheckReturnValue")
 	public static class StatementYieldContext extends StatementContext {
-		public ExprContext when;
+		public ExprContext condition;
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
 		public ExprContext expr() {
 			return getRuleContext(ExprContext.class,0);
@@ -3192,7 +3192,7 @@ public class EclangParser extends Parser {
 	}
 	@SuppressWarnings("CheckReturnValue")
 	public static class StatementBreakContext extends StatementContext {
-		public ExprContext when;
+		public ExprContext condition;
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
 		public ExprContext expr() {
 			return getRuleContext(ExprContext.class,0);
@@ -3328,7 +3328,7 @@ public class EclangParser extends Parser {
 	}
 	@SuppressWarnings("CheckReturnValue")
 	public static class StatementPassContext extends StatementContext {
-		public ExprContext when;
+		public ExprContext condition;
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
 		public ExprContext expr() {
 			return getRuleContext(ExprContext.class,0);
@@ -3405,7 +3405,7 @@ public class EclangParser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class StatementThrowContext extends StatementContext {
 		public ExprContext throw_;
-		public ExprContext when;
+		public ExprContext condition;
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
 		public List<ExprContext> expr() {
 			return getRuleContexts(ExprContext.class);
@@ -3480,7 +3480,7 @@ public class EclangParser extends Parser {
 	}
 	@SuppressWarnings("CheckReturnValue")
 	public static class StatementAssertContext extends StatementContext {
-		public ExprContext when;
+		public ExprContext condition;
 		public TerminalNode STRING() { return getToken(EclangParser.STRING, 0); }
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
 		public ExprContext expr() {
@@ -3641,7 +3641,7 @@ public class EclangParser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class StatementTailIfContext extends StatementContext {
 		public ExprContext expression;
-		public ExprContext when;
+		public ExprContext condition;
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
 		public List<ExprContext> expr() {
 			return getRuleContexts(ExprContext.class);
@@ -3895,7 +3895,7 @@ public class EclangParser extends Parser {
 					setState(474);
 					match(T__39);
 					setState(475);
-					((StatementBreakContext)_localctx).when = expr(0);
+					((StatementBreakContext)_localctx).condition = expr(0);
 					}
 				}
 
@@ -3917,7 +3917,7 @@ public class EclangParser extends Parser {
 					setState(480);
 					match(T__39);
 					setState(481);
-					((StatementContinueContext)_localctx).when = expr(0);
+					((StatementContinueContext)_localctx).condition = expr(0);
 					}
 				}
 
@@ -3939,7 +3939,7 @@ public class EclangParser extends Parser {
 					setState(486);
 					match(T__39);
 					setState(487);
-					((StatementPassContext)_localctx).when = expr(0);
+					((StatementPassContext)_localctx).condition = expr(0);
 					}
 				}
 
@@ -3961,7 +3961,7 @@ public class EclangParser extends Parser {
 					setState(492);
 					match(T__39);
 					setState(493);
-					((StatementYieldContext)_localctx).when = expr(0);
+					((StatementYieldContext)_localctx).condition = expr(0);
 					}
 				}
 
@@ -3985,7 +3985,7 @@ public class EclangParser extends Parser {
 					setState(499);
 					match(T__39);
 					setState(500);
-					((StatementThrowContext)_localctx).when = expr(0);
+					((StatementThrowContext)_localctx).condition = expr(0);
 					}
 				}
 
@@ -4009,7 +4009,7 @@ public class EclangParser extends Parser {
 					setState(507);
 					match(T__39);
 					setState(508);
-					((StatementAssertContext)_localctx).when = expr(0);
+					((StatementAssertContext)_localctx).condition = expr(0);
 					}
 				}
 
@@ -4033,7 +4033,7 @@ public class EclangParser extends Parser {
 					setState(514);
 					match(T__39);
 					setState(515);
-					((StatementReturnContext)_localctx).when = expr(0);
+					((StatementReturnContext)_localctx).condition = expr(0);
 					}
 				}
 
@@ -4050,7 +4050,7 @@ public class EclangParser extends Parser {
 				setState(521);
 				match(T__39);
 				setState(522);
-				((StatementTailIfContext)_localctx).when = expr(0);
+				((StatementTailIfContext)_localctx).condition = expr(0);
 				setState(523);
 				match(NL);
 				}

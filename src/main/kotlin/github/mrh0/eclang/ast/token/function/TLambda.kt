@@ -30,7 +30,7 @@ class TLambda(location: Loc, val expr: ITok, val args: MutableList<TParameter>, 
         argPairs.forEach { cd.ctx().define(location, Variable(it.first, it.second)) }
         val returnType = returns.process(cd, hint).first
         val ir = expr.process(cd, hint)
-        funcIR = IRFunctionOverride(location, ir.second as IRBlock, "name", IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second, null) }), returnType, null)
+        funcIR = IRFunctionOverride(location, ir.second as IRBlock, "name", IRParameters(location, argPairs.map { IRParameter(location, it.first, it.second, null) }), returnType, null, null)
         return EcTypeNone to funcIR!!
     }
 }

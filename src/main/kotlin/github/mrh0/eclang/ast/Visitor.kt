@@ -220,7 +220,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitStatementAssignment(ctx: EclangParser.StatementAssignmentContext): ITok = TStatementAssign(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitExprNamed(ctx: EclangParser.ExprNamedContext): ITok = TNamed(loc(ctx), ctx.NAME().text)
 
-    override fun visitStatementTailIf(ctx: EclangParser.StatementTailIfContext): ITok = TTailIf(loc(ctx), TStatement(loc(ctx), visit(ctx.expression)), if (ctx.`when` != null) visit(ctx.`when`) else null)
+    override fun visitStatementTailIf(ctx: EclangParser.StatementTailIfContext): ITok = TTailIf(loc(ctx), TStatement(loc(ctx), visit(ctx.expression)), if (ctx.condition != null) visit(ctx.condition) else null)
 
     // Branches
     override fun visitStatementIf(ctx: EclangParser.StatementIfContext): ITok {
@@ -234,19 +234,15 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return TStatementWhile(loc(ctx), visit(ctx.condition), visit(ctx.body), if(ctx.elseBody == null) null else visit(ctx.elseBody))
     }
 
-    override fun visitStatementForInRange(ctx: EclangParser.StatementForInRangeContext): ITok {
-        return TStatementForeachInRange(loc(ctx), ctx.NAME().text, visit(ctx.lower), visit(ctx.upper), visit(ctx.body), null)
-    }
+    override fun visitStatementForInRange(ctx: EclangParser.StatementForInRangeContext): ITok = TStatementForeachInRange(loc(ctx), ctx.NAME().text, visit(ctx.lower), visit(ctx.upper), visit(ctx.body), null)
 
-    override fun visitStatementForIn(ctx: EclangParser.StatementForInContext): ITok {
-        return TStatementForeachIn(loc(ctx), ctx.NAME().text, visit(ctx.iterable), visit(ctx.body), null)
-    }
+    override fun visitStatementForIn(ctx: EclangParser.StatementForInContext): ITok = TStatementForeachIn(loc(ctx), ctx.NAME().text, visit(ctx.iterable), visit(ctx.body), null)
 
-    override fun visitStatementContinue(ctx: EclangParser.StatementContinueContext): ITok = TTailIf(loc(ctx), TStatementContinue(loc(ctx)), if (ctx.`when` != null) visit(ctx.`when`) else null)
-    override fun visitStatementBreak(ctx: EclangParser.StatementBreakContext): ITok = TTailIf(loc(ctx), TStatementBreak(loc(ctx)), if (ctx.`when` != null) visit(ctx.`when`) else null)
-    override fun visitStatementPass(ctx: EclangParser.StatementPassContext): ITok = TTailIf(loc(ctx), TPass(loc(ctx)), if (ctx.`when` != null) visit(ctx.`when`) else null)
-    override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TTailIf(loc(ctx), TStatementThrow(loc(ctx), visit(ctx.throw_)), if (ctx.`when` != null) visit(ctx.`when`) else null)
-    override fun visitStatementReturn(ctx: EclangParser.StatementReturnContext): ITok = TTailIf(loc(ctx), TStatementReturn(loc(ctx), visit(ctx.return_)), if (ctx.`when` != null) visit(ctx.`when`) else null)
+    override fun visitStatementContinue(ctx: EclangParser.StatementContinueContext): ITok = TTailIf(loc(ctx), TStatementContinue(loc(ctx)), if (ctx.condition != null) visit(ctx.condition) else null)
+    override fun visitStatementBreak(ctx: EclangParser.StatementBreakContext): ITok = TTailIf(loc(ctx), TStatementBreak(loc(ctx)), if (ctx.condition != null) visit(ctx.condition) else null)
+    override fun visitStatementPass(ctx: EclangParser.StatementPassContext): ITok = TTailIf(loc(ctx), TPass(loc(ctx)), if (ctx.condition != null) visit(ctx.condition) else null)
+    override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TTailIf(loc(ctx), TStatementThrow(loc(ctx), visit(ctx.throw_)), if (ctx.condition != null) visit(ctx.condition) else null)
+    override fun visitStatementReturn(ctx: EclangParser.StatementReturnContext): ITok = TTailIf(loc(ctx), TStatementReturn(loc(ctx), visit(ctx.return_)), if (ctx.condition != null) visit(ctx.condition) else null)
 
     override fun visitStatementDefer(ctx: EclangParser.StatementDeferContext): ITok = TDefer(loc(ctx), visit(ctx.statement()))
     override fun visitStatementDeferDo(ctx: EclangParser.StatementDeferDoContext): ITok = TDefer(loc(ctx), visit(ctx.block()))

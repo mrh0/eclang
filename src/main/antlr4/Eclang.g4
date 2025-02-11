@@ -181,14 +181,14 @@ statement:
 
     | NAME '=' expr NL                                                                  #statementAssignment
 
-    | 'break' ('if' when=expr)? NL                                                      #statementBreak
-    | 'continue' ('if' when=expr)? NL                                                   #statementContinue
-    | 'pass' ('if' when=expr)? NL                                                       #statementPass
-    | 'yield' ('if' when=expr)? NL                                                      #statementYield
-    | 'throw' throw=expr ('if' when=expr)? NL                                           #statementThrow
-    | 'assert' STRING ('if' when=expr)? NL                                              #statementAssert
-    | 'ret' return=expr ('if' when=expr)? NL                                            #statementReturn
-    | expression=expr 'if' when=expr NL                                                 #statementTailIf
+    | 'break' ('if' condition=expr)? NL                                                      #statementBreak
+    | 'continue' ('if' condition=expr)? NL                                                   #statementContinue
+    | 'pass' ('if' condition=expr)? NL                                                       #statementPass
+    | 'yield' ('if' condition=expr)? NL                                                      #statementYield
+    | 'throw' throw=expr ('if' condition=expr)? NL                                           #statementThrow
+    | 'assert' STRING ('if' condition=expr)? NL                                              #statementAssert
+    | 'ret' return=expr ('if' condition=expr)? NL                                            #statementReturn
+    | expression=expr 'if' condition=expr NL                                                 #statementTailIf
 
     | 'defer' statement                                                                 #statementDefer
     | 'defer' 'do' body=block                                                           #statementDeferDo

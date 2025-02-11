@@ -3,6 +3,7 @@ package github.mrh0.eclang.context.function
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.token.TBlock
 import github.mrh0.eclang.error.EcError
+import github.mrh0.eclang.error.EcInvalidVarArgError
 import github.mrh0.eclang.types.EcType
 
 object GlobalFunctions {
@@ -17,6 +18,14 @@ object GlobalFunctions {
 
     fun addOverride(location: Loc, name: String, params: Array<FunctionParameter>, returnType: EcType, block: TBlock?, sourceName: String?, generics: Map<String, EcType>?, called: Boolean = false): String {
         val fos: FunctionOverrides
+
+        var varArg: FunctionParameter? = null
+        if (params.isNotEmpty()) {
+            varArg = params.find { it.varArg }
+            if (varArg != null && varArg != params.last()) throw EcInvalidVarArgError(location, name)
+            params.dropLast(1)
+        }
+
         if(functions.containsKey(name)) {
             //if(functions[name]!!.returnType != returnType) throw EcError(location, "Function $name is already defined return type ${functions[name]!!.returnType}")
             fos = functions[name]!!
@@ -27,7 +36,7 @@ object GlobalFunctions {
         }
 
         val usedSourceName = sourceName ?: getSourceName(name, fos.getNumberOfOverrides());
-        val res = FunctionOverride(location, usedSourceName, params, returnType, block, generics ?: mapOf(), null, null)
+        val res = FunctionOverride(location, usedSourceName, params, returnType, block, generics ?: mapOf(), null, varArg?.type)
         fos.add(res)
         if (name == "main") calledFunctionOverrides[usedSourceName] = true
         if (called) calledFunctionOverrides[usedSourceName] = true
