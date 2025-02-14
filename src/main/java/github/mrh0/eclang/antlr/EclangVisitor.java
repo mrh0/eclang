@@ -441,6 +441,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitParameterVarArg(EclangParser.ParameterVarArgContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code parameterVarArgC}
+	 * labeled alternative in {@link EclangParser#parameter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterVarArgC(EclangParser.ParameterVarArgCContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code parameterConst}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
@@ -567,6 +574,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementDeferDo(EclangParser.StatementDeferDoContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code statementLetIf}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementLetIf(EclangParser.StatementLetIfContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code statementIf}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
@@ -692,6 +706,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalUnitDeclare}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalUnitDeclare(EclangParser.GlobalUnitDeclareContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code globalRecordDefine}
 	 * labeled alternative in {@link EclangParser#global}.

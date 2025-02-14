@@ -744,6 +744,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitParameterVarArg(EclangParser.ParameterVarArgContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code parameterVarArgC}
+	 * labeled alternative in {@link EclangParser#parameter}.
+	 * @param ctx the parse tree
+	 */
+	void enterParameterVarArgC(EclangParser.ParameterVarArgCContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code parameterVarArgC}
+	 * labeled alternative in {@link EclangParser#parameter}.
+	 * @param ctx the parse tree
+	 */
+	void exitParameterVarArgC(EclangParser.ParameterVarArgCContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code parameterConst}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
@@ -960,6 +972,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementDeferDo(EclangParser.StatementDeferDoContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code statementLetIf}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementLetIf(EclangParser.StatementLetIfContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementLetIf}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementLetIf(EclangParser.StatementLetIfContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code statementIf}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
@@ -1175,6 +1199,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code globalUnitDeclare}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void enterGlobalUnitDeclare(EclangParser.GlobalUnitDeclareContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code globalUnitDeclare}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void exitGlobalUnitDeclare(EclangParser.GlobalUnitDeclareContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code globalRecordDefine}
 	 * labeled alternative in {@link EclangParser#global}.

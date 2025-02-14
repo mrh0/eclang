@@ -7,6 +7,7 @@ import github.mrh0.eclang.context.result.ResultInstance
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.eclang.types.*
+import github.mrh0.eclang.types.internal.EcTypeVarArgC
 import github.mrh0.eclang.types.numbers.*
 import github.mrh0.eclang.types.numbers.signed.EcTypeChar
 import github.mrh0.eclang.types.numbers.signed.EcTypeInt
@@ -20,6 +21,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
     }
 
     private fun translateNative(t: EcType): String = when(t) {
+        is EcTypeVarArgC -> "SHOULD NOT BE HERE"
         is EcTypeSize -> "size_t"
         is EcTypeInt -> "int"
         is EcTypeCString -> "char*"

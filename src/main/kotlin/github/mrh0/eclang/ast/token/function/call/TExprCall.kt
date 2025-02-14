@@ -11,11 +11,16 @@ import github.mrh0.eclang.error.EcAmbiguousSignatureError
 import github.mrh0.eclang.error.EcGenericNotEstablishedError
 import github.mrh0.eclang.error.EcNoMatchingCallSignatureError
 import github.mrh0.eclang.ir.IIR
+import github.mrh0.eclang.ir.data.IRInt
+import github.mrh0.eclang.ir.data.IRValue
 import github.mrh0.eclang.ir.function.call.IRGlobalFunctionCall
 import github.mrh0.eclang.ir.function.call.IRArgument
 import github.mrh0.eclang.ir.function.call.IRArguments
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeGeneric
+import github.mrh0.eclang.types.EcTypeNone
+import github.mrh0.eclang.types.internal.EcTypeVarArgC
+import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 
 open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : Tok(location) {
     override fun toString(): String {
@@ -24,7 +29,7 @@ open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : T
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val overrides = GlobalFunctions.getOverridesByName(location, name)
-        val processedArgs = args.map { it.process(cd, hint) }
+        val processedArgs = args.map { it.process(cd, hint) }.toMutableList()
         val argTypes = processedArgs.map { it.first }.toTypedArray()
 
         val matching = overrides.getMatching(location, argTypes)
@@ -33,6 +38,11 @@ open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : T
         val matchingNonGeneric = matching.filter { !it.hasGenerics }
         if (matchingNonGeneric.size > 1) throw EcAmbiguousSignatureError(location, name, argTypes, matching.map { it.location })
         val first = matching[0]
+
+        if (first.varArg != null && first.varArg !is EcTypeVarArgC) {
+            val varArgLen = processedArgs.count() - first.params.size
+            processedArgs.add(varArgLen-1, EcTypeInt to IRInt(location, varArgLen))
+        }
 
         if (first.hasGenerics) {
             val genericMap: MutableMap<String, EcType> = mutableMapOf()

@@ -23,15 +23,15 @@ declare type UnsignedNumber as UnsignedIntegerNumber
 declare type Number as SignedNumber | UnsignedNumber
 
 // apr
-declare rec Pool from "apr_pool_t"
-declare rec PoolStatus from "apr_status_t"
+declare rec Pool extern "apr_pool_t"
+declare rec PoolStatus extern "apr_status_t"
 
 var ROOT_POOL: @Pool? = Null
 
-declare fn createPool from "apr_pool_create" as (pool: @@Pool, parent: @Pool?): PoolStatus
+declare fn createPool extern "apr_pool_create" as (pool: @@Pool, parent: @Pool?): PoolStatus
 fn createPool(pool: @@Pool): PoolStatus = createPool(pool, Null)
-declare fn freePool from "apr_pool_destroy" as (pool: @Pool)
-declare fn alloc from "apr_palloc" as (pool: @Pool, size: Size): @Any
+declare fn freePool extern "apr_pool_destroy" as (pool: @Pool)
+declare fn alloc extern "apr_palloc" as (pool: @Pool, size: Size): @Any
 
 // math
 declare fn acos as (x: Double): Double
@@ -52,7 +52,7 @@ declare fn log10 as (x: Double): Double
 declare fn pow as (x: Double, y: Double): Double
 declare fn sqrt as (x: Double): Double
 declare fn ceil as (x: Double): Double
-declare fn abs from "fabs" as (x: Double): Double
+declare fn abs extern "fabs" as (x: Double): Double
 declare fn floor as (x: Double): Double
 // declare fn fmod as (x: Double, y: Double): Double
 declare fn round as (x: Double): Double
@@ -62,32 +62,32 @@ fn max(x: Double, y: Double): Double = if (x > y) x else y
 fn clamp(v: Double, min: Double, max: Double): Double = max(min(v, max), min)
 
 // stdlib
-declare fn toDouble from "atof" as (string: CString): Double
-declare fn toInt from "atoi" as (string: CString): Int
-declare fn toLong from "atol" as (string: CString): Long
+declare fn toDouble extern "atof" as (string: CString): Double
+declare fn toInt extern "atoi" as (string: CString): Int
+declare fn toLong extern "atol" as (string: CString): Long
 
 declare fn abort as ()
 declare fn exit as (status: Int)
 fn exit() = exit(0)
-declare fn getEnv from "getenv" as (name: CString): CString
-declare fn executeSystemCommand from "system" as (name: CString): Int
+declare fn getEnv extern "getenv" as (name: CString): CString
+declare fn executeSystemCommand extern "system" as (name: CString): Int
 
 declare fn abs as (x: Int): Int
-declare fn abs from "labs" as (x: Long): Long
+declare fn abs extern "labs" as (x: Long): Long
 
-declare rec IntDivResult from "div_t" as
+declare rec IntDivResult extern "div_t" as
      quot: Int
      rem: Int
 
-declare rec LongDivResult from "ldiv_t" as
+declare rec LongDivResult extern "ldiv_t" as
      quot: Long
      rem: Long
 
-declare fn div from "div" as (numer: Int, denom: Int): IntDivResult
-declare fn div from "ldiv" as (numer: Long, denom: Long): LongDivResult
+declare fn div extern "div" as (numer: Int, denom: Int): IntDivResult
+declare fn div extern "ldiv" as (numer: Long, denom: Long): LongDivResult
 
-declare fn randomInt from "rand" as (): Int
-declare fn randomInt from "srand" as (seed: Int): Int
+declare fn randomInt extern "rand" as (): Int
+declare fn randomInt extern "srand" as (seed: Int): Int
 
 // string
 // declare fn memchr(str: @Any, c: Int, n: Size): @Any

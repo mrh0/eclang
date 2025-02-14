@@ -12,9 +12,7 @@ import github.mrh0.eclang.ir.IRNop
 import github.mrh0.eclang.ir.function.IRFunctionOverride
 import github.mrh0.eclang.ir.function.IRParameter
 import github.mrh0.eclang.ir.function.IRParameters
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeCallSignature
-import github.mrh0.eclang.types.EcTypeGeneric
+import github.mrh0.eclang.types.*
 
 class FunctionOverride(
     val location: Loc,
@@ -24,11 +22,12 @@ class FunctionOverride(
     val block: TBlock?,
     private val generics: Map<String, EcType>,
     val throws: EcType?,
-    private val varArg: EcType?,
+    val varArg: EcType?,
     private var called: Boolean = false
 ) {
     private val noDefParams = params.filter { it.def == null }
     val hasGenerics = params.any { it.type is EcTypeGeneric }
+
     fun match(location: Loc, types: Array<EcType>): Boolean {
         if(types.size != noDefParams.size && varArg == null) return false
         for(i in types.indices) {

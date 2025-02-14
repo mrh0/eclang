@@ -761,6 +761,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterParameterVarArgC(EclangParser.ParameterVarArgCContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitParameterVarArgC(EclangParser.ParameterVarArgCContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterParameterConst(EclangParser.ParameterConstContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -977,6 +989,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterStatementLetIf(EclangParser.StatementLetIfContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementLetIf(EclangParser.StatementLetIfContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterStatementIf(EclangParser.StatementIfContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -1188,6 +1212,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalUnitDeclare(EclangParser.GlobalUnitDeclareContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalUnitDeclare(EclangParser.GlobalUnitDeclareContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -20,10 +20,11 @@ object GlobalFunctions {
         val fos: FunctionOverrides
 
         var varArg: FunctionParameter? = null
+        var newParams = params
         if (params.isNotEmpty()) {
             varArg = params.find { it.varArg }
             if (varArg != null && varArg != params.last()) throw EcInvalidVarArgError(location, name)
-            params.dropLast(1)
+            if (varArg != null) newParams = params.dropLast(1).toTypedArray()
         }
 
         if(functions.containsKey(name)) {
@@ -36,7 +37,7 @@ object GlobalFunctions {
         }
 
         val usedSourceName = sourceName ?: getSourceName(name, fos.getNumberOfOverrides());
-        val res = FunctionOverride(location, usedSourceName, params, returnType, block, generics ?: mapOf(), null, varArg?.type)
+        val res = FunctionOverride(location, usedSourceName, newParams, returnType, block, generics ?: mapOf(), null, varArg?.type)
         fos.add(res)
         if (name == "main") calledFunctionOverrides[usedSourceName] = true
         if (called) calledFunctionOverrides[usedSourceName] = true

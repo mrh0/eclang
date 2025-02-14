@@ -39,6 +39,8 @@ fun main(args: Array<String>) {
     options.addOption(Option.builder("o").longOpt("output").argName("path").type(Path::class.java).hasArg().desc("Output .c source file path and name").build())
     options.addOption("v", "version", false, "Prints version")
     options.addOption("d", "debug", false, "Prints debug info")
+    options.addOption("dc", "declaration-comments", false, "Includes declaration comments in output") // TODO
+    options.addOption("od", "only-declarations", false, "Emits declarations only") // TODO
     options.addOption("t", "time", false, "Prints compile time")
     options.addOption("h", "help", false, "Prints help")
     val parser: CommandLineParser = DefaultParser()

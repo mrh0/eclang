@@ -15,10 +15,10 @@ declare fn apr_pstrdup as (p: @apr_pool_t, s: CString): CString
 declare fn apr_pstrmemdup as (p: @apr_pool_t, s: CString, n: apr_size_t): CString
 declare fn apr_pstrndup as (p: @apr_pool_t, s: CString, n: apr_size_t): CString
 declare fn apr_pmemdup as (p: @apr_pool_t, m: @Any, n: apr_size_t): @Any
-declare fn apr_pstrcat as (p: @apr_pool_t, rest...CString): CString
+declare fn apr_pstrcat as (p: @apr_pool_t, ...): CString
 declare fn apr_pstrcatv as (p: @apr_pool_t, vec: @iovec, nvec: apr_size_t, nbytes: @apr_size_t): CString
 declare fn apr_pvsprintf as (p: @apr_pool_t, fmt: CString, ap: va_list): CString
-declare fn apr_psprintf as (p: @apr_pool_t, fmt: CString, rest...CString): CString
+declare fn apr_psprintf as (p: @apr_pool_t, fmt: CString, ...): CString
 declare fn apr_cpystrn as (dst: CString, src: CString, dst_size: apr_size_t): CString
 declare fn apr_collapse_spaces as (dest: CString, src: CString): CString
 declare fn apr_tokenize_to_argv as (arg_str: CString, argv_out: @@CString, token_context: @apr_pool_t): apr_status_t

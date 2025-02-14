@@ -31,8 +31,8 @@ char* __ec_atom_test_atom = "test_atom";
 // Tuples
 
 // Arrays
-typedef struct { long len; __ec_string_t* data; } __ec_array_1642030774_t;
-typedef struct { long len; int* data; } __ec_array_1990160809_t;
+typedef struct { long len; __ec_string_t* data; } __ec_array_384587033_t;
+typedef struct { long len; int* data; } __ec_array_1524960486_t;
 
 // Declarations
 void log_0(const char* value);
@@ -43,9 +43,10 @@ double max_0(double x, double y);
 char* clone_0(const char* str, const apr_pool_t* pool);
 char* clone_1(const char* str);
 char* genericTest_0(const char* test);
-__ec_result_2325025437_t throwsTest1_0(int i);
-__ec_result_2325025437_t throwsTest2_0(int i);
-int varArgTest_0(int a, int b, const __ec_string_t c);
+__ec_result_1152863188_t throwsTest1_0(int i);
+__ec_result_1152863188_t throwsTest2_0(int i);
+int varArgTest_0(int a, int b, int __ec_va_count, ...);
+int varArgCTest_0(int a, int b, ...);
 int main_0(void);
 int defTest_0(int input);
 char* n_0(const char* a);
@@ -105,24 +106,28 @@ char* genericTest_0(const char* test) {
 	char* v = "";
 	return v;
 }
-__ec_result_2325025437_t throwsTest1_0(int i) {
-	return (__ec_result_2325025437_t){0, .value=i+1};
+__ec_result_1152863188_t throwsTest1_0(int i) {
+	return (__ec_result_1152863188_t){0, .value=i+1};
 }
-__ec_result_2325025437_t throwsTest2_0(int i) {
-	return (__ec_result_2325025437_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
+__ec_result_1152863188_t throwsTest2_0(int i) {
+	return (__ec_result_1152863188_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
 }
-int varArgTest_0(int a, int b, const __ec_string_t c, ...) {
+int varArgTest_0(int a, int b, int __ec_va_count, ...) {
+	return a+b;
+}
+int varArgCTest_0(int a, int b, ...) {
 	return a+b;
 }
 int main_0(void) {
-	varArgTest_0(5, 8, (__ec_string_t){5,"Hello"}, (__ec_string_t){5,"World"}, (__ec_string_t){1,"!"});
+	varArgTest_0(5, 8, 3, (__ec_string_t){5,"Hello"}, (__ec_string_t){5,"World"}, (__ec_string_t){1,"!"});
+	varArgCTest_0(5, 8, (__ec_string_t){5,"Hello"}, (__ec_string_t){5,"World"}, (__ec_string_t){1,"!"});
 	throwsTest1_0(7);
 	throwsTest2_0(7);
 	log_0(genericTest_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_1("Cloned String"));
-	const __ec_array_1642030774_t array1 = (__ec_array_1642030774_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
-	__ec_array_1990160809_t array2 = (__ec_array_1990160809_t){4,(int[]){5, 3, 6, 0}};
+	const __ec_array_384587033_t array1 = (__ec_array_384587033_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
+	__ec_array_1524960486_t array2 = (__ec_array_1524960486_t){4,(int[]){5, 3, 6, 0}};
 	const __ec_string_t* carray1 = (__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}};
 	int* carray2 = (int[]){5, 3, 6, 0};
 	static const int staticVal = 6;

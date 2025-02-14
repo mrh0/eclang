@@ -46,3 +46,26 @@ typedef struct {
 #define SUCCESS(val) (ReturnWrapper){0, .value = (val)}
 #define ERROR(code, message) (ReturnWrapper){1, .result.error = (Error){code, message}}
 ```
+
+Record Polymorphism
+
+```
+struct Animal as
+    sound: String
+    name: String
+    
+struct Cat extends Animal as
+    purring: Int
+    
+struct Dog extends Animal as
+    sniffing: Int = 0 // Default value of 0
+
+fn speak(animal: Animal) do
+    ret animal.sound
+
+val jeff = Cat { name = "Jeff", sound = "meow", purring = 10 }
+val bob = Dog { "woff", "Bob", 8 }
+val bill = Dog { sound = "woffof", name = "Bill" }
+
+speak(jeff) // "meow"
+```

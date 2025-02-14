@@ -26,8 +26,12 @@ fn throwsTest2(i: Int): Int throws Error do
 fn varArgTest(a: Int, b: Int, ...c: String): Int do
     ret a + b
 
+fn varArgCTest(a: Int, b: Int, ...): Int do
+    ret a + b
+
 fn main(): Int do
     varArgTest(5, 8, "Hello", "World", "!")
+    varArgCTest(5, 8, "Hello", "World", "!")
     throwsTest1(7)
     throwsTest2(7)
     log(genericTest("Test"c))
