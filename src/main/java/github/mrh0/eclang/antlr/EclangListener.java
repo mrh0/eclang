@@ -482,6 +482,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprBinOp(EclangParser.ExprBinOpContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprPrimitiveUnit}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprPrimitiveUnit(EclangParser.ExprPrimitiveUnitContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprPrimitiveUnit}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprPrimitiveUnit(EclangParser.ExprPrimitiveUnitContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprSizeOf}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -1271,6 +1283,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code globalNamespace}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void enterGlobalNamespace(EclangParser.GlobalNamespaceContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code globalNamespace}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 */
+	void exitGlobalNamespace(EclangParser.GlobalNamespaceContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EclangParser#use}.
 	 * @param ctx the parse tree

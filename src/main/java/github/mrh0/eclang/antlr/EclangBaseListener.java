@@ -497,6 +497,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterExprPrimitiveUnit(EclangParser.ExprPrimitiveUnitContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprPrimitiveUnit(EclangParser.ExprPrimitiveUnitContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterExprSizeOf(EclangParser.ExprSizeOfContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -1284,6 +1296,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalNamespace(EclangParser.GlobalNamespaceContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalNamespace(EclangParser.GlobalNamespaceContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -34,6 +34,8 @@ fn main(): Int do
     varArgCTest(5, 8, "Hello", "World", "!")
     throwsTest1(7)
     throwsTest2(7)
+    // val testUnitValue = 554.0testUnit
+    val testCast = "Testing" as unsafe CString
     log(genericTest("Test"c))
     createPool(addrof(ROOT_POOL!), Null)
     log("Cloned String"c.clone())

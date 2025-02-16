@@ -288,6 +288,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprBinOp(EclangParser.ExprBinOpContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprPrimitiveUnit}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprPrimitiveUnit(EclangParser.ExprPrimitiveUnitContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprSizeOf}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -748,6 +755,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code globalNamespace}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalNamespace(EclangParser.GlobalNamespaceContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#use}.
 	 * @param ctx the parse tree

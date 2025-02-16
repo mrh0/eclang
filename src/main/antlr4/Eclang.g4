@@ -103,6 +103,7 @@ expr:
     | 'addrof' expr                                                 #exprAddressOf
     | '(' expr ')'                                                  #exprNest
     | '(' INDENT expr NL DEDENT ')'                                 #exprNest
+    | primitive NAME                                                #exprPrimitiveUnit
     | primitive                                                     #exprPrimitive
     | NAME                                                          #exprNamed
     | 'if' '(' condition=expr ')' body=expr 'else' elseBody=expr    #exprInlineIf
@@ -223,23 +224,25 @@ func:
     ;
 
 global:
-      'var' NAME '=' expr NL                                                                            #globalDefine
-    | 'val' NAME '=' expr NL                                                                            #globalDefineConst
-    | 'var' NAME (':' type)? '=' expr NL                                                                #globalDefineTyped
-    | 'val' NAME (':' type)? '=' expr NL                                                                #globalDefineConstTyped
+      'var' NAME '=' expr NL                                                                                                        #globalDefine
+    | 'val' NAME '=' expr NL                                                                                                        #globalDefineConst
+    | 'var' NAME (':' type)? '=' expr NL                                                                                            #globalDefineTyped
+    | 'val' NAME (':' type)? '=' expr NL                                                                                            #globalDefineConstTyped
 
-    | 'declare' 'var' name=NAME ('extern' externalName=STRING)? 'as' type  NL                              #globalDeclareDefine
-    | 'declare' ('val' | 'const') name=NAME ('extern' externalName=STRING)? 'as' type  NL                  #globalDeclareConst
-    | 'declare' 'type' NAME 'as' type NL                                                                 #globalTypeDefine
+    | 'declare' 'var' name=NAME ('extern' externalName=STRING)? 'as' type  NL                                                       #globalDeclareDefine
+    | 'declare' ('val' | 'const') name=NAME ('extern' externalName=STRING)? 'as' type  NL                                           #globalDeclareConst
+    | 'declare' 'type' NAME 'as' type NL                                                                                            #globalTypeDefine
 
-    | 'declare' 'unit' NAME 'as' type NL                                                                 #globalUnitDeclare // Number sufix
+    | 'unit' NAME '(' NAME ':' type ')' '=' expr NL                                                                                 #globalUnitDeclare // Number sufix
 
-    | 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                                      #globalRecordDefine
-    | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT              #globalRecordDeclareDefine
-    | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? NL                                                                #globalRecordDeclare
+    | 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                                          #globalRecordDefine
+    | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT               #globalRecordDeclareDefine
+    | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? NL                                                                  #globalRecordDeclare
 
-    | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT           #globalStructDeclareDefine
-    | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? NL                                                             #globalStructDeclare
+    | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT            #globalStructDeclareDefine
+    | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? NL                                                               #globalStructDeclare
+
+    | 'namespace' NAME NL                                                                                                           #globalNamespace
     ;
 
 use:
