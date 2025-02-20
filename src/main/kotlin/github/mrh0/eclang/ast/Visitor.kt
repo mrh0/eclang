@@ -13,6 +13,7 @@ import github.mrh0.eclang.ast.token.data.*
 import github.mrh0.eclang.ast.token.data.record.TCreateRecord
 import github.mrh0.eclang.ast.token.data.record.TCreateRecordTyped
 import github.mrh0.eclang.ast.token.data.record.THere
+import github.mrh0.eclang.ast.token.data.unit.TPrimitiveUnit
 import github.mrh0.eclang.ast.token.type.TTypeRecord
 import github.mrh0.eclang.ast.token.function.*
 import github.mrh0.eclang.ast.token.function.call.TExprCall
@@ -129,20 +130,20 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
 
     // Primitives
-    override fun visitNumberInt(ctx: EclangParser.NumberIntContext): ITok = TInteger(loc(ctx), ctx.text.replace("_", "").replace("i", "").toInt())
-    override fun visitNumberLong(ctx: EclangParser.NumberLongContext): ITok = TLong(loc(ctx), ctx.text.replace("_", "").dropLast(1).toLong())
-    override fun visitNumberShort(ctx: EclangParser.NumberShortContext): ITok = TShort(loc(ctx), ctx.text.replace("_", "").dropLast(1).toShort())
-    override fun visitNumberChar(ctx: EclangParser.NumberCharContext): ITok = TCharNum(loc(ctx), ctx.text.replace("_", "").dropLast(1).toInt())
+    override fun visitNumberInteger(ctx: EclangParser.NumberIntegerContext): ITok = TInteger(loc(ctx), ctx.text.replace("_", "").toInt())
+    //override fun visitNumberLong(ctx: EclangParser.NumberLongContext): ITok = TLong(loc(ctx), ctx.text.replace("_", "").dropLast(1).toLong())
+    //override fun visitNumberShort(ctx: EclangParser.NumberShortContext): ITok = TShort(loc(ctx), ctx.text.replace("_", "").dropLast(1).toShort())
+    //override fun visitNumberChar(ctx: EclangParser.NumberCharContext): ITok = TCharNum(loc(ctx), ctx.text.replace("_", "").dropLast(1).toInt())
 
-    override fun visitNumberUInt(ctx: EclangParser.NumberUIntContext): ITok = TUnsignedInteger(loc(ctx), ctx.text.replace("_", "").replace("i", "").replace("u", "").toInt())
-    override fun visitNumberULong(ctx: EclangParser.NumberULongContext): ITok = TUnsignedLong(loc(ctx), ctx.text.replace("_", "").dropLast(2).toLong())
-    override fun visitNumberUShort(ctx: EclangParser.NumberUShortContext): ITok = TUnsignedShort(loc(ctx), ctx.text.replace("_", "").dropLast(2).toShort())
-    override fun visitNumberUChar(ctx: EclangParser.NumberUCharContext): ITok = TUnsignedCharNum(loc(ctx), ctx.text.replace("_", "").dropLast(2).toInt())
+    //override fun visitNumberUInt(ctx: EclangParser.NumberUIntContext): ITok = TUnsignedInteger(loc(ctx), ctx.text.replace("_", "").replace("i", "").replace("u", "").toInt())
+    //override fun visitNumberULong(ctx: EclangParser.NumberULongContext): ITok = TUnsignedLong(loc(ctx), ctx.text.replace("_", "").dropLast(2).toLong())
+    //override fun visitNumberUShort(ctx: EclangParser.NumberUShortContext): ITok = TUnsignedShort(loc(ctx), ctx.text.replace("_", "").dropLast(2).toShort())
+    //override fun visitNumberUChar(ctx: EclangParser.NumberUCharContext): ITok = TUnsignedCharNum(loc(ctx), ctx.text.replace("_", "").dropLast(2).toInt())
 
     override fun visitNumberBin(ctx: EclangParser.NumberBinContext): ITok = TInteger(loc(ctx), ctx.text.substring(2).toInt(2))
     override fun visitNumberHex(ctx: EclangParser.NumberHexContext): ITok = TInteger(loc(ctx), Integer.decode(ctx.text))
-    override fun visitNumberFloat(ctx: EclangParser.NumberFloatContext): ITok = TFloat(loc(ctx), ctx.text.toFloat())
-    override fun visitNumberDouble(ctx: EclangParser.NumberDoubleContext): ITok = TDouble(loc(ctx), ctx.text.toDouble())
+    override fun visitNumberFloating(ctx: EclangParser.NumberFloatingContext): ITok = TFloat(loc(ctx), ctx.text.replace("_", "").toFloat())
+    //override fun visitNumberDouble(ctx: EclangParser.NumberDoubleContext): ITok = TDouble(loc(ctx), ctx.text.toDouble())
 
     override fun visitPrimitiveBool(ctx: EclangParser.PrimitiveBoolContext): ITok = TBoolean(loc(ctx), ctx.BOOL().text == "true")
     //override fun visitPrimitiveCString(ctx: EclangParser.PrimitiveCStringContext): ITok = TCString(loc(ctx), Util.getCStringContent(ctx.text) ?: "")
@@ -193,6 +194,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         "@" -> TReadPointer(loc(ctx), visit(ctx.expr()))
         else -> throw NotImplementedError("Unary Operator '${ctx.unOp().text}' is not implemented.")
     }
+
+    override fun visitExprPrimitiveUnit(ctx: EclangParser.ExprPrimitiveUnitContext): ITok = TPrimitiveUnit(loc(ctx), visit(ctx.primitive()), ctx.NAME().text)
 
     override fun visitExprAs(ctx: EclangParser.ExprAsContext): ITok = TCast(loc(ctx), visit(ctx.expr()), visit(ctx.type()))
     override fun visitExprAsUnsafe(ctx: EclangParser.ExprAsUnsafeContext): ITok = TCastUnsafe(loc(ctx), visit(ctx.expr()), visit(ctx.type()))

@@ -12,13 +12,13 @@ import github.mrh0.eclang.ir.data.IRAtom
 import github.mrh0.eclang.ir.data.IRValue
 import github.mrh0.eclang.types.EcTypeAtomInstance
 import github.mrh0.eclang.types.EcType
+import github.mrh0.eclang.types.numbers.EcTypeDouble
+import github.mrh0.eclang.types.numbers.EcTypeFloat
+import github.mrh0.eclang.types.numbers.signed.EcTypeChar
 import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 import github.mrh0.eclang.types.numbers.signed.EcTypeLong
 import github.mrh0.eclang.types.numbers.signed.EcTypeShort
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeUInt
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeULong
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeUShort
-import github.mrh0.eclang.types.numbers.unsigned.EcTypeUnsignedInteger
+import github.mrh0.eclang.types.numbers.unsigned.*
 
 class TPrimitiveUnit(location: Loc, private val expr: ITok, private val name: String) : Tok(location) {
     override fun toString(): String {
@@ -35,13 +35,15 @@ class TPrimitiveUnit(location: Loc, private val expr: ITok, private val name: St
         val irPair = expr.process(cd, hint)
         return when(name) {
             "i", "i32" -> simpleCast(irPair, EcTypeInt)
-            "u", "u32" -> simpleCast(irPair, EcTypeUInt)
+            "u", "ui", "u32" -> simpleCast(irPair, EcTypeUInt)
             "l", "i64" -> simpleCast(irPair, EcTypeLong)
             "ul", "u64" -> simpleCast(irPair, EcTypeULong)
             "s", "i16" -> simpleCast(irPair, EcTypeShort)
             "us", "u16" -> simpleCast(irPair, EcTypeUShort)
-            "b", "i8" -> simpleCast(irPair, EcTypeShort)
-            "ub", "u8" -> simpleCast(irPair, EcTypeUShort)
+            "b", "i8" -> simpleCast(irPair, EcTypeChar)
+            "ub", "u8" -> simpleCast(irPair, EcTypeUChar)
+            "f", "f32" -> simpleCast(irPair, EcTypeFloat)
+            "d", "f64" -> simpleCast(irPair, EcTypeDouble)
             else -> throw EcUnknownUnitTypeError(location, name, irPair.first)
         }
     }

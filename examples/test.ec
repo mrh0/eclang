@@ -48,7 +48,7 @@ fn main(): Int do
     for index in array1 do
         log(array1[index])
     log("Hello World")
-    val tchar: Char = 10c
+    val tchar: Char = 10b
     val tshort: Short = 10s
     val tint: Int = 10i
     val tlong: Long = 10l

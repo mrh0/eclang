@@ -29,16 +29,8 @@ BOOL: 'true' | 'false';
 NAME: [_a-zA-Z][_a-zA-Z0-9]*;
 ATOM: ':'[a-zA-Z0-9][_a-zA-Z0-9]*;
 
-UINT: '0u'|'0ui'|[1-9][_0-9]*('u'|'ui');
-UCHAR: '0uc'|[1-9][_0-9]*'uc';
-USHORT: '0us'|[1-9][_0-9]*'us';
-ULONG: '0ul'|[1-9][_0-9]*'ul';
-SHORT: '0s'|[1-9][_0-9]*'s';
-INT: '0'|'0i'|[1-9][_0-9]*'i'?;
-CHARNUM: '0c'|[1-9][_0-9]*'c';
-LONG: '0l'|[1-9][_0-9]*'l';
-FLOAT: '0f'|[1-9][0-9]*('.'[0-9]*)?'f'?;
-DOUBLE: '0d'|[1-9][0-9]*('.'[0-9]*)?'d'?;
+INT: '0'|[1-9][_0-9]*;
+FLOAT: '.0'|[1-9][0-9]*('.'[0-9]*)?;
 HEX: '0x'[0-9a-fA-F]*;
 BIN: '0b'[0-1]*;
 
@@ -53,16 +45,8 @@ COMMENT: '//' ~[\r\n]* -> skip;
 BLOCKCOMMENT: '/*' .*? '*/' -> skip;
 
 number:
-      LONG          #numberLong
-    | CHARNUM       #numberChar
-    | SHORT         #numberShort
-    | INT           #numberInt
-    | UINT          #numberUInt
-    | UCHAR         #numberUChar
-    | USHORT        #numberUShort
-    | ULONG         #numberULong
-    | FLOAT         #numberFloat
-    | DOUBLE        #numberDouble
+      INT           #numberInteger
+    | FLOAT         #numberFloating
     | HEX           #numberHex
     | BIN           #numberBin
     ;
@@ -235,7 +219,7 @@ global:
 
     | 'unit' NAME '(' NAME ':' type ')' '=' expr NL                                                                                 #globalUnitDeclare // Number sufix
 
-    | 'rec' name=NAME 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                                          #globalRecordDefine
+    | 'rec' name=NAME (extending=NAME) 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                                          #globalRecordDefine
     | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT               #globalRecordDeclareDefine
     | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? NL                                                                  #globalRecordDeclare
 

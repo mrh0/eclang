@@ -8,125 +8,29 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  */
 public interface EclangListener extends ParseTreeListener {
 	/**
-	 * Enter a parse tree produced by the {@code numberLong}
+	 * Enter a parse tree produced by the {@code numberInteger}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
 	 */
-	void enterNumberLong(EclangParser.NumberLongContext ctx);
+	void enterNumberInteger(EclangParser.NumberIntegerContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code numberLong}
+	 * Exit a parse tree produced by the {@code numberInteger}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
 	 */
-	void exitNumberLong(EclangParser.NumberLongContext ctx);
+	void exitNumberInteger(EclangParser.NumberIntegerContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code numberChar}
+	 * Enter a parse tree produced by the {@code numberFloating}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
 	 */
-	void enterNumberChar(EclangParser.NumberCharContext ctx);
+	void enterNumberFloating(EclangParser.NumberFloatingContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code numberChar}
+	 * Exit a parse tree produced by the {@code numberFloating}
 	 * labeled alternative in {@link EclangParser#number}.
 	 * @param ctx the parse tree
 	 */
-	void exitNumberChar(EclangParser.NumberCharContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code numberShort}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void enterNumberShort(EclangParser.NumberShortContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code numberShort}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void exitNumberShort(EclangParser.NumberShortContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code numberInt}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void enterNumberInt(EclangParser.NumberIntContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code numberInt}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void exitNumberInt(EclangParser.NumberIntContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code numberUInt}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void enterNumberUInt(EclangParser.NumberUIntContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code numberUInt}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void exitNumberUInt(EclangParser.NumberUIntContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code numberUChar}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void enterNumberUChar(EclangParser.NumberUCharContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code numberUChar}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void exitNumberUChar(EclangParser.NumberUCharContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code numberUShort}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void enterNumberUShort(EclangParser.NumberUShortContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code numberUShort}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void exitNumberUShort(EclangParser.NumberUShortContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code numberULong}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void enterNumberULong(EclangParser.NumberULongContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code numberULong}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void exitNumberULong(EclangParser.NumberULongContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code numberFloat}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void enterNumberFloat(EclangParser.NumberFloatContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code numberFloat}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void exitNumberFloat(EclangParser.NumberFloatContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code numberDouble}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void enterNumberDouble(EclangParser.NumberDoubleContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code numberDouble}
-	 * labeled alternative in {@link EclangParser#number}.
-	 * @param ctx the parse tree
-	 */
-	void exitNumberDouble(EclangParser.NumberDoubleContext ctx);
+	void exitNumberFloating(EclangParser.NumberFloatingContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code numberHex}
 	 * labeled alternative in {@link EclangParser#number}.
