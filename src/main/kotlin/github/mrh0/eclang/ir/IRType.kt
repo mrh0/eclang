@@ -44,6 +44,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeULong -> "unsigned long"
         is EcTypeUShort -> "unsigned short"
         is EcTypePointer -> "${translateNative(t.wrapped)}*"
+        is EcTypeVolatile -> "volatile ${translateNative(t.wrapped)}"
         is EcTypeBoxed -> "${translateNative(t.wrapped)}*"
         is EcTypeGeneric -> throw EcError(location, "Generic type cannot be used in this context")
         is EcTypeCArray -> "${translateNative(t.arg)}*"

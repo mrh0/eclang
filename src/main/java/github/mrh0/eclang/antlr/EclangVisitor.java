@@ -274,33 +274,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprCreateRecordNamed(EclangParser.ExprCreateRecordNamedContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code typeUnion}
-	 * labeled alternative in {@link EclangParser#type}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTypeUnion(EclangParser.TypeUnionContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code typeAddressByName}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitTypeAddressByName(EclangParser.TypeAddressByNameContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code typeEnum}
-	 * labeled alternative in {@link EclangParser#type}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTypeEnum(EclangParser.TypeEnumContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code typeArray}
-	 * labeled alternative in {@link EclangParser#type}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTypeArray(EclangParser.TypeArrayContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeNullable}
 	 * labeled alternative in {@link EclangParser#type}.
@@ -315,6 +294,41 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTypeTypeOf(EclangParser.TypeTypeOfContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeAtom}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeAtom(EclangParser.TypeAtomContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeGeneric}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeGeneric(EclangParser.TypeGenericContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeUnion}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeUnion(EclangParser.TypeUnionContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeEnum}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeEnum(EclangParser.TypeEnumContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeArray}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeArray(EclangParser.TypeArrayContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeThrows}
 	 * labeled alternative in {@link EclangParser#type}.
@@ -337,19 +351,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeUnionAnon(EclangParser.TypeUnionAnonContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code typeAtom}
+	 * Visit a parse tree produced by the {@code typeVolatile}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitTypeAtom(EclangParser.TypeAtomContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code typeGeneric}
-	 * labeled alternative in {@link EclangParser#type}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTypeGeneric(EclangParser.TypeGenericContext ctx);
+	T visitTypeVolatile(EclangParser.TypeVolatileContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeNest}
 	 * labeled alternative in {@link EclangParser#type}.

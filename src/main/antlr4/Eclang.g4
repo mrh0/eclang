@@ -142,6 +142,7 @@ type:
     | 'typeof' expr                                                         #typeTypeOf
     | type '[' (']c' | ']')                                                 #typeArray
     | left=type 'throws' throwing=type                                      #typeThrows
+    | 'volatile' type                                                       #typeVolatile
     //| 'const' type                                                          #typeConst // When argument must be known at compile time
     ;
 
@@ -198,7 +199,7 @@ statement:
 
     | 'try' left=expr                                                                           #statementTry
     | 'try' left=expr 'catch' NAME 'do' elseBody=block                                          #statementTryCatch
-    | 'try' INDENT left=expr NL DEDENT 'catch' NAME 'do' elseBody=block                          #statementTryCatch
+    // | 'try' INDENT left=expr NL DEDENT 'catch' NAME 'do' elseBody=block                          #statementTryCatch
     ;
 
 func:
@@ -219,14 +220,14 @@ global:
 
     | 'unit' NAME '(' NAME ':' type ')' '=' expr NL                                                                                 #globalUnitDeclare // Number sufix
 
-    | 'rec' name=NAME (extending=NAME) 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                                          #globalRecordDefine
+    | 'rec' name=NAME ('extends' extending=NAME)? 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                                          #globalRecordDefine
     | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT               #globalRecordDeclareDefine
     | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? NL                                                                  #globalRecordDeclare
 
     | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT            #globalStructDeclareDefine
     | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? NL                                                               #globalStructDeclare
 
-    | 'namespace' NAME NL                                                                                                           #globalNamespace
+    | 'module' NAME NL                                                                                                           #globalNamespace
     ;
 
 use:
