@@ -1,13 +1,18 @@
-use "apr.h"
-use "apr.ec"
-use "apr_errno.h"
-use "apr_errno.ec"
-use "apr_general.h"
-use "apr_general.ec"
-use "apr_want.h"
-use "apr_want.ec"
-use "apr_allocator.h"
-use "apr_allocator.ec"
+use "apr_pools.h"
+use "core:apr/apr.ec"
+use "core:apr/errno.ec"
+use "core:apr/general.ec"
+use "core:apr/want.ec"
+use "core:apr/allocator.ec"
+
+// #define APR_WANT_MEMFUNC
+// #define 	APR_POOL_DECLARE_ACCESSOR(type)
+// #define 	APR_POOL_IMPLEMENT_ACCESSOR(type)
+declare val APR_POOL_DEBUG as Int
+// #define 	APR_POOL__FILE_LINE__   __FILE__ ":" APR_STRINGIFY(__LINE__)
+
+declare rec apr_pool_t
+declare type apr_abortfunc_t as (retcode: Int) => Int
 
 declare fn apr_pool_initialize as (): apr_status_t
 declare fn apr_pool_terminate as ()

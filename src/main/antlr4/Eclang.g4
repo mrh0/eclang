@@ -203,7 +203,7 @@ statement:
     ;
 
 func:
-      'declare' 'fn' name=NAME ('extern' externalName=STRING)? 'as' '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)?  NL                    #functionDeclare
+      'declare' 'fn' name=NAME ('extern' externalName=STRING)? 'as' '(' params+=parameter? (',' params+=parameter)* ')' ((':' | '=>') returnType=type)?  NL                    #functionDeclare
     | 'pub'? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? 'do' body=block		            #functionBlock
     | 'pub'? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? '=' expression=expr NL            #functionInline
     ;
@@ -220,9 +220,9 @@ global:
 
     | 'unit' NAME '(' NAME ':' type ')' '=' expr NL                                                                                 #globalUnitDeclare // Number sufix
 
-    | 'rec' name=NAME ('extends' extending=NAME)? 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                                                          #globalRecordDefine
-    | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT               #globalRecordDeclareDefine
-    | 'declare' 'rec' name=NAME ('extern' externalName=STRING)? NL                                                                  #globalRecordDeclare
+    | ('rec' | 'record') name=NAME ('extends' extending=NAME)? 'as' INDENT (names+=NAME ':' types+=type NL)+ DEDENT                              #globalRecordDefine
+    | 'declare' ('rec' | 'record') name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT               #globalRecordDeclareDefine
+    | 'declare' ('rec' | 'record') name=NAME ('extern' externalName=STRING)? NL                                                                  #globalRecordDeclare
 
     | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT            #globalStructDeclareDefine
     | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? NL                                                               #globalStructDeclare
