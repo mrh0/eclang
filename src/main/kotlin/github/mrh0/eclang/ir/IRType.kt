@@ -50,6 +50,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeCArray -> "${translateNative(t.arg)}*"
         is EcTypeArray -> ArrayInstance.get(t.arg).getId()
         is EcTypeUnion -> "union{${t.types.mapIndexed() { i, it -> "${translateNative(it)} v$i" }.joinToString(separator = ";", postfix = ";")}}"
+        is EcTypeCallSignature -> 
         else -> throw NotImplementedError("Native type '$t' is not implemented")
     }
 

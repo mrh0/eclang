@@ -62,8 +62,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
 
     // Records
     override fun visitGlobalRecordDefine(ctx: EclangParser.GlobalRecordDefineContext): ITok = TTypeRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), ctx.extending?.text)
-    override fun visitGlobalRecordDeclare(ctx: EclangParser.GlobalRecordDeclareContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, listOf(), listOf(), Util.getStringContent(ctx.externalName?.text))
-    override fun visitGlobalRecordDeclareDefine(ctx: EclangParser.GlobalRecordDeclareDefineContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), Util.getStringContent(ctx.externalName?.text))
+    override fun visitGlobalRecordDeclare(ctx: EclangParser.GlobalRecordDeclareContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, listOf(), listOf(), null, Util.getStringContent(ctx.externalName?.text))
+    override fun visitGlobalRecordDeclareDefine(ctx: EclangParser.GlobalRecordDeclareDefineContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), null, Util.getStringContent(ctx.externalName?.text))
 
     override fun visitGlobalStructDeclare(ctx: EclangParser.GlobalStructDeclareContext): ITok  = TTypeDeclareStruct(loc(ctx), ctx.name.text, listOf(), listOf(), Util.getStringContent(ctx.externalName?.text))
     override fun visitGlobalStructDeclareDefine(ctx: EclangParser.GlobalStructDeclareDefineContext): ITok  = TTypeDeclareStruct(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), Util.getStringContent(ctx.externalName?.text))
@@ -91,6 +91,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         if(ctx.text.endsWith('c')) TTypeCArray(loc(ctx), visit(ctx.type())) else TTypeArray(loc(ctx), visit(ctx.type()))
 
     override fun visitTypeThrows(ctx: EclangParser.TypeThrowsContext): ITok = TTypeThrows(loc(ctx), visit(ctx.left), visit(ctx.throwing))
+
+    override fun visitTypeCallSignature(ctx: EclangParser.TypeCallSignatureContext): ITok = TTypeCallSignature(loc(ctx), visit(ctx.argTypes), visit(ctx.returnType))
 
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {

@@ -242,6 +242,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprCreateRecord(EclangParser.ExprCreateRecordContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprPipe}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprPipe(EclangParser.ExprPipeContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprPipe}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprPipe(EclangParser.ExprPipeContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprNull}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -349,6 +361,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprInlineIf(EclangParser.ExprInlineIfContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code exprIt}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprIt(EclangParser.ExprItContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprIt}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprIt(EclangParser.ExprItContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code exprAs}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -493,6 +517,18 @@ public interface EclangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTypeTypeOf(EclangParser.TypeTypeOfContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code typeCallSignature}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeCallSignature(EclangParser.TypeCallSignatureContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code typeCallSignature}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeCallSignature(EclangParser.TypeCallSignatureContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code typeAtom}
 	 * labeled alternative in {@link EclangParser#type}.

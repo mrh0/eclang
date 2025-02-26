@@ -79,6 +79,7 @@ binOp:
 expr:
       'here'                                                        #exprHere
     | 'Null'                                                        #exprNull
+    | 'it'                                                          #exprIt // For shorthand functions, switch and pipe op
     | left=expr binOp right=expr                                    #exprBinOp
     | unOp expr                                                     #exprUnOp
     | 'sizeof' type                                                 #exprSizeOf
@@ -121,6 +122,7 @@ expr:
 
     | '(' expr ')'                                                                                      #exprNest
     | '(' INDENT expr NL DEDENT ')'                                                                     #exprNest
+    | experssions+=expr ('|>' experssions+=expr)+                                                       #exprPipe
     //| 'try' left=expr 'else' right=expr                                                                 #exprTry
     //| 'try' INDENT left=expr NL DEDENT 'else' right=expr                                                #exprTry
     //| 'try' left=expr 'else' INDENT right=expr NL DEDENT                                                #exprTry
@@ -130,19 +132,23 @@ expr:
     ;
 
 type:
-      NAME                                                                  #typeByName
-    | '@' type                                                              #typeAddressByName
-    | type '?'                                                              #typeNullable
-    | types+=type '&' types+=type ('&' types+=type)*                        #typeEnum
-    | types+=type '|' types+=type ('|' types+=type)*                        #typeUnion
-    | 'anon' types+=type '|' types+=type ('|' types+=type)*                 #typeUnionAnon // Anonymus union
-    | '(' type ')'                                                          #typeNest
-    | ATOM                                                                  #typeAtom
-    | '<' NAME '>'                                                          #typeGeneric
-    | 'typeof' expr                                                         #typeTypeOf
-    | type '[' (']c' | ']')                                                 #typeArray
-    | left=type 'throws' throwing=type                                      #typeThrows
-    | 'volatile' type                                                       #typeVolatile
+      NAME                                                                      #typeByName
+    | '@' type                                                                  #typeAddressByName
+    | type '?'                                                                  #typeNullable
+    | types+=type '&' types+=type ('&' types+=type)*                            #typeEnum
+    | types+=type '|' types+=type ('|' types+=type)*                            #typeUnion
+    | 'anon' types+=type '|' types+=type ('|' types+=type)*                     #typeUnionAnon // Anonymus union
+    | '(' type ')'                                                              #typeNest
+    | ATOM                                                                      #typeAtom
+    | '<' NAME '>'                                                              #typeGeneric
+    | 'typeof' expr                                                             #typeTypeOf
+    | type '[' (']c' | ']')                                                     #typeArray
+    | left=type 'throws' throwing=type                                          #typeThrows
+    | ('vol' | 'volatile') type                                                 #typeVolatile
+    | 'fn' '(' argTypes+=type ')' ('=>' returnType=type)?                       #typeCallSignature
+    | 'fn' '(' argTypes+=type (',' argTypes+=type)* ')' ('=>' returnType=type)? #typeCallSignature
+    | '(' argTypes+=type ')' '=>' returnType=type                               #typeCallSignature
+    | '(' argTypes+=type (',' argTypes+=type)* ')' '=>' returnType=type         #typeCallSignature
     //| 'const' type                                                          #typeConst // When argument must be known at compile time
     ;
 

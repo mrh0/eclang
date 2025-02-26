@@ -148,6 +148,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprCreateRecord(EclangParser.ExprCreateRecordContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprPipe}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprPipe(EclangParser.ExprPipeContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprNull}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -210,6 +217,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprInlineIf(EclangParser.ExprInlineIfContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code exprIt}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprIt(EclangParser.ExprItContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprAs}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -294,6 +308,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTypeTypeOf(EclangParser.TypeTypeOfContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code typeCallSignature}
+	 * labeled alternative in {@link EclangParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeCallSignature(EclangParser.TypeCallSignatureContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code typeAtom}
 	 * labeled alternative in {@link EclangParser#type}.
