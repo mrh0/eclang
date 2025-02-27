@@ -11,13 +11,15 @@ class ResultInstance private constructor(val returnType: EcType, val errorType: 
         private val arrays: MutableMap<Int, ResultInstance> = mutableMapOf()
 
         fun get(returnType: EcType, errorType: EcType): ResultInstance {
-            return arrays.getOrPut(returnType.hashCode() + errorType.hashCode()) { ResultInstance(returnType, errorType) }
+            return arrays.getOrPut(31 * returnType.hashCode() + 31 * errorType.hashCode()) { ResultInstance(returnType, errorType) }
         }
 
         fun getAll() = arrays.values
     }
 
-    fun getId() = "__ec_result_${(returnType.hashCode() + errorType.hashCode()).toUInt()}_t"
+    val hash = (31 * returnType.hashCode() + 31 * errorType.hashCode()).toUInt()
+
+    fun getId() = "__ec_result_${hash}_t"
 
     fun toC(sb: CSourceBuilder, c: Context) {
         sb.put("typedef struct { int code; union { ")

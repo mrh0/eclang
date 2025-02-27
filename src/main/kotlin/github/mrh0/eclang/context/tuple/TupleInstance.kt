@@ -12,13 +12,15 @@ class TupleInstance private constructor(val types: Array<EcType>) {
         private val tuples: MutableMap<Int, TupleInstance> = mutableMapOf()
 
         fun get(types: Array<EcType>): TupleInstance {
-            return tuples.getOrPut(types.hashCode()) { TupleInstance(types) }
+            return tuples.getOrPut(types.contentHashCode()) { TupleInstance(types) }
         }
 
         fun getAll() = tuples.values
     }
 
-    fun getId() = "__ec_tuple_${types.hashCode()}_t"
+    val hash = types.contentHashCode().toUInt()
+
+    fun getId() = "__ec_tuple_${hash}_t"
 
     fun toC(sb: CSourceBuilder, c: Context) {
         sb.put("typedef struct { ")

@@ -21,7 +21,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
     }
 
     private fun translateNative(t: EcType): String = when(t) {
-        is EcTypeVarArgC -> "SHOULD NOT BE HERE"
+        is EcTypeVarArgC -> TODO("Should never happen!")
         is EcTypeSize -> "size_t"
         is EcTypeInt -> "int"
         is EcTypeCString -> "char*"
@@ -50,7 +50,7 @@ class IRType(location: Loc, val type: EcType) : IR(location) {
         is EcTypeCArray -> "${translateNative(t.arg)}*"
         is EcTypeArray -> ArrayInstance.get(t.arg).getId()
         is EcTypeUnion -> "union{${t.types.mapIndexed() { i, it -> "${translateNative(it)} v$i" }.joinToString(separator = ";", postfix = ";")}}"
-        is EcTypeCallSignature -> 
+        is EcTypeCallSignature -> TODO()
         else -> throw NotImplementedError("Native type '$t' is not implemented")
     }
 
