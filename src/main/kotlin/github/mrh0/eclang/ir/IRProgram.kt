@@ -4,6 +4,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.array.ArrayInstance
 import github.mrh0.eclang.context.atom.AtomInstance
+import github.mrh0.eclang.context.signature.CallSignatureInstance
 import github.mrh0.eclang.context.tuple.TupleInstance
 import github.mrh0.eclang.ir.function.IRFunctionOverride
 import github.mrh0.eclang.output.c.CSourceBuilder
@@ -50,6 +51,10 @@ class IRProgram(location: Loc, private val functions: List<IIR>, private val glo
 
         sb.commentLine("Declarations")
         functions.forEach { if (it is IRFunctionOverride) it.toCDeclaration(sb, c) }
+        sb.putLine()
+
+        sb.commentLine("Call Signatures")
+        CallSignatureInstance.getAll().forEach { it.toC(sb, c) }
         sb.putLine()
 
         sb.commentLine("Globals")

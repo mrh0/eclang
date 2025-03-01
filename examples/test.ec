@@ -29,7 +29,14 @@ fn varArgTest(a: Int, b: Int, ...c: String): Int do
 fn varArgCTest(a: Int, b: Int, ...): Int do
     ret a + b
 
+fn testCallSigFunc(v: Int): Int do
+    ret 1
+
+fn funcWithCallSig(func: (Int) => Int): Int do
+    ret 1
+
 fn main(): Int do
+    funcWithCallSig(testCallSigFunc)
     varArgTest(5, 8, "Hello", "World", "!")
     varArgCTest(5, 8, "Hello", "World", "!")
     throwsTest1(7)

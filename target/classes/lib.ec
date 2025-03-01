@@ -15,6 +15,7 @@ fn log(value: String): None do
 fn log(value: Number): None do
     printf("%d\n"c, value)
 
+declare type Ptr as @Any
 declare type SignedIntegerNumber as Char | Short | Int | Long
 declare type UnsignedIntegerNumber as UChar | UShort | UInt | ULong | Size
 declare type FloatingNumber as Float | Double

@@ -26,10 +26,9 @@ class CallSignatureInstance private constructor(val argTypes: Array<EcType>, val
         IRType(Loc.IDENTITY, returnType).toC(sb, c)
         sb.put("(*${getId()})(")
         argTypes.forEachIndexed { index, it ->
-            if (index != 0)  sb.put(",")
+            if (index != 0) sb.put(",")
             IRType(Loc.IDENTITY, it).toC(sb, c)
         }
-
         sb.putLine(");")
     }
 }

@@ -1,12 +1,8 @@
-use "apr.h"
+use "apr_strings.h"
 use "core:apr.ec"
-use "apr_errno.h"
 use "core:apr_errno.ec"
-use "apr_pools.h"
 use "core:apr_pools.ec"
-use "apr_want.h"
 use "core:apr_want.ec"
-use "stdarg.h"
 use "core:stdarg.ec"
 
 declare fn apr_strnatcmp as (a: CString, b: CString): Int

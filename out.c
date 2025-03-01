@@ -31,8 +31,8 @@ char* __ec_atom_test_atom = "test_atom";
 // Tuples
 
 // Arrays
-typedef struct { long len; __ec_string_t* data; } __ec_array_367746789_t;
-typedef struct { long len; int* data; } __ec_array_1008925772_t;
+typedef struct { long len; __ec_string_t* data; } __ec_array_411506101_t;
+typedef struct { long len; int* data; } __ec_array_487694075_t;
 
 // Declarations
 void log_0(const char* value);
@@ -43,8 +43,8 @@ double max_0(double x, double y);
 char* clone_0(const char* str, const apr_pool_t* pool);
 char* clone_1(const char* str);
 char* genericTest_0(const char* test);
-__ec_result_2421627092_t throwsTest1_0(int i);
-__ec_result_2421627092_t throwsTest2_0(int i);
+__ec_result_3520079180_t throwsTest1_0(int i);
+__ec_result_3520079180_t throwsTest2_0(int i);
 int varArgTest_0(int a, int b, int __ec_va_count, ...);
 int varArgCTest_0(int a, int b, ...);
 int main_0(void);
@@ -57,6 +57,9 @@ void x_0(int a);
 void x_1(const char* a);
 void y_1(const char* a);
 int z_0(int a);
+
+// Call Signatures
+typedef int(*__ec_call_sig_172262539_t)(int);
 
 // Globals
 // declare rec apr_pool_t as Pool
@@ -106,11 +109,11 @@ char* genericTest_0(const char* test) {
 	char* v = "";
 	return v;
 }
-__ec_result_2421627092_t throwsTest1_0(int i) {
-	return (__ec_result_2421627092_t){0, .value=i+1};
+__ec_result_3520079180_t throwsTest1_0(int i) {
+	return (__ec_result_3520079180_t){0, .value=i+1};
 }
-__ec_result_2421627092_t throwsTest2_0(int i) {
-	return (__ec_result_2421627092_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
+__ec_result_3520079180_t throwsTest2_0(int i) {
+	return (__ec_result_3520079180_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
 }
 int varArgTest_0(int a, int b, int __ec_va_count, ...) {
 	return a+b;
@@ -127,8 +130,8 @@ int main_0(void) {
 	log_0(genericTest_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_1("Cloned String"));
-	const __ec_array_367746789_t array1 = (__ec_array_367746789_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
-	__ec_array_1008925772_t array2 = (__ec_array_1008925772_t){4,(int[]){5, 3, 6, 0}};
+	const __ec_array_411506101_t array1 = (__ec_array_411506101_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
+	__ec_array_487694075_t array2 = (__ec_array_487694075_t){4,(int[]){5, 3, 6, 0}};
 	const __ec_string_t* carray1 = (__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}};
 	int* carray2 = (int[]){5, 3, 6, 0};
 	static const int staticVal = 6;
@@ -146,7 +149,6 @@ int main_0(void) {
 	unsigned short tushort = 10;
 	unsigned int tuint = 10;
 	unsigned long tulong = 10;
-	const int testUnitInt = 50;
 	char* a = "Hello";
 	char* b = "Hello";
 	bool c = strcmp(a, b) == 0;
