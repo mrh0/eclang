@@ -4,12 +4,9 @@ import java.util.HashMap
 
 abstract class Types2Type(val namespace: String, val id: String, val inherits: Types2Type?) {
     val uniqueName: String = "$namespace:$id"
-    //val children: HashSet<String> = hashSetOf()
 
     open fun accepts(type: Types2Type): Boolean = eq(type) || (type.inherits != null && this.accepts(type.inherits))
     open fun eq(type: Types2Type): Boolean = type === this || type.uniqueName === this.uniqueName
-    //open fun isChildOf(type: Types2Type): Boolean = type.children.contains(this.uniqueName)
-    //open fun isParentOf(type: Types2Type): Boolean = children.contains(type.uniqueName)
     open fun canCast(type: Types2Type): Boolean = type.accepts(this)
     open fun cast(type: Types2Type): Types2Type {
         if (canCast(this)) return type
@@ -28,7 +25,6 @@ abstract class Types2Type(val namespace: String, val id: String, val inherits: T
     override fun toString(): String = uniqueName
 
     init {
-        //inherits?.children?.add(this.uniqueName)
         if (ALL_TYPES.contains(uniqueName)) throw Error("BUG: Type $uniqueName is already instantiated.")
         ALL_TYPES[this.uniqueName] = this
     }
