@@ -16,9 +16,7 @@ import github.mrh0.eclang.ir.data.IRValue
 import github.mrh0.eclang.ir.function.call.IRGlobalFunctionCall
 import github.mrh0.eclang.ir.function.call.IRArgument
 import github.mrh0.eclang.ir.function.call.IRArguments
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeGeneric
-import github.mrh0.eclang.types.EcTypeNone
+import github.mrh0.eclang.types.*
 import github.mrh0.eclang.types.internal.EcTypeVarArgC
 import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 
@@ -29,7 +27,8 @@ open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : T
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val overrides = GlobalFunctions.getOverridesByName(location, name)
-        val processedArgs = args.map { it.process(cd, hint) }.toMutableList()
+        // EcTypeUnion(overrides.overrides.map { it.params[index].type }.toHashSet() ) )
+        val processedArgs = args.map { it.process(cd, EcTypeAny) }.toMutableList() // TODO: Create union hint from overrides
         val argTypes = processedArgs.map { it.first }.toTypedArray()
 
         val matching = overrides.getMatching(location, argTypes)

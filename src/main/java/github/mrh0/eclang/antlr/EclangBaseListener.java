@@ -485,6 +485,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterExprFunctionReference(EclangParser.ExprFunctionReferenceContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprFunctionReference(EclangParser.ExprFunctionReferenceContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterExprCreateRecordNamed(EclangParser.ExprCreateRecordNamedContext ctx) { }
 	/**
 	 * {@inheritDoc}

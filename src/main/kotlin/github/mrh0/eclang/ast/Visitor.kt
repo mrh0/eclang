@@ -107,6 +107,8 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
         return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), if(ctx.returnType == null) null else visit(ctx.returnType), Util.getStringContent(ctx.externalName?.text))
     }
 
+    override fun visitExprFunctionReference(ctx: EclangParser.ExprFunctionReferenceContext): ITok = TNamedFunction(loc(ctx), ctx.NAME().text)
+
     override fun visitBlock(ctx: EclangParser.BlockContext): ITok = TBlock(loc(ctx), visit(ctx.statements))
 
     override fun visitParameterTyped(ctx: EclangParser.ParameterTypedContext): ITok = TParameterTyped(loc(ctx), ctx.NAME().text, visit(ctx.type()))

@@ -281,6 +281,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprUnOp(EclangParser.ExprUnOpContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprFunctionReference}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprFunctionReference(EclangParser.ExprFunctionReferenceContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprCreateRecordNamed}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree

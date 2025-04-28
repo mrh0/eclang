@@ -78,7 +78,7 @@ binOp:
 
 expr:
       'here'                                                        #exprHere
-    | 'Null'                                                        #exprNull
+    | 'null'                                                        #exprNull
     | 'it'                                                          #exprIt // For shorthand functions, switch and pipe op
     | left=expr binOp right=expr                                    #exprBinOp
     | unOp expr                                                     #exprUnOp
@@ -104,6 +104,8 @@ expr:
     | accesssed=expr '?.' NAME                                                #exprAccessNameNullishCoalescing
     | accesssed=expr '[' index=expr ']'                                             #exprAccessor
     | accesssed=expr '[' INDENT index=expr NL DEDENT ']'                            #exprAccessor
+
+    | 'fn' NAME                                                     #exprFunctionReference
 
     | NAME '(' ')'                                                  #exprFunctionCallNoArgs
     | NAME '(' args+=expr (',' args+=expr)* ')'                     #exprFunctionCallWithArgs

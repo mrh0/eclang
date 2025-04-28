@@ -470,6 +470,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitExprUnOp(EclangParser.ExprUnOpContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code exprFunctionReference}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprFunctionReference(EclangParser.ExprFunctionReferenceContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code exprFunctionReference}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprFunctionReference(EclangParser.ExprFunctionReferenceContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code exprCreateRecordNamed}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree

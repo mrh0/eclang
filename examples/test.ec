@@ -36,7 +36,7 @@ fn funcWithCallSig(func: (Int) => Int): Int do
     ret 1
 
 fn main(): Int do
-    funcWithCallSig(testCallSigFunc)
+    funcWithCallSig(fn testCallSigFunc)
     varArgTest(5, 8, "Hello", "World", "!")
     varArgCTest(5, 8, "Hello", "World", "!")
     throwsTest1(7)
@@ -44,7 +44,7 @@ fn main(): Int do
     // val testUnitValue = 554.0testUnit
     val testCast = "Testing" as unsafe CString
     log(genericTest("Test"c))
-    createPool(addrof(ROOT_POOL!), Null)
+    createPool(addrof(ROOT_POOL!), null)
     log("Cloned String"c.clone())
     val array1 = ["One", "Two", "Three"]
     val array2: Int[] = [5, 3, 6, 0]
