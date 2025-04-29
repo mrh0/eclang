@@ -3,7 +3,17 @@ package github.mrh0.ect2.core
 import java.util.HashMap
 
 abstract class Types2Type(val namespace: String, val id: String, val inherits: Types2Type?) {
+    companion object {
+        val ALL_TYPES: HashMap<String, Types2Type> = hashMapOf()
+    }
+
     val uniqueName: String = "$namespace:$id"
+    val uid: Int = ALL_TYPES.size
+
+    init {
+        if (ALL_TYPES.contains(uniqueName)) throw Error("BUG: Type $uniqueName is already instantiated.")
+        ALL_TYPES[this.uniqueName] = this
+    }
 
     open fun accepts(type: Types2Type): Boolean = eq(type) || (type.inherits != null && this.accepts(type.inherits))
     open fun eq(type: Types2Type): Boolean = type === this || type.uniqueName === this.uniqueName
@@ -12,8 +22,8 @@ abstract class Types2Type(val namespace: String, val id: String, val inherits: T
         if (canCast(this)) return type
         throw Error("$this cannot be cast to $type")
     }
-    fun union(union: Types2Type) {
-        Types2TypeUnion.of(this, union)
+    open fun union(other: Types2Type): Types2TypeUnion {
+        return if (other is Types2TypeUnion) other.union(this) else Types2TypeUnion.of(this, other)
     }
     fun alias(namespace: String, id: String): Types2Type {
         val uniqueAliasName = "$namespace:$id"
@@ -23,13 +33,4 @@ abstract class Types2Type(val namespace: String, val id: String, val inherits: T
     }
 
     override fun toString(): String = uniqueName
-
-    init {
-        if (ALL_TYPES.contains(uniqueName)) throw Error("BUG: Type $uniqueName is already instantiated.")
-        ALL_TYPES[this.uniqueName] = this
-    }
-
-    companion object {
-        val ALL_TYPES: HashMap<String, Types2Type> = hashMapOf()
-    }
 }

@@ -29,6 +29,7 @@ fun main(args: Array<String>) {
         Types2String.accepts(Types2TypeVector.of(Types2Char)), false)
     test("String can be cast to Char Vector",
         Types2String.cast(Types2TypeVector.of(Types2Char)).accepts(Types2TypeVector.of(Types2Char)), true)
+    println(Types2Integer.union(Types2String).union(Types2None).union(Types2Any))
 
     println(Types2Type.ALL_TYPES.keys)
 }
