@@ -31,40 +31,63 @@ char* __ec_atom_test_atom = "test_atom";
 // Tuples
 
 // Arrays
-typedef struct { long len; __ec_string_t* data; } __ec_array_411506101_t;
-typedef struct { long len; int* data; } __ec_array_487694075_t;
+typedef struct { long len; __ec_string_t* data; } __ec_array_12_t;
+typedef struct { long len; int* data; } __ec_array_2_t;
 
 // Declarations
 void log_0(const char* value);
 void log_1(const __ec_string_t value);
-void log_12(size_t value);
+void log_2(char value);
+void log_3(int value);
+void log_4(unsigned char value);
+void log_5(long value);
+void log_6(size_t value);
+void log_7(short value);
+void log_8(unsigned int value);
+void log_9(unsigned long value);
+void log_10(unsigned short value);
+void log_11(float value);
+void log_12(double value);
+apr_status_t createPool_2(const apr_pool_t** pool);
 double min_0(double x, double y);
 double max_0(double x, double y);
+double clamp_0(double v, double min, double max);
+void exit_1(void);
 char* clone_0(const char* str, const apr_pool_t* pool);
-char* clone_1(const char* str);
+char* clone_1(const char* str, const void* pool);
+char* clone_2(const char* str);
 char* genericTest_0(const char* test);
-__ec_result_3520079180_t throwsTest1_0(int i);
-__ec_result_3520079180_t throwsTest2_0(int i);
+__ec_result_267701493_t throwsTest1_0(int i);
+__ec_result_267701493_t throwsTest2_0(int i);
 int varArgTest_0(int a, int b, int __ec_va_count, ...);
 int varArgCTest_0(int a, int b, ...);
+int testCallSigFunc_0(int v);
 int main_0(void);
 int defTest_0(int input);
-char* n_0(const char* a);
+char* n_0(const void* a);
+char* n_1(const char* a);
+int n_2(int a);
+int n_3();
 char* aa_0(void);
 char* a_0(const char* atom);
-int test_1(int a, const char* b);
+char* a_1(const char* atom);
+char* a_2(const char* atom);
+int test_0(int a, int b, int c);
+int test_1(int a, const char* b, int c);
+int test_2(int a, int b);
+int test_3(int a, const char* b);
 void x_0(int a);
 void x_1(const char* a);
+void y_0(int a);
 void y_1(const char* a);
 int z_0(int a);
 
 // Call Signatures
-typedef int(*__ec_call_sig_172262539_t)(int);
 
 // Globals
 // declare rec apr_pool_t as Pool
 // declare rec apr_status_t as PoolStatus
-static apr_pool_t* ROOT_POOL = NULL;
+static union{apr_pool_t* v0;void* v1;} ROOT_POOL = NULL;
 // declare rec div_t as IntDivResult
 // declare rec ldiv_t as LongDivResult
 typedef struct {
@@ -79,7 +102,7 @@ typedef struct {
 } Test;
 typedef struct {
 	int a;
-	union{char v0;short v1;int v2;long v3;float v4;double v5;unsigned char v6;unsigned short v7;unsigned int v8;unsigned long v9;size_t v10;} b;
+	union{char v0;int v1;unsigned char v2;long v3;size_t v4;short v5;unsigned int v6;unsigned long v7;unsigned short v8;float v9;double v10;} b;
 } UnionTest;
 static const UnionTest unionTest = (UnionTest){0, 0};
 
@@ -90,8 +113,41 @@ void log_0(const char* value) {
 void log_1(const __ec_string_t value) {
 	printf_0("%s\n", value.data);
 }
-void log_12(size_t value) {
+void log_2(char value) {
+	printf_1("%d\n", value);
+}
+void log_3(int value) {
+	printf_2("%d\n", value);
+}
+void log_4(unsigned char value) {
+	printf_3("%d\n", value);
+}
+void log_5(long value) {
+	printf_4("%d\n", value);
+}
+void log_6(size_t value) {
+	printf_5("%d\n", value);
+}
+void log_7(short value) {
+	printf_6("%d\n", value);
+}
+void log_8(unsigned int value) {
+	printf_7("%d\n", value);
+}
+void log_9(unsigned long value) {
+	printf_8("%d\n", value);
+}
+void log_10(unsigned short value) {
+	printf_9("%d\n", value);
+}
+void log_11(float value) {
+	printf_10("%d\n", value);
+}
+void log_12(double value) {
 	printf_11("%d\n", value);
+}
+apr_status_t createPool_2(const apr_pool_t** pool) {
+	return apr_pool_create(pool, NULL);
 }
 double min_0(double x, double y) {
 	return (x<y) ? (x) : (y);
@@ -99,27 +155,39 @@ double min_0(double x, double y) {
 double max_0(double x, double y) {
 	return (x>y) ? (x) : (y);
 }
+double clamp_0(double v, double min, double max) {
+	return max_0(min_0(v, max), min);
+}
+void exit_1(void) {
+	return exit_0(0);
+}
 char* clone_0(const char* str, const apr_pool_t* pool) {
 	return str;
 }
-char* clone_1(const char* str) {
-	return clone_0(str, NULL);
+char* clone_1(const char* str, const void* pool) {
+	return str;
+}
+char* clone_2(const char* str) {
+	return clone_1(str, NULL);
 }
 char* genericTest_0(const char* test) {
 	char* v = "";
 	return v;
 }
-__ec_result_3520079180_t throwsTest1_0(int i) {
-	return (__ec_result_3520079180_t){0, .value=i+1};
+__ec_result_267701493_t throwsTest1_0(int i) {
+	return (__ec_result_267701493_t){0, .value=i+1};
 }
-__ec_result_3520079180_t throwsTest2_0(int i) {
-	return (__ec_result_3520079180_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
+__ec_result_267701493_t throwsTest2_0(int i) {
+	return (__ec_result_267701493_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
 }
 int varArgTest_0(int a, int b, int __ec_va_count, ...) {
 	return a+b;
 }
 int varArgCTest_0(int a, int b, ...) {
 	return a+b;
+}
+int testCallSigFunc_0(int v) {
+	return 1;
 }
 int main_0(void) {
 	varArgTest_0(5, 8, 3, (__ec_string_t){5,"Hello"}, (__ec_string_t){5,"World"}, (__ec_string_t){1,"!"});
@@ -129,14 +197,14 @@ int main_0(void) {
 	const char* testCast = (char*)(__ec_string_t){7,"Testing"};
 	log_0(genericTest_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
-	log_0(clone_1("Cloned String"));
-	const __ec_array_411506101_t array1 = (__ec_array_411506101_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
-	__ec_array_487694075_t array2 = (__ec_array_487694075_t){4,(int[]){5, 3, 6, 0}};
+	log_0(clone_2("Cloned String"));
+	const __ec_array_12_t array1 = (__ec_array_12_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
+	__ec_array_2_t array2 = (__ec_array_2_t){4,(int[]){5, 3, 6, 0}};
 	const __ec_string_t* carray1 = (__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}};
 	int* carray2 = (int[]){5, 3, 6, 0};
 	static const int staticVal = 6;
 	if (true) {
-		log_12(array1.len);
+		log_6(array1.len);
 	}
 	for (int index=0;index<array1.len;index++) {
 		log_1(array1.data[index]);
@@ -159,7 +227,7 @@ int main_0(void) {
 	log_0("World");
 	int* addr = &G2;
 	int addr2 = *addr;
-	test_1(0, "");
+	test_3(0, "");
 	Test testRec = (Test){0, 0};
 	const int ee = testRec.a;
 	y_1("");
@@ -170,7 +238,7 @@ int main_0(void) {
 	char _char = 'a';
 	char char2 = '\r';
 	a_0(aa_0());
-	n_0("Null");
+	n_1("Null");
 	defTest_0(7);
 	int iter = 5;
 	while ((iter)>0) {
@@ -206,8 +274,17 @@ int defTest_0(int input) {
 	log_0("1");
 	return __ec_ret;
 }
-char* n_0(const char* a) {
+char* n_0(const void* a) {
+	return "";
+}
+char* n_1(const char* a) {
 	return (char*)__ec_nc(a, "");
+}
+int n_2(int a) {
+	return 0;
+}
+int n_3() {
+	return 0;
 }
 char* aa_0(void) {
 	return __ec_atom_test1;
@@ -215,7 +292,25 @@ char* aa_0(void) {
 char* a_0(const char* atom) {
 	return atom;
 }
-int test_1(int a, const char* b) {
+char* a_1(const char* atom) {
+	return atom;
+}
+char* a_2(const char* atom) {
+	return atom;
+}
+int test_0(int a, int b, int c) {
+	int d = 5;
+	return c;
+}
+int test_1(int a, const char* b, int c) {
+	int d = 5;
+	return c;
+}
+int test_2(int a, int b) {
+	int d = 5;
+	return a;
+}
+int test_3(int a, const char* b) {
 	int d = 5;
 	return a;
 }
@@ -224,6 +319,9 @@ void x_0(int a) {
 }
 void x_1(const char* a) {
 	log_0("Str");
+}
+void y_0(int a) {
+	x_0(a);
 }
 void y_1(const char* a) {
 	x_1(a);

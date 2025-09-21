@@ -7,4 +7,6 @@ data class EcTypeGeneric(val name: String) : EcType("<$name>") {
     override fun accepts(location: Loc, type: EcType): Boolean = true
 
     override fun isReferenceType(): Boolean = true
+
+    override fun onNew() {}
 }

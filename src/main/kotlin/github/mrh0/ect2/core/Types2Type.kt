@@ -1,5 +1,8 @@
 package github.mrh0.ect2.core
 
+import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.error.EcUndefinedAccessorPropertyError
+import github.mrh0.eclang.types.EcType
 import java.util.HashMap
 
 abstract class Types2Type(val namespace: String, val id: String, val inherits: Types2Type?) {
@@ -31,6 +34,14 @@ abstract class Types2Type(val namespace: String, val id: String, val inherits: T
         ALL_TYPES[uniqueAliasName] = this
         return this
     }
+
+    open fun isReferenceType(): Boolean = false
+
+    open fun canBeInstantiated() = false
+
+    open fun getProperty(location: Loc, name: String): Types2Type = throw Error("")
+
+    open fun accessor(location: Loc, indexType: Types2Type): Types2Type = throw Error("")
 
     override fun toString(): String = uniqueName
 }

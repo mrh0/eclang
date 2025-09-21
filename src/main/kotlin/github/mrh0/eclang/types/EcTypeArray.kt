@@ -5,7 +5,7 @@ import github.mrh0.eclang.types.numbers.signed.EcTypeSignedInteger
 import github.mrh0.eclang.types.numbers.unsigned.EcTypeSize
 import github.mrh0.eclang.types.numbers.unsigned.EcTypeUnsignedInteger
 
-data class EcTypeArray(val arg: EcType) : EcType("Array") {
+data class EcTypeArray(val arg: EcType) : EcType(getVectorId(arg)) {
     override fun toString() = "$arg[]"
 
     override fun accepts(location: Loc, type: EcType): Boolean {
@@ -26,6 +26,12 @@ data class EcTypeArray(val arg: EcType) : EcType("Array") {
             is EcTypeSignedInteger, is EcTypeUnsignedInteger -> arg
             else -> super.accessor(location, indexType)
         }
+    }
+
+    companion object {
+        val ALL_VECTORS: HashMap<String, EcTypeArray> = hashMapOf()
+        fun getVectorId(vector: EcType) = "Vector<$vector>"
+        fun of(vector: EcType): EcTypeArray = ALL_VECTORS.getOrPut(getVectorId(vector)) { EcTypeArray(vector) }
     }
 
     override fun isReferenceType(): Boolean = true

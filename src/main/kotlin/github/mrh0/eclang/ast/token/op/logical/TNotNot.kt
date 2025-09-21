@@ -13,7 +13,6 @@ import github.mrh0.eclang.ir.logical.notnot.IRNotNotInt
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeBool
 import github.mrh0.eclang.types.EcTypeNull
-import github.mrh0.eclang.types.EcTypeNullable
 import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 
 class TNotNot(location: Loc, val expr: ITok) : Tok(location) {
@@ -23,11 +22,11 @@ class TNotNot(location: Loc, val expr: ITok) : Tok(location) {
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val e = expr.process(cd, hint);
-        return when (e.first) {
-            is EcTypeBool -> Pair(EcTypeBool, e.second)
-            is EcTypeInt -> Pair(EcTypeBool, IRNotNotInt(location, e.second))
-            is EcTypeNull -> Pair(EcTypeBool, IRBool(location, false))
-            is EcTypeNullable -> Pair(EcTypeBool, IREquals(location, e.second, IRInt(location, 0)))
+        return when {
+            e.first.accepts(location, EcTypeBool) -> EcTypeBool to e.second
+            e.first.accepts(location, EcTypeInt) -> EcTypeBool to IRNotNotInt(location, e.second)
+            e.first is EcTypeNull -> EcTypeBool to IRBool(location, false)
+            e.first.accepts(location, EcTypeNull) -> EcTypeBool to IREquals(location, e.second, IRInt(location, 0))
             else -> throw EcOpTypeError(location, "!!", e.first)
         }
     }

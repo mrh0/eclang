@@ -17,7 +17,7 @@ class TAddressOf(location: Loc, val expr: ITok) : Tok(location) {
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val res = expr.process(cd, hint)
-        val type = EcTypePointer(res.first)
+        val type = EcTypePointer.of(res.first)
         return type to IRAddressOf(location, res.second)
     }
 }

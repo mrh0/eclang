@@ -1,29 +1,15 @@
 package github.mrh0.eclang.types
 
-import github.mrh0.eclang.ast.Loc
-
-open class EcTypeTuple(val types: Array<EcType>) : EcType("Tuple") {
+open class EcTypeTuple private constructor(val types: Array<out EcType>) : EcType("Tuple") {
     companion object {
-        fun isThrowableTuple(type: EcType): Boolean {
-            if (type !is EcTypeTuple) return false
-            if (type.types.size != 2) return false
-            // if (!type.types[1].isReferenceType()) return false
-            return true
+        private fun getTupleId(types: Array<out EcType>) = "Tuple(${types.joinToString()})"
+
+        fun of(vararg types: EcType): EcType {
+            if (types.isEmpty()) return EcTypeNone
+            else if (types.size == 1) return types.first()
+            return ALL_TYPES.getOrPut(getTupleId(types)) { EcTypeTuple(types) }
         }
     }
-    override fun accepts(location: Loc, type: EcType): Boolean = type == this
 
     override fun isReferenceType() = true
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as EcTypeTuple
-
-        return types.contentEquals(other.types)
-    }
-
-    override fun hashCode(): Int {
-        return types.contentHashCode()
-    }
 }

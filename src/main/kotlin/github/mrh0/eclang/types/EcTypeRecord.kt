@@ -2,9 +2,8 @@ package github.mrh0.eclang.types
 
 import github.mrh0.eclang.ast.Loc
 
-data class EcTypeRecord(val name: String, val props: List<Pair<String, EcType>>, private val extending: String?, private val externalName: String?) : EcType("Record") {
+data class EcTypeRecord(val name: String, val props: List<Pair<String, EcType>>, private val extending: String?, private val externalName: String?) : EcType(name) {
     val map: Map<String, EcType> = props.associate { it }
-    override fun accepts(location: Loc, type: EcType): Boolean = type == this
 
     override fun isReferenceType(): Boolean = true
 
@@ -13,4 +12,6 @@ data class EcTypeRecord(val name: String, val props: List<Pair<String, EcType>>,
     fun getSourceName(): String = externalName ?: name
 
     fun getExtending() = extending
+
+    override fun toString() = name
 }

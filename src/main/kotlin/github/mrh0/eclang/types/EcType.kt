@@ -3,20 +3,58 @@ package github.mrh0.eclang.types
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcUndefinedAccessorPropertyError
+import github.mrh0.ect2.core.Types2Type
+import java.util.HashMap
 
-abstract class EcType(val identifier: String) {
+abstract class EcType(val identifier: String, val inherits: EcType? = EcTypeAny, val namespace: String = "core") {
     override fun toString(): String = identifier
 
-    open fun accepts(location: Loc, type: EcType): Boolean = type == this
+    companion object {
+        val ALL_TYPES: HashMap<String, EcType> = hashMapOf()
 
-    open fun cast(location: Loc, to: EcType): EcType {
-        if(!this.accepts(location, to)) throw EcError(location, "Cannot cast $this to $to")
-        return to
+        fun nullable(wrapped: EcType): EcType = EcTypeUnion.of(wrapped, EcTypeNull)
+        fun notNullable(type: EcType): EcType = if (type is EcTypeUnion) type.notNullableCopy() else type
+    }
+
+    val uniqueName: String = "$namespace:$identifier"
+    val uid: Int = ALL_TYPES.size
+
+    init {
+        onNew()
+    }
+
+    open fun onNew() {
+        if (ALL_TYPES.contains(uniqueName)) throw Error("BUG: Type $uniqueName is already instantiated.")
+        ALL_TYPES[this.uniqueName] = this
+    }
+
+    open fun accepts(location: Loc, type: EcType): Boolean = eq(type) || (type.inherits != null && this.accepts(location, type.inherits))
+    open fun eq(type: EcType): Boolean = type === this || type.uniqueName === this.uniqueName
+    open fun canCast(location: Loc, type: EcType): Boolean = type.accepts(location, this)
+    open fun cast(location: Loc, type: EcType): EcType {
+        if (canCast(location, this)) return type
+        throw EcError(location, "$this cannot be cast to $type")
+    }
+
+    @Deprecated("Use EcTypeUnion.of()",
+        ReplaceWith("EcTypeUnion.of()")
+    )
+    open fun union(other: EcType): EcType {
+        return if (other is EcTypeUnion) other.union(this) else EcTypeUnion.of(this, other)
+    }
+
+    fun alias(namespace: String, id: String): EcType {
+        val uniqueAliasName = "$namespace:$id"
+        if (ALL_TYPES.contains(uniqueAliasName)) throw Error("BUG: Type $uniqueAliasName is already instantiated.")
+        ALL_TYPES[uniqueAliasName] = this
+        return this
+    }
+
+    override fun hashCode(): Int {
+        return uid
     }
 
     open fun expand(): List<EcType> = listOf(this)
-
-    open fun getNamespace() = "EC"
 
     open fun isReferenceType() = false
 

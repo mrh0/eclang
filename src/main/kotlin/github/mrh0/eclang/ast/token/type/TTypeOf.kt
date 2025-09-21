@@ -4,13 +4,9 @@ import github.mrh0.eclang.ast.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRType
-import github.mrh0.eclang.types.BuiltInTypes
 import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeNullable
-import github.mrh0.eclang.types.EcTypeUnion
 
 class TTypeOf(location: Loc, val type: ITok) : Tok(location) {
     override fun toString() = "sizeof($type)"

@@ -16,7 +16,7 @@ class TTypePointerByName(location: Loc, val type: ITok) : Tok(location) {
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val res = type.process(cd, hint)
-        val builtIn = EcTypePointer(res.first)
+        val builtIn = EcTypePointer.of(res.first)
         return Pair(builtIn, IRType(location, builtIn))
     }
 }

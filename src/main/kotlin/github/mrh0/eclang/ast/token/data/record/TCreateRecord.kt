@@ -24,7 +24,7 @@ class TCreateRecord(location: Loc, private val values: List<ITok>) : Tok(locatio
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         if (hint !is EcTypeRecord) throw EcUnableToInferTypeError(location)
         val irs = values.mapIndexed { index, it -> it.process(cd, hint.props[index].second) }
-        irs.forEachIndexed { index, it -> if(!hint.props[index].second.accepts(location, it.first)) throw EcUnexpectedTypeError(location, hint, it.first) }
+        irs.forEachIndexed { index, it -> if(!hint.props[index].second.accepts(location, it.first)) throw EcUnexpectedTypeError(location, hint.props[index].second, it.first) }
         return hint to IRCreateRecord(location, hint.name, irs.map { it.second })
     }
 }

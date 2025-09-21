@@ -18,7 +18,7 @@ class IRFunctionOverride(location: Loc, private val block: IRBlock, val id: Stri
     }
 
     override fun toC(sb: CSourceBuilder, c: Context) {
-        if (!GlobalFunctions.calledFunctionOverrides.containsKey(id)) return // TODO: do this better
+        //if (!GlobalFunctions.calledFunctionOverrides.containsKey(id)) return // TODO: do this better
         sb.putStatement()
         IRType(location, returnType).toC(sb, c)
         sb.put(' ')
@@ -36,7 +36,7 @@ class IRFunctionOverride(location: Loc, private val block: IRBlock, val id: Stri
     }
 
     fun toCDeclaration(sb: CSourceBuilder, c: Context) {
-        if (!GlobalFunctions.calledFunctionOverrides.containsKey(id)) return // TODO: do this better
+        //if (!GlobalFunctions.calledFunctionOverrides.containsKey(id)) return // TODO: do this better
         sb.putStatement()
         IRType(location, returnType).toC(sb, c)
         sb.put(' ')

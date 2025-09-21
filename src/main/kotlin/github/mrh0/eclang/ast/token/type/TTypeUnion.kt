@@ -19,7 +19,7 @@ class TTypeUnion(location: Loc, val types: List<ITok>) : Tok(location) {
         processedTypes.forEach {
             if (it is EcTypeUnion) set.addAll(it.expand()) else set.add(it)
         }
-        val union = EcTypeUnion(set)
+        val union = EcTypeUnion.of(set)
         return union to IRType(location, union)
     }
 }

@@ -23,6 +23,6 @@ class TParameterTypedDefault(location: Loc, name: String, val type: ITok, val de
         //if (!defPair.second.deterministic()) throw EcError(location, "Default value of $name must be deterministic.")
         val typePair = type.process(cd, EcTypeNone)
         //if (!typePair.first.accepts(location, defPair.first)) throw EcAssignTypeError(location, name, typePair.first, defPair.first)
-        return FunctionParameter(fixedName, EcTypeUnion(mutableSetOf(typePair.first, EcTypeDefaultParameterWrapper(typePair.first))) , def)
+        return FunctionParameter(fixedName, EcTypeUnion.of(typePair.first, EcTypeDefaultParameterWrapper(typePair.first)) , def)
     }
 }

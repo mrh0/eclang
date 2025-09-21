@@ -27,10 +27,10 @@ declare type Number as SignedNumber | UnsignedNumber
 declare rec Pool extern "apr_pool_t"
 declare rec PoolStatus extern "apr_status_t"
 
-var ROOT_POOL: @Pool? = Null
+var ROOT_POOL: @Pool? = null
 
 declare fn createPool extern "apr_pool_create" as (pool: @@Pool, parent: @Pool?): PoolStatus
-fn createPool(pool: @@Pool): PoolStatus = createPool(pool, Null)
+fn createPool(pool: @@Pool): PoolStatus = createPool(pool, null)
 declare fn freePool extern "apr_pool_destroy" as (pool: @Pool)
 declare fn alloc extern "apr_palloc" as (pool: @Pool, size: Size): @Any
 
@@ -119,7 +119,7 @@ fn clone(str: CString, pool: @Pool?): CString do
     //copy(newStr, str, n)
     ret str
 
-fn clone(str: CString): CString = clone(str, Null)
+fn clone(str: CString): CString = clone(str, null)
 
 rec Error as
     code: Int

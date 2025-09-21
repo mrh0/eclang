@@ -12,7 +12,7 @@ class FunctionOverrides(val name: String, val returnType: EcType) {
     fun getMatching(location: Loc, signature: EcTypeCallSignature): List<FunctionOverride> {
         return overrides.filter { it.match(location, signature.args) && it.ret.accepts(location, signature.ret) }
     }
-    fun getType() = EcTypeUnion(overrides.map { it.getType() }.toHashSet())
+    fun getType() = EcTypeUnion.of(overrides.map { it.getType() }.toHashSet())
     fun getNumberOfOverrides() = overrides.size
 
     override fun toString() = "FOS($name, $returnType, $overrides)"

@@ -148,7 +148,7 @@ BLOCKCOMMENT=115
 '..='=33
 '..>'=34
 'here'=35
-'Null'=36
+'null'=36
 'it'=37
 'sizeof'=38
 'alignof'=39
