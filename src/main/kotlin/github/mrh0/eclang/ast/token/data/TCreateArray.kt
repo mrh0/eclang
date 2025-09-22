@@ -20,7 +20,7 @@ class TCreateArray(location: Loc, private val values: List<ITok>) : Tok(location
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val arrayType: EcTypeArray = if (hint is EcTypeArray) hint else {
             val ir0 = values[0].process(cd, EcTypeNone)
-            EcTypeArray(ir0.first)
+            EcTypeArray.of(ir0.first) as EcTypeArray
         }
 
         val irs = values.map { it.process(cd, arrayType.arg) }

@@ -5468,7 +5468,7 @@ public class EclangParser extends Parser {
 	}
 	@SuppressWarnings("CheckReturnValue")
 	public static class GlobalNamespaceContext extends GlobalContext {
-		public TerminalNode NAME() { return getToken(EclangParser.NAME, 0); }
+		public TerminalNode STRING() { return getToken(EclangParser.STRING, 0); }
 		public TerminalNode NL() { return getToken(EclangParser.NL, 0); }
 		public GlobalNamespaceContext(GlobalContext ctx) { copyFrom(ctx); }
 		@Override
@@ -5931,7 +5931,7 @@ public class EclangParser extends Parser {
 				setState(967);
 				match(T__98);
 				setState(968);
-				match(NAME);
+				match(STRING);
 				setState(969);
 				match(NL);
 				}
@@ -6820,7 +6820,7 @@ public class EclangParser extends Parser {
 		"\u0005[\u0000\u0000\u03c3\u03c5\u0005n\u0000\u0000\u03c4\u03c2\u0001\u0000"+
 		"\u0000\u0000\u03c4\u03c5\u0001\u0000\u0000\u0000\u03c5\u03c6\u0001\u0000"+
 		"\u0000\u0000\u03c6\u03cb\u0005e\u0000\u0000\u03c7\u03c8\u0005c\u0000\u0000"+
-		"\u03c8\u03c9\u0005g\u0000\u0000\u03c9\u03cb\u0005e\u0000\u0000\u03ca\u0334"+
+		"\u03c8\u03c9\u0005n\u0000\u0000\u03c9\u03cb\u0005e\u0000\u0000\u03ca\u0334"+
 		"\u0001\u0000\u0000\u0000\u03ca\u033a\u0001\u0000\u0000\u0000\u03ca\u0340"+
 		"\u0001\u0000\u0000\u0000\u03ca\u034a\u0001\u0000\u0000\u0000\u03ca\u0354"+
 		"\u0001\u0000\u0000\u0000\u03ca\u035f\u0001\u0000\u0000\u0000\u03ca\u036a"+

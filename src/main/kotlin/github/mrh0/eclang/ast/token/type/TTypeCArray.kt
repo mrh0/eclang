@@ -13,7 +13,7 @@ class TTypeCArray(location: Loc, val type: ITok) : Tok(location) {
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val res = type.process(cd, hint)
-        val array = EcTypeCArray(res.first)
+        val array = EcTypeCArray.of(res.first) as EcTypeCArray
         return array to IRType(location, array)
     }
 }

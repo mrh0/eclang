@@ -21,7 +21,7 @@ class TCreateCArray(location: Loc, private val values: List<ITok>) : Tok(locatio
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val arrayType: EcTypeCArray = if (hint is EcTypeCArray) hint else {
             val ir0 = values[0].process(cd, EcTypeNone)
-            EcTypeCArray(ir0.first)
+            EcTypeCArray.of(ir0.first) as EcTypeCArray
         }
 
         val irs = values.map { it.process(cd, arrayType.arg) }

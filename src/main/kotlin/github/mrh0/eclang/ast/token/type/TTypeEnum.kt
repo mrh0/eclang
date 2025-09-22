@@ -20,7 +20,7 @@ class TTypeEnum(location: Loc, val primitives: List<ITok>) : Tok(location) {
         processedTypes.forEach {
             if (it is EcTypeEnum) set.addAll(it.expand()) else set.add(it)
         }
-        val enum = EcTypeEnum(set)
+        val enum = EcTypeEnum.of(set)
         return enum to IRType(location, enum)
     }
 }

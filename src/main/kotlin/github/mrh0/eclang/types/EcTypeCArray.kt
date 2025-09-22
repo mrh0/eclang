@@ -2,12 +2,11 @@ package github.mrh0.eclang.types
 
 import github.mrh0.eclang.ast.Loc
 
-data class EcTypeCArray(val arg: EcType) : EcType("CArray") {
-    override fun toString() = "$arg[]c"
+class EcTypeCArray private constructor(val arg: EcType) : EcType(getArrayId(arg)) {
+    companion object {
+        private fun getArrayId(wrapped: EcType) = "CArray($wrapped)"
 
-    override fun accepts(location: Loc, type: EcType): Boolean {
-        if(type !is EcTypeCArray) return false
-        return arg.accepts(location, type.arg)
+        fun of(wrapped: EcType): EcType = ALL_TYPES.getOrPut(getArrayId(wrapped)) { EcTypeCArray(wrapped) }
     }
 
     override fun isReferenceType(): Boolean = true

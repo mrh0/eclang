@@ -1,3 +1,5 @@
+module "test"
+
 use "core:lib.ec"
 
 val G: Int = 69

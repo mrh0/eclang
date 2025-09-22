@@ -5,12 +5,11 @@ import github.mrh0.eclang.types.numbers.signed.EcTypeSignedInteger
 import github.mrh0.eclang.types.numbers.unsigned.EcTypeSize
 import github.mrh0.eclang.types.numbers.unsigned.EcTypeUnsignedInteger
 
-data class EcTypeArray(val arg: EcType) : EcType(getVectorId(arg)) {
-    override fun toString() = "$arg[]"
+class EcTypeArray private constructor(val arg: EcType) : EcType(getArrayId(arg)) {
+    companion object {
+        private fun getArrayId(wrapped: EcType) = "Array($wrapped)"
 
-    override fun accepts(location: Loc, type: EcType): Boolean {
-        if(type !is EcTypeArray) return false
-        return arg.accepts(location, type.arg)
+        fun of(wrapped: EcType): EcType = ALL_TYPES.getOrPut(getArrayId(wrapped)) { EcTypeArray(wrapped) }
     }
 
     override fun getProperty(location: Loc, name: String): EcType {
@@ -23,15 +22,9 @@ data class EcTypeArray(val arg: EcType) : EcType(getVectorId(arg)) {
 
     override fun accessor(location: Loc, indexType: EcType): EcType {
         return when (indexType) {
-            is EcTypeSignedInteger, is EcTypeUnsignedInteger -> arg
+            is EcTypeSignedInteger, is EcTypeUnsignedInteger -> arg // TODO: Rework this check
             else -> super.accessor(location, indexType)
         }
-    }
-
-    companion object {
-        val ALL_VECTORS: HashMap<String, EcTypeArray> = hashMapOf()
-        fun getVectorId(vector: EcType) = "Vector<$vector>"
-        fun of(vector: EcType): EcTypeArray = ALL_VECTORS.getOrPut(getVectorId(vector)) { EcTypeArray(vector) }
     }
 
     override fun isReferenceType(): Boolean = true

@@ -235,7 +235,7 @@ global:
     | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT            #globalStructDeclareDefine
     | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? NL                                                               #globalStructDeclare
 
-    | 'module' NAME NL                                                                                                           #globalNamespace
+    | 'module' STRING NL                                                                                                           #globalNamespace
     ;
 
 use:

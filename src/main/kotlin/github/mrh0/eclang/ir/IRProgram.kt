@@ -8,6 +8,7 @@ import github.mrh0.eclang.context.signature.CallSignatureInstance
 import github.mrh0.eclang.context.tuple.TupleInstance
 import github.mrh0.eclang.ir.function.IRFunctionOverride
 import github.mrh0.eclang.output.c.CSourceBuilder
+import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.util.Util
 
 class IRProgram(location: Loc, private val functions: List<IIR>, private val globals: List<IIR>, private val uses: List<IIR>) : IR(location) {
@@ -35,6 +36,11 @@ class IRProgram(location: Loc, private val functions: List<IIR>, private val glo
         typedef struct { size_t len; char* data; } __ec_string_t;
         """.trimIndent())
         sb.putLine()
+        sb.putLine()
+
+        sb.commentLine("Type Names")
+        val typeNameKeys = EcType.ALL_TYPES.map { it.key }
+        sb.putLine("char* __ec_type_names[${EcType.ALL_TYPES.size}] = {${typeNameKeys.joinToString("\",\"", prefix = "\"", postfix = "\"")}};")
         sb.putLine()
 
         sb.commentLine("Atoms")

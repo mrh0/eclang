@@ -1,7 +1,11 @@
 package github.mrh0.eclang.types
 
-data class EcTypeResult(val returnedType: EcType, val throwableType: EcType) : EcType("", EcTypeTuple.of(returnedType, throwableType)) {
+class EcTypeResult private constructor(val returnedType: EcType, val throwableType: EcType) : EcType(getResultId(returnedType, throwableType)) {
+    companion object {
+        fun getResultId(returnedType: EcType, throwableType: EcType) = "Result($returnedType,$throwableType)"
+
+        fun of(rt: EcType, et: EcType) = ALL_TYPES.getOrPut(getResultId(rt, et)) { EcTypeResult(rt, et) }
+    }
+
     override fun isReferenceType() = true
 }
-
-// Convert to Boxed(Union(r, e))

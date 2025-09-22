@@ -18,6 +18,6 @@ class TAtom(location: Loc, private val value: String) : Tok(location) {
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         testIdentifier(location, value)
         val instance = AtomInstance.get(value)
-        return EcTypeAtomInstance(instance) to IRAtom(location, instance)
+        return EcTypeAtomInstance.of(instance) to IRAtom(location, instance)
     }
 }

@@ -15,7 +15,7 @@ class TTypeAtom(location: Loc, val type: String) : Tok(location) {
 
     override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
         val atom = AtomInstance.get(type.drop(1))
-        val atomType = EcTypeAtomInstance(atom)
+        val atomType = EcTypeAtomInstance.of(atom)
         return Pair(atomType, IRType(location, atomType))
     }
 }
