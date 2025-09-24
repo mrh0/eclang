@@ -146,7 +146,7 @@ type:
     | 'typeof' expr                                                             #typeTypeOf
     | type '[' (']c' | ']')                                                     #typeArray
     | left=type 'throws' throwing=type                                          #typeThrows
-    | ('vol' | 'volatile') type                                                 #typeVolatile
+    //| ('vol' | 'volatile') type                                                 #typeVolatile
     | 'fn' '(' argTypes+=type ')' ('=>' returnType=type)?                       #typeCallSignature
     | 'fn' '(' argTypes+=type (',' argTypes+=type)* ')' ('=>' returnType=type)? #typeCallSignature
     | '(' argTypes+=type ')' '=>' returnType=type                               #typeCallSignature
@@ -164,7 +164,9 @@ parameter:
     | NAME '=' expr                         #parameterDefault
     | '...' NAME ':' type                   #parameterVarArg
     | '...'                                 #parameterVarArgC
-    | 'const' parameter                     #parameterConst
+    | 'var' parameter                       #parameterVariable
+    | 'val' parameter                       #parameterConst
+    | 'vol' parameter                       #parameterVolatile
     ;
 
 statement:
@@ -219,8 +221,10 @@ func:
 global:
       'var' NAME '=' expr NL                                                                                                        #globalDefine
     | 'val' NAME '=' expr NL                                                                                                        #globalDefineConst
+    | 'vol' NAME '=' expr NL                                                                                                        #globalDefineVolatile
     | 'var' NAME (':' type)? '=' expr NL                                                                                            #globalDefineTyped
     | 'val' NAME (':' type)? '=' expr NL                                                                                            #globalDefineConstTyped
+    | 'vol' NAME (':' type)? '=' expr NL                                                                                            #globalDefineVolatileTyped
 
     | 'declare' 'var' name=NAME ('extern' externalName=STRING)? 'as' type  NL                                                       #globalDeclareDefine
     | 'declare' ('val' | 'const') name=NAME ('extern' externalName=STRING)? 'as' type  NL                                           #globalDeclareConst
