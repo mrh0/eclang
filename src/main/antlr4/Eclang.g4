@@ -172,9 +172,11 @@ parameter:
 statement:
       'var' NAME '=' expr NL                                                            #statementDefineVar
     | 'val' NAME '=' expr NL                                                            #statementDefineVal
+    | 'vol' NAME '=' expr NL                                                            #statementDefineVol
     | 'const' NAME '=' expr NL                                                          #statementDefineConst
     | 'var' NAME ':' type '=' expr NL                                                   #statementDefineVarTyped
     | 'val' NAME ':' type '=' expr NL                                                   #statementDefineValTyped
+    | 'vol' NAME ':' type '=' expr NL                                                   #statementDefineVolTyped
     | 'const' NAME ':' type '=' expr NL                                                 #statementDefineConstTyped
 
     | NAME '=' expr NL                                                                  #statementAssignment
@@ -187,6 +189,9 @@ statement:
     | 'assert' STRING ('if' condition=expr)? NL                                              #statementAssert
     | 'ret' return=expr ('if' condition=expr)? NL                                            #statementReturn
     | expression=expr 'if' condition=expr NL                                                 #statementTailIf
+
+    | expression=expr 'while' condition=expr NL                                                 #statementTailWhile
+    //| expression=expr 'for' condition=expr NL                                                 #statementTailFor
 
     | 'defer' statement                                                                 #statementDefer
     | 'defer' 'do' body=block                                                           #statementDeferDo

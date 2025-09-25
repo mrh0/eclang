@@ -5,6 +5,7 @@ import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.output.c.CSource
 import github.mrh0.eclang.types.EcTypeNone
+import github.mrh0.eclang.types.TypeRegistry
 import github.mrh0.eclang.util.Util
 import org.apache.commons.cli.*
 import java.io.FileInputStream
@@ -64,6 +65,8 @@ fun main(args: Array<String>) {
     // val file = Path.of(Util::class.java.classLoader.getResource("test.ec")!!.toURI()).toFile()
 
     val timeTaken = measureTime {
+        TypeRegistry(Loc.IDENTITY).registerBuiltin()
+
         val tree: ITok = Compiler.tokenizeFile(file)
         if (DEBUG) {
             println("-Tokens:")

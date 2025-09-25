@@ -23,7 +23,7 @@ typedef struct { int line; int position; char* path; } __ec_location_t;
 typedef struct { size_t len; char* data; } __ec_string_t;
 
 // Type Names
-char* __ec_type_names[88] = {"core:Union(Int, Char, Long, Short, UChar, UInt, Size, ULong, UShort, Float, Double)","Enum(Atom(test1), Atom(test3), Atom(test2))","CArray(Int)","Union(Short, Int, Long)","Union(Char, Int, Long, Short)","Union(Int, Long)","Union(Int, Char, Long, Short, Float, Double)","core:UInt","core:Union(Float, Double)","core:Atom(test_atom)","Array(String)","core:Union(UInt, Size, ULong)","core:Union(UInt, Size, ULong, UShort)","core:Enum(Atom(test3), Atom(test2))","core:Union(Int, Char, Long, Short, Float, Double)","core:String","core:Float","Pointer(Int)","Pointer(Pointer(Pool))","Result(Int,Error)","Union(Null, CString)","core:None","core:Result(Int,Error)","Union(Float, Double)","core:IntDivResult","core:Enum(Atom(test1), Atom(test2), Atom(test3))","core:VarArgC","core:Union(Int, CString)","core:Union(Int, Char, Long, Short)","core:Atom","Union(Int, CString)","Union(UInt, Size, ULong)","core:Pointer(Int)","core:Pointer(None)","core:Short","Union(ULong, Size)","core:Union(Pointer(Pool), Null)","core:Union(Null, CString)","core:ULong","core:Atom(test1)","core:Array(Int)","core:Double","Pointer(Pool)","core:Union(Size, ULong)","core:Char","Array(Int)","core:CArray(String)","core:Pointer(Any)","core:Union(Int, Long)","core:UChar","core:CString","core:Size","core:Bool","core:DefaultWrapper(Int)","core:PoolStatus","core:UnionTest","core:Union(DefaultWrapper(Int), Int)","core:Atom(test2)","Atom(test1)","core:LongDivResult","core:Long","core:Union(Int, Long, Short)","Union(UShort, UInt, Size, ULong)","Union(Pointer(Pool), Null)","DefaultWrapper(Int)","Union(DefaultWrapper(Int), Int)","core:Error","Pointer(Any)","core:Pool","CArray(String)","core:Union(UChar, UInt, Size, ULong, UShort)","core:Any","Union(UChar, UInt, Size, ULong, UShort)","Atom(test3)","Enum(Atom(test2), Atom(test3))","core:Null","Atom(test_atom)","core:Int","core:Pointer(Pool)","core:Atom(test3)","core:UShort","Pointer(None)","Atom(test2)","core:Pointer(Pointer(Pool))","core:Array(String)","Union(Int, Char, Long, Short, Float, Double, UChar, UInt, Size, ULong, UShort)","core:CArray(Int)","core:Test"};
+char* __ec_type_names[88] = {"Enum(Atom(test1), Atom(test3), Atom(test2))","CArray(Int)","Union(Short, Int, Long)","Union(Char, Int, Long, Short)","Union(Int, Long)","Union(Int, Char, Long, Short, Float, Double)","core:Union(Float, Double, Char, UChar, Size, Int, Long, Short, UInt, ULong, UShort)","core:UInt","core:Union(Float, Double)","core:Atom(test_atom)","Array(String)","core:Union(UInt, Size, ULong)","core:Union(UInt, Size, ULong, UShort)","core:Enum(Atom(test3), Atom(test2))","core:String","core:Float","Pointer(Int)","Pointer(Pointer(Pool))","Result(Int,Error)","Union(Null, CString)","core:None","core:Result(Int,Error)","Union(Float, Double)","core:IntDivResult","core:Enum(Atom(test1), Atom(test2), Atom(test3))","core:VarArgC","core:Union(Int, CString)","core:Union(Int, Char, Long, Short)","core:Atom","Union(Float, Double, Char, Int, Long, Short, UChar, UInt, Size, ULong, UShort)","Union(Int, CString)","Union(UInt, Size, ULong)","core:Pointer(Int)","core:Pointer(None)","core:Short","Union(ULong, Size)","core:Union(Pointer(Pool), Null)","core:Union(Null, CString)","core:ULong","core:Atom(test1)","core:Array(Int)","core:Double","Pointer(Pool)","core:Union(Size, ULong)","core:Char","Array(Int)","core:CArray(String)","core:Pointer(Any)","core:Union(Int, Long)","core:UChar","core:CString","core:Size","core:Bool","core:DefaultWrapper(Int)","core:PoolStatus","core:UnionTest","core:Union(DefaultWrapper(Int), Int)","core:Atom(test2)","Atom(test1)","core:LongDivResult","core:Long","core:Union(Int, Long, Short)","Union(UShort, UInt, Size, ULong)","Union(Pointer(Pool), Null)","DefaultWrapper(Int)","Union(DefaultWrapper(Int), Int)","core:Error","Pointer(Any)","core:Pool","CArray(String)","core:Union(UChar, UInt, Size, ULong, UShort)","core:Any","Union(UChar, UInt, Size, ULong, UShort)","Atom(test3)","Enum(Atom(test2), Atom(test3))","core:Null","Atom(test_atom)","core:Int","core:Pointer(Pool)","core:Atom(test3)","Pointer(None)","core:UShort","Atom(test2)","core:Pointer(Pointer(Pool))","core:Array(String)","core:Union(Float, Double, Char, Int, Long, Short)","core:CArray(Int)","core:Test"};
 
 // Atoms
 char* __ec_atom_test1 = "test1";
@@ -34,23 +34,23 @@ char* __ec_atom_test_atom = "test_atom";
 // Tuples
 
 // Arrays
-typedef struct { long len; __ec_string_t* data; } __ec_array_12_t;
-typedef struct { long len; int* data; } __ec_array_2_t;
+typedef struct { long len; __ec_string_t* data; } __ec_array_9_t;
+typedef struct { long len; int* data; } __ec_array_10_t;
 
 // Declarations
 void log_0(const char* value);
 void log_1(const __ec_string_t value);
-void log_2(int value);
-void log_3(char value);
-void log_4(long value);
-void log_5(short value);
-void log_6(unsigned char value);
-void log_7(unsigned int value);
-void log_8(size_t value);
-void log_9(unsigned long value);
-void log_10(unsigned short value);
-void log_11(float value);
-void log_12(double value);
+void log_2(float value);
+void log_3(double value);
+void log_4(char value);
+void log_5(unsigned char value);
+void log_6(size_t value);
+void log_7(int value);
+void log_8(long value);
+void log_9(short value);
+void log_10(unsigned int value);
+void log_11(unsigned long value);
+void log_12(unsigned short value);
 apr_status_t createPool_2(const apr_pool_t** pool);
 double min_0(double x, double y);
 double max_0(double x, double y);
@@ -60,8 +60,8 @@ char* clone_0(const char* str, const apr_pool_t* pool);
 char* clone_1(const char* str, const void* pool);
 char* clone_2(const char* str);
 char* genericTest_0(const char* test);
-__ec_result_267701493_t throwsTest1_0(int i);
-__ec_result_267701493_t throwsTest2_0(int i);
+__ec_result_275000536_t throwsTest1_0(int i);
+__ec_result_275000536_t throwsTest2_0(int i);
 int varArgTest_0(int a, int b, int __ec_va_count, ...);
 int varArgCTest_0(int a, int b, ...);
 int testCallSigFunc_0(int v);
@@ -105,7 +105,7 @@ typedef struct {
 } Test;
 typedef struct {
 	int a;
-	union{int v0;char v1;long v2;short v3;unsigned char v4;unsigned int v5;size_t v6;unsigned long v7;unsigned short v8;float v9;double v10;} b;
+	union{float v0;double v1;char v2;unsigned char v3;size_t v4;int v5;long v6;short v7;unsigned int v8;unsigned long v9;unsigned short v10;} b;
 } UnionTest;
 static const UnionTest unionTest = (UnionTest){0, 0};
 
@@ -116,37 +116,37 @@ void log_0(const char* value) {
 void log_1(const __ec_string_t value) {
 	printf_0("%s\n", value.data);
 }
-void log_2(int value) {
+void log_2(float value) {
 	printf_1("%d\n", value);
 }
-void log_3(char value) {
+void log_3(double value) {
 	printf_2("%d\n", value);
 }
-void log_4(long value) {
+void log_4(char value) {
 	printf_3("%d\n", value);
 }
-void log_5(short value) {
+void log_5(unsigned char value) {
 	printf_4("%d\n", value);
 }
-void log_6(unsigned char value) {
+void log_6(size_t value) {
 	printf_5("%d\n", value);
 }
-void log_7(unsigned int value) {
+void log_7(int value) {
 	printf_6("%d\n", value);
 }
-void log_8(size_t value) {
+void log_8(long value) {
 	printf_7("%d\n", value);
 }
-void log_9(unsigned long value) {
+void log_9(short value) {
 	printf_8("%d\n", value);
 }
-void log_10(unsigned short value) {
+void log_10(unsigned int value) {
 	printf_9("%d\n", value);
 }
-void log_11(float value) {
+void log_11(unsigned long value) {
 	printf_10("%d\n", value);
 }
-void log_12(double value) {
+void log_12(unsigned short value) {
 	printf_11("%d\n", value);
 }
 apr_status_t createPool_2(const apr_pool_t** pool) {
@@ -177,11 +177,11 @@ char* genericTest_0(const char* test) {
 	char* v = "";
 	return v;
 }
-__ec_result_267701493_t throwsTest1_0(int i) {
-	return (__ec_result_267701493_t){0, .value=i+1};
+__ec_result_275000536_t throwsTest1_0(int i) {
+	return (__ec_result_275000536_t){0, .value=i+1};
 }
-__ec_result_267701493_t throwsTest2_0(int i) {
-	return (__ec_result_267701493_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
+__ec_result_275000536_t throwsTest2_0(int i) {
+	return (__ec_result_275000536_t){1, .error=(Error){0, (__ec_string_t){4,"Test"}}};
 }
 int varArgTest_0(int a, int b, int __ec_va_count, ...) {
 	return a+b;
@@ -201,13 +201,13 @@ int main_0(void) {
 	log_0(genericTest_0("Test"));
 	apr_pool_create(&(ROOT_POOL), NULL);
 	log_0(clone_2("Cloned String"));
-	const __ec_array_12_t array1 = (__ec_array_12_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
-	__ec_array_2_t array2 = (__ec_array_2_t){4,(int[]){5, 3, 6, 0}};
+	const __ec_array_9_t array1 = (__ec_array_9_t){3,(__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}}};
+	__ec_array_10_t array2 = (__ec_array_10_t){4,(int[]){5, 3, 6, 0}};
 	const __ec_string_t* carray1 = (__ec_string_t[]){(__ec_string_t){3,"One"}, (__ec_string_t){3,"Two"}, (__ec_string_t){5,"Three"}};
 	int* carray2 = (int[]){5, 3, 6, 0};
 	static const int staticVal = 6;
 	if (true) {
-		log_8(array1.len);
+		log_6(array1.len);
 	}
 	for (int index=0;index<array1.len;index++) {
 		log_1(array1.data[index]);

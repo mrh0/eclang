@@ -10,49 +10,17 @@ import java.util.HashMap
 abstract class EcType(val identifier: String, val inherits: EcType? = EcTypeAny, val namespace: String = "core") {
     override fun toString(): String = identifier
 
-    data class TypeIdentity(
-        val namespace: String,
-        val identifier: String,
-        val create: (location: Loc, types: Array<out EcType>?) -> EcType,
-        val params: (count: Int) -> Int = { 0 }) {}
+
 
     companion object {
         val ALL_TYPES: HashMap<String, EcType> = hashMapOf()
-        val ALL_IDENTITY_TYPES: HashMap<String, TypeIdentity> = hashMapOf()
-
-        fun registerIdentity(
-            location: Loc,
-            namespace: String,
-            identifier: String,
-            create: (location: Loc, types: Array<out EcType>?) -> EcType,
-            params: (count: Int) -> Int = { 0 }) {
-            val uniqueName = "$namespace:$identifier"
-            if (ALL_IDENTITY_TYPES.contains(uniqueName)) throw EcError(location,"Type by name $uniqueName is already defined.")
-            ALL_IDENTITY_TYPES[uniqueName] = TypeIdentity(namespace, identifier, create, params)
-        }
 
         fun nullable(wrapped: EcType): EcType = EcTypeUnion.of(wrapped, EcTypeNull)
         fun notNullable(type: EcType): EcType = if (type is EcTypeUnion) type.notNullableCopy() else type
-
-        fun from(location: Loc, namespace: String, identifier: String, types: Array<out EcType>): EcType {
-            val uniqueName = "$namespace:$identifier"
-            val identity = ALL_IDENTITY_TYPES.getOrElse(uniqueName) { throw EcUnknownTypeError(location, uniqueName) }
-            val expectedParameterLength = identity.params(types.size)
-            if (types.size != expectedParameterLength) throw EcError(location, "Expected $expectedParameterLength type parameters, got ${types.size}.")
-            return identity.create(location, types)
-        }
-
-        fun from(location: Loc, namespace: String, identifier: String): EcType {
-            val uniqueName = "$namespace:$identifier"
-            val identity = ALL_IDENTITY_TYPES.getOrElse(uniqueName) { throw EcUnknownTypeError(location, uniqueName) }
-            val expectedParameterLength = identity.params(0)
-            if (expectedParameterLength != 0) throw EcError(location, "Expected $expectedParameterLength type parameters, got 0.")
-            return identity.create(location, null)
-        }
     }
 
-    fun from(location: Loc, vararg types: EcType) = Companion.from(location, namespace, identifier, types)
-    fun from(location: Loc) = Companion.from(location, namespace, identifier)
+    fun from(location: Loc, types: Array<EcType>) = TypeRegistry.get(location, namespace, identifier, types)
+    fun from(location: Loc) = TypeRegistry.get(location, namespace, identifier)
 
     private val uniqueName: String = "$namespace:$identifier"
     val uid: Int = ALL_TYPES.size

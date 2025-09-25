@@ -76,6 +76,7 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
 
         val usesIRs = uses.map { it.process(cd, hint).second }
 
+        println(globals.joinToString())
         val globalIRs = globals.map { it.process(cd, hint).second }
         functions.forEach { analyzeFunction(it, cd) } //it.process(cd).second
 
