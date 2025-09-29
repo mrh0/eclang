@@ -9,6 +9,7 @@ import github.mrh0.eclang.types.numbers.signed.EcTypeLong
 import github.mrh0.eclang.types.numbers.signed.EcTypeShort
 import github.mrh0.eclang.types.numbers.unsigned.*
 
+@Deprecated("Replace with TypeRegistry")
 object BuiltInTypes {
     private val builtInPrimitiveIdentityTypes: List<EcType> = listOf(
         EcTypeInt,

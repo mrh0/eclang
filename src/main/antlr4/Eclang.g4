@@ -94,10 +94,10 @@ expr:
     | 'if' '(' condition=expr ')' body=expr 'else' elseBody=expr    #exprInlineIf
     | expr 'is' NAME                                                #exprIs
     | expr '!is' NAME                                               #exprIsNot
+    | expr 'is' 'not' NAME                                          #exprIsNot
     | expr 'as' type                                                #exprAs
-    | expr 'as' '(' type ')'                                        #exprAs
     | expr 'as' 'unsafe' type                                       #exprAsUnsafe
-    | expr 'as' 'unsafe' '(' type ')'                               #exprAsUnsafe
+    | expr '!as' type                                       		#exprAsUnsafe
     | expr '!'                                                      #exprCastNotNull
 
     | accesssed=expr '.' NAME                                                 #exprAccessName
@@ -134,7 +134,8 @@ expr:
     ;
 
 type:
-      NAME                                                                      #typeByName
+      NAME '<' types+=NAME+ '>'                                                 #typeByNameParameters
+    | NAME                                                                      #typeByName
     | '@' type                                                                  #typeAddressByName
     | type '?'                                                                  #typeNullable
     | types+=type '&' types+=type ('&' types+=type)*                            #typeEnum
@@ -244,7 +245,7 @@ global:
     | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type NL)+  DEDENT            #globalStructDeclareDefine
     | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? NL                                                               #globalStructDeclare
 
-    | 'module' STRING NL                                                                                                           #globalNamespace
+    | 'module' name=STRING NL                                                                                                           #globalNamespace
     ;
 
 use:

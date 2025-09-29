@@ -65,7 +65,7 @@ fun main(args: Array<String>) {
     // val file = Path.of(Util::class.java.classLoader.getResource("test.ec")!!.toURI()).toFile()
 
     val timeTaken = measureTime {
-        TypeRegistry(Loc.IDENTITY).registerBuiltin()
+        TypeRegistry.registerBuiltin()
 
         val tree: ITok = Compiler.tokenizeFile(file)
         if (DEBUG) {

@@ -1,4 +1,4 @@
-//module "test"
+module "test"
 
 use "core:lib.ec"
 

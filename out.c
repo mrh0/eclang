@@ -23,7 +23,7 @@ typedef struct { int line; int position; char* path; } __ec_location_t;
 typedef struct { size_t len; char* data; } __ec_string_t;
 
 // Type Names
-char* __ec_type_names[88] = {"Enum(Atom(test1), Atom(test3), Atom(test2))","CArray(Int)","Union(Short, Int, Long)","Union(Char, Int, Long, Short)","Union(Int, Long)","Union(Int, Char, Long, Short, Float, Double)","core:Union(Float, Double, Char, UChar, Size, Int, Long, Short, UInt, ULong, UShort)","core:UInt","core:Union(Float, Double)","core:Atom(test_atom)","Array(String)","core:Union(UInt, Size, ULong)","core:Union(UInt, Size, ULong, UShort)","core:Enum(Atom(test3), Atom(test2))","core:String","core:Float","Pointer(Int)","Pointer(Pointer(Pool))","Result(Int,Error)","Union(Null, CString)","core:None","core:Result(Int,Error)","Union(Float, Double)","core:IntDivResult","core:Enum(Atom(test1), Atom(test2), Atom(test3))","core:VarArgC","core:Union(Int, CString)","core:Union(Int, Char, Long, Short)","core:Atom","Union(Float, Double, Char, Int, Long, Short, UChar, UInt, Size, ULong, UShort)","Union(Int, CString)","Union(UInt, Size, ULong)","core:Pointer(Int)","core:Pointer(None)","core:Short","Union(ULong, Size)","core:Union(Pointer(Pool), Null)","core:Union(Null, CString)","core:ULong","core:Atom(test1)","core:Array(Int)","core:Double","Pointer(Pool)","core:Union(Size, ULong)","core:Char","Array(Int)","core:CArray(String)","core:Pointer(Any)","core:Union(Int, Long)","core:UChar","core:CString","core:Size","core:Bool","core:DefaultWrapper(Int)","core:PoolStatus","core:UnionTest","core:Union(DefaultWrapper(Int), Int)","core:Atom(test2)","Atom(test1)","core:LongDivResult","core:Long","core:Union(Int, Long, Short)","Union(UShort, UInt, Size, ULong)","Union(Pointer(Pool), Null)","DefaultWrapper(Int)","Union(DefaultWrapper(Int), Int)","core:Error","Pointer(Any)","core:Pool","CArray(String)","core:Union(UChar, UInt, Size, ULong, UShort)","core:Any","Union(UChar, UInt, Size, ULong, UShort)","Atom(test3)","Enum(Atom(test2), Atom(test3))","core:Null","Atom(test_atom)","core:Int","core:Pointer(Pool)","core:Atom(test3)","Pointer(None)","core:UShort","Atom(test2)","core:Pointer(Pointer(Pool))","core:Array(String)","core:Union(Float, Double, Char, Int, Long, Short)","core:CArray(Int)","core:Test"};
+char* __ec_type_names[88] = {"Enum(Atom(test1), Atom(test3), Atom(test2))","CArray(Int)","Union(Short, Int, Long)","Union(Char, Int, Long, Short)","Union(Int, Long)","core:UInt","Union(UShort, Size, UInt, ULong)","core:Atom(test_atom)","Array(String)","core:Union(Float, Double, Int, Long, Short, Char)","core:Enum(Atom(test3), Atom(test2))","core:String","core:Union(Int, Long, Short, Char)","core:Float","Pointer(Int)","Pointer(Pointer(Pool))","Result(Int,Error)","Union(Null, CString)","core:None","core:Result(Int,Error)","Union(Float, Double)","core:IntDivResult","core:Enum(Atom(test1), Atom(test2), Atom(test3))","core:Union(Double, Float)","Union(Float, Double, Int, Long, Short, Char, UShort, UChar, Size, UInt, ULong)","core:VarArgC","core:Atom","Union(Int, CString)","Union(UInt, Size, ULong)","core:Pointer(Int)","core:Pointer(None)","core:Short","Union(ULong, Size)","core:Union(Pointer(Pool), Null)","Union(UChar, UShort, Size, UInt, ULong)","core:Union(Null, CString)","core:ULong","core:Atom(test1)","Union(Int, Long, Short, Char, Double, Float)","core:Array(Int)","core:Double","Pointer(Pool)","core:Union(Size, ULong)","core:Char","core:Union(Size, UInt, ULong)","Array(Int)","core:CArray(String)","core:Union(CString, Int)","core:Pointer(Any)","core:Union(Int, Long)","core:UChar","core:CString","core:Size","core:Union(UShort, Size, UInt, ULong)","core:Bool","core:DefaultWrapper(Int)","core:PoolStatus","core:UnionTest","core:Union(DefaultWrapper(Int), Int)","core:Atom(test2)","Atom(test1)","core:LongDivResult","core:Long","core:Union(Int, Long, Short)","Union(Pointer(Pool), Null)","DefaultWrapper(Int)","Union(DefaultWrapper(Int), Int)","core:Union(UShort, UChar, Size, Float, Double, Int, Long, Short, Char, UInt, ULong)","core:Error","Pointer(Any)","core:Pool","CArray(String)","core:Any","Atom(test3)","Enum(Atom(test2), Atom(test3))","core:Null","Atom(test_atom)","core:Int","core:Pointer(Pool)","core:Atom(test3)","Pointer(None)","core:UShort","Atom(test2)","core:Pointer(Pointer(Pool))","core:Array(String)","core:Union(UShort, UChar, Size, UInt, ULong)","core:CArray(Int)","core:Test"};
 
 // Atoms
 char* __ec_atom_test1 = "test1";
@@ -40,17 +40,17 @@ typedef struct { long len; int* data; } __ec_array_10_t;
 // Declarations
 void log_0(const char* value);
 void log_1(const __ec_string_t value);
-void log_2(float value);
-void log_3(double value);
-void log_4(char value);
-void log_5(unsigned char value);
-void log_6(size_t value);
+void log_2(unsigned short value);
+void log_3(unsigned char value);
+void log_4(size_t value);
+void log_5(float value);
+void log_6(double value);
 void log_7(int value);
 void log_8(long value);
 void log_9(short value);
-void log_10(unsigned int value);
-void log_11(unsigned long value);
-void log_12(unsigned short value);
+void log_10(char value);
+void log_11(unsigned int value);
+void log_12(unsigned long value);
 apr_status_t createPool_2(const apr_pool_t** pool);
 double min_0(double x, double y);
 double max_0(double x, double y);
@@ -75,14 +75,14 @@ char* aa_0(void);
 char* a_0(char* atom);
 char* a_1(char* atom);
 char* a_2(char* atom);
-int test_0(int a, int b, int c);
-int test_1(int a, const char* b, int c);
-int test_2(int a, int b);
-int test_3(int a, const char* b);
+int test_0(int a, const char* b, int c);
+int test_1(int a, int b, int c);
+int test_2(int a, const char* b);
+int test_3(int a, int b);
 void x_0(int a);
 void x_1(const char* a);
-void y_0(int a);
-void y_1(const char* a);
+void y_0(const char* a);
+void y_1(int a);
 int z_0(int a);
 
 // Call Signatures
@@ -97,6 +97,7 @@ typedef struct {
 	int code;
 	__ec_string_t message;
 } Error;
+// module test
 static const int G = 69;
 static int G2 = 420;
 typedef struct {
@@ -105,7 +106,7 @@ typedef struct {
 } Test;
 typedef struct {
 	int a;
-	union{float v0;double v1;char v2;unsigned char v3;size_t v4;int v5;long v6;short v7;unsigned int v8;unsigned long v9;unsigned short v10;} b;
+	union{unsigned short v0;unsigned char v1;size_t v2;float v3;double v4;int v5;long v6;short v7;char v8;unsigned int v9;unsigned long v10;} b;
 } UnionTest;
 static const UnionTest unionTest = (UnionTest){0, 0};
 
@@ -116,19 +117,19 @@ void log_0(const char* value) {
 void log_1(const __ec_string_t value) {
 	printf_0("%s\n", value.data);
 }
-void log_2(float value) {
+void log_2(unsigned short value) {
 	printf_1("%d\n", value);
 }
-void log_3(double value) {
+void log_3(unsigned char value) {
 	printf_2("%d\n", value);
 }
-void log_4(char value) {
+void log_4(size_t value) {
 	printf_3("%d\n", value);
 }
-void log_5(unsigned char value) {
+void log_5(float value) {
 	printf_4("%d\n", value);
 }
-void log_6(size_t value) {
+void log_6(double value) {
 	printf_5("%d\n", value);
 }
 void log_7(int value) {
@@ -140,13 +141,13 @@ void log_8(long value) {
 void log_9(short value) {
 	printf_8("%d\n", value);
 }
-void log_10(unsigned int value) {
+void log_10(char value) {
 	printf_9("%d\n", value);
 }
-void log_11(unsigned long value) {
+void log_11(unsigned int value) {
 	printf_10("%d\n", value);
 }
-void log_12(unsigned short value) {
+void log_12(unsigned long value) {
 	printf_11("%d\n", value);
 }
 apr_status_t createPool_2(const apr_pool_t** pool) {
@@ -207,7 +208,7 @@ int main_0(void) {
 	int* carray2 = (int[]){5, 3, 6, 0};
 	static const int staticVal = 6;
 	if (true) {
-		log_6(array1.len);
+		log_4(array1.len);
 	}
 	for (int index=0;index<array1.len;index++) {
 		log_1(array1.data[index]);
@@ -230,10 +231,10 @@ int main_0(void) {
 	log_0("World");
 	int* addr = &G2;
 	int addr2 = *addr;
-	test_3(0, "");
+	test_2(0, "");
 	Test testRec = (Test){0, 0};
 	const int ee = testRec.a;
-	y_1("");
+	y_0("");
 	z_0(1);
 	const char* k = __ec_atom_test_atom;
 	const int p = G+G2;
@@ -301,19 +302,19 @@ char* a_1(char* atom) {
 char* a_2(char* atom) {
 	return atom;
 }
-int test_0(int a, int b, int c) {
+int test_0(int a, const char* b, int c) {
 	int d = 5;
 	return c;
 }
-int test_1(int a, const char* b, int c) {
+int test_1(int a, int b, int c) {
 	int d = 5;
 	return c;
 }
-int test_2(int a, int b) {
+int test_2(int a, const char* b) {
 	int d = 5;
 	return a;
 }
-int test_3(int a, const char* b) {
+int test_3(int a, int b) {
 	int d = 5;
 	return a;
 }
@@ -323,11 +324,11 @@ void x_0(int a) {
 void x_1(const char* a) {
 	log_0("Str");
 }
-void y_0(int a) {
-	x_0(a);
-}
-void y_1(const char* a) {
+void y_0(const char* a) {
 	x_1(a);
+}
+void y_1(int a) {
+	x_0(a);
 }
 int z_0(int a) {
 	return a+1;

@@ -521,6 +521,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterTypeByNameParameters(EclangParser.TypeByNameParametersContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeByNameParameters(EclangParser.TypeByNameParametersContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterTypeNullable(EclangParser.TypeNullableContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -653,18 +665,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterTypeVolatile(EclangParser.TypeVolatileContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitTypeVolatile(EclangParser.TypeVolatileContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterTypeNest(EclangParser.TypeNestContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -749,6 +749,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterParameterVariable(EclangParser.ParameterVariableContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitParameterVariable(EclangParser.ParameterVariableContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterParameterConst(EclangParser.ParameterConstContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -756,6 +768,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitParameterConst(EclangParser.ParameterConstContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterParameterVolatile(EclangParser.ParameterVolatileContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitParameterVolatile(EclangParser.ParameterVolatileContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -780,6 +804,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitStatementDefineVal(EclangParser.StatementDefineValContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStatementDefineVol(EclangParser.StatementDefineVolContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementDefineVol(EclangParser.StatementDefineVolContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -816,6 +852,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitStatementDefineValTyped(EclangParser.StatementDefineValTypedContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStatementDefineVolTyped(EclangParser.StatementDefineVolTypedContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementDefineVolTyped(EclangParser.StatementDefineVolTypedContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -936,6 +984,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitStatementTailIf(EclangParser.StatementTailIfContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStatementTailWhile(EclangParser.StatementTailWhileContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementTailWhile(EclangParser.StatementTailWhileContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -1133,6 +1193,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterGlobalDefineVolatile(EclangParser.GlobalDefineVolatileContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalDefineVolatile(EclangParser.GlobalDefineVolatileContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterGlobalDefineTyped(EclangParser.GlobalDefineTypedContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -1152,6 +1224,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitGlobalDefineConstTyped(EclangParser.GlobalDefineConstTypedContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalDefineVolatileTyped(EclangParser.GlobalDefineVolatileTypedContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalDefineVolatileTyped(EclangParser.GlobalDefineVolatileTypedContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

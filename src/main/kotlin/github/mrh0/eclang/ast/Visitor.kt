@@ -215,6 +215,7 @@ class Visitor(private val file: File) : EclangBaseVisitor<ITok>() {
     override fun visitGlobalDefineConstTyped(ctx: EclangParser.GlobalDefineConstTypedContext): ITok = TGlobalDefineConstTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
     override fun visitGlobalTypeDefine(ctx: EclangParser.GlobalTypeDefineContext): ITok = TGlobalTypeDefine(loc(ctx), ctx.NAME().text, visit(ctx.type()))
     override fun visitUse(ctx: EclangParser.UseContext): ITok = TGlobalUse(loc(ctx), Util.getStringContent(ctx.from.text) ?: "")
+    override fun visitGlobalNamespace(ctx: EclangParser.GlobalNamespaceContext): ITok = TGlobalModule(loc(ctx), Util.getStringContent(ctx.name.text) ?: "")
 
     override fun visitStatementDefineVar(ctx: EclangParser.StatementDefineVarContext): ITok = TStatementDefineVar(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitStatementDefineVarTyped(ctx: EclangParser.StatementDefineVarTypedContext): ITok = TStatementDefineVarTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
