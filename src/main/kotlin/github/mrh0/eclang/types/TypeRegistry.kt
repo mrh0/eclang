@@ -20,6 +20,7 @@ object TypeRegistry {
         val params: ParamsType = { 0 }) {}
 
     val ALL_IDENTITY_TYPES: HashMap<String, TypeIdentity> = hashMapOf()
+    val TYPE_COLLISION_MAP: HashMap<String, TypeIdentity> = hashMapOf() // Type name,
 
     fun register(
         location: Loc,
@@ -29,7 +30,9 @@ object TypeRegistry {
         params: (count: Int) -> Int = { 0 }) {
         val uniqueName = "$namespace:$identifier"
         if (ALL_IDENTITY_TYPES.contains(uniqueName)) throw EcError(location,"Type by name $uniqueName is already defined.")
-        ALL_IDENTITY_TYPES[uniqueName] = TypeIdentity(namespace, identifier, create, params)
+        val identity = TypeIdentity(namespace, identifier, create, params)
+        ALL_IDENTITY_TYPES[uniqueName] = identity
+        TYPE_COLLISION_MAP[identifier] = identity
     }
 
     private fun register(name: String, create: CreateType, params: ParamsType) {
