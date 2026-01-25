@@ -51,7 +51,7 @@ fun main(args: Array<String>) {
     DEBUG = cmd.hasOption("d")
     if (cmd.hasOption("h") || cmd.options.isEmpty()) {
         println(logoSmall)
-        println("ECLang 'Easy C Language' v$VERSION (C) MRH0 2024")
+        println("ECLang 'Easy C Language' v$VERSION (C) MRH0 2026")
         println("Options:")
         options.options.forEach {
             println("\t--${it.longOpt}${if (it.hasArg()) " <${it.argName}> " else " "}(-${it.opt}) ${it.description}.")

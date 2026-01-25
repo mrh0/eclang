@@ -30,6 +30,7 @@ eclang is a system language compiler which generates human-readable C source and
 ```
 sudo apt update
 sudo apt install gcc
+sudo apt install maven
 sudo apt install build-essential
 sudo apt install libapr1 libapr1-dev
 ```
@@ -41,7 +42,7 @@ mvn clean package
 
 ### Compile .ec source with eclang.jar
 ```
-java -jar ./target/eclang-0.1.0.jar -c source.ec -o out.c
+java -jar ./target/eclang-0.1.0.jar -c ./examples/fib.ec -o out.c
 ```
 
 ### Compile generated .c source with gcc

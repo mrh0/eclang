@@ -4,6 +4,8 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcProtectedPrefixError
 import java.io.File
+import java.io.FileInputStream
+import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -23,12 +25,15 @@ object Util {
         }
     }
 
+    @Deprecated("Use getStream")
     fun getPath(location: Loc, relativePath: String): Path {
         if (relativePath.contains(":")) {
             val split = relativePath.split(":")
             if (split.size > 2) throw EcError(location, "Malformed path '$relativePath'")
             if (split[0] == "core") {
                 val path = split[1]
+                println(path)
+                println(Util::class.java.classLoader.getResource(path))
                 return Path.of(Util::class.java.classLoader.getResource(path)?.toURI() ?: throw EcError(location, "File not found at path '$relativePath'"))
             }
             else throw EcError(location, "Unknown path prefix '${split[0]}' at '$relativePath'")
@@ -38,6 +43,23 @@ object Util {
 
         return path.toAbsolutePath()
     }
+
+    fun getStream(location: Loc, relativePath: String): InputStream {
+        if (relativePath.contains(":")) {
+            val split = relativePath.split(":")
+            if (split.size > 2) throw EcError(location, "Malformed path '$relativePath'")
+            if (split[0] == "core") {
+                val path = split[1]
+                return Util::class.java.classLoader.getResourceAsStream(path)
+                    ?: throw EcError(location, "File not found at path '$relativePath'")
+            }
+            else throw EcError(location, "Unknown path prefix '${split[0]}' at '$relativePath'")
+        }
+
+        return FileInputStream(File(relativePath))
+    }
+
+
 
     private val tupleEntryNames: Array<String> = arrayOf("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth",
         "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "seventeenth", "eighteenth", "nineteenth", "twentieth")

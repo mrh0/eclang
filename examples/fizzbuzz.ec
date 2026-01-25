@@ -1,4 +1,4 @@
-use "ec:lib.ec"
+use "core:lib.ec"
 
 fn main(): Int do
     for i in 0 to 100 do

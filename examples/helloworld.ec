@@ -1,4 +1,4 @@
-use "ec:lib.ec"
+use "core:lib.ec"
 
 fn main(): Int do
     log("Hello World")

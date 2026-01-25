@@ -62,8 +62,10 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
         usesIn.forEach {
             if (useMap[it.path] != true && it.path.endsWith(".ec")) {
                 useMap[it.path] = true
-                val file = Util.getPath(location, it.path).toFile()
-                val tree = Compiler.tokenizeFile(file)
+                // println(Util.getPath(location, it.path))
+                // val file = Util.getPath(location, it.path).toFile()
+                val stream = Util.getStream(location, it.path)
+                val tree = Compiler.tokenizeStream(stream, it.path)
                 functions.addAll(tree.functionsIn)
                 uses.addAll(tree.usesIn)
                 globals.addAll(tree.globalsIn)

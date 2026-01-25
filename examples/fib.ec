@@ -1,12 +1,13 @@
-use "ec:lib.ec"
+module "fib"
 
-val n = 10
-val a = 0
-val b = 1
+use "core:lib.ec"
+
+val a = 0i
+val b = 1i
 
 fn main(): Int do
-    for i in 0 to 100 do
-        a = b
-        b = a + b
-        log(a)
-    ret 0
+	for var i in 0 to 100 do
+		a = b
+		b = a + b
+		log(a)
+	ret 0
