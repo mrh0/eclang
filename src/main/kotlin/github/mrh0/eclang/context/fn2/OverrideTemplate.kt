@@ -1,10 +1,11 @@
 package github.mrh0.eclang.context.fn2
 
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.token.TBlock
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.util.Util.testIdentifier
 
-data class OverrideTemplate private constructor(val location: Loc, val sourceName: String, val returnType: EcType, val parameters: Array<ParameterTemplate>) {
+data class OverrideTemplate private constructor(val location: Loc, val sourceName: String, val returnType: EcType, val parameters: Array<ParameterTemplate>, val block: TBlock? = null) {
     companion object {
         fun of(location: Loc, sourceName: String, returnType: EcType, parameters: Array<ParameterTemplate>) =
             OverrideTemplate(location, testIdentifier(location, sourceName), returnType, parameters)

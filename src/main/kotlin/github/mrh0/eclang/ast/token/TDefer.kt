@@ -1,7 +1,7 @@
 package github.mrh0.eclang.ast.token
 
 import github.mrh0.eclang.util.Util.testIdentifier
-import github.mrh0.eclang.ast.CompileData
+import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok

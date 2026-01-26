@@ -1,7 +1,7 @@
 package github.mrh0.eclang.ast.token.op.logical
 
 import github.mrh0.eclang.ast.ITok
-import github.mrh0.eclang.ast.CompileData
+import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.error.EcOpTypeError

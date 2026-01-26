@@ -8,7 +8,7 @@ import github.mrh0.eclang.error.EcNotDefinedError
 import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.context.state.IVar
 
-class ContextBuilder(val contextName: String) {
+open class ContextBuilder(val contextName: String) {
     val stack: ContextStack = ContextStack()
 
     fun define(location: Loc, variable: IVar): IVar = stack.define(location, variable)
