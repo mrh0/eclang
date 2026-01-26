@@ -5,6 +5,7 @@ import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.types.EcTypeCallSignature
 import github.mrh0.eclang.types.EcTypeUnion
 
+@Deprecated("Use FunctionTemplate")
 class FunctionOverrides(val name: String, val returnType: EcType) {
     val overrides: MutableList<FunctionOverride> = mutableListOf()
     fun add(fo: FunctionOverride) = overrides.add(fo)

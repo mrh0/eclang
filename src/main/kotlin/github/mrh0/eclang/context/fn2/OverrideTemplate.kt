@@ -1,8 +1,15 @@
 package github.mrh0.eclang.context.fn2
 
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.types.EcType
+import github.mrh0.eclang.util.Util.testIdentifier
 
-data class OverrideTemplate(val namespace: String, val identifier: String, val location: Loc, val parameters: Array<ParameterTemplate>, val isExternal: Boolean = false) {
+data class OverrideTemplate private constructor(val location: Loc, val sourceName: String, val returnType: EcType, val parameters: Array<ParameterTemplate>) {
+    companion object {
+        fun of(location: Loc, sourceName: String, returnType: EcType, parameters: Array<ParameterTemplate>) =
+            OverrideTemplate(location, testIdentifier(location, sourceName), returnType, parameters)
+    }
+
     override fun toString(): String = "${parameters.size}"
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -10,21 +17,10 @@ data class OverrideTemplate(val namespace: String, val identifier: String, val l
 
         other as OverrideTemplate
 
-        if (isExternal != other.isExternal) return false
-        if (namespace != other.namespace) return false
-        if (identifier != other.identifier) return false
-        if (location != other.location) return false
-        if (!parameters.contentEquals(other.parameters)) return false
-
-        return true
+        return sourceName == other.sourceName
     }
 
     override fun hashCode(): Int {
-        var result = isExternal.hashCode()
-        result = 31 * result + namespace.hashCode()
-        result = 31 * result + identifier.hashCode()
-        result = 31 * result + location.hashCode()
-        result = 31 * result + parameters.contentHashCode()
-        return result
+        return sourceName.hashCode()
     }
 }

@@ -8,25 +8,25 @@ import github.mrh0.eclang.types.EcTypeTuple
 import github.mrh0.eclang.types.numbers.signed.EcTypeInt
 
 fun main(args: Array<String>) {
-    val scope = ModuleScope()
+    val scope = ModuleScope("test")
 
-    val overrideA1 = OverrideTemplate("test", "a", Loc.IDENTITY, arrayOf())
-    val overrideB1 = OverrideTemplate("test", "b", Loc.IDENTITY, arrayOf())
+    val overrideA1 = OverrideTemplate(Loc.IDENTITY, "a", EcTypeAny, arrayOf())
+    val overrideB1 = OverrideTemplate(Loc.IDENTITY, "b", EcTypeAny, arrayOf())
 
-    val overrideA2 = OverrideTemplate("test", "a", Loc.IDENTITY, arrayOf(ParameterTemplate("oneA2", EcTypeAny)))
+    val overrideA2 = OverrideTemplate(Loc.IDENTITY, "a", EcTypeAny, arrayOf(ParameterTemplate("oneA2", EcTypeAny)))
 
-    val overrideA3 = OverrideTemplate("test", "a", Loc.IDENTITY, arrayOf(
+    val overrideA3 = OverrideTemplate(Loc.IDENTITY, "a", EcTypeAny, arrayOf(
         ParameterTemplate("one", EcTypeString)))
 
-    val overrideA4 = OverrideTemplate("test", "a", Loc.IDENTITY, arrayOf(
+    val overrideA4 = OverrideTemplate(Loc.IDENTITY, "a", EcTypeAny, arrayOf(
         ParameterTemplate("one", EcTypeInt),
         ParameterTemplate("two", EcTypeString)))
 
-    scope.addOverride(overrideA1)
-    scope.addOverride(overrideB1)
-    scope.addOverride(overrideA2)
-    scope.addOverride(overrideA3)
-    scope.addOverride(overrideA4)
+    scope.addOverride("a", overrideA1)
+    scope.addOverride("b", overrideB1)
+    scope.addOverride("a", overrideA2)
+    scope.addOverride("a", overrideA3)
+    scope.addOverride("a", overrideA4)
 
     println(scope.getOverride(Loc.IDENTITY, "a", arrayOf(EcTypeBool)))
 

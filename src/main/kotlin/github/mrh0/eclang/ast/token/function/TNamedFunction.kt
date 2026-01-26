@@ -6,7 +6,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.function.GlobalFunctions
 import github.mrh0.eclang.context.signature.CallSignatureInstance
-import github.mrh0.eclang.error.EcAmbiguousSignatureError
+import github.mrh0.eclang.error.fn.EcAmbiguousSignatureError
 import github.mrh0.eclang.error.EcUnexpectedTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRNamed
@@ -24,7 +24,7 @@ class TNamedFunction (location: Loc, val name: String) : Tok(location) {
         val overrides = GlobalFunctions.getOverridesByName(location, fixedName)
         if (hint !is EcTypeCallSignature) throw EcUnexpectedTypeError(location, hint, EcTypeAny)
         val matching = overrides.getMatching(location, hint)
-        if (matching.size > 1) throw EcAmbiguousSignatureError(location, name, hint.args, matching.map { it.location })
+        if (matching.size > 1) throw EcAmbiguousSignatureError(location, cd.namespace, name, hint.args, matching[0].location)
         return hint to IRNamed(location, fixedName)
     }
 }

@@ -3,9 +3,10 @@ package github.mrh0.eclang.context.function
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.token.TBlock
 import github.mrh0.eclang.error.EcError
-import github.mrh0.eclang.error.EcInvalidVarArgError
+import github.mrh0.eclang.error.fn.EcInvalidVarArgError
 import github.mrh0.eclang.types.EcType
 
+@Deprecated("Use ModuleScope")
 object GlobalFunctions {
     private val functions: MutableMap<String, FunctionOverrides> = mutableMapOf()
     val calledFunctionOverrides: MutableMap<String, Boolean> = mutableMapOf()

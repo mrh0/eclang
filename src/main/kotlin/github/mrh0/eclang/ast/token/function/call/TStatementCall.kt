@@ -6,8 +6,8 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.statement.TStatement
 import github.mrh0.eclang.context.function.GlobalFunctions
-import github.mrh0.eclang.error.EcAmbiguousSignatureError
-import github.mrh0.eclang.error.EcNoMatchingCallSignatureError
+import github.mrh0.eclang.error.fn.EcAmbiguousSignatureError
+import github.mrh0.eclang.error.fn.EcNoMatchingCallSignatureError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRStatement
 import github.mrh0.eclang.ir.function.call.IRArgument

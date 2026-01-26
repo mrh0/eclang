@@ -6,7 +6,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.result.ResultInstance
 import github.mrh0.eclang.context.tuple.TupleInstance
-import github.mrh0.eclang.error.EcReturnTypeError
+import github.mrh0.eclang.error.fn.EcReturnTypeError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRStatementReturn
 import github.mrh0.eclang.ir.IRStatementReturnDefer

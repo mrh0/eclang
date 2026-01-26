@@ -7,9 +7,9 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TProgram.Companion.permutateFunctionParams
 import github.mrh0.eclang.context.function.FunctionParameter
 import github.mrh0.eclang.context.function.GlobalFunctions
-import github.mrh0.eclang.error.EcAmbiguousSignatureError
+import github.mrh0.eclang.error.fn.EcAmbiguousSignatureError
 import github.mrh0.eclang.error.EcGenericNotEstablishedError
-import github.mrh0.eclang.error.EcNoMatchingCallSignatureError
+import github.mrh0.eclang.error.fn.EcNoMatchingCallSignatureError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.data.IRInt
 import github.mrh0.eclang.ir.data.IRValue
@@ -35,7 +35,7 @@ open class TExprCall (location: Loc, val name: String, val args: List<ITok>) : T
 
         if (matching.isEmpty()) throw EcNoMatchingCallSignatureError(location, name, argTypes)
         val matchingNonGeneric = matching.filter { !it.hasGenerics }
-        if (matchingNonGeneric.size > 1) throw EcAmbiguousSignatureError(location, name, argTypes, matching.map { it.location })
+        if (matchingNonGeneric.size > 1) throw EcAmbiguousSignatureError(location, cd.namespace, name, argTypes, matching[0].location)
         val first = matching[0]
 
         if (first.varArg != null && first.varArg !is EcTypeVarArgC) {
