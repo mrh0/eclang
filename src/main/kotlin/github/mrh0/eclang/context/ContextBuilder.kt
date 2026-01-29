@@ -17,9 +17,11 @@ open class ContextBuilder(val contextName: String) {
 
     fun defer(location: Loc, toks: List<ITok>) = toks.forEach { stack.defer(location, it) } 
 
-    fun getRaw(location: Loc, name: String): IVar? = stack.getRaw(location, name)
+    fun getRaw(name: String): IVar? = stack.getRaw(name)
 
     fun get(location: Loc, name: String): IVar = stack.get(location, name)
+
+    fun getIndexRaw(name: String): Int? = stack.getIndexRaw(name)
 
     fun getIndex(location: Loc, name: String): Int = stack.getIndex(location, name)
 

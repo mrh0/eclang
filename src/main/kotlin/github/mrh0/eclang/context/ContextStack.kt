@@ -8,7 +8,7 @@ import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcNotDefinedError
 import github.mrh0.eclang.types.EcType
 
-class ContextStack {
+open class ContextStack {
     class Scope(val vars: MutableMap<String, Int> = mutableMapOf(), val deferred: MutableList<ITok> = mutableListOf()) {
         var returned: Boolean = false
         val newDeferred: MutableList<ITok> = mutableListOf()
@@ -31,20 +31,16 @@ class ContextStack {
         top.newDeferred.add(tok)
     }
 
-    fun getRaw(location: Loc, name: String): IVar? {
+    fun getIndexRaw(name: String): Int? = scopeStack.last().vars[name]
+
+    fun getIndex(location: Loc, name: String): Int = getIndexRaw(name) ?: throw EcNotDefinedError(location, name)
+
+    fun getRaw(name: String): IVar? {
         val top = scopeStack.last().vars
         return if(top.containsKey(name)) vars[top[name]!!] else null
     }
 
-    fun get(location: Loc, name: String): IVar {
-        val top = scopeStack.last().vars
-        return if(top.containsKey(name)) vars[top[name]!!] else throw EcNotDefinedError(location, name)
-    }
-
-    fun getIndex(location: Loc, name: String): Int {
-        val top = scopeStack.last().vars
-        return if(top.containsKey(name)) top[name]!! else throw EcNotDefinedError(location, name)
-    }
+    fun get(location: Loc, name: String): IVar = getRaw(name) ?: throw EcNotDefinedError(location, name)
 
     fun assign(location: Loc, name: String, type: EcType): IVar {
         val top = scopeStack.last().vars

@@ -9,11 +9,11 @@ class CompileData {
     // var namespace: String = "default"
     private val localContext: MutableMap<String, Context> = mutableMapOf()
 
-    private var currentLocalContextBuilder: ContextBuilder = global
+    private var currentLocalContextBuilder: ContextBuilder = module.globalContext
     var genericContext: Map<String, EcType>? = null
 
     fun getVar(location: Loc, name: String): IVar {
-        return ctx().getRaw(location, name) ?: getGlobal().get(location, name)
+        return ctx().getRaw(name) ?: getGlobal().get(location, name)
     }
 
     fun newContext(contextName: String, generics: Map<String, EcType> = mapOf()): ContextBuilder {
@@ -24,10 +24,10 @@ class CompileData {
     }
 
     fun ctx() = currentLocalContextBuilder
-    fun getGlobal() = global
+    fun getGlobal() = module.globalContext
 
     fun finalize(): Context {
         localContext[currentLocalContextBuilder.contextName] = currentLocalContextBuilder.build()
-        return global.build()
+        return module.globalContext.build()
     }
 }
