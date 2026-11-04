@@ -1,30 +1,24 @@
 package github.mrh0.eclang.ast.token.data.record
 
-import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.error.EcAssignTypeError
+import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
-import github.mrh0.eclang.error.EcUnableToInferTypeError
-import github.mrh0.eclang.error.EcUnexpectedTypeError
 import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.data.IRBool
-import github.mrh0.eclang.ir.data.record.IRCreateRecord
-import github.mrh0.eclang.types.BuiltInTypes
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeBool
-import github.mrh0.eclang.types.EcTypeRecord
+import github.mrh0.ect2.Record
+import github.mrh0.ect2.Type
+import github.mrh0.ect2.Union
 
-class TCreateRecord(location: Loc, private val values: List<ITok>) : Tok(location) {
-    override fun toString(): String {
-        return "TCreateRecord($values)"
+/** `{ 1, 2 }` or `{ a = 1, b = 2 }`: a record whose type comes from where it is used. */
+class TCreateRecord(location: Loc, val values: List<ITok>, private val names: List<String>? = null) : Tok(location) {
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        val record = hint as? Record ?: (hint as? Union)?.members?.filterIsInstance<Record>()?.singleOrNull()
+            ?: throw EcError(location, "Can't tell which record this is. Write its name in front, e.g. `Point { ... }`.")
+        return record to createRecord(cd, location, record, values, names)
     }
 
-    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        if (hint !is EcTypeRecord) throw EcUnableToInferTypeError(location)
-        val irs = values.mapIndexed { index, it -> it.process(cd, hint.props[index].second) }
-        irs.forEachIndexed { index, it -> if(!hint.props[index].second.accepts(location, it.first)) throw EcUnexpectedTypeError(location, hint.props[index].second, it.first) }
-        return hint to IRCreateRecord(location, hint.name, irs.map { it.second })
+    override fun toString(): String {
+        return "TCreateRecord($values)"
     }
 }

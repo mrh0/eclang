@@ -4,7 +4,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRInclude(location: Loc, private val path: String) : IR(location) {
+class IRInclude(location: Loc, val path: String) : IR(location) {
     override fun toString(): String {
         return "include($path)"
     }
@@ -13,5 +13,5 @@ class IRInclude(location: Loc, private val path: String) : IR(location) {
         sb.putLine("#include <$path>")
     }
 
-    override fun deterministic(): Boolean = true
+    override fun isConstant(): Boolean = true
 }

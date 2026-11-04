@@ -4,7 +4,8 @@ use "core:apr/pools.ec"
 use "core:apr/file_io.ec"
 use "core:apr/errno.ec"
 use "core:apr/inherit.ec"
-use "netinet/in.ec"
+use "netinet/in.h"
+use "arpa/inet.h"
 
 declare val APR_MAX_SECS_TO_LINGER as Int
 declare val APRMAXHOSTLEN as Int
@@ -35,12 +36,15 @@ declare val APR_PROTO_UDP as Int
 declare val APR_PROTO_SCTP as Int
 declare val APR_SENDFILE_DISCONNECT_SOCKET as Int
 
-declare type apr_inet_addr as inet_addr
+declare fn apr_inet_addr as (cp: CString): UInt
 
-// enum apr_shutdown_how_e { APR_SHUTDOWN_READ, APR_SHUTDOWN_WRITE, APR_SHUTDOWN_READWRITE }
-// enum apr_interface_e { APR_LOCAL, APR_REMOTE }
-declare type apr_shutdown_how_e as Int
-declare type apr_interface_e as Int
+declare enum apr_shutdown_how_e as
+    :read = APR_SHUTDOWN_READ
+    :write = APR_SHUTDOWN_WRITE
+    :readwrite = APR_SHUTDOWN_READWRITE
+declare enum apr_interface_e as
+    :local = APR_LOCAL
+    :remote = APR_REMOTE
 
 declare rec apr_socket_t
 declare rec apr_hdtr_t
@@ -49,7 +53,7 @@ declare rec apr_ipsubnet_t
 declare type apr_port_t as apr_uint16_t
 declare rec apr_sockaddr_t
 
-declare fn apr_socket_create as (new_sock: @@apr_socket_t, family: Int, type: Int, protocol: Int, cont: @apr_pool_t): apr_status_t
+declare fn apr_socket_create as (new_sock: @@apr_socket_t, family: Int, sock_type: Int, protocol: Int, cont: @apr_pool_t): apr_status_t
 declare fn apr_socket_shutdown as (thesocket: @apr_socket_t, how: apr_shutdown_how_e): apr_status_t
 declare fn apr_socket_close as (thesocket: @apr_socket_t): apr_status_t
 declare fn apr_socket_bind as (sock: @apr_socket_t, sa: @apr_sockaddr_t): apr_status_t
@@ -61,11 +65,11 @@ declare fn apr_sockaddr_info_get as (sa: @@apr_sockaddr_t, hostname: CString, fa
 declare fn apr_getnameinfo as (hostname: @CString, sa: @apr_sockaddr_t, flags: apr_int32_t): apr_status_t
 declare fn apr_parse_addr_port as (addr: @CString, scope_id: @CString, port: @apr_port_t, str: CString, p: @apr_pool_t): apr_status_t
 declare fn apr_gethostname as (buf: CString, len: Int, cont: @apr_pool_t): apr_status_t
-declare fn apr_socket_data_get as (data: @Ptr, key: CString, sock: @apr_socket_t): apr_status_t
-declare fn apr_socket_data_set as (sock: @apr_socket_t, data: Ptr, key: CString, cleanup: Fn(Ptr): apr_status_t): apr_status_t
+declare fn apr_socket_data_get as (data: @@Any, key: CString, sock: @apr_socket_t): apr_status_t
+declare fn apr_socket_data_set as (sock: @apr_socket_t, data: @Any, key: CString, cleanup: fn (@Any): apr_status_t): apr_status_t
 declare fn apr_socket_send as (sock: @apr_socket_t, buf: CString, len: @apr_size_t): apr_status_t
 declare fn apr_socket_sendv as (sock: @apr_socket_t, vec: @iovec, nvec: apr_int32_t, len: @apr_size_t): apr_status_t
-declare fn apr_socket_sendto as (sock: @apr_socket_t, where: @apr_sockaddr_t, flags: apr_int32_t, buf: CString, len: @apr_size_t): apr_status_t
+declare fn apr_socket_sendto as (sock: @apr_socket_t, target: @apr_sockaddr_t, flags: apr_int32_t, buf: CString, len: @apr_size_t): apr_status_t
 declare fn apr_socket_recvfrom as (from: @apr_sockaddr_t, sock: @apr_socket_t, flags: apr_int32_t, buf: CString, len: @apr_size_t): apr_status_t
 declare fn apr_socket_sendfile as (sock: @apr_socket_t, file: @apr_file_t, hdtr: @apr_hdtr_t, offset: @apr_off_t, len: @apr_size_t, flags: apr_int32_t): apr_status_t
 declare fn apr_socket_recv as (sock: @apr_socket_t, buf: CString, len: @apr_size_t): apr_status_t
@@ -78,11 +82,10 @@ declare fn apr_socket_addr_get as (sa: @@apr_sockaddr_t, which: apr_interface_e,
 declare fn apr_sockaddr_ip_get as (addr: @CString, sockaddr: @apr_sockaddr_t): apr_status_t
 declare fn apr_sockaddr_ip_getbuf as (buf: CString, buflen: apr_size_t, sockaddr: @apr_sockaddr_t): apr_status_t
 declare fn apr_sockaddr_equal as (addr1: @apr_sockaddr_t, addr2: @apr_sockaddr_t): Int
-declare fn apr_socket_type_get as (sock: @apr_socket_t, type: @Int): apr_status_t
+declare fn apr_socket_type_get as (sock: @apr_socket_t, sock_type: @Int): apr_status_t
 declare fn apr_getservbyname as (sockaddr: @apr_sockaddr_t, servname: CString): apr_status_t
 declare fn apr_ipsubnet_create as (ipsub: @@apr_ipsubnet_t, ipstr: CString, mask_or_numbits: CString, p: @apr_pool_t): apr_status_t
 declare fn apr_ipsubnet_test as (ipsub: @apr_ipsubnet_t, sa: @apr_sockaddr_t): Int
-declare fn apr_socket_accept_filter as (sock: @apr_socket_t, name: CString, args: CString): apr_status_t
 declare fn apr_socket_protocol_get as (sock: @apr_socket_t, protocol: @Int): apr_status_t
 declare fn apr_socket_pool_get as (thesocket: @apr_socket_t): @apr_pool_t
 declare fn apr_socket_inherit_set as (thesocket: @apr_socket_t): apr_status_t

@@ -39,28 +39,23 @@ int main_0(void);
 // Call Signatures
 
 // Globals
+// module fib
 
 // Code
 void log_0(const char* value) {
-	printf_0("%s\n", value);
+	printf("%s\n", value);
 }
 void log_1(int value) {
-	printf_0("%d\n", value);
+	printf("%d\n", value);
 }
 int main_0(void) {
-	for (int i=0;i<100;i++) {
-		if (i%3==0&&i%5==0) {
-			log_0("FizzBuzz");
-		}
-		else if (i%3==0) {
-			log_0("Fizz");
-		}
-		else if (i%5==0) {
-			log_0("Buzz");
-		}
-		else {
-			log_1(i);
-		}
+	int a = 0;
+	int b = 1;
+	for (int i=0;i<40;i++) {
+		log_1(a);
+		const int next = a+b;
+		a = b;
+		b = next;
 	}
 	return 0;
 }

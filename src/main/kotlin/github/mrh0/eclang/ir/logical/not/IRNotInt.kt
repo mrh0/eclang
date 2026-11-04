@@ -9,11 +9,11 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 class IRNotInt(location: Loc, val expr: IIR) : IR(location) {
     override fun toString() = "(!i $expr)"
 
-    override fun deterministic() = expr.deterministic()
+    override fun isConstant() = expr.isConstant()
 
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.put('(')
         expr.toC(sb, c)
-        sb.put("<1)")
+        sb.put(") == 0")
     }
 }

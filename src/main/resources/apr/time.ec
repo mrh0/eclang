@@ -22,7 +22,21 @@ declare val apr_day_snames as @Char
 declare type apr_time_t as apr_int64_t
 declare type apr_interval_time_t as apr_int64_t
 declare type apr_short_interval_time_t as apr_int32_t
-declare rec apr_time_exp_t
+declare type time_t as Long
+
+// A time split into parts (apr_time_exp_lt, apr_time_exp_gmt).
+declare rec apr_time_exp_t as
+    tm_usec: apr_int32_t
+    tm_sec: apr_int32_t
+    tm_min: apr_int32_t
+    tm_hour: apr_int32_t
+    tm_mday: apr_int32_t
+    tm_mon: apr_int32_t
+    tm_year: apr_int32_t
+    tm_wday: apr_int32_t
+    tm_yday: apr_int32_t
+    tm_isdst: apr_int32_t
+    tm_gmtoff: apr_int32_t
 
 declare fn apr_time_now as (): apr_time_t
 declare fn apr_time_ansi_put as (result: @apr_time_t, input: time_t): apr_status_t

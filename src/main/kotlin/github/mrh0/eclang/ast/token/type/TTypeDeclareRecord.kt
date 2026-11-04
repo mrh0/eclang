@@ -1,26 +1,32 @@
 package github.mrh0.eclang.ast.token.type
 
-import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
+import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRPass
-import github.mrh0.eclang.ir.IRType
-import github.mrh0.eclang.ir.data.record.IRRecord
-import github.mrh0.eclang.types.BuiltInTypes
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeRecord
+import github.mrh0.ect2.Type
+import github.mrh0.ect2.Types
 
-class TTypeDeclareRecord(location: Loc, val name: String, val names: List<String>, val types: List<ITok>, val extending: String?, val externalName: String?) : Tok(location) {
-    override fun toString(): String {
-        return "TDeclareRecord(${names.mapIndexed { index, it -> it to types[index] }})"
+/** `declare rec, a record defined in C (fields optional)`. eclang never emits its definition. */
+class TTypeDeclareRecord(location: Loc, val name: String, val names: List<String>, val types: List<ITok>, val extending: String?, val externalName: String?) : Tok(location), ITypeDeclaration {
+    override val parentName: String? get() = null
+
+    override fun declareType(cd: CompileData) {
+        checkNewTypeName(cd, location, name)
+        cd.types.record(cd.module.name, name, null, externalName, isExternal = true, isCStruct = false)
     }
 
-    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        val pairs = names.mapIndexed { index, it -> it to types[index].process(cd, hint) }
-        val type = EcTypeRecord(name, pairs.map { it.first to it.second.first }, extending, externalName)
-        BuiltInTypes.defineType(location, cd.namespace, name, type)
-        return type to IRPass(location, "declare rec $externalName as $name")
+    override fun defineType(cd: CompileData) = defineFields(cd, location, declared(cd, location, name), names, types)
+
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        declareType(cd)
+        defineType(cd)
+        return Types.None to IRPass(location, null)
+    }
+
+    override fun toString(): String {
+        return "TTypeDeclareRecord($name)"
     }
 }

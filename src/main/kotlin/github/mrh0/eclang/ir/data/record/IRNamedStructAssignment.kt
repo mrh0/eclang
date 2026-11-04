@@ -7,7 +7,6 @@ import github.mrh0.eclang.ir.IR
 import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
-import github.mrh0.eclang.types.EcType
 
 class IRNamedStructAssignment(location: Loc, val name: String, val right: IIR) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {

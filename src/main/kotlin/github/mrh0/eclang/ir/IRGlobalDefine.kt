@@ -5,18 +5,31 @@ import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.state.IVar
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRGlobalDefine(location: Loc, private val ivar: IVar, private val expr: IIR) : IR(location) {
-    override fun toString(): String {
-        return "globalDefine($$ivar, $expr)"
-    }
+/**
+ * A global variable. C only allows constant initializers for globals, so `val a = f()` is declared without a
+ * value and set at the start of the program instead ([toCInit], called from the C `main`), in declaration order.
+ */
+open class IRGlobalDefine(location: Loc, private val ivar: IVar, private val expr: IIR, private val volatile: Boolean = false) : IR(location) {
+    private val initializedInMain = !expr.isConstant()
 
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.putStatement("static ")
-        IRType(location, ivar.getType()).toC(sb, c)
-        sb.put(' ')
-        sb.put(ivar.getName())
-        sb.put(" = ")
+        sb.putStatement("static ${if (volatile) "volatile " else ""}${sb.types.cName(ivar.getType())} ${ivar.cName()}")
+        if (!initializedInMain) {
+            sb.put(" = ")
+            expr.toC(sb, c)
+        }
+        sb.endStatement()
+    }
+
+    /** The statement that sets this global at the start of `main`, if its value isn't a C constant. */
+    fun toCInit(sb: CSourceBuilder, c: Context) {
+        if (!initializedInMain) return
+        sb.putStatement("\t${ivar.cName()} = ")
         expr.toC(sb, c)
         sb.endStatement()
+    }
+
+    override fun toString(): String {
+        return "IRGlobalDefine(${ivar.getName()}, $expr)"
     }
 }

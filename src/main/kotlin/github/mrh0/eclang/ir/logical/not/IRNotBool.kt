@@ -9,7 +9,7 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 class IRNotBool(location: Loc, val expr: IIR) : IR(location) {
     override fun toString() = "(!b $expr)"
 
-    override fun deterministic() = expr.deterministic()
+    override fun isConstant() = expr.isConstant()
 
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.put("!")

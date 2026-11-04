@@ -9,7 +9,7 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 class IRCast(location: Loc, val type: IIR, val expr: IIR) : IR(location) {
     override fun toString() = "Cast($type, $expr)"
 
-    override fun deterministic() = expr.deterministic()
+    override fun isConstant() = expr.isConstant()
 
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.put('(')

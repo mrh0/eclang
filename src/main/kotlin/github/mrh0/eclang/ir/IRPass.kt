@@ -13,5 +13,5 @@ class IRPass(location: Loc, private val comment: String?) : IR(location) {
         if (comment != null) sb.commentLine(comment)
     }
 
-    override fun deterministic(): Boolean = true
+    override fun isConstant(): Boolean = true
 }

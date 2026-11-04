@@ -6,11 +6,14 @@ import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IR
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRAccessorNamed(location: Loc, val expr: IIR, val name: String) : IR(location) {
-    override fun toString() = "($expr)"
-
+/** `expr.name`, or `expr->name` when [throughPointer]. */
+class IRAccessorNamed(location: Loc, val expr: IIR, val name: String, val throughPointer: Boolean = false) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         expr.toC(sb, c)
-        sb.put(".$name")
+        sb.put(if (throughPointer) "->$name" else ".$name")
+    }
+
+    override fun toString(): String {
+        return "IRAccessorNamed($expr, $name)"
     }
 }

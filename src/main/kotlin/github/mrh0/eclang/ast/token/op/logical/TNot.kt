@@ -1,28 +1,36 @@
 package github.mrh0.eclang.ast.token.op.logical
 
-import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.error.EcOpTypeError
+import github.mrh0.eclang.ast.token.op.Ops
+import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
+import github.mrh0.eclang.ir.IRIs
+import github.mrh0.eclang.ir.data.IRBool
 import github.mrh0.eclang.ir.logical.not.IRNotBool
 import github.mrh0.eclang.ir.logical.not.IRNotInt
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeBool
-import github.mrh0.eclang.types.numbers.signed.EcTypeInt
+import github.mrh0.eclang.ir.logical.notnot.IRNotNotInt
+import github.mrh0.ect2.Type
+import github.mrh0.ect2.Types
+import github.mrh0.ect2.Union
 
+/** `!!x` is true for true, non-zero numbers and non-null values; `!x` is the opposite. */
 class TNot(location: Loc, val expr: ITok) : Tok(location) {
-    override fun toString(): String {
-        return "TNot($expr)"
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        val (t, ir) = cd.usable(location, expr.process(cd, Types.None), "`!`")
+        val set = false
+        return Types.Bool to when {
+            t === Types.Bool -> if (set) ir else IRNotBool(location, ir)
+            Ops.isNumeric(t) -> if (set) IRNotNotInt(location, ir) else IRNotInt(location, ir)
+            t === Types.Null -> IRBool(location, !set)
+            t is Union && t.isNullable -> IRIs(location, ir, t, Types.Null, negated = set)
+            else -> throw EcError(location, "`!` needs a Bool, a number or a nullable value, but got $t.")
+        }
     }
 
-    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        val e = expr.process(cd, hint);
-        return when (e.first) {
-            is EcTypeBool -> Pair(EcTypeBool, IRNotBool(location, e.second))
-            is EcTypeInt -> Pair(EcTypeBool, IRNotInt(location, e.second))
-            else -> throw EcOpTypeError(location, "!", e.first)
-        }
+    override fun toString(): String {
+        return "TNot($expr)"
     }
 }

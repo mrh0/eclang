@@ -12,8 +12,4 @@ class IRNamed(location: Loc, private val name: String) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.put(name)
     }
-
-    override fun deterministic(): Boolean {
-        return super.deterministic()
-    }
 }

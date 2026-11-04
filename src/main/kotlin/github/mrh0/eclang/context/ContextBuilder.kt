@@ -2,11 +2,8 @@ package github.mrh0.eclang.context
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
-import github.mrh0.eclang.error.EcAssignTypeError
-import github.mrh0.eclang.error.EcError
-import github.mrh0.eclang.error.EcNotDefinedError
-import github.mrh0.eclang.types.EcType
 import github.mrh0.eclang.context.state.IVar
+import github.mrh0.ect2.Type
 
 open class ContextBuilder(val contextName: String) {
     val stack: ContextStack = ContextStack()
@@ -15,7 +12,7 @@ open class ContextBuilder(val contextName: String) {
 
     fun defer(location: Loc, tok: ITok) = stack.defer(location, tok)
 
-    fun defer(location: Loc, toks: List<ITok>) = toks.forEach { stack.defer(location, it) } 
+    fun defer(location: Loc, toks: List<ITok>) = toks.forEach { stack.defer(location, it) }
 
     fun getRaw(name: String): IVar? = stack.getRaw(name)
 
@@ -25,7 +22,13 @@ open class ContextBuilder(val contextName: String) {
 
     fun getIndex(location: Loc, name: String): Int = stack.getIndex(location, name)
 
-    fun assign(location: Loc, name: String, type: EcType): IVar = stack.assign(location, name, type)
+    fun narrow(name: String, type: Type) = stack.narrow(name, type)
+
+    fun forget(name: String) = stack.forget(name)
+
+    fun depth() = stack.depth()
+
+    fun deferredSince(depth: Int) = stack.deferredSince(depth)
 
     fun build(): Context {
         return Context(contextName, stack.getVars())
@@ -40,5 +43,6 @@ open class ContextBuilder(val contextName: String) {
     fun getNewDeferred() = stack.getNewDeferred()
 
     fun hasReturned() = stack.hasReturned()
-    fun setReturned() = stack.setReturned()
+    fun setReturned(statically: Boolean = false) = stack.setReturned(statically)
+    fun hasReturnedStatically() = stack.hasReturnedStatically()
 }

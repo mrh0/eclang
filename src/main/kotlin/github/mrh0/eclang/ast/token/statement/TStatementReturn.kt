@@ -1,48 +1,35 @@
 package github.mrh0.eclang.ast.token.statement
 
-import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.context.result.ResultInstance
-import github.mrh0.eclang.context.tuple.TupleInstance
-import github.mrh0.eclang.error.fn.EcReturnTypeError
+import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.Lifetimes
+import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.IRStatementReturn
-import github.mrh0.eclang.ir.IRStatementReturnDefer
-import github.mrh0.eclang.ir.IRType
-import github.mrh0.eclang.ir.data.IRInt
-import github.mrh0.eclang.ir.data.IRNull
-import github.mrh0.eclang.ir.data.record.IRCreateRecord
-import github.mrh0.eclang.ir.data.record.IRNamedStructAssignment
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeResult
+import github.mrh0.eclang.ir.IRBlock
+import github.mrh0.eclang.ir.IRStatement
+import github.mrh0.eclang.ir.data.IRResultValue
+import github.mrh0.ect2.Type
+import github.mrh0.ect2.Types
 
 class TStatementReturn(location: Loc, val next: ITok) : Tok(location) {
-    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        var hint2 = hint
-        if (hint is EcTypeResult) hint2 = hint.returnedType
-        val res = next.process(cd, hint2)
-        if (!hint2.accepts(location, res.first)) throw EcReturnTypeError(location, hint2, res.first)
-        cd.ctx().setReturned()
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        val fn = cd.function ?: throw EcError(location, "`ret` can only be used inside a function.")
+        val res = next.process(cd, fn.returns)
+        val result = fn.throws?.let { cd.types.result(fn.returns, it) }
 
-        var ir = res.second
-        if (hint is EcTypeResult) ir = IRCreateRecord(
-            location,
-            ResultInstance.get(hint.returnedType, hint.throwableType).getId(),
-            listOf(
-                IRInt(location, 0),
-                IRNamedStructAssignment(location, "value", res.second)
-            )
-        )
-
-        if (cd.ctx().getDeferred().isEmpty()) return Pair(res.first, IRStatementReturn(location, ir))
-        return res.first to IRStatementReturnDefer(
-            location,
-            ir,
-            IRType(location, res.first),
-            cd.ctx().getDeferred().map { it.process(cd, hint2).second }
-        )
+        if (fn.returns === Types.None) {
+            if (res.first !== Types.None) throw EcError(location, "Function ${fn.name} returns nothing, but this returns a ${res.first}. Declare the return type, e.g. `fn ${fn.name}(...): ${cd.types.concrete(res.first)}`.")
+            // `ret log(x)` in a function returning nothing: run the call, then return.
+            if (result == null) return Types.None to returnWithDefers(cd, location, res.second, Types.None, hasValue = false)
+            val ret = returnWithDefers(cd, location, IRResultValue(location, result, false, null), result)
+            return Types.None to IRBlock(location, listOf(IRStatement(location, res.second), ret), listOf())
+        }
+        val value = cd.expect(location, res, fn.returns, "return value of '${fn.name}'")
+        Lifetimes.checkReturn(cd, location, next, fn.returns)
+        if (result != null) return Types.None to returnWithDefers(cd, location, IRResultValue(location, result, false, value), result)
+        return Types.None to returnWithDefers(cd, location, value, fn.returns)
     }
 
     override fun toString(): String {

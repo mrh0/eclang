@@ -1,3 +1,7 @@
+use "apr_allocator.h"
+use "core:apr/pools.ec"
+use "core:apr/thread_mutex.ec"
+
 declare val APR_MEMNODE_T_SIZE as Int
 declare val APR_ALLOCATOR_MAX_FREE_UNLIMITED as Int
 

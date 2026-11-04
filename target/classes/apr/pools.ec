@@ -11,7 +11,7 @@ use "core:apr/allocator.ec"
 declare val APR_POOL_DEBUG as Int
 // #define 	APR_POOL__FILE_LINE__   __FILE__ ":" APR_STRINGIFY(__LINE__)
 
-declare rec apr_pool_t
+// apr_pool_t is built in: `Pool` is `@apr_pool_t`.
 declare type apr_abortfunc_t as (retcode: Int) => Int
 
 declare fn apr_pool_initialize as (): apr_status_t
@@ -26,7 +26,7 @@ declare fn apr_pool_create as (newpool: @@apr_pool_t, parent: @apr_pool_t): apr_
 declare fn apr_pool_create_core as (newpool: @@apr_pool_t): apr_status_t
 declare fn apr_pool_create_unmanaged as (newpool: @@apr_pool_t): apr_status_t
 declare fn apr_pool_allocator_get as (pool: @apr_pool_t): @apr_allocator_t
-declare fn apr_pool_clear as (p: @apr_pool_t):
+declare fn apr_pool_clear as (p: @apr_pool_t)
 declare fn apr_pool_clear_debug as (p: @apr_pool_t, file_line: CString)
 declare fn apr_pool_destroy as (p: @apr_pool_t)
 declare fn apr_pool_destroy_debug as (p: @apr_pool_t, file_line: CString)
@@ -36,7 +36,7 @@ declare fn apr_pcalloc as (p: @apr_pool_t, size: apr_size_t): @Any
 declare fn apr_pcalloc_debug as (p: @apr_pool_t, size: apr_size_t, file_line: CString): @Any
 declare fn apr_pool_abort_set as (abortfunc: apr_abortfunc_t, pool: @apr_pool_t)
 declare fn apr_pool_abort_get as (pool: @apr_pool_t): apr_abortfunc_t
-declare fn apr_pool_parent_get as (pool: @apr_pool_t): @apr_pool_t
+declare fn apr_pool_parent_get as (pool: @apr_pool_t): @apr_pool_t?
 declare fn apr_pool_is_ancestor as (a: @apr_pool_t, b: @apr_pool_t): Int
 declare fn apr_pool_tag as (pool: @apr_pool_t, tag: CString)
 declare fn apr_pool_userdata_set as (data: @Any, key: CString, cleanup: fn (@Any): apr_status_t, pool: @apr_pool_t): apr_status_t
@@ -49,7 +49,6 @@ declare fn apr_pool_child_cleanup_set as (p: @apr_pool_t, data: @Any, plain_clea
 declare fn apr_pool_cleanup_run as (p: @apr_pool_t, data: @Any, cleanup: fn (@Any): apr_status_t): apr_status_t
 declare fn apr_pool_cleanup_null as (data: @Any): apr_status_t
 declare fn apr_pool_cleanup_for_exec as ()
+// Do nothing unless APR is built with APR_POOL_DEBUG (apr_pool_find and apr_pool_num_bytes exist only then).
 declare fn apr_pool_join as (p: @apr_pool_t, sub: @apr_pool_t)
-declare fn apr_pool_find as (mem: @Any): @apr_pool_t
-declare fn apr_pool_num_bytes as (p: @apr_pool_t, recurse: Int): apr_size_t
 declare fn apr_pool_lock as (pool: @apr_pool_t, flag: Int)

@@ -2,12 +2,12 @@ module "fib"
 
 use "core:lib.ec"
 
-val a = 0i
-val b = 1i
-
 fn main(): Int do
-	for var i in 0 to 100 do
-		a = b
-		b = a + b
-		log(a)
-	ret 0
+    var a = 0i
+    var b = 1i
+    for i in 0..<40 do
+        log(a)
+        val next = a + b
+        a = b
+        b = next
+    ret 0

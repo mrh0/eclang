@@ -10,22 +10,21 @@ use "core:apr/proc_mutex.ec"
 use "core:apr/time.ec"
 use "core:apr/dso.ec"
 use "core:apr/shm.ec"
-use "dirent.ec"
-use "fcntl.ec"
-use "pthread.ec"
+use "dirent.h"
+use "fcntl.h"
+use "pthread.h"
 
-declare type apr_os_global_mutex_t as apr_os_proc_mutex_t
-declare type apr_os_global_mutex_get as apr_os_proc_mutex_get
-
+// Native OS types, opaque here: only passed around, with their C names (DIR, pthread_t, struct tm, ...).
+declare rec apr_os_global_mutex_t
 declare type apr_os_file_t as Int
-declare type apr_os_dir_t as DIR
+declare rec apr_os_dir_t
 declare type apr_os_sock_t as Int
 declare rec apr_os_proc_mutex_t
-declare type apr_os_thread_t as pthread_t
-declare type apr_os_threadkey_t as pthread_key_t
-declare type apr_os_proc_t as pid_t
-declare type apr_os_imp_time_t as timeval
-declare type apr_os_exp_time_t as tm
+declare rec apr_os_thread_t
+declare rec apr_os_threadkey_t
+declare type apr_os_proc_t as Int
+declare rec apr_os_imp_time_t
+declare rec apr_os_exp_time_t
 declare type apr_os_dso_handle_t as @Any
 declare type apr_os_shm_t as @Any
 declare rec apr_os_sock_info_t
@@ -33,6 +32,7 @@ declare rec apr_os_sock_info_t
 declare fn apr_os_file_get as (thefile: @apr_os_file_t, file: @apr_file_t): apr_status_t
 declare fn apr_os_dir_get as (thedir: @@apr_os_dir_t, dir: @apr_dir_t): apr_status_t
 declare fn apr_os_sock_get as (thesock: @apr_os_sock_t, sock: @apr_socket_t): apr_status_t
+declare fn apr_os_global_mutex_get as (ospmutex: @apr_os_global_mutex_t, pmutex: @apr_global_mutex_t): apr_status_t
 declare fn apr_os_proc_mutex_get as (ospmutex: @apr_os_proc_mutex_t, pmutex: @apr_proc_mutex_t): apr_status_t
 declare fn apr_os_exp_time_get as (ostime: @@apr_os_exp_time_t, aprtime: @apr_time_exp_t): apr_status_t
 declare fn apr_os_imp_time_get as (ostime: @@apr_os_imp_time_t, aprtime: @apr_time_t): apr_status_t

@@ -7,9 +7,10 @@ import github.mrh0.eclang.ir.IR
 import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
-import github.mrh0.eclang.types.EcType
 
 class IRCreateCArray(location: Loc, val type: IRType, val entries: List<IIR>) : IR(location) {
+    override fun isConstant() = entries.all { it.isConstant() }
+
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.put('(')
         type.toC(sb, c)

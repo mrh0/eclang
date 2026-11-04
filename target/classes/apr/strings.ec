@@ -1,9 +1,8 @@
 use "apr_strings.h"
-use "core:apr.ec"
-use "core:apr_errno.ec"
-use "core:apr_pools.ec"
-use "core:apr_want.ec"
-use "core:stdarg.ec"
+use "core:apr/apr.ec"
+use "core:apr/errno.ec"
+use "core:apr/pools.ec"
+use "core:apr/want.ec"
 
 declare fn apr_strnatcmp as (a: CString, b: CString): Int
 declare fn apr_strnatcasecmp as (a: CString, b: CString): Int
@@ -18,7 +17,8 @@ declare fn apr_psprintf as (p: @apr_pool_t, fmt: CString, ...): CString
 declare fn apr_cpystrn as (dst: CString, src: CString, dst_size: apr_size_t): CString
 declare fn apr_collapse_spaces as (dest: CString, src: CString): CString
 declare fn apr_tokenize_to_argv as (arg_str: CString, argv_out: @@CString, token_context: @apr_pool_t): apr_status_t
-declare fn apr_strtok as (str: CString, sep: CString, last: @CString): CString
+// str is null after the first call; returns null when there are no more tokens.
+declare fn apr_strtok as (str: CString?, sep: CString, last: @CString): CString?
 declare fn apr_itoa as (p: @apr_pool_t, n: Int): CString
 declare fn apr_ltoa as (p: @apr_pool_t, n: Long): CString
 declare fn apr_off_t_toa as (p: @apr_pool_t, n: apr_off_t): CString

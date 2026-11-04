@@ -1,74 +1,27 @@
 package github.mrh0.eclang.context
 
-import github.mrh0.eclang.ast.Loc
-import github.mrh0.eclang.context.fn2.FunctionTemplate
-import github.mrh0.eclang.context.fn2.OverrideTemplate
-import github.mrh0.eclang.context.state.Constant
-import github.mrh0.eclang.context.state.IVar
-import github.mrh0.eclang.error.EcNameCollisionError
-import github.mrh0.eclang.error.fn.EcFunctionNotDefinedError
-import github.mrh0.eclang.error.fn.EcNoMatchingCallSignatureError
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeCallSignature
-import github.mrh0.eclang.types.EcTypeFunctionReference
-import github.mrh0.eclang.util.Util
+/**
+ * A namespace. Each file belongs to the module it names with `module "name"`, or to the top level ([name] "")
+ * when it names none. Code sees its own module's names and the top level's; other modules' names are written
+ * qualified, `name.member`.
+ */
+class Module(val name: String) {
+    /** The module's global variables and constants. */
+    val globals = ContextBuilder("__globals_$name")
 
-class Module private constructor(val namespace: String) {
+    val isTopLevel get() = name.isEmpty()
+
+    /** The C name of a definition called [member] in this module: `fib__add` in module fib, `add` at the top level. */
+    fun cName(member: String) = if (isTopLevel) member else "${name}__$member"
+
+    override fun toString() = if (isTopLevel) "the top level" else "module '$name'"
+
     companion object {
-        val globalModules = mutableMapOf<String, Module>()
-        val nameCollisionSet = mutableSetOf<String>()
-
-        fun getModules() = globalModules
-        fun get(namespace: String) = globalModules.getOrPut(namespace) { Module(namespace) }
-    }
-
-    private val functions = mutableMapOf<String, FunctionTemplate>()
-    val vars: MutableList<IVar> = mutableListOf()
-
-    fun checkCollision(location: Loc, sourceName: String) {
-        if (nameCollisionSet.contains(sourceName)) {
-            throw EcNameCollisionError(location, sourceName)
+        /** Why [name] can't name a module, or null when it can. */
+        fun problem(name: String): String? = when {
+            !Regex("[a-zA-Z][a-zA-Z0-9_]*").matches(name) -> "a module name must start with a letter and contain only letters, digits and _"
+            "__" in name -> "a module name can't contain `__` (it separates the module from the name in C)"
+            else -> null
         }
     }
-
-    fun defineModuleVar(location: Loc, variable: IVar): IVar {
-        checkCollision(location ,getModuleVarSourceName(variable))
-        vars.add(variable)
-        return variable
-    }
-
-    fun addOverride(identifier: String, override: OverrideTemplate) {
-        checkCollision(override.location ,override.sourceName)
-        nameCollisionSet.add(override.sourceName)
-        val template = functions.getOrPut(identifier) {
-            val template = FunctionTemplate(override.location, namespace, identifier)
-            defineModuleVar(
-                override.location,
-                Constant(identifier, EcTypeFunctionReference.of(template))
-            )
-            template
-        }
-        template.insert(override)
-    }
-
-    fun getOverride(location: Loc, identifier: String, arguments: Array<EcType>): OverrideTemplate {
-        val template = functions.getOrElse(Util.testIdentifier(location, identifier)) {
-            throw EcFunctionNotDefinedError(location, identifier, namespace)
-        }
-        return template.get(location, arguments) ?: throw EcNoMatchingCallSignatureError(
-            location,
-            identifier,
-            arguments
-        )
-    }
-
-    override fun toString(): String {
-        return functions.toString()
-    }
-
-    fun getNextOverrideId(location: Loc, identifier: String): Int {
-        return functions.getOrElse(identifier) { return 0 }.getOverrideCount()
-    }
-
-    fun getModuleVarSourceName(variable: IVar) = "${namespace}__${variable.getName()}"
 }

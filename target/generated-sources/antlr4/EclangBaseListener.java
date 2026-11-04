@@ -136,30 +136,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterUnOp(EclangParser.UnOpContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitUnOp(EclangParser.UnOpContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterBinOp(EclangParser.BinOpContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitBinOp(EclangParser.BinOpContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterExprAsUnsafe(EclangParser.ExprAsUnsafeContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -184,18 +160,6 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExprCastNotNull(EclangParser.ExprCastNotNullContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExprCastNotNull(EclangParser.ExprCastNotNullContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterExprAccessNameNullishCoalescing(EclangParser.ExprAccessNameNullishCoalescingContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -203,6 +167,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprAccessNameNullishCoalescing(EclangParser.ExprAccessNameNullishCoalescingContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprCastNotNull(EclangParser.ExprCastNotNullContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprCastNotNull(EclangParser.ExprCastNotNullContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -256,6 +232,30 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterExprInlineIfOld(EclangParser.ExprInlineIfOldContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprInlineIfOld(EclangParser.ExprInlineIfOldContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprLambda(EclangParser.ExprLambdaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprLambda(EclangParser.ExprLambdaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterExprPipe(EclangParser.ExprPipeContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -287,6 +287,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprAlignOf(EclangParser.ExprAlignOfContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprNew(EclangParser.ExprNewContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprNew(EclangParser.ExprNewContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -472,13 +484,13 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExprUnOp(EclangParser.ExprUnOpContext ctx) { }
+	@Override public void enterExprTry(EclangParser.ExprTryContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitExprUnOp(EclangParser.ExprUnOpContext ctx) { }
+	@Override public void exitExprTry(EclangParser.ExprTryContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -503,6 +515,30 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprCreateRecordNamed(EclangParser.ExprCreateRecordNamedContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprUnOp(EclangParser.ExprUnOpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprUnOp(EclangParser.ExprUnOpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterLambdaParameter(EclangParser.LambdaParameterContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLambdaParameter(EclangParser.LambdaParameterContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -880,6 +916,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterStatementDeclareVar(EclangParser.StatementDeclareVarContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementDeclareVar(EclangParser.StatementDeclareVarContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterStatementAssignment(EclangParser.StatementAssignmentContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -1108,6 +1156,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterStatementPool(EclangParser.StatementPoolContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementPool(EclangParser.StatementPoolContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterStatementTry(EclangParser.StatementTryContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -1240,6 +1300,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterGlobalConstant(EclangParser.GlobalConstantContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalConstant(EclangParser.GlobalConstantContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterGlobalDeclareDefine(EclangParser.GlobalDeclareDefineContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -1271,6 +1343,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitGlobalTypeDefine(EclangParser.GlobalTypeDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterGlobalEnumDeclare(EclangParser.GlobalEnumDeclareContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalEnumDeclare(EclangParser.GlobalEnumDeclareContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -1348,6 +1432,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterGlobalInterfaceDefine(EclangParser.GlobalInterfaceDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGlobalInterfaceDefine(EclangParser.GlobalInterfaceDefineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterGlobalNamespace(EclangParser.GlobalNamespaceContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -1367,6 +1463,18 @@ public class EclangBaseListener implements EclangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitUse(EclangParser.UseContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterInterpolation(EclangParser.InterpolationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitInterpolation(EclangParser.InterpolationContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -9,7 +9,7 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 class IRMul(location: Loc, val left: IIR, val right: IIR) : IR(location) {
     override fun toString() = "($left * $right)"
 
-    override fun deterministic() = left.deterministic() && right.deterministic()
+    override fun isConstant() = left.isConstant() && right.isConstant()
 
     override fun toC(sb: CSourceBuilder, c: Context) {
         left.toC(sb, c)

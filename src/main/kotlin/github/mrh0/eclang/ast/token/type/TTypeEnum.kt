@@ -1,26 +1,22 @@
 package github.mrh0.eclang.ast.token.type
 
-import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
+import github.mrh0.eclang.context.CompileData
+
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRType
-import github.mrh0.eclang.types.BuiltInTypes
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeEnum
-import github.mrh0.eclang.types.EcTypeUnion
+import github.mrh0.ect2.*
 
+/** `A & B`: old spelling of a union of atoms (`:a & :b`); same as `A | B`. */
 class TTypeEnum(location: Loc, val primitives: List<ITok>) : Tok(location) {
-    override fun toString() = "#Enum($primitives)"
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        val type: Type = cd.types.union(primitives.map { it.process(cd, Types.None).first })
+        return type to IRType(location, type)
+    }
 
-    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        val set = mutableSetOf<EcType>()
-        val processedTypes = primitives.map { it.process(cd, hint).first }
-        processedTypes.forEach {
-            if (it is EcTypeEnum) set.addAll(it.expand()) else set.add(it)
-        }
-        val enum = EcTypeEnum.of(set)
-        return enum to IRType(location, enum)
+    override fun toString(): String {
+        return "TTypeEnum"
     }
 }

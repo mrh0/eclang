@@ -7,5 +7,6 @@ interface IIR {
     fun toC(sb: CSourceBuilder, c: Context)
     fun toCPre(sb: CSourceBuilder, c: Context)
     fun toCPost(sb: CSourceBuilder, c: Context)
-    fun deterministic() = false
+    /** True for a C constant expression, which can initialize a global (`static int x = 1 << 2;`). */
+    fun isConstant() = false
 }

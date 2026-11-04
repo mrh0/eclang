@@ -1,5 +1,4 @@
-use "apr.h"
-use "global_mutex.h"
+use "apr_global_mutex.h"
 use "core:apr/proc_mutex.ec"
 use "core:apr/pools.ec"
 use "core:apr/errno.ec"

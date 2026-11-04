@@ -1,25 +1,93 @@
 package github.mrh0.eclang.ast.token.statement
 
-import github.mrh0.eclang.util.Util.testIdentifier
-import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.ast.IAssignable
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.Place
 import github.mrh0.eclang.ast.Tok
+import github.mrh0.eclang.ast.unnested
+import github.mrh0.eclang.ast.token.TNamed
+import github.mrh0.eclang.ast.token.op.Ops
+import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.Lifetimes
+import github.mrh0.eclang.ast.token.accessor.TAccessor
+import github.mrh0.eclang.ast.token.accessor.TAccessorNamed
+import github.mrh0.eclang.ast.token.op.TReadPointer
+import github.mrh0.eclang.context.state.NarrowedVar
 import github.mrh0.eclang.error.EcAssignConstError
+import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
+import github.mrh0.eclang.ir.IRNamed
 import github.mrh0.eclang.ir.IRStatementAssign
-import github.mrh0.eclang.types.EcType
+import github.mrh0.eclang.util.Util.testIdentifier
+import github.mrh0.ect2.IntLiteral
+import github.mrh0.ect2.Prim
+import github.mrh0.ect2.Type
+import github.mrh0.ect2.Types
 
-class TStatementAssign(location: Loc, private val varName: String, private val expr: ITok) : Tok(location) {
-    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        val fixedName = testIdentifier(location, varName)
-        val ir = expr.process(cd, hint)
-        val ivar = cd.ctx().assign(location, fixedName, ir.first)
-        if (!ivar.canAssign()) throw EcAssignConstError(location, varName)
-        return Pair(ir.first, IRStatementAssign(location, ivar, ir.second))
+/**
+ * `target = value`, or `target op= value` with [op] one of `+ - * / % & | ^ << >>` (empty for a plain `=`). The
+ * target is a variable, a field (`p.x`), an element (`a[i]`) or what a pointer points to (`@p`).
+ */
+class TStatementAssign(location: Loc, private val target: ITok, private val op: String, private val expr: ITok) : Tok(location) {
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        val place = when (val t = target.unnested()) {
+            is TNamed -> variable(cd, t.name, narrowed = op.isNotEmpty())
+            is IAssignable -> t.place(cd).also { p -> p.readOnly?.let { throw EcError(location, it) } }
+            else -> throw EcError(location, "Can't assign to this expression. You can assign to a variable (`x = 1`), a field (`p.x = 1`), an element (`a[i] = 1`) or what a pointer points to (`@p = 1`).")
+        }
+        val value = if (op.isEmpty()) cd.expect(location, expr.process(cd, place.type), place.type, "assignment to ${describe()}")
+            else compound(cd, place.type)
+        if (op.isEmpty()) Lifetimes.assign(cd, location, target, expr, place.type, describe())
+        place.name?.let { cd.ctx().forget(it) }
+        return Types.None to IRStatementAssign(location, place.ir, op, value)
+    }
+
+    /**
+     * The variable [name] as a whole. A plain assignment ends any narrowing, so it takes the declared type; with
+     * [narrowed] (`x += 1` inside `if x != null`) the value keeps its narrowed type, which stays true.
+     */
+    private fun variable(cd: CompileData, name: String, narrowed: Boolean): Place {
+        if (TNamed.isCurrentPool(cd, name)) throw EcError(location, TNamed(location, name).place(cd).readOnly!!)
+        val fixedName = testIdentifier(location, name)
+        val found = cd.getVar(location, fixedName)
+        val ivar = (found as? NarrowedVar)?.base ?: found
+        if (!ivar.canAssign()) throw EcAssignConstError(location, name, ivar.kind())
+        if (narrowed && found is NarrowedVar) return Place(found.getType(), found.toIR(location, cd, Types.None))
+        return Place(ivar.getType(), IRNamed(location, ivar.cName()), null, fixedName)
+    }
+
+    /** The value of `target op= value`, converted to the target's type [t]. */
+    private fun compound(cd: CompileData, t: Type): IIR {
+        val what = "`$op=`"
+        val v = cd.usable(location, expr.process(cd, t), "right side of $what")
+        if (op == "+" && t === Types.String)
+            throw EcError(location, "Joining Strings needs memory, so `+=` can't do it. Write `s = concat(s, other)` (or `s = \"\${s}\${other}\"`), which allocates in the current pool.")
+        val integerOnly = op in setOf("%", "&", "|", "^", "<<", ">>")
+        if (!Ops.isNumeric(t) || !Ops.isNumeric(v.first) || (integerOnly && (!Ops.isInteger(t) || !Ops.isInteger(v.first)))) {
+            val hint = if (t === Types.Bool && op in setOf("&", "|", "^")) " For Bools write `x = x ${mapOf("&" to "and", "|" to "or", "^" to "xor")[op]} y`." else ""
+            throw EcError(location, "$what needs ${if (integerOnly) "whole numbers" else "numbers"}, but ${describe()} is a $t and the value is a ${v.first}.$hint")
+        }
+        val literal = (v.first as? IntLiteral)?.value
+        if ((op == "/" || op == "%") && literal == 0L) throw EcError(location, "$what by zero: a division by zero has no result.")
+        if (op == "<<" || op == ">>") {
+            if (literal != null && literal < 0) throw EcError(location, "Can't shift by a negative number of bits ($literal).")
+            val bits = (t as Prim).bits
+            if (literal != null && literal >= bits) throw EcError(location, "Can't shift a $t by $literal bits: it only has $bits.")
+            return cd.expect(location, v, cd.types.concrete(v.first), "right side of $what")
+        }
+        return cd.expect(location, v, t, "right side of $what on ${describe()}")
+    }
+
+    private fun describe(): String = when (val t = target.unnested()) {
+        is TNamed -> "'${t.name}'"
+        is TAccessorNamed -> "field '${t.name}'"
+        is TAccessor -> "this element"
+        is TReadPointer -> "what the pointer points to"
+        else -> "this target"
     }
 
     override fun toString(): String {
-        return "TAssign($expr)"
+        return "TStatementAssign($target $op= $expr)"
     }
 }

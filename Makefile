@@ -11,9 +11,9 @@ build:
 
 compile:
 	java -jar $(JAR_FILE) -c $(FILE)
-	gcc out.c -o out -I/usr/include/apr-1.0 -L/usr/lib -lapr-1
+	gcc out.c -o out -I/usr/include/apr-1.0 -L/usr/lib -lapr-1 -lm
 
 compile-run:
 	java -jar $(JAR_FILE) -c $(FILE)
-	gcc out.c -o out -I/usr/include/apr-1.0 -L/usr/lib -lapr-1
+	gcc out.c -o out -I/usr/include/apr-1.0 -L/usr/lib -lapr-1 -lm
 	./out

@@ -1,27 +1,20 @@
 package github.mrh0.eclang.ast.token.function.call
 
-import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
-import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.ast.token.statement.TStatement
-import github.mrh0.eclang.context.function.GlobalFunctions
-import github.mrh0.eclang.error.fn.EcAmbiguousSignatureError
-import github.mrh0.eclang.error.fn.EcNoMatchingCallSignatureError
+import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRStatement
-import github.mrh0.eclang.ir.function.call.IRArgument
-import github.mrh0.eclang.ir.function.call.IRArguments
-import github.mrh0.eclang.ir.function.call.IRGlobalFunctionCall
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.EcTypeNone
+import github.mrh0.ect2.Result
+import github.mrh0.ect2.Type
+import github.mrh0.ect2.Types
 
-class TStatementCall (location: Loc, name: String, args: List<ITok>) : TExprCall(location, name, args) {
-    override fun toString(): String {
-        return "TStatementCall(${name}, $args)"
-    }
-
-    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        return EcTypeNone to IRStatement(location, super.process(cd, hint).second)
+/** A call used as a statement. Its value is dropped, but an error it can return may not be. */
+class TStatementCall (location: Loc, name: String, args: List<ITok>, isMethod: Boolean = false) : TExprCall(location, name, args, isMethod) {
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        val (type, ir) = super.process(cd, hint)
+        if (type is Result) throw EcError(location, "The error from $name(...) is ignored: ${cd.types.explain(type, cd.types.concrete(type.value))}.")
+        return Types.None to IRStatement(location, ir)
     }
 }

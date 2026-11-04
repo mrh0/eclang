@@ -1,12 +1,14 @@
 package github.mrh0.eclang.ast.token.function
 
-import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
-import github.mrh0.eclang.context.function.FunctionParameter
+import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.function.Parameter
+import github.mrh0.eclang.ir.IIR
+import github.mrh0.ect2.Type
 
 abstract class TParameter(location: Loc, val name: String) : Tok(location) {
-    override fun toString() = "TParameter($name)"
+    abstract fun toFunctionParameter(cd: CompileData): Parameter
 
-    abstract fun toFunctionParameter(cd: CompileData): FunctionParameter
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> = throw NotImplementedError("Parameters are read with toFunctionParameter")
 }

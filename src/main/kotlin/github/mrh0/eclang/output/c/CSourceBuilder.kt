@@ -4,7 +4,7 @@ import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.SourceBuilder
 import java.util.*
 
-class CSourceBuilder : SourceBuilder() {
+class CSourceBuilder(val types: CTypes) : SourceBuilder() {
     val scopeStack: Stack<BlockScope> = Stack()
 
     fun putStatement() {
@@ -40,5 +40,13 @@ class CSourceBuilder : SourceBuilder() {
         put("// ")
         put(comment)
         put("\n")
+    }
+
+    /** Writes [write] into a separate builder (same types and indentation) and returns the text. */
+    fun render(write: (CSourceBuilder) -> Unit): String {
+        val inner = CSourceBuilder(types)
+        scopeStack.forEach { inner.scopeStack.push(it) }
+        write(inner)
+        return inner.toString()
     }
 }

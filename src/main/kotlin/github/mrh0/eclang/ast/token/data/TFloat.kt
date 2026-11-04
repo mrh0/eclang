@@ -1,19 +1,20 @@
 package github.mrh0.eclang.ast.token.data
 
-import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
+import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.ir.IIR
-import github.mrh0.eclang.ir.data.IRFloat
-import github.mrh0.eclang.types.EcType
-import github.mrh0.eclang.types.numbers.EcTypeFloat
+import github.mrh0.eclang.ir.data.IRNumber
+import github.mrh0.ect2.Type
 
-class TFloat(location: Loc, private val value: Float) : Tok(location) {
-    override fun toString(): String {
-        return "${value}f"
+/** A decimal literal; Double unless used where a Float is expected. */
+class TFloat(location: Loc, val value: Double) : Tok(location) {
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        val type = cd.types.floatLiteral(value)
+        return type to IRNumber(location, value, type)
     }
 
-    override fun process(cd: CompileData, hint: EcType): Pair<EcType, IIR> {
-        return EcTypeFloat to IRFloat(location, value)
+    override fun toString(): String {
+        return "TFloat($value)"
     }
 }

@@ -1,23 +1,11 @@
 package github.mrh0.eclang.ir
 
 import github.mrh0.eclang.ast.Loc
-import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.context.state.IVar
-import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRGlobalDefineConst(location: Loc, private val ivar: IVar, private val expr: IIR) : IR(location) {
+/** A global `val`: C-wise the same as a global variable (eclang checks that it isn't assigned). */
+class IRGlobalDefineConst(location: Loc, private val ivar: IVar, expr: IIR) : IRGlobalDefine(location, ivar, expr) {
     override fun toString(): String {
-        return "globalDefine($$ivar, $expr)"
-    }
-
-    override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.putStatement("static ")
-        sb.put("const ")
-        IRType(location, ivar.getType()).toC(sb, c)
-        sb.put(' ')
-        sb.put(ivar.getName())
-        sb.put(" = ")
-        expr.toC(sb, c)
-        sb.endStatement()
+        return "IRGlobalDefineConst(${ivar.getName()})"
     }
 }

@@ -1,3 +1,6 @@
+use "apr_dso.h"
+use "core:apr/pools.ec"
+
 declare rec apr_dso_handle_t
 declare type apr_dso_handle_sym_t as @Any
 

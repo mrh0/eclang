@@ -9,8 +9,6 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 class IRReadPointer(location: Loc, val expr: IIR) : IR(location) {
     override fun toString() = "(@ $expr)"
 
-    override fun deterministic() = expr.deterministic()
-
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.put('*')
         expr.toC(sb, c)
