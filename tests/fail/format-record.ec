@@ -1,13 +1,13 @@
-// error: Can't put a Point into a String with `${...}`. Put its fields in instead, e.g. `${p.x}`.
-use "core:apr/pools.ec"
-
+// error: Can't put a Point? into a String with `${...}`. It may be null: check it first, or write `${x ?? default}`.
 rec Point as
     x: Int
     y: Int
 
+fn find(found: Bool): Point? do
+    ret null if !found
+    ret Point { 1, 2 }
+
 fn main(): Int do
-    var pool: @apr_pool_t? = null
-    ret 1 if apr_pool_create_core(addrof(pool!)) != APR_SUCCESS
-    val p = Point { x = 1, y = 2 }
-    val s = format(pool!, "p is ${p}")
+    val p = find(true)
+    val s = "p is ${p}"
     ret 0

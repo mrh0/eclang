@@ -72,7 +72,32 @@ declare val APR_FILEPATH_ENCODING_UTF8 as Int
 declare rec apr_dir_t
 declare type apr_fileperms_t as apr_int32_t
 // declare type apr_dev_t as dev_t
-declare rec apr_finfo_t
+// Information about a file (apr_stat, apr_dir_read). `valid` says which fields were filled in (APR_FINFO_*).
+// Only these fields of the C struct are declared; filetype is one of the APR_* file types below. fname and name
+// are `const char*` in C: read them with `!as CString?`, so the C compiler doesn't warn about the const.
+declare rec apr_finfo_t as
+    valid: apr_int32_t
+    protection: apr_fileperms_t
+    filetype: Int
+    nlink: apr_int32_t
+    size: apr_off_t
+    csize: apr_off_t
+    atime: apr_time_t
+    mtime: apr_time_t
+    ctime: apr_time_t
+    fname: CString?
+    name: CString?
+
+// apr_filetype_e, as Ints (a struct field isn't converted to atoms).
+declare val APR_NOFILE as Int
+declare val APR_REG as Int
+declare val APR_DIR as Int
+declare val APR_CHR as Int
+declare val APR_BLK as Int
+declare val APR_PIPE as Int
+declare val APR_LNK as Int
+declare val APR_SOCK as Int
+declare val APR_UNKFILE as Int
 
 declare fn apr_stat as (finfo: @apr_finfo_t, fname: CString, wanted: apr_int32_t, pool: @apr_pool_t): apr_status_t
 declare fn apr_dir_open as (new_dir: @@apr_dir_t, dirname: CString, pool: @apr_pool_t): apr_status_t

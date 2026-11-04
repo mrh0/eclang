@@ -17,3 +17,20 @@ declare val APR_EOF as Int
 declare val APR_NOTFOUND as Int
 
 declare fn apr_strerror as (statcode: apr_status_t, buf: CString, bufsize: apr_size_t): CString
+declare val APR_EACCES as Int
+declare val APR_EBUSY as Int
+declare val APR_ENOTIMPL as Int
+declare val APR_ETIMEDOUT as Int
+
+// The APR_STATUS_IS_* tests (macros): non-zero when a status means that error on any platform.
+declare fn APR_STATUS_IS_ENOENT as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_EEXIST as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_EACCES as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_EINVAL as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_ENOMEM as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_EAGAIN as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_EBUSY as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_EOF as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_TIMEUP as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_ETIMEDOUT as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_ENOTIMPL as (s: apr_status_t): Int

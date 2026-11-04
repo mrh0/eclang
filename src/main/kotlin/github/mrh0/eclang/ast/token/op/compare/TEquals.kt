@@ -13,6 +13,8 @@ import github.mrh0.eclang.ir.compare.equals.IREquals
 import github.mrh0.eclang.ir.compare.equals.IREqualsStringString
 import github.mrh0.eclang.ir.logical.not.IRNotBool
 import github.mrh0.eclang.ir.compare.equals.IREqualsRecord
+import github.mrh0.eclang.ast.token.op.Ops
+import github.mrh0.ect2.Tuple
 import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
@@ -20,13 +22,13 @@ import github.mrh0.ect2.Types
 class TEquals(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val l = left.process(cd, Types.None)
-        val r = right.process(cd, Types.None)
+        val r = right.process(cd, l.first as? Tuple ?: Types.None) // So `t == (1, 2)` works on a `(Long, Long)`
         nullComparison(cd, location, l, r, negated = false)?.let { return it }
         val (kind, a, b) = comparison(cd, location, "==", l, r, equality = true)
         return Types.Bool to when (kind) {
             CompareKind.CSTRING -> IREqualsStringString(location, a, b)
             CompareKind.STRING -> IRRawCall(location, "__ec_str_eq", listOf(a, b)).let { if (false) IRNotBool(location, it) else it }
-            CompareKind.RECORD -> IREqualsRecord(location, a, b, l.first as github.mrh0.ect2.Record, negated = false)
+            CompareKind.RECORD -> IREqualsRecord(location, a, b, Ops.base(l.first), negated = false)
             else -> IREquals(location, a, b)
         }
     }

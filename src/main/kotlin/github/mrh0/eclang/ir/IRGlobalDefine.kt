@@ -12,6 +12,10 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 open class IRGlobalDefine(location: Loc, private val ivar: IVar, private val expr: IIR, private val volatile: Boolean = false) : IR(location) {
     private val initializedInMain = !expr.isConstant()
 
+    /** The C name, and whether it can be left out of the C file when nothing refers to it (a constant value has no effects). */
+    val cName get() = ivar.cName()
+    val removable get() = !initializedInMain
+
     override fun toC(sb: CSourceBuilder, c: Context) {
         sb.putStatement("static ${if (volatile) "volatile " else ""}${sb.types.cName(ivar.getType())} ${ivar.cName()}")
         if (!initializedInMain) {

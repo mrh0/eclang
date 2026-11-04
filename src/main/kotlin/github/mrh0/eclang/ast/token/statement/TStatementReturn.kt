@@ -18,6 +18,12 @@ class TStatementReturn(location: Loc, val next: ITok) : Tok(location) {
         val fn = cd.function ?: throw EcError(location, "`ret` can only be used inside a function.")
         val res = next.process(cd, fn.returns)
         val result = fn.throws?.let { cd.types.result(fn.returns, it) }
+        // `ret panic("...")`: the call never comes back, so nothing is returned (and no deferred statement runs).
+        if (res.first === Types.Never) {
+            cd.ctx().setReturned()
+            return Types.None to IRStatement(location, res.second)
+        }
+        if (fn.returns === Types.Never) throw EcError(location, "Function ${fn.name} is declared `Never`: it never returns, so it can't `ret`. End it with something that doesn't come back, such as `exit(1)`, or give it another return type.")
 
         if (fn.returns === Types.None) {
             if (res.first !== Types.None) throw EcError(location, "Function ${fn.name} returns nothing, but this returns a ${res.first}. Declare the return type, e.g. `fn ${fn.name}(...): ${cd.types.concrete(res.first)}`.")

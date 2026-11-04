@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // `?.` reads a field of a value that may be null; the result is null when the value is.
 
@@ -9,9 +9,9 @@ rec Node as
 
 fn show(n: Int?) do
     if n != null do
-        log(n)
+        io.log(n)
     else do
-        log("null"c)
+        io.log("null"c)
 
 fn main(): Int do
     var last = Node { value = 3, name = "three"c, next = null }
@@ -21,8 +21,8 @@ fn main(): Int do
 
     show(head?.value)
     show(none?.value)
-    log(head?.name ?? "?"c)
-    log(none?.name ?? "?"c)
+    io.log(head?.name ?? "?"c)
+    io.log(none?.name ?? "?"c)
 
     // Chains stop at the first null.
     show(head?.next?.value)

@@ -24,7 +24,7 @@ import github.mrh0.ect2.Types
  * rewrites `x |> f(2)` to `f(it, 2)`). A chain `a |> f |> g` is `(a |> f) |> g`. The value is evaluated once: when
  * the stage uses `it` more than once, it goes into a temporary first (unless it is a plain variable or literal).
  */
-class TPipe(location: Loc, private val value: ITok, private val stage: ITok, private val itUses: Int) : Tok(location) {
+class TPipe(location: Loc, val value: ITok, val stage: ITok, private val itUses: Int) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         var v = cd.usable(location, value.process(cd, Types.None), "value before `|>`")
         val simple = value.unnested().let { it is TNamed || it is TInteger || it is TFloat || it is TBoolean || it is TChar }
@@ -56,7 +56,7 @@ class TIt(location: Loc) : Tok(location) {
 }
 
 /** `callee(args)` where callee is any expression of function type, e.g. a lambda as a `|>` stage. */
-class TCallValue(location: Loc, private val callee: ITok, private val args: List<ITok>) : Tok(location) {
+class TCallValue(location: Loc, private val callee: ITok, val args: List<ITok>) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val values = args.mapIndexed { i, a -> cd.usable(location, a.process(cd, Types.None), "argument ${i + 1}") }
         // The arguments' types tell a lambda the types of parameters written without one.

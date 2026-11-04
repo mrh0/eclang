@@ -12,10 +12,16 @@ import github.mrh0.ect2.Union
 
 /** `{ 1, 2 }` or `{ a = 1, b = 2 }`: a record whose type comes from where it is used. */
 class TCreateRecord(location: Loc, val values: List<ITok>, private val names: List<String>? = null) : Tok(location) {
+    /** Whether the last compiled literal used a default value that may point to memory (see Lifetimes). */
+    var usedDefaults = false
+        private set
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val record = hint as? Record ?: (hint as? Union)?.members?.filterIsInstance<Record>()?.singleOrNull()
             ?: throw EcError(location, "Can't tell which record this is. Write its name in front, e.g. `Point { ... }`.")
-        return record to createRecord(cd, location, record, values, names)
+        val (allocates, ir) = createRecord(cd, location, record, values, names)
+        usedDefaults = allocates
+        return record to ir
     }
 
     override fun toString(): String {

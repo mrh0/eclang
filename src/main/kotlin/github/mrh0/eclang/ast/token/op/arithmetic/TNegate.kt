@@ -23,7 +23,7 @@ class TNegate(location: Loc, val expr: ITok) : Tok(location) {
             is FloatLiteral -> cd.types.floatLiteral(-t.value).let { it to IRNumber(location, -t.value, it) }
             else -> {
                 if (!Ops.isNumeric(t)) throw EcError(location, "`-` needs a number, but got $t.")
-                if (t is Prim && t.category == github.mrh0.ect2.Category.UINT) throw EcError(location, "$t can't be negative. Convert it first, e.g. `-(x as Long)`.")
+                if ((Ops.base(t) as? Prim)?.category == github.mrh0.ect2.Category.UINT) throw EcError(location, "$t can't be negative. Convert it first, e.g. `-(x as Long)`.")
                 t to IRNegate(location, e.second)
             }
         }

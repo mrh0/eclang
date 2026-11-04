@@ -9,6 +9,12 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 abstract class TFunc(location: Loc, val name: String, val params: TParameters, val returns: ITok?) : Tok(location) {
+    /** Locals whose address the body takes (`addrof x`), with where; flow typing doesn't narrow them (see `Narrowing`). */
+    var addressTaken: Map<String, Loc> = mapOf()
+
+    /** For `export fn`: the name C calls it by. */
+    var exportName: String? = null
+
     /** The parameters and the declared return type (a Result for `T throws E`). */
     fun processSignature(cd: CompileData): Pair<List<Parameter>, Type> {
         val parameters = params.get().map { it.toFunctionParameter(cd) }

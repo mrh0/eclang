@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 fn describe(name: CString?): CString do
     ret "nobody"c if name == null
@@ -11,7 +11,7 @@ fn length(name: CString?): Int do
     ret 0
 
 fn show(v: Int | CString) do
-    log(v)
+    io.log(v)
 
 fn kind(v: Int | CString | Null): CString do
     if v == null do
@@ -21,33 +21,33 @@ fn kind(v: Int | CString | Null): CString do
     ret "string"c
 
 fn main(): Int do
-    log(describe(null))
-    log(describe("Ada"c))
-    log(length("x"c))
+    io.log(describe(null))
+    io.log(describe("Ada"c))
+    io.log(length("x"c))
     show(5)
     show("five"c)
 
     var u: Int | CString = 42
     if u is Int do
-        log(u + 1)
+        io.log(u + 1)
     u = "now a string"c
     if u is CString do
-        log(u)
+        io.log(u)
 
-    log(kind(null))
-    log(kind(3))
-    log(kind("s"c))
+    io.log(kind(null))
+    io.log(kind(3))
+    io.log(kind("s"c))
 
     val maybe: Int? = 10
     val nothing: Int? = null
-    log(maybe ?? 0)
-    log(nothing ?? -1)
+    io.log(maybe ?? 0)
+    io.log(nothing ?? -1)
     val m2 = maybe ?? 0
-    log(m2 + 1)
-    log(!!maybe)
-    log(!nothing)
+    io.log(m2 + 1)
+    io.log(!!maybe)
+    io.log(!nothing)
     if maybe != null and maybe > 5 do
-        log("big"c)
-    log(maybe!)
-    log(u as CString)
+        io.log("big"c)
+    io.log(maybe!)
+    io.log(u as CString)
     ret 0

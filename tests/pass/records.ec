@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 rec Animal as
     name: CString
@@ -19,7 +19,7 @@ inter Named as
     name: CString
 
 fn greet(who: Named) do
-    log(who.name)
+    io.log(who.name)
 
 fn legs(a: @Animal): Int = a.legs
 
@@ -36,30 +36,30 @@ fn sum(list: @Node?): Int do
 fn main(): Int do
     val tom = Cat { name = "Tom"c, legs = 4, lives = 9 }
     val rex: Dog = { "Rex"c, 4, true }
-    log(tom.name)
-    log(tom.lives)
+    io.log(tom.name)
+    io.log(tom.lives)
     // Interfaces: any record with a `name: CString` field.
     greet(tom)
     greet(rex)
     // A child fits where its parent is expected (by pointer, the C layout is shared).
-    log(legs(addrof tom))
+    io.log(legs(addrof tom))
     var pet: @Animal = addrof tom
     if pet is @Cat do
-        log("pet is a cat"c)
+        io.log("pet is a cat"c)
     if pet is @Dog do
-        log("pet is a dog"c)
+        io.log("pet is a dog"c)
     val cat = pet as @Cat
-    log(cat.lives)
+    io.log(cat.lives)
     // A child copied into a parent keeps the parent's fields.
     val copy: Animal = tom
-    log(copy.name)
+    io.log(copy.name)
     // Generics: one copy of `first` per element type.
-    log(first([3, 2, 1]))
-    log(first(["a"c, "b"c]))
+    io.log(first([3, 2, 1]))
+    io.log(first(["a"c, "b"c]))
     // A linked list with nullable pointers.
     var c = Node { 3, null }
     var b = Node { 2, addrof c }
     var a = Node { 1, addrof b }
-    log(sum(addrof a))
-    log(sum(null))
+    io.log(sum(addrof a))
+    io.log(sum(null))
     ret 0

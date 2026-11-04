@@ -15,7 +15,9 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 /** `while condition do`, optionally with an `else` block that runs when the loop ends without `break`. */
-class TStatementWhile(location: Loc, private val condition: ITok, private val body: ITok, private val elseBody: ITok?, private val assigned: Set<String>) : Tok(location) {
+class TStatementWhile(location: Loc, private val condition: ITok, private val body: ITok, private val elseBody: ITok?, private val assigned: Set<String>) : Tok(location), ILabeledLoop {
+    override var label: String? = null
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         // The condition is checked again after each round, so it can't rely on what the body changes.
         cd.forgetAssigned(location, assigned)
@@ -24,6 +26,7 @@ class TStatementWhile(location: Loc, private val condition: ITok, private val bo
         return Types.None to compileLoop(cd, location, hint, elseBody,
             elseNarrowing = { Narrowing.apply(cd, Narrowing.of(cd, condition, false)) },
             endless = isTrue(condition),
+            label = label,
             compileBody = {
                 cd.ctx().push()
                 Narrowing.apply(cd, Narrowing.of(cd, condition, true))

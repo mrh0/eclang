@@ -1,5 +1,5 @@
 // The type-system examples from README.md (literals, flow typing, records, errors, casts, interfaces, generics).
-use "core:lib.ec"
+use "core:io.ec"
 
 rec Test as
     a: Int
@@ -19,7 +19,7 @@ rec Duck as
     coolness: Int
 
 fn greet(who: Named) do
-    log(who.name)
+    io.log(who.name)
 
 fn greeting(name: CString?): CString do
     ret "Hello, stranger"c if name == null
@@ -54,23 +54,23 @@ fn main(): Int do
     val tom = Cat { name = "Tom"c, lives = 9 }
     var pet: @Animal = addrof tom
     if pet is @Cat do
-        log(pet.lives)
+        io.log(pet.lives)
     val cat = pet as @Cat
-    log(greeting(null))
-    log(describe(null))
-    log(describe(5))
-    log(describe("text"c))
+    io.log(greeting(null))
+    io.log(describe(null))
+    io.log(describe(5))
+    io.log(describe("text"c))
     val result = throwsTest(0) ?? 10
-    log(result)
-    log(twice(3) ?? 0)
+    io.log(result)
+    io.log(twice(3) ?? 0)
     try throwsTest(50) catch error do
-        log(error.message)
+        io.log(error.message)
     try check(-1) catch e do
-        log(e.code)
+        io.log(e.code)
     val intValue: Int = 56
     val longValue: Long = intValue as Long
     val small = longValue as Short
     greet(Duck { "Donald"c, 9 })
-    log(first([7, 8]))
-    log(t3.a)
+    io.log(first([7, 8]))
+    io.log(t3.a)
     ret 0

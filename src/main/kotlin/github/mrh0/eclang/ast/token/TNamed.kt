@@ -5,6 +5,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Place
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.context.state.NarrowedVar
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRRaw
@@ -18,6 +19,7 @@ class TNamed (location: Loc, val name: String) : Tok(location), IAssignable {
         if (isCurrentPool(cd, name)) return cd.types.pool to IRRaw(location, CURRENT_POOL)
         val fixedName = testIdentifier(location, name)
         val v = cd.getVar(location, fixedName)
+        Lifetimes.checkAlive(cd, location, fixedName, name)
         return v.getType() to v.toIR(location, cd, hint)
     }
 
@@ -27,6 +29,7 @@ class TNamed (location: Loc, val name: String) : Tok(location), IAssignable {
             return Place(cd.types.pool, IRRaw(location, CURRENT_POOL), "`pool` is the current pool and can't be assigned. To allocate in another pool for a while, use a `pool do` block; to allocate one value elsewhere, write `new x in p`.")
         val fixedName = testIdentifier(location, name)
         val v = cd.getVar(location, fixedName)
+        Lifetimes.checkAlive(cd, location, fixedName, name)
         val base = (v as? NarrowedVar)?.base ?: v
         val readOnly = when {
             base.canAssign() -> null

@@ -43,6 +43,7 @@ class TOffsetOf(location: Loc, val type: ITok, private val field: String) : Tok(
         val name = testIdentifier(location, field)
         if (t !is Record) throw EcError(location, "`offsetof` needs a record type, but $t has no fields.")
         if (t.field(name) == null) throw EcError(location, "$t has no field '$field'.${CompileData.suggestion(field, t.fields.keys)}")
+        if (name in t.bitWidths) throw EcError(location, "`offsetof` can't give where bit-field '$field' starts: it doesn't start at a whole byte.")
         return Types.Size to IRSizeOf(location, ir, "offsetof", name)
     }
 

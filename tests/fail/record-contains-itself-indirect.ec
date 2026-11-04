@@ -1,5 +1,4 @@
 // error: Record A contains itself (through A.b.a)
-use "core:lib.ec"
 
 rec A as
     x: Int

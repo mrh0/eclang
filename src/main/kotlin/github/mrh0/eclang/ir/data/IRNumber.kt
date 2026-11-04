@@ -14,6 +14,9 @@ class IRNumber(location: Loc, val value: Number, val type: Type) : IRValue(locat
                 val text = value.toString()
                 if (type === Types.Float) "${text}f" else text
             }
+            // C has no negative literals: `-9223372036854775808L` is `-` applied to a number too big for a long.
+            value is Long && value == Long.MIN_VALUE -> "(-9223372036854775807L - 1)"
+            value.toLong() == Int.MIN_VALUE.toLong() && type === Types.Int -> "(-2147483647 - 1)"
             type === Types.ULong || type === Types.Size -> "${value}UL"
             type === Types.UInt -> "${value}U"
             type === Types.Long || value.toLong() !in Int.MIN_VALUE..Int.MAX_VALUE -> "${value}L"

@@ -10,6 +10,8 @@ import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.bitwise.IRBitwise
 import github.mrh0.eclang.ir.data.IRNumber
+import github.mrh0.eclang.ast.token.op.RuntimeChecks
+import github.mrh0.eclang.ir.arithmetic.IRCheckedArith
 import github.mrh0.ect2.IntLiteral
 import github.mrh0.ect2.Prim
 import github.mrh0.ect2.Type
@@ -47,14 +49,17 @@ class TBitwise(location: Loc, private val op: String, private val left: ITok, pr
             if (op == "<<" && (v shr count.toInt()) != lt.value) throw EcError(location, "${lt.value} << $count is too big for a whole number.")
             return cd.types.intLiteral(v) to IRNumber(location, v, cd.types.intLiteral(v))
         }
-        val type = cd.types.concrete(lt) as Prim
+        val shifted = cd.types.concrete(lt)
+        val type = Ops.base(shifted) as Prim
         if (count != null && count >= type.bits)
             throw EcError(location, "Can't shift a $type by $count bits: it only has ${type.bits}. Convert it to a wider type first, e.g. `(x as Long) $op $count`.")
         val countType = cd.types.concrete(rt)
-        val ir = IRBitwise(location, op, cd.expect(location, l, type, "left side of `$op`"), cd.expect(location, r, countType, "right side of `$op`"),
+        if (RuntimeChecks.needed(cd, op, type, rt))
+            return shifted to IRCheckedArith(location, op, type, Ops.base(countType) as Prim, cd.expect(location, l, shifted, "left side of `$op`"), cd.expect(location, r, countType, "right side of `$op`"))
+        val ir = IRBitwise(location, op, cd.expect(location, l, shifted, "left side of `$op`"), cd.expect(location, r, countType, "right side of `$op`"),
             // C computes on at least an int, so a shifted small type is cut back to its own size.
             if (op == "<<" && type.bits < 32) type else null)
-        return type to ir
+        return shifted to ir
     }
 
     override fun toString() = "TBitwise($left $op $right)"

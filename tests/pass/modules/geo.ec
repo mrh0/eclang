@@ -1,5 +1,5 @@
 module "geo"
-use "core:lib.ec"
+use "core:io.ec"
 
 rec Point as
     x: Int
@@ -14,11 +14,22 @@ fn make(x: Int, y: Int): Point do
 
 fn square(v: Int): Int = v * v
 
-fn distance2(a: Point, b: Point): Int = square(a.x - b.x) + square(a.y - b.y)
+// Private to geo: only this module's code can use them.
+priv rec Delta as
+    dx: Int
+    dy: Int
 
-// Adds an overload to the top level's `log`; inside this module both are visible.
+priv val NONE = 0
+
+priv fn delta(a: Point, b: Point): Delta = Delta { a.x - b.x + NONE, a.y - b.y }
+
+fn distance2(a: Point, b: Point): Int do
+    val d = delta(a, b)
+    ret square(d.dx) + square(d.dy)
+
+// geo's own `log`, beside io.log: `geo.log(p)`.
 fn log(p: Point) do
-    log(p.x)
-    log(p.y)
+    io.log(p.x)
+    io.log(p.y)
 
 const UNIT = 100

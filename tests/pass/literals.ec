@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 fn half(x: Int): Int = x / 2
 fn half(x: Double): Double = x / 2
@@ -13,26 +13,26 @@ fn main(): Int do
     val big: Long = 5000000000
     val small: UChar = 255
     val f: Float = 2.5
-    log(c)
-    log(big)
-    log(small)
-    log(f)
+    io.log(c)
+    io.log(big)
+    io.log(small)
+    io.log(f)
     // Arithmetic on literals is computed at compile time, so it can still fit a small type.
     val folded: Char = 60 + 6
-    log(folded)
+    io.log(folded)
     // Overloads: the closest match wins.
-    log(pick(5))
-    log(pick(5l))
-    log(pick(c))
+    io.log(pick(5))
+    io.log(pick(5l))
+    io.log(pick(c))
     val s: Short = 7
-    log(pick(s))
-    log(half(9))
-    log(half(9.0))
+    io.log(pick(s))
+    io.log(half(9))
+    io.log(half(9.0))
     // Mixing: a literal adapts to the other side.
     val sum = c + 1
-    log(sum)
+    io.log(sum)
     val d = 1.5 + 2
-    log(d)
-    log(0xFF)
-    log(1_000_000)
+    io.log(d)
+    io.log(0xFF)
+    io.log(1_000_000)
     ret 0

@@ -1,0 +1,9 @@
+3 coins
+Purse { coin: 3 coins }
+Purse { coin: 3 coins }
+Holder { purse: Purse { coin: 3 coins } }
+shade 1
+Mixed { either: "text", state: :on, maybe: null, action: <fn>, words: ["a", "b"], nested: [[1, 2], [3]], empty: [], held: 5, other: (Point2 { x: 1.5 }, 2.5) }
+Nothing { gone: null }
+Purse { coin: 3 coins }
+3 coins!

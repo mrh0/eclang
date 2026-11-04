@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 use "modules/geo.ec"
 
 // `const`: values known at compile time.
@@ -14,20 +14,20 @@ const RATE = 0.5
 val scaled = geo.UNIT * TWICE
 
 fn main(): Int do
-    log(LIMIT)
-    log(TWICE)
-    log(BIG)
-    log(GREETING)
-    log(READY)
-    log(RATE)
-    log(scaled)
+    io.log(LIMIT)
+    io.log(TWICE)
+    io.log(BIG)
+    io.log(GREETING)
+    io.log(READY)
+    io.log(RATE)
+    io.log(scaled)
 
     // An untyped constant adapts like a literal.
     val c: Char = LIMIT + 55
-    log(c)
+    io.log(c)
     val small: UChar = TWICE
-    log(small)
+    io.log(small)
 
     const LOCAL = TWICE + 1
-    log(LOCAL)
+    io.log(LOCAL)
     ret 0

@@ -15,7 +15,8 @@ import github.mrh0.ect2.*
  * - anything that converts implicitly (`Int as Long`, `Int as Int | CString`);
  * - between any two number types (`Long as Int` may cut the value; that's what `as` is for);
  * - a union to one of its members (`x as Int`), checked at runtime;
- * - a record pointer to a record that extends it (`animal as @Cat`), checked at runtime.
+ * - a record pointer to a record that extends it (`animal as @Cat`), checked at runtime;
+ * - to and from a `distinct` type, from what fits its base (`5 as UserId`, `id as Int`).
  * Anything else needs `!as`, an unchecked C cast.
  */
 class TCast(location: Loc, val expr: ITok, val type: ITok) : Tok(location) {
@@ -24,8 +25,13 @@ class TCast(location: Loc, val expr: ITok, val type: ITok) : Tok(location) {
         val value = cd.usable(location, expr.process(cd, to), "`as`")
         val from = value.first
         val types = cd.types
+        // A number `as` another number type is a C cast even when it only widens: C wouldn't widen by itself in
+        // `(x as ULong) << 40`, `(a as Double) / b` or a C vararg.
+        if (Ops.isNumeric(from) && Ops.isNumeric(to) && to is Prim && from !== to && cd.types.concrete(from) !== to)
+            return to to IRConvert(location, value.second, from, to, IRConvert.Mode.EXPLICIT)
         if (types.accepts(to, from)) return to to cd.expect(location, value, to, "`as`")
         val allowed = (Ops.isNumeric(from) && Ops.isNumeric(to)) ||
+            ((from is Distinct || to is Distinct) && types.accepts(Ops.base(to), Ops.base(from))) ||
             (from is Union && from.members.any { types.accepts(to, it) }) ||
             (from is Pointer && to is Pointer && from.target is Record && to.target is Record &&
                 to.target.distanceTo(from.target) != null)

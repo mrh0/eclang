@@ -1,5 +1,4 @@
 // error: The name of record 'FILE' is already used by C
-use "core:lib.ec"
 
 rec FILE as
     handle: Int

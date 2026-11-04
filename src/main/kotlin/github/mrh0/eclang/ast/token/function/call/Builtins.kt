@@ -5,15 +5,19 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.token.data.TInterpolated
 import github.mrh0.eclang.ast.token.data.TString
+import github.mrh0.eclang.ast.token.op.equalityProblem
 import github.mrh0.eclang.ast.token.statement.TStatementPool
 import github.mrh0.eclang.ast.unnested
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRRaw
 import github.mrh0.eclang.ir.IRRawCall
 import github.mrh0.eclang.ir.data.IRClone
 import github.mrh0.eclang.ir.data.IRFormat
+import github.mrh0.eclang.ir.data.IRHash
+import github.mrh0.eclang.ir.data.IRShow
 import github.mrh0.eclang.util.StringLiteral
 import github.mrh0.eclang.util.Util
 import github.mrh0.ect2.*
@@ -24,11 +28,13 @@ import github.mrh0.ect2.*
  * - `format("x is ${x}")`: the interpolated String (a String literal with `${...}` on its own does the same);
  * - `concat(a, b, ...)`: the Strings joined;
  * - `clone(x)`: a deep copy of x (see CTypes.clone);
+ * - `hash(x)`: a hash of x that fits `==` (see CTypes.hash), also when other `hash` functions exist but none takes x;
  * - `newPool()`: a new pool, a child of the current one (or of the given parent); `clearPool(p)` frees everything
- *   in p, `freePool(p)` frees p itself.
+ *   in p, `freePool(p)` frees p itself;
+ * - `cstr(s)`: a copy of the String s that ends with a 0 byte, as a CString for C functions.
  */
 internal object Builtins {
-    private val names = setOf("format", "concat", "clone", "newPool", "clearPool", "freePool")
+    private val names = setOf("format", "concat", "clone", "hash", "newPool", "clearPool", "freePool", "cstr")
 
     fun has(name: String) = name in names
 
@@ -71,6 +77,23 @@ internal object Builtins {
                 val into = if (args.size == 2) pool(cd, location, "`$name`", arg(1)) else current(location)
                 type to IRClone(location, type, cd.expect(location, value, type, "`clone`"), into)
             }
+            "hash" -> {
+                if (args.size != 1) throw EcError(location, "`hash` takes the value to hash: `hash(x)`.")
+                val value = cd.usable(location, arg(0), "`hash`")
+                val type = cd.storable(location, value.first, "`hash`")
+                equalityProblem(type)?.let { throw EcError(location, "`hash` can't be generated for a $type, because `==` can't compare it: $it. Define one yourself: `fn hash(x: $type): ULong`.") }
+                Types.ULong to IRHash(location, type, cd.expect(location, value, type, "`hash`"))
+            }
+            "cstr" -> {
+                val explicit = args.size == 2
+                if (args.size !in 1..2 || (explicit && !isPoolArg(0)))
+                    throw EcError(location, "`cstr` takes a String, and optionally the pool to copy it into first: `cstr(s)` or `cstr(p, s)`.")
+                val what = "the String given to `cstr`"
+                val string = cd.expect(location, cd.usable(location, arg(if (explicit) 1 else 0, Types.String), what), Types.String, what)
+                pools += if (explicit) args[0] else null
+                val into = if (explicit) pool(cd, location, "`$name`", arg(0)) else current(location)
+                Types.CString to IRRawCall(location, "__ec_str_cstr", listOf(into, string))
+            }
             "newPool" -> {
                 if (args.size > 1) throw EcError(location, "`newPool` takes no arguments (the new pool is a child of the current one), or the parent pool: `newPool(parent)`.")
                 pools += args.firstOrNull()
@@ -80,7 +103,9 @@ internal object Builtins {
             else -> { // clearPool, freePool
                 if (args.size != 1) throw EcError(location, "`$name` takes one pool: `$name(p)`.")
                 if (name == "freePool") freeProblem(cd, args[0])?.let { throw EcError(location, it) }
-                Types.None to IRRawCall(location, if (name == "freePool") "apr_pool_destroy" else "apr_pool_clear", listOf(pool(cd, location, "`$name`", arg(0))))
+                val call = IRRawCall(location, if (name == "freePool") "apr_pool_destroy" else "apr_pool_clear", listOf(pool(cd, location, "`$name`", arg(0))))
+                Lifetimes.kill(cd, location, args[0], free = name == "freePool")
+                Types.None to call
             }
         }
     }
@@ -106,19 +131,45 @@ internal object Builtins {
     fun interpolate(cd: CompileData, location: Loc, pool: IIR, template: TInterpolated): Pair<Type, IIR> {
         val format = StringBuilder()
         val args = mutableListOf<Pair<Type, IIR>>()
+        val readers = mutableListOf<(String) -> String>()
         template.parts.forEach { part ->
             if (part is StringLiteral) { format.append(part.toC().replace("%", "%%")); return@forEach }
-            val value = cd.usable(location, (part as ITok).process(cd, Types.None), "`\${...}`")
+            val field = part as TInterpolated.Field
+            val value = cd.usable(location, field.value.process(cd, Types.None), "`\${...}`")
             val type = value.first.let { if (it is AtomLiteral) Types.Atom else cd.types.concrete(it) }
-            val spec = IRFormat.spec(type) ?: throw EcError(location, "Can't put a $type into a String with `\${...}`. " + when {
+            val printed = printable(type)
+            val shown = if (printed) Types.String else type
+            val spec = IRFormat.spec(shown) ?: throw EcError(location, "Can't put a $type into a String with `\${...}`. " + when {
                 type is Union && type.isNullable -> "It may be null: check it first, or write `\${x ?? default}`."
                 type is Declared -> "Put its fields in instead, e.g. `\${p.x}`."
-                else -> "Numbers, Bools, Chars, atoms, Strings and CStrings can be put in."
+                else -> "Numbers, Bools, Chars, atoms, Strings, CStrings, records and tuples can be put in."
             })
-            format.append(spec.first)
-            args += type to cd.expect(location, value, type, "`\${...}`")
+            val (conversion, read) = field.spec?.apply(location, shown, spec) ?: spec
+            format.append(conversion)
+            readers += read
+            val converted = cd.expect(location, value, type, "`\${...}`")
+            if (printed) cd.functions.resolvePrinters(location, type)
+            if (printed) printsItself(cd, field, type)?.let { throw EcError(location, it) }
+            args += shown to if (printed) IRShow(location, type, converted) else converted
         }
-        return Types.String to IRFormat(location, pool, format.toString(), args)
+        return Types.String to IRFormat(location, pool, format.toString(), args, readers)
+    }
+
+    /** Whether `${...}` prints a [t] with CTypes.show: records and tuples, and pointers to them. */
+    private fun printable(t: Type): Boolean = when (t) {
+        is Distinct -> printable(t.base)
+        is Record -> !t.isExternal
+        is Tuple, is FixedArray -> true
+        is Pointer -> printable(t.target)
+        else -> false
+    }
+
+    /** Why [field], of type [t], would call the function `str` it is in with its own parameter, forever; or null. */
+    private fun printsItself(cd: CompileData, field: TInterpolated.Field, t: Type): String? {
+        val self = cd.function ?: return null
+        val name = (field.value.unnested() as? TNamed)?.name ?: return null
+        if (cd.functions.printers[t] !== self || self.params.singleOrNull()?.name != name) return null
+        return "`\${$name}` here calls this same `str` with the same value, which would never end. Put its fields in instead, e.g. `\${$name.x}`."
     }
 
     /** The current pool (`pool`), as C. */

@@ -8,7 +8,7 @@ import github.mrh0.eclang.ir.data.IRAtom
 import github.mrh0.eclang.util.Util.testIdentifier
 import github.mrh0.ect2.Type
 
-class TAtom(location: Loc, private val value: String) : Tok(location) {
+class TAtom(location: Loc, val value: String) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         testIdentifier(location, value)
         val instance = cd.atoms.get(value)

@@ -7,19 +7,21 @@ import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
 import github.mrh0.ect2.Type
+import github.mrh0.ect2.Types
 
 /**
  * One compiled function. [returnType] is the C return type (a result struct for functions that `throw`).
  * [endsWithSuccess]: a `None throws E` function that reaches its end returns "no error". [cVarArgs]: it ends
- * with C's `...` (a typed `...rest: T` is an ordinary array parameter in [params]).
+ * with C's `...` (a typed `...rest: T` is an ordinary array parameter in [params]). [exported]: an `export fn`. In a
+ * library C calls it from any thread, which may not have a current pool yet; the other functions are `static` there.
  */
 class IRFunctionOverride(
     location: Loc, private val block: IRBlock, val id: String, val params: IRParameters,
-    val returnType: Type, private val endsWithSuccess: Boolean, private val cVarArgs: Boolean,
+    val returnType: Type, private val endsWithSuccess: Boolean, private val cVarArgs: Boolean, private val exported: Boolean = false,
 ) : IR(location) {
 
     private fun signature(sb: CSourceBuilder, c: Context) {
-        sb.putStatement("${sb.types.cName(returnType)} $id(")
+        sb.putStatement("${if (sb.types.isHidden(exported)) "static " else ""}${if (returnType === Types.Never) "_Noreturn " else ""}${sb.types.cName(returnType)} $id(")
         params.toC(sb, c)
         if (cVarArgs) sb.put(if (params.args.isEmpty()) "..." else ", ...")
         if (params.args.isEmpty() && !cVarArgs) sb.put("void")
@@ -30,6 +32,10 @@ class IRFunctionOverride(
         signature(sb, c)
         sb.put(" ")
         sb.pushScope(BlockScope())
+        if (exported && sb.types.isLibrary) {
+            sb.putStatement("__ec_enter()")
+            sb.endStatement()
+        }
         val body = sb.render { out ->
             block.toC(out, c)
             if (endsWithSuccess && !block.diverges) {

@@ -11,6 +11,11 @@ class Module(val name: String) {
 
     val isTopLevel get() = name.isEmpty()
 
+    /** Names declared with `priv` (by kind), which only code of this module can use. */
+    val privateFunctions = HashSet<String>()
+    val privateGlobals = HashSet<String>()
+    val privateTypes = HashSet<String>()
+
     /** The C name of a definition called [member] in this module: `fib__add` in module fib, `add` at the top level. */
     fun cName(member: String) = if (isTopLevel) member else "${name}__$member"
 

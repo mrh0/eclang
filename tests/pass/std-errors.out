@@ -1,0 +1,18 @@
+3
+parse error: expected a digit
+range error: 18 is more than 9
+true
+1
+ab
+question
+not found: 'question' was not found
+42
+not found: open config.txt: No such file or directory
+true
+/etc/shadow: Permission denied
+permission denied
+I/O error
+already exists: make the directory: File exists
+count
+true
+timeout: too slow

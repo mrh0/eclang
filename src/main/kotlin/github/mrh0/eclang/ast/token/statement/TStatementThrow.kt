@@ -19,7 +19,7 @@ class TStatementThrow(location: Loc, val next: ITok) : Tok(location) {
         val error = cd.expect(location, next.process(cd, errorType), errorType, "error thrown from '${fn.name}'")
         Lifetimes.checkReturn(cd, location, next, errorType, "throw")
         val result = cd.types.result(fn.returns, errorType)
-        return Types.None to returnWithDefers(cd, location, IRResultValue(location, result, true, error), result)
+        return Types.None to returnWithDefers(cd, location, IRResultValue(location, result, true, error), result, error = true)
     }
 
     override fun toString(): String {

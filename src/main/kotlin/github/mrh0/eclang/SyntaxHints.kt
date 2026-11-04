@@ -35,8 +35,18 @@ object SyntaxHints {
     /** Where to report a problem, and what to say. */
     class Hint(val line: Int, val column: Int, val message: String)
 
+    /** `for (a, b) in ...`, which isn't the C-style `for` it starts like. */
+    private val destructuringFor = Regex("^for\\s*\\([\\w\\s,()]*\\)\\s*in\\b")
+
     private val blockKeywords = setOf("fn", "if", "else", "while", "for", "inline", "defer")
     private val declarationKeywords = "`fn`, `val`, `var`, `const`, `rec`, `inter`, `use`, `module` or `declare`"
+
+    /** Words a declaration can start with that are no keywords, so the parser reads any name there as one and fails after it. */
+    private val declarationWords = setOf("packed", "align", "union", "export")
+
+    /** A line at the top level starting with a name that starts no declaration: `io.log(1)`. */
+    private fun startsTopLevelStatement(p: Problem) = p.column > 0 && p.indentOf(p.line) == 0 && p.keyword.isNotEmpty() && p.keyword !in declarationWords &&
+        p.code.startsWith(p.keyword) && p.lines[p.line - 1].length >= p.column && p.expected.none { it == "as" } && p.keyword !in EclangParser.VOCABULARY.let { v -> (1..v.maxTokenType).mapNotNull { t -> v.getLiteralName(t)?.removeSurrounding("'") } }
 
     private fun rule(check: (Problem) -> Hint?) = check
 
@@ -116,7 +126,12 @@ object SyntaxHints {
                 else -> null
             }
         },
-        rule { p -> if (Regex("^for\\s*\\(").containsMatchIn(p.code)) at(p, "eclang has no C-style `for`. Loop over a range with `for i in 0..<10 do`, or use `while cond do`.") else null },
+        rule { p -> if (Regex("^for\\s*\\(").containsMatchIn(p.code) && !destructuringFor.containsMatchIn(p.code)) at(p, "eclang has no C-style `for`. Loop over a range with `for i in 0..<10 do`, or use `while cond do`.") else null },
+        // `val (a, b) = ...` is a statement, not a declaration.
+        rule { p ->
+            if (p.token?.text == "(" && p.keyword in listOf("val", "var") && p.source.startsWith(p.keyword)) at(p, "`${p.keyword} (a, b) = ...` only works inside a function. At the top level, name the tuple (`${p.keyword} t = ...`) and read its parts with `t.first`, `t.second`.")
+            else null
+        },
         // A C-style declaration: `Int a = 1`.
         rule { p ->
             Regex("^([A-Z]\\w*\\??)\\s+([a-z_]\\w*)\\s*=\\s*(.*)$").find(p.code)?.let { m ->
@@ -125,7 +140,7 @@ object SyntaxHints {
             }
         },
         rule { p ->
-            Regex("^fn\\s+\\w+\\s*\\(.*\\b([a-z_]\\w*)\\s+([A-Z@\\[]\\w*)").find(p.code)?.let { m ->
+            Regex("^fn\\s+\\w+\\s*\\(.*(?<!\\w)([a-z_]\\w*)\\s+([A-Z@\\[]\\w*)").find(p.code)?.let { m ->
                 at(p, "Parameters are written `name: Type`: `${m.groupValues[1]}: ${m.groupValues[2]}`.")
             }
         },
@@ -160,7 +175,7 @@ object SyntaxHints {
         },
         // Statements at the top level of a file.
         rule { p ->
-            if (p.expected.containsAll(listOf("<EOF>", "fn"))) Hint(p.line, 0, "Only declarations ($declarationKeywords) can be at the top level of a file. " +
+            if (p.expected.containsAll(listOf("<EOF>", "fn")) || startsTopLevelStatement(p)) Hint(p.line, 0, "Only declarations ($declarationKeywords) can be at the top level of a file. " +
                 "Put statements inside a function, such as `fn main(): Int do`.")
             else null
         },

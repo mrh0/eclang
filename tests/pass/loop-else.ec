@@ -1,14 +1,14 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // A loop's `else` block runs when the loop ends without `break`.
 
 fn find(values: Int[], wanted: Int) do
     for value in values do
         if value == wanted do
-            log("found"c)
+            io.log("found"c)
             break
     else do
-        log("not found"c)
+        io.log("not found"c)
 
 fn countdown(from: Int) do
     var n = from
@@ -16,8 +16,8 @@ fn countdown(from: Int) do
         n = n - 1
         break if n == 2
     else
-        log("reached zero"c)
-    log(n)
+        io.log("reached zero"c)
+    io.log(n)
 
 fn main(): Int do
     find([1, 2, 3], 2)
@@ -33,10 +33,10 @@ fn main(): Int do
             continue
         else do
             break if rounds == 3
-    log(rounds)
+    io.log(rounds)
 
     for i in 0..<0 do
-        log("never"c)
+        io.log("never"c)
     else do
-        log("empty range"c)
+        io.log("empty range"c)
     ret 0

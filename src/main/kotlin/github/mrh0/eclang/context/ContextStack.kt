@@ -8,6 +8,12 @@ import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcNotDefinedError
 import github.mrh0.ect2.Type
 
+/** Memory allocated in [pool] ([poolName] in code) at point [seq] of the function, which `clearPool`/`freePool` of it later frees. */
+data class Alloc(val seq: Int, val pool: String, val poolName: String)
+
+/** `clearPool`/`freePool` of a pool at point [seq]: what was allocated in it before is freed. [how] says so in errors. */
+data class Kill(val seq: Int, val how: String)
+
 open class ContextStack {
     /**
      * One block scope. A child scope starts with copies of its parent's variables, deferred statements and
@@ -17,6 +23,14 @@ open class ContextStack {
         val vars: MutableMap<String, Int> = mutableMapOf(),
         val deferred: MutableList<ITok> = mutableListOf(),
         val narrowed: MutableMap<String, Type> = mutableMapOf(),
+        /** Variable → the named-pool memory its value may be in (see [Lifetimes.allocations]). */
+        val allocations: MutableMap<String, Set<Alloc>> = mutableMapOf(),
+        /** Pool variable → the pool it holds now (a new one after `p = newPool()`, the same as p after `val q = p`). */
+        val pools: MutableMap<String, String> = mutableMapOf(),
+        /** Pool → the last `clearPool`/`freePool` of it. */
+        val killed: MutableMap<String, Kill> = mutableMapOf(),
+        /** Pools freed with `freePool`, with how ("`freePool(p)` at line 9"). */
+        val freed: MutableMap<String, String> = mutableMapOf(),
     ) {
         /** True once this scope always leaves early (ret, throw, break, continue); later code is unreachable. */
         var returned: Boolean = false
@@ -101,10 +115,72 @@ open class ContextStack {
 
     fun push() {
         val top = scopeStack.last()
-        scopeStack.add(Scope(top.vars.toMutableMap(), top.deferred.toMutableList(), top.narrowed.toMutableMap()))
+        scopeStack.add(Scope(top.vars.toMutableMap(), top.deferred.toMutableList(), top.narrowed.toMutableMap(),
+            top.allocations.toMutableMap(), top.pools.toMutableMap(), top.killed.toMutableMap(), top.freed.toMutableMap()))
     }
 
-    fun pop(): Scope = scopeStack.removeLastOrNull() ?: throw Error("Scope empty")
+    /**
+     * Closes the innermost scope. Unless it always left early, what it learned about pools carries on in the
+     * enclosing one: the memory it freed stays freed, and a variable may hold what it held before or what the
+     * scope assigned. (A scope that left early, e.g. by `ret` after running `defer freePool(p)`, changes nothing.)
+     */
+    fun pop(): Scope {
+        val scope = scopeStack.removeLastOrNull() ?: throw Error("Scope empty")
+        val parent = scopeStack.lastOrNull() ?: return scope
+        if (scope.returned) return scope
+        scope.killed.forEach { (pool, kill) -> parent.killed.merge(pool, kill) { a, b -> if (b.seq > a.seq) b else a } }
+        parent.freed.putAll(scope.freed)
+        scope.allocations.forEach { (name, allocs) ->
+            if (parent.vars[name] != null && parent.vars[name] == scope.vars[name]) parent.allocations.merge(name, allocs, Set<Alloc>::plus)
+        }
+        scope.pools.forEach { (name, pool) -> if (parent.vars[name] != null && parent.pools[name] != pool) parent.pools[name] = pool }
+        return scope
+    }
+
+    private var counter = 0
+
+    /** The next point in the function, for [Alloc.seq] and [Kill.seq] (also names new pools). */
+    fun next(): Int = counter++
+
+    /** The named-pool memory the local [name] may point into. */
+    fun allocationsOf(name: String): Set<Alloc> = scopeStack.last().allocations[name] ?: setOf()
+
+    /** [name] now holds a value in [allocs] (replacing what it held), or, with [add], also in them (a field of it was set). */
+    fun setAllocations(name: String, allocs: Set<Alloc>, add: Boolean = false) {
+        val top = scopeStack.last()
+        if (top.vars[name] == null) return
+        if (add) top.allocations.merge(name, allocs, Set<Alloc>::plus) else top.allocations[name] = allocs
+    }
+
+    /** The pool the pool variable [name] holds, or null when it isn't a local. */
+    fun poolOf(name: String): String? {
+        val top = scopeStack.last()
+        val index = top.vars[name] ?: return null
+        return top.pools.getOrPut(name) { "pool$index" }
+    }
+
+    /** The pool variable [name] now holds [pool] (`val q = p`), or a new pool when [pool] is null. */
+    fun setPool(name: String, pool: String?) {
+        val top = scopeStack.last()
+        val index = top.vars[name] ?: return
+        top.pools[name] = pool ?: "pool$index#${next()}"
+    }
+
+    /** Memory allocated in [pool] (called [poolName]) now. */
+    fun alloc(pool: String, poolName: String) = Alloc(next(), pool, poolName)
+
+    /** Frees what [pool] holds (`clearPool`), or with [free] the pool itself (`freePool`); [how] says so in errors. */
+    fun kill(pool: String, how: String, free: Boolean) {
+        val top = scopeStack.last()
+        top.killed[pool] = Kill(next(), how)
+        if (free) top.freed[pool] = how
+    }
+
+    /** How the memory of [alloc] was freed, or null when it is still there. */
+    fun killedBy(alloc: Alloc): String? = scopeStack.last().killed[alloc.pool]?.takeIf { it.seq > alloc.seq }?.how
+
+    /** How [pool] was freed with `freePool`, or null. */
+    fun freedBy(pool: String): String? = scopeStack.last().freed[pool]
 
     fun setReturned(statically: Boolean = false) {
         val top = scopeStack.last()

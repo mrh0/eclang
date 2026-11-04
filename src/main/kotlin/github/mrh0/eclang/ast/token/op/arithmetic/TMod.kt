@@ -13,7 +13,7 @@ class TMod(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> =
         arithmetic(cd, location, "%", left, right,
             { a, b -> if (b == 0L) throw ArithmeticException("division by zero") else a % b }, null, integerOnly = true,
-            fractionHint = " For the remainder of Floats or Doubles, call `fmod(a, b)` (from core:lib.ec).",
+            fractionHint = " For the remainder of Floats or Doubles, call `math.fmod(a, b)` (from core:math.ec).", checked = "%",
         ) { l, r -> IRMod(location, l, r) }
 
     override fun toString(): String {

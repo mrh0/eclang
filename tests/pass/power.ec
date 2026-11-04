@@ -1,18 +1,18 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // `**` on whole numbers stays a whole number, computed exactly; otherwise it is a Double.
 fn main(): Int do
-    log(2 ** 10)
+    io.log(2 ** 10)
     val x: Long = 3
-    log(x ** 39)
+    io.log(x ** 39)
     val n = 2
-    log(n ** 30)
-    log(n ** -1)
+    io.log(n ** 30)
+    io.log(n ** -1)
     val one = -1
-    log(one ** 3)
+    io.log(one ** 3)
     val u: UInt = 3
-    log(u ** 4)
-    log(2.0 ** 0.5)
+    io.log(u ** 4)
+    io.log(2.0 ** 0.5)
     val d = 1.5
-    log(d ** 2)
+    io.log(d ** 2)
     ret 0

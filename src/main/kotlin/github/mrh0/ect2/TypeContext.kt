@@ -44,6 +44,7 @@ class TypeContext {
     fun pointer(target: Type): Pointer = intern(listOf("@", target)) { Pointer(it, target) }
     fun array(element: Type): ArrayType = intern(listOf("[]", element)) { ArrayType(it, element, false) }
     fun cArray(element: Type): ArrayType = intern(listOf("[]c", element)) { ArrayType(it, element, true) }
+    fun fixedArray(element: Type, size: Long): FixedArray = intern(listOf("[n]", element, size)) { FixedArray(it, element, size) }
     fun tuple(elements: List<Type>): Tuple = intern(listOf<Any>("()") + elements) { Tuple(it, elements.toList()) }
     fun atom(name: String): AtomLiteral = intern(listOf(":", name)) { AtomLiteral(it, name) }
     fun typeParam(name: String): TypeParam = intern(listOf("<>", name)) { TypeParam(it, name) }
@@ -104,9 +105,41 @@ class TypeContext {
     /** Declares a record. Call [Declared.define] on the result to give it fields. */
     fun record(
         namespace: String, name: String, parent: Record? = null,
-        externalName: String? = null, isExternal: Boolean = false, isCStruct: Boolean = false,
-    ): Record = Record(nextId(), namespace, name, parent, externalName, isExternal, isCStruct)
+        externalName: String? = null, isExternal: Boolean = false, isCStruct: Boolean = false, layout: Layout = Layout(),
+    ): Record = Record(nextId(), namespace, name, parent, externalName, isExternal, isCStruct, layout = layout)
         .also { created += it; define(namespace, name, it) }
+
+    /** Declares a generic record; [instantiate] makes each instance with [recordInstance] and gives it its fields. */
+    fun genericRecord(namespace: String, name: String, params: List<String>, instantiate: (List<Type>) -> Record): GenericRecord =
+        GenericRecord(nextId(), namespace, name, params, instantiate).also { created += it; define(namespace, name, it) }
+
+    /** Makes the instance of [generic] for [args], with the C name [cBase], and remembers it, so a field can refer to it. */
+    fun recordInstance(generic: GenericRecord, args: List<Type>, cBase: String, layout: Layout = Layout()): Record =
+        Record(nextId(), generic.namespace, args.joinToString(", ", "${generic.name}<", ">"), null, generic = generic, typeArgs = args, cBase = cBase, layout = layout)
+            .also { created += it; generic.instances[args] = it }
+
+    /** `List<Int>`: the instance of [generic] for [args], or an [Applied] while an argument is still generic. */
+    fun apply(generic: GenericRecord, args: List<Type>): Type {
+        val concrete = args.map { concrete(it) }
+        if (concrete.any { hasTypeParam(it) }) return intern(listOf<Any>("<>", generic) + concrete) { Applied(it, generic, concrete) }
+        return generic.instances[concrete] ?: generic.instantiate(concrete)
+    }
+
+    /** Whether [t] still has a `<T>` in it, so that it is only known once a call binds it. */
+    fun hasTypeParam(t: Type): Boolean = when (t) {
+        is TypeParam, is Applied -> true
+        is Pointer -> hasTypeParam(t.target)
+        is ArrayType -> hasTypeParam(t.element)
+        is FixedArray -> hasTypeParam(t.element)
+        is Tuple -> t.elements.any { hasTypeParam(it) }
+        is Union -> t.members.any { hasTypeParam(it) }
+        is FunctionType -> t.params.any { hasTypeParam(it) } || hasTypeParam(t.returns)
+        else -> false
+    }
+
+    /** `type Name = distinct T`. */
+    fun distinct(namespace: String, name: String, base: Type): Distinct =
+        Distinct(nextId(), namespace, name, base).also { created += it; define(namespace, name, it) }
 
     /** Declares an interface. Call [Declared.define] on the result to give it fields. */
     fun interfaceType(namespace: String, name: String): Interface =
@@ -165,6 +198,8 @@ class TypeContext {
         from is Union -> from.members.map { cost(it, to) }.let { if (NO in it) NO else it.max() }
         // Fits if it fits any member; pick the cheapest.
         to is Union -> to.members.map { cost(from, it) }.filter { it != NO }.minOrNull() ?: NO
+        // A little more than its base, so `f(5)` picks `f(Int)` over `f(UserId)`.
+        (from is IntLiteral || from is FloatLiteral) && to is Distinct -> cost(from, to.base).let { if (it == NO) NO else it + 1 }
         from is IntLiteral && to is Prim -> intLiteralCost(from.value, to)
         from is FloatLiteral && to is Prim -> when (to) { Types.Double -> 0; Types.Float -> 1; else -> NO }
         from is AtomLiteral -> if (to === Types.Atom) 0 else NO
@@ -241,6 +276,7 @@ class TypeContext {
         return when {
             from is Result -> "it can fail with ${from.error}. Handle the error with `try`, `?? default` or `try ... catch e do`"
             from === Types.Null -> "null is not allowed here. To allow it, make the type nullable: `${nullable(to)}`"
+            from is Distinct || to is Distinct -> "${(to as? Distinct ?: from)} is a `distinct` type, so nothing converts to or from it by itself; $fixWithAs"
             from is Union && from.isNullable && accepts(to, nonNull(from)) ->
                 "the value may be null. Check it first with `if x != null`, give a default with `?? value`, or assert it is set with `!`"
             from is Union -> {
@@ -256,7 +292,14 @@ class TypeContext {
                 from.category == SINT && to.category == UINT -> "$from may be negative but $to can't hold negative numbers; $fixWithAs"
                 else -> "$from → $to may lose data ($to is smaller); $fixWithAs"
             }
+            from is Tuple && to is Tuple -> if (from.elements.size != to.elements.size) "they have a different number of parts (${from.elements.size} and ${to.elements.size})"
+                else "tuple part types must match exactly, because the parts are stored differently"
             from is ArrayType && to is ArrayType -> "array element types must match exactly, because the elements are stored differently"
+            from is FixedArray && to is FixedArray -> if (from.element === to.element) "they have a different length (${from.size} and ${to.size})"
+                else "array element types must match exactly, because the elements are stored differently"
+            from is FixedArray && to is ArrayType && !to.isC && from.element === to.element -> "a fixed-size array holds its elements itself. To use it as a $to, slice it: `a[..]`"
+            from is FixedArray && (to === Types.CString || to is ArrayType || to is Pointer) -> "a fixed-size array holds its elements itself. `a.data` is a pointer to them"
+            to is FixedArray && from is ArrayType -> "the length of a $from is only known when the program runs. Copy the elements one by one, or give an array literal"
             from is Pointer && to is Pointer && to.target is Interface ->
                 if (from.target is Declared) explain(from.target, to.target) else "only a pointer to a record with the fields of ${to.target} fits $to"
             from is Pointer && to is Pointer -> "pointer types must match exactly; use `!as $to` to reinterpret the pointer"
@@ -285,10 +328,13 @@ class TypeContext {
         Types.Any -> "Any has no fixed size in C. Use it only as a parameter type, or `@Any` for an untyped pointer"
         Types.Never -> "Never has no values"
         is Interface -> "interface ${type.name} has no fixed size in C. Use it as a parameter type (each record gets its own copy of the function), or store a union of records"
-        is TypeParam -> "generic type $type is only known when the function is called; use it in parameters and return types"
+        is TypeParam, is Applied -> "generic type $type is only known when the function is called; use it in parameters and return types"
+        is GenericRecord -> "${type.name} is generic, so it needs its type arguments, e.g. `${type.name}<${type.params.joinToString(", ") { "Int" }}>`"
         is IntLiteral, is FloatLiteral -> null
+        is Distinct -> storageProblem(type.base)
         is Union -> type.members.firstNotNullOfOrNull { storageProblem(it) }
         is ArrayType -> storageProblem(type.element)
+        is FixedArray -> storageProblem(type.element)
         is Pointer -> if (type.target is Interface) "a pointer to interface ${type.target.name} has no C type of its own. Use it as a parameter type (each record gets its own copy of the function)" else null
         is Tuple -> type.elements.firstNotNullOfOrNull { storageProblem(it) }
         is Result -> "the result of a call that can fail must be handled where the call is made"
@@ -345,11 +391,18 @@ class TypeContext {
         is TypeParam -> bindings[param]?.let { accepts(it, arg) } ?: run { bindings[param] = concrete(arg); true }
         is Pointer -> arg is Pointer && bind(param.target, arg.target, bindings)
         is ArrayType -> arg is ArrayType && arg.isC == param.isC && bind(param.element, arg.element, bindings)
+        is FixedArray -> arg is FixedArray && arg.size == param.size && bind(param.element, arg.element, bindings)
         is Tuple -> arg is Tuple && arg.elements.size == param.elements.size &&
             param.elements.indices.all { bind(param.elements[it], arg.elements[it], bindings) }
         is FunctionType -> arg is FunctionType && arg.params.size == param.params.size &&
             param.params.indices.all { bind(param.params[it], arg.params[it], bindings) } &&
             bind(param.returns, arg.returns, bindings)
+        is Applied -> arg is Record && arg.generic === param.generic && param.args.indices.all { bind(param.args[it], arg.typeArgs[it], bindings) }
+        // `<T>?` takes a T or null; null says nothing about T.
+        is Union -> if (!hasTypeParam(param)) accepts(param, arg) else {
+            val member = param.members.singleOrNull { it !== Types.Null }
+            member != null && param.isNullable && (arg === Types.Null || bind(member, nonNull(arg), bindings))
+        }
         else -> accepts(param, arg)
     }
 
@@ -358,7 +411,9 @@ class TypeContext {
         is TypeParam -> bindings[type] ?: type
         is Pointer -> pointer(substitute(type.target, bindings))
         is ArrayType -> substitute(type.element, bindings).let { if (type.isC) cArray(it) else array(it) }
+        is FixedArray -> fixedArray(substitute(type.element, bindings), type.size)
         is Tuple -> tuple(type.elements.map { substitute(it, bindings) })
+        is Applied -> apply(type.generic, type.args.map { substitute(it, bindings) })
         is Union -> union(type.members.map { substitute(it, bindings) })
         is FunctionType -> function(type.params.map { substitute(it, bindings) }, substitute(type.returns, bindings),
             type.throws?.let { substitute(it, bindings) })

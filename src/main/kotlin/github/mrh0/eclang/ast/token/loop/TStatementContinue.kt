@@ -9,12 +9,13 @@ import github.mrh0.eclang.ir.loop.IRContinue
 import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
-class TStatementContinue (location: Loc) : Tok(location) {
+/** `continue`, or `continue outer` to start the next round of the loop labelled `outer` around this one. */
+class TStatementContinue (location: Loc, private val label: String? = null) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         if (cd.loopDepth == 0) throw EcError(location, "`continue` can only be used inside a loop.")
-        val deferred = cd.loopDeferred()
+        val deferred = cd.loopDeferred(location, label, "continue")
         cd.ctx().setReturned()
-        return Types.None to IRContinue(location, deferred)
+        return Types.None to IRContinue(location, deferred, cd.continueLabel(location, label))
     }
 
     override fun toString(): String {

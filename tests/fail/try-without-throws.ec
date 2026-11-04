@@ -1,5 +1,5 @@
 // error: `try` passes the error on, but main doesn't declare that it can fail
-use "core:lib.ec"
+use "core:errors.ec"
 
 fn parse(c: Char): Int throws Error = 1
 

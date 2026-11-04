@@ -5,6 +5,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.branch.TTailIf
 import github.mrh0.eclang.ast.token.function.call.TStatementCall
+import github.mrh0.eclang.ast.token.statement.TDestructure
 import github.mrh0.eclang.ast.token.statement.TStatement
 import github.mrh0.eclang.ast.token.statement.TStatementAssign
 import github.mrh0.eclang.context.CompileData
@@ -15,6 +16,9 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 class TBlock(location: Loc, val statements: List<ITok>) : Tok(location) {
+    /** For a function body: the locals whose address is taken in it (`TFunc.addressTaken`). */
+    var addressTaken: Map<String, Loc> = mapOf()
+
     override fun toString(): String {
         return "$statements"
     }
@@ -24,7 +28,7 @@ class TBlock(location: Loc, val statements: List<ITok>) : Tok(location) {
      * flow typing nothing (a call, an assignment, an unconditional `ret`).
      */
     private fun isIndependent(statement: ITok) = statement is TStatementCall || statement is TStatement ||
-        statement is TStatementAssign || (statement is TTailIf && !statement.isConditional)
+        statement is TStatementAssign || (statement is TDestructure && statement.assigns) || (statement is TTailIf && !statement.isConditional)
 
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         cd.ctx().push()
@@ -54,9 +58,7 @@ class TBlock(location: Loc, val statements: List<ITok>) : Tok(location) {
             }
         }
         val diverges = cd.ctx().hasReturned()
-        val deferredIr = if (!diverges) cd.noHoist("`try` can't be used in `defer`.") {
-            cd.ctx().getNewDeferred().reversed().map { it.process(cd, Types.None).second }
-        } else listOf()
+        val deferredIr = if (!diverges) cd.compileDeferred(TErrDefer.normal(cd.ctx().getNewDeferred()).reversed()) else listOf()
         cd.ctx().pop()
         return Types.None to IRBlock(location, irs, deferredIr, diverges)
     }

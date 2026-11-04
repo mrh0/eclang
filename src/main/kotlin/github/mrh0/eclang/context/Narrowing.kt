@@ -20,7 +20,8 @@ import github.mrh0.ect2.*
  * Inside `if x != null do`, x can't be null, so it is narrowed from `CString?` to `CString` there. The same
  * works for `x is T`, `not`, `and`, `or`, and for the code after an `if` whose body always leaves
  * (`if x == null do ret 0` narrows x for the rest of the block). Only local variables and parameters are
- * narrowed, and assigning to a variable forgets what was known about it.
+ * narrowed, and assigning to a variable forgets what was known about it. A local whose address the function takes
+ * (`addrof x`) is never narrowed: a write through that pointer could change it after the check.
  */
 object Narrowing {
     /** Variable name → the narrower type it has when [condition] is [whenTrue]. */
@@ -108,16 +109,30 @@ object Narrowing {
             else -> null
         } ?: return mapOf()
         if (type !is Union || !type.isNullable) return mapOf()
-        return mapOf(name to if (isNull) Types.Null else cd.types.nonNull(type))
+        return unlessAliased(cd, left.takeIf { it is TNamed } ?: right!!, mapOf(name to if (isNull) Types.Null else cd.types.nonNull(type)), nullCheck = true)
     }
 
     private fun isCheck(cd: CompileData, check: TIs, matches: Boolean): Map<String, Type> {
         val (name, type) = local(cd, check.expr) ?: return mapOf()
         val target = check.type.process(cd, Types.None).first
-        if (type is Pointer && target is Pointer) return if (matches) mapOf(name to target) else mapOf()
+        if (type is Pointer && target is Pointer) return if (matches) unlessAliased(cd, check.expr, mapOf(name to target)) else mapOf()
         if (type !is Union) return mapOf()
         val (fitting, rest) = type.members.partition { it === target || cd.types.isSubtype(it, target) }
         val narrowed = cd.types.union(if (matches) fitting else rest)
-        return if (narrowed === Types.Never || narrowed === type) mapOf() else mapOf(name to narrowed)
+        return if (narrowed === Types.Never || narrowed === type) mapOf() else unlessAliased(cd, check.expr, mapOf(name to narrowed))
+    }
+
+    /**
+     * [narrowings] of the variable [tok], or none when its address is taken (`addrof x`): the check then proves nothing
+     * about later reads, because a write through the pointer could change it. A warning says how to keep the value.
+     */
+    private fun unlessAliased(cd: CompileData, tok: ITok, narrowings: Map<String, Type>, nullCheck: Boolean = false): Map<String, Type> {
+        val name = (tok as? TNamed)?.name ?: return narrowings
+        val at = cd.addressTaken[name] ?: return narrowings
+        if (cd.warnedAliased.add(tok.location.toString()))
+            cd.warn(tok.location, "This check doesn't narrow '$name', because its address is taken at line ${at.getLine()} " +
+                "(`addrof $name`), so it could change through that pointer after the check. Check a copy instead: " +
+                "`val ${name}Now = $name`, then check and use `${name}Now`" + (if (nullCheck) " (or `if val ${name}Now = $name do`)." else "."))
+        return mapOf()
     }
 }

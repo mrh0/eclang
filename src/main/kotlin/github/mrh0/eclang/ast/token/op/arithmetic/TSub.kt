@@ -11,7 +11,7 @@ import github.mrh0.ect2.Type
 
 class TSub(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> =
-        arithmetic(cd, location, "-", left, right, { a, b -> Math.subtractExact(a, b) }, { a, b -> a - b }) { l, r -> IRSub(location, l, r) }
+        arithmetic(cd, location, "-", left, right, { a, b -> Math.subtractExact(a, b) }, { a, b -> a - b }, checked = "-") { l, r -> IRSub(location, l, r) }
 
     override fun toString(): String {
         return "TSub($left, $right)"

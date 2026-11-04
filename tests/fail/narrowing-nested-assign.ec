@@ -1,5 +1,5 @@
 // error: `+` needs two numbers, but got Int | CString
-use "core:lib.ec"
+use "core:io.ec"
 
 // The assignment in the inner block undoes `v is Int` for the rest of the outer block too.
 fn main(): Int do
@@ -7,5 +7,5 @@ fn main(): Int do
     if v is Int do
         if true do
             v = "s"c
-        log(v + 1)
+        io.log(v + 1)
     ret 0

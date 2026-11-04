@@ -1,0 +1,81 @@
+{
+  "name": "eclang",
+  "displayName": "eclang",
+  "description": "eclang (Easy C Lang) language support: syntax highlighting, compiler errors, ecdoc tooltips and go to definition.",
+  "version": "0.1.0",
+  "publisher": "mrh0",
+  "license": "MIT",
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Programming Languages"],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "eclang",
+        "aliases": ["eclang", "ec"],
+        "extensions": [".ec"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "eclang",
+        "scopeName": "source.eclang",
+        "path": "./syntaxes/eclang.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "eclang",
+      "properties": {
+        "eclang.typeCheck.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show what the compiler reports (type errors, null safety, ...) as well as syntax errors. Needs Java 17 or later."
+        },
+        "eclang.java.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "The Java executable. Empty: `java` from the PATH."
+        },
+        "eclang.compiler.jar": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "The compiler to check with, such as target/eclang-0.1.0.jar of a build of your own. Empty: the one that comes with the extension."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[eclang]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.detectIndentation": false
+      }
+    }
+  },
+  "scripts": {
+    "gen": "node scripts/gen-parser.mjs",
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/build.mjs --tests && node dist/test/run.js",
+    "package": "npm run build && vsce package --no-dependencies --skip-license --allow-missing-repository"
+  },
+  "dependencies": {
+    "antlr4": "4.13.2",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "~1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.5.0",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.0.0"
+  }
+}

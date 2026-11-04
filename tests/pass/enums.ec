@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // A C enum (or set of #define constants) seen as atoms: eclang code uses :success and :failure,
 // and only calls of `declare fn` functions pass and get the C constants.
@@ -13,9 +13,9 @@ fn describe(code: ExitCode): CString = if code == :success do "ok"c else "failed
 
 fn main(): Int do
     val a = abs(:failure)
-    log(a)
-    log(describe(a))
+    io.log(a)
+    io.log(describe(a))
     val b: ExitCode = :success
-    log(abs(b))
-    log(describe(abs(b)))
+    io.log(abs(b))
+    io.log(describe(abs(b)))
     ret 0

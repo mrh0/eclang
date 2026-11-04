@@ -7,6 +7,7 @@ import github.mrh0.eclang.ast.token.function.IFuncBody
 import github.mrh0.eclang.ast.token.function.TFunc
 import github.mrh0.eclang.ast.token.function.TFuncExternal
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.InterfaceMethod
 import github.mrh0.eclang.context.Module
 import github.mrh0.eclang.context.state.Constant
 import github.mrh0.eclang.context.state.InlineConstant
@@ -22,10 +23,12 @@ import github.mrh0.eclang.ir.IRCCast
 import github.mrh0.eclang.ir.IREnumConvert
 import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.ir.data.IRCreateArray
+import github.mrh0.eclang.ir.data.IRFormat
 import github.mrh0.eclang.ir.data.IRInt
 import github.mrh0.eclang.ir.function.IRFunctionOverride
 import github.mrh0.eclang.ir.function.IRParameter
 import github.mrh0.eclang.ir.function.IRParameters
+import github.mrh0.eclang.output.c.CTypes
 import github.mrh0.eclang.util.Util.testIdentifier
 import github.mrh0.ect2.*
 
@@ -65,12 +68,24 @@ class Overload(
      * types (always false in the CString copy), which is fine here but a likely mistake in ordinary code.
      */
     val isUnionCopy: Boolean = false,
+    /** In a union copy: the declared type of each parameter that was split (`v: Int | CString`), for `when`. */
+    val declaredUnions: Map<String, Type> = mapOf(),
+    /** The names of all the function's parameters, in order, passed or not: arguments in order fill these. */
+    val declared: List<String> = listOf(),
+    /**
+     * Only reachable with named arguments: `fn f(a: Int = 0, b: Int = 0)` called as `f(1)` means a, so the copy that leaves
+     * a out and has the same parameter types only serves `f(b = 1)`.
+     */
+    val namedOnly: Boolean = false,
+    /** For `export fn`: the name C calls it by, which is [cName]. */
+    val exportName: String? = null,
 ) {
     /**
-     * True when the function has `<T>`, interface or Any parameters. It is never compiled itself; each call
+     * True when the function has `<T>`, interface or Any parameters, or a `<T>` only in its result. It is never compiled itself; each call
      * compiles an instance for the concrete argument types instead.
      */
-    val isTemplate = !isExternal && params.any { isTemplateType(it.type) }
+    val isTemplate = !isExternal && (params.any { isTemplateType(it.type) } || containsTypeParam(returns) ||
+        varArg?.takeIf { !it.isCVarArg }?.let { containsTypeParam(it.type) } == true)
 
     val instances = HashMap<List<Type>, Overload>()
 
@@ -83,9 +98,10 @@ class Overload(
         fun isInterface(t: Type): Boolean = t is Interface || (t is Pointer && t.target is Interface)
 
         fun containsTypeParam(t: Type): Boolean = when (t) {
-            is TypeParam -> true
+            is TypeParam, is Applied -> true
             is Pointer -> containsTypeParam(t.target)
             is ArrayType -> containsTypeParam(t.element)
+            is FixedArray -> containsTypeParam(t.element)
             is Tuple -> t.elements.any { containsTypeParam(it) }
             is Union -> t.members.any { containsTypeParam(it) }
             is FunctionType -> t.params.any { containsTypeParam(it) } || containsTypeParam(t.returns)
@@ -118,6 +134,7 @@ class Functions(private val cd: CompileData) {
      */
     private fun visible(name: String, qualifier: Module? = null): List<Overload> =
         (if (qualifier != null) listOf(qualifier) else cd.visibleModules()).flatMap { overloads[key(it, name)].orEmpty() }
+            .filter { it.module === cd.module || it.name !in it.module.privateFunctions }
 
     private fun visibleNames(qualifier: Module?): List<String> {
         val prefixes = (if (qualifier != null) listOf(qualifier) else cd.visibleModules()).map { "${it.name}:" }
@@ -125,9 +142,21 @@ class Functions(private val cd: CompileData) {
     }
 
     private fun notDefined(location: Loc, name: String, qualifier: Module?): Nothing {
+        (qualifier ?: cd.topLevel).takeIf { name in it.privateFunctions && it !== cd.module }?.let {
+            throw EcError(location, "'$name' is private to $it (`priv fn`), so only code in it can call it. Remove `priv` to use it here.")
+        }
         val hint = if (qualifier != null) CompileData.suggestion(name, visibleNames(qualifier))
             else cd.whereElse(name) { overloads.containsKey(key(it, name)) }.ifEmpty { CompileData.suggestion(name, visibleNames(null)) }
+                .ifEmpty { suggestionElsewhere(name) }
         throw EcFunctionNotDefinedError(location, name, qualifier?.toString(), hint)
+    }
+
+    /** " Did you mean 'io.log'?" when [name] is close to a public function of a module that isn't visible here, or "". */
+    private fun suggestionElsewhere(name: String): String {
+        val visible = cd.visibleModules().toSet()
+        val qualified = overloads.values.flatten().filter { it.module !in visible && it.name !in it.module.privateFunctions }
+            .associate { it.name to "${it.module.name}.${it.name}" }
+        return CompileData.closest(name, qualified.keys)?.let { " Did you mean '${qualified[it]}'?" } ?: ""
     }
 
     /** Whether a function called [name] can be called from here. */
@@ -144,9 +173,14 @@ class Functions(private val cd: CompileData) {
         params.forEachIndexed { i, p -> if ((p.isVarArg || p.isCVarArg) && i != params.size - 1) throw EcInvalidVarArgError(p.location, name) }
         val varArg = params.lastOrNull()?.takeIf { it.isVarArg || it.isCVarArg }
         val fixed = if (varArg != null) params.dropLast(1) else params
-        if (returns !== Types.None && !Overload.containsTypeParam(returns)) cd.storable(func.location, returns, "return type of '$name'")
+        if (isExternal) (fixed.map { it.type } + returns).firstOrNull { CTypes.fixedOf(it) != null }?.let {
+            throw EcError(func.location, "C functions don't take or return arrays by value, so '$name' can't use a $it: in C, an `int a[4]` parameter is a pointer. Declare it as a pointer (`T[]c` or `@T`) and pass `a.data`.")
+        }
+        func.exportName?.let { checkExport(func, name, it, returns, fixed, varArg) }
+        if (returns === Types.Never && throws != null) throw EcError(func.location, "'$name' returns Never, so it never comes back, not even with an error. Remove `throws`, or give it another return type.")
+        if (returns !== Types.None && returns !== Types.Never && !Overload.containsTypeParam(returns)) cd.storable(func.location, returns, "return type of '$name'")
         throws?.let { cd.storable(func.location, it, "error type of '$name'") }
-        varArg?.takeIf { it.isVarArg }?.let { cd.storable(it.location, it.type, "the variadic parameter '${it.name}'") }
+        varArg?.takeIf { it.isVarArg && !Overload.containsTypeParam(it.type) }?.let { cd.storable(it.location, it.type, "the variadic parameter '${it.name}'") }
 
         // Every combination of union members, and of passing or leaving out parameters with defaults.
         var combinations: List<List<Parameter?>> = listOf(listOf())
@@ -170,21 +204,39 @@ class Functions(private val cd: CompileData) {
 
         val module = cd.module
         val list = overloads.getOrPut(key(module, name)) { mutableListOf() }
+        val earlier = list.size
         for (combo in combinations) {
             val present = combo.filterNotNull()
             val absent = fixed.filterIndexed { i, _ -> combo[i] == null }
-            list.firstOrNull { it.params.map { p -> p.type } == present.map { p -> p.type } && (it.varArg == null) == (varArg == null) }?.let {
-                throw EcError(func.location, "Function $name(${present.joinToString { it.type.toString() }}) is already defined at ${it.location}.")
-            }
+            val same = list.indexOfFirst { it.params.map { p -> p.type } == present.map { p -> p.type } && (it.varArg == null) == (varArg == null) }
+            if (same in 0 until earlier) throw EcError(func.location, "Function $name(${present.joinToString { it.type.toString() }}) is already defined at ${list[same].location}.")
             val base = module.cName(name)
             val index = counters.merge(base, 1, Int::plus)!! - 1
-            val cName = if (isExternal) (func.getSourceName() ?: name) else "${base}_$index"
-            val body = if (func is IFuncBody) func.getBody() else null
-            val overload = Overload(func.location, module, name, cName, present, absent, returns, throws, varArg, body, isExternal, isUnionCopy = isUnionCopy)
+            val cName = func.exportName ?: if (isExternal) (func.getSourceName() ?: name) else "${base}_$index"
+            val body = if (func is IFuncBody) func.getBody().also { it.addressTaken = func.addressTaken } else null
+            val declaredUnions = fixed.filter { variants(it.type).size > 1 }.associate { it.name to it.type }
+            val overload = Overload(func.location, module, name, cName, present, absent, returns, throws, varArg, body, isExternal, isUnionCopy = isUnionCopy, declaredUnions = declaredUnions,
+                declared = fixed.map { it.name }, namedOnly = same >= 0, exportName = func.exportName)
             list += overload
+            if (overload.exportName != null) { cd.claimCName(func.location, cName, "the exported function '$name'", renamable = false); exported += overload }
             cd.reserveCName(cName)
             if (!isExternal && !overload.isTemplate) toBuild += overload
         }
+    }
+
+    /** The `export fn`s, in the order they were declared. */
+    val exported = ArrayList<Overload>()
+
+    /** C has to see an exported function as one function with one signature, so what makes eclang compile copies of it can't be used. */
+    private fun checkExport(func: TFunc, name: String, cName: String, returns: Type, params: List<Parameter>, varArg: Parameter?) {
+        fun reject(why: String): Nothing = throw EcError(func.location, "'$name' can't be exported: $why")
+        if (func is TFuncExternal) reject("it is already a C function.")
+        if (cName == "main") reject("C's `main` is the one eclang writes to start the program. Give it another name with `export extern \"name\" fn`.")
+        if (varArg != null) reject("C can't call a function with `...`. Take an array instead.")
+        params.firstOrNull { it.default != null }?.let { reject("C has no default values, so parameter '${it.name}' must be given. Remove its default, and keep a function with a default next to it if eclang code needs one.") }
+        params.firstOrNull { Overload.isTemplateType(it.type) }?.let { reject("parameter '${it.name}' is a ${it.type}, so each call compiles a copy of the function. Export a function for each concrete type you need.") }
+        if (Overload.containsTypeParam(returns)) reject("it returns a $returns, so each call compiles a copy of the function. Export a function for each concrete type you need.")
+        params.firstOrNull { variants(it.type).size > 1 }?.let { reject("parameter '${it.name}' is a ${it.type}, which makes one C function per type. Export a function for each type, or take a single type.") }
     }
 
     /**
@@ -218,31 +270,91 @@ class Functions(private val cd: CompileData) {
         return if (hints.all { it === first } && !Overload.isTemplateType(first)) first else Types.None
     }
 
+    /** The type to use as a hint for the argument named [parameter], when every candidate agrees on it. */
+    fun hintForName(name: String, parameter: String, qualifier: Module? = null): Type {
+        val hints = visible(name, qualifier).mapNotNull { o -> o.params.firstOrNull { it.name == parameter }?.type }
+        val first = hints.firstOrNull() ?: return Types.None
+        return if (hints.all { it === first } && !Overload.isTemplateType(first)) first else Types.None
+    }
+
+    /**
+     * [args] in the order of [o]'s parameters, or null when [o] doesn't take them. [names] gives each argument's parameter
+     * (null: it fills the next parameter in order), or is null when no argument has one.
+     */
+    private fun <T> arrange(o: Overload, args: List<T>, names: List<String?>?): List<T>? {
+        if (!fitsArity(o, args.size)) return null
+        if (names == null) return if (o.namedOnly) null else args
+        if (args.size != o.params.size) return null
+        val inOrder = names.count { it == null }
+        if (o.params.take(inOrder).map { it.name } != o.declared.take(inOrder)) return null
+        return args.take(inOrder) + o.params.drop(inOrder).map { p -> args[names.indexOf(p.name).takeIf { it >= 0 } ?: return null] }
+    }
+
+    /** Why no overload takes the named arguments [names], or null when the usual error says it better. */
+    private fun namedProblem(name: String, candidates: List<Overload>, names: List<String?>): String? {
+        val parameters = candidates.flatMap { it.declared }.distinct()
+        names.filterNotNull().firstOrNull { it !in parameters }?.let {
+            return "$name(...) has no parameter called '$it'.${CompileData.suggestion(it, parameters)} Its parameters are: ${parameters.joinToString(", ")}."
+        }
+        val inOrder = names.count { it == null }
+        names.filterNotNull().firstOrNull { n -> candidates.all { n in it.declared.take(inOrder) } }?.let {
+            return "Parameter '$it' of $name(...) is given twice: by an argument in order, and by name."
+        }
+        val required = candidates.flatMap { o -> o.declared.drop(inOrder).filter { p -> p !in names && o.absent.none { it.name == p } && o.params.any { it.name == p } && candidates.none { c -> c.absent.any { it.name == p } } } }
+        return required.firstOrNull()?.let { "$name(...) also needs its parameter '$it', which has no default value." }
+    }
+
     private fun fitsArity(o: Overload, count: Int) = if (o.varArg != null) count >= o.params.size else count == o.params.size
 
     /**
-     * Resolves a call of [name] with [args] (already compiled) to the best overload. [qualifier]: the module of a
-     * qualified call, `fib.add(1, 2)`.
+     * The function type a lambda without parameter types gets as argument [index] of a generic function: what the
+     * [known] argument types (null: not compiled yet) make of its parameter, `(Int) => None` for `<T>[]` and `(<T>) => <U>`
+     * called with an `Int[]`. A return type that is still generic comes from the lambda, so it is left open (None).
      */
-    fun call(location: Loc, name: String, args: List<Pair<Type, IIR>>, qualifier: Module? = null): CallTarget {
-        val candidates = visible(name, qualifier).ifEmpty { notDefined(location, name, qualifier) }
-        args.forEachIndexed { i, a -> cd.usable(location, a, "argument ${i + 1} of '$name'") }
-        val argTypes = args.map { it.first }
-
-        val scored = candidates.filter { fitsArity(it, args.size) }.mapNotNull { o ->
+    fun lambdaHint(name: String, count: Int, index: Int, known: List<Type?>, qualifier: Module? = null): Type {
+        val hints = visible(name, qualifier).filter { fitsArity(it, count) }.mapNotNull { o ->
+            val param = o.params.getOrNull(index)?.type as? FunctionType ?: return@mapNotNull null
             val bindings = mutableMapOf<TypeParam, Type>()
-            score(o, argTypes, bindings)?.let { Triple(o, it, bindings) }
-        }
-        if (scored.isEmpty()) throw EcNoMatchingCallSignatureError(location, name, argTypes, whyNoMatch(candidates, argTypes))
-        val best = scored.minOf { it.second }
-        // On a tie, a concrete function beats a generic one, and the current module's function beats the top level's.
-        val winners = scored.filter { it.second == best }
-            .let { w -> w.filter { !it.first.isTemplate }.ifEmpty { w } }
-            .let { w -> w.filter { it.first.module === cd.module }.ifEmpty { w } }
-        if (winners.size > 1) throw EcAmbiguousSignatureError(location, name, argTypes, winners.map { it.first.describe() })
+            val fits = known.withIndex().all { (i, t) ->
+                val p = o.params.getOrNull(i)?.type
+                t == null || p == null || !Overload.containsTypeParam(p) || types.bind(p, t, bindings)
+            }
+            val bound = types.substitute(param, bindings) as FunctionType
+            if (!fits || bound.params.any { Overload.containsTypeParam(it) }) null
+            else types.function(bound.params, if (Overload.containsTypeParam(bound.returns)) Types.None else bound.returns, bound.throws)
+        }.distinct()
+        return hints.singleOrNull() ?: Types.None
+    }
 
-        val (chosen, _, bindings) = winners[0]
-        val target = if (chosen.isTemplate) instantiate(location, chosen, argTypes, bindings) else chosen
+    /**
+     * Resolves a call of [name] with [args] (already compiled) to the best overload. [qualifier]: the module of a
+     * qualified call, `fib.add(1, 2)`. [expected]: the type wanted of the result, which decides a `<T>` that only the
+     * return type has (`val names: @List<String> = list()`). [names]: the parameter each argument is for, if any has one.
+     */
+    fun call(location: Loc, name: String, written: List<Pair<Type, IIR>>, qualifier: Module? = null, expected: Type = Types.None, names: List<String?>? = null): CallTarget {
+        val candidates = visible(name, qualifier).ifEmpty { notDefined(location, name, qualifier) }
+        written.forEachIndexed { i, a -> cd.usable(location, a, "argument ${i + 1} of '$name'") }
+
+        val scored = candidates.mapNotNull { o ->
+            val ordered = arrange(o, written, names) ?: return@mapNotNull null
+            val bindings = mutableMapOf<TypeParam, Type>()
+            score(o, ordered.map { it.first }, bindings)?.let { Scored(o, it, bindings, ordered) }
+        }
+        if (scored.isEmpty()) {
+            names?.let { namedProblem(name, candidates, it) }?.let { throw EcError(location, it) }
+            val types = written.map { it.first }
+            throw EcNoMatchingCallSignatureError(location, name, types, if (names == null) whyNoMatch(candidates, types) else "Available: ${candidates.joinToString("; ") { it.describe() }}.")
+        }
+        val best = scored.minOf { it.cost }
+        // On a tie, a concrete function beats a generic one, and the current module's function beats the top level's.
+        val winners = scored.filter { it.cost == best }
+            .let { w -> w.filter { !it.overload.isTemplate }.ifEmpty { w } }
+            .let { w -> w.filter { it.overload.module === cd.module }.ifEmpty { w } }
+        if (winners.size > 1) throw EcAmbiguousSignatureError(location, name, written.map { it.first }, winners.map { it.overload.describe() })
+
+        val (chosen, _, bindings, args) = winners[0]
+        val argTypes = args.map { it.first }
+        val target = if (chosen.isTemplate) instantiate(location, chosen, argTypes, bindings, expected) else chosen
         val irs = target.params.mapIndexed { i, p ->
             val ir = cd.expect(location, args[i], p.type, "argument ${i + 1} of '$name'")
             val enum = if (target.isExternal) cd.enums[p.type] else null
@@ -256,6 +368,7 @@ class Functions(private val cd: CompileData) {
         target.varArg?.let { va ->
             if (va.isCVarArg) extra.forEachIndexed { i, a ->
                 val t = cd.storable(location, a.first, "argument ${target.params.size + i + 1} of '$name'")
+                if (target.isExternal) cVarArgProblem(t)?.let { throw EcError(location, "Argument ${target.params.size + i + 1} of '$name' is a $t, which C's `...` can't take: $it") }
                 irs += cd.expect(location, a, t, "argument ${target.params.size + i + 1} of '$name'")
             } else {
                 val values = extra.mapIndexed { i, a -> cd.expect(location, a, va.type, "argument ${target.params.size + i + 1} of '$name'") }
@@ -283,15 +396,66 @@ class Functions(private val cd: CompileData) {
     /** A C function returning `const char*` (or another const pointer) gives an eclang value without the const. */
     fun returnsConst(o: Overload): Boolean = o.isExternal && o.throws == null && pointerLike(o.returns)
 
+    /**
+     * Why a value of type [t] can't be passed to a C function's `...` (C reads it as a number or a pointer, as its
+     * format says), with the fix, or null when it can.
+     */
+    private fun cVarArgProblem(t: Type): String? = when {
+        t === Types.String -> "a String is a struct with a length, and its bytes need not end with a 0. Use `%.*s` with `s.len as Int, s.data`, or put it in a String with `\${...}` and use that."
+        t is ArrayType && !t.isC -> "an array is a struct with a length. Pass its elements' memory with `.data` (a C array)."
+        t is FixedArray -> "C can't take an array by value. Pass its elements' memory with `.data`."
+        t is Declared -> "C functions with `...` take numbers and pointers. Pass its fields instead, or a pointer to it (`addrof x`)."
+        t is Union && !isPlainUnion(t) -> "a tagged union is a struct. Check what it holds first (`if x is T do`), or use `x ?? default`."
+        t is Tuple || t is Result -> "it is a struct. Pass its parts instead."
+        else -> null
+    }
+
+    /** A union C holds as one pointer (`T?` of a pointer type, atoms), see CTypes.isPlain. */
+    private fun isPlainUnion(u: Union): Boolean {
+        val values = u.members.filter { it !== Types.Null }
+        return values.all { it === Types.Atom || it is AtomLiteral } ||
+            (values.size == 1 && values[0].let { it is Pointer || it === Types.CString || it === Types.Atom || it is AtomLiteral || (it is ArrayType && it.isC) || it is FunctionType })
+    }
+
+    /** An overload a call fits: what it costs, what its `<T>`s stand for, and the arguments in the order of its parameters. */
+    private data class Scored(val overload: Overload, val cost: Int, val bindings: Map<TypeParam, Type>, val args: List<Pair<Type, IIR>>)
+
+    /** The (record, interface) pairs being checked by [missingMethod], so a method taking the interface itself doesn't loop. */
+    private val checking = HashSet<Pair<Type, Type>>()
+
+    /**
+     * The first function interface [iface] (or `@Interface`) asks for that can't be called on an [arg] (`arg.name(...)`
+     * with the interface's parameter types, returning its type), or null when the record has them all.
+     */
+    fun missingMethod(arg: Type, iface: Type): InterfaceMethod? {
+        val i = (if (iface is Pointer) iface.target else iface) as? Interface ?: return null
+        val methods = cd.interfaceMethods[i] ?: return null
+        if (!checking.add(arg to i)) return null
+        try {
+            return methods.firstOrNull { m ->
+                visible(m.name).none { o ->
+                    fitsArity(o, m.params.size + 1) && score(o, listOf(arg) + m.params, HashMap()) != null &&
+                        (m.returns === Types.None || Overload.containsTypeParam(o.returns) || types.cost(o.returns, m.returns) != TypeContext.NO)
+                }
+            }
+        } finally {
+            checking.remove(arg to i)
+        }
+    }
+
     /** Total cost of calling [o] with [argTypes], or null when it doesn't fit. Generic parameters cost extra. */
     private fun score(o: Overload, argTypes: List<Type>, bindings: MutableMap<TypeParam, Type>): Int? {
         var total = 0
         for ((i, a) in argTypes.withIndex()) {
             val p = o.params.getOrNull(i)
             val cost = when {
-                p == null -> if (o.varArg!!.isCVarArg) 0 else types.cost(a, o.varArg.type)
+                p == null -> when {
+                    o.varArg!!.isCVarArg -> 0
+                    Overload.containsTypeParam(o.varArg.type) -> if (types.bind(o.varArg.type, a, bindings)) genericCost else TypeContext.NO
+                    else -> types.cost(a, o.varArg.type)
+                }
                 Overload.containsTypeParam(p.type) -> if (types.bind(p.type, a, bindings)) genericCost else TypeContext.NO
-                Overload.isInterface(p.type) -> types.cost(a, p.type).let { if (it == TypeContext.NO) it else it + genericCost }
+                Overload.isInterface(p.type) -> types.cost(a, p.type).let { if (it == TypeContext.NO || missingMethod(a, p.type) != null) TypeContext.NO else it + genericCost }
                 p.type === Types.Any && !o.isExternal -> genericCost
                 else -> types.cost(a, p.type)
             }
@@ -309,13 +473,20 @@ class Functions(private val cd: CompileData) {
                 val p = o.params.getOrNull(i)?.type ?: o.varArg?.takeIf { !it.isCVarArg }?.type ?: return@forEachIndexed
                 if (!Overload.containsTypeParam(p) && p !== Types.Any && !types.accepts(p, a))
                     return "Argument ${i + 1} should be $p: ${types.explain(a, p)}."
+                if (Overload.isInterface(p)) missingMethod(a, p)?.let { m ->
+                    val params = (listOf("x: $a") + m.params.mapIndexed { j, t -> "p${j + 1}: $t" }).joinToString(", ")
+                    val returns = if (m.returns === Types.None) "" else ": ${m.returns}"
+                    return "Argument ${i + 1} should be $p, which asks for `$m`, but there is no function '${m.name}' for a $a. Define one: `fn ${m.name}($params)$returns`."
+                }
             }
         }
         return "Available: ${candidates.joinToString("; ") { it.describe() }}."
     }
 
     /** The instance of template [o] for these argument types, compiled later by [buildAll]. */
-    private fun instantiate(location: Loc, o: Overload, argTypes: List<Type>, bindings: Map<TypeParam, Type>): Overload {
+    private fun instantiate(location: Loc, o: Overload, argTypes: List<Type>, argBindings: Map<TypeParam, Type>, expected: Type): Overload {
+        val bindings = argBindings.toMutableMap()
+        if (Overload.containsTypeParam(types.substitute(o.returns, bindings)) && expected !== Types.None) types.bind(o.returns, types.nonNull(expected), bindings)
         val paramTypes = o.params.mapIndexed { i, p ->
             when {
                 Overload.containsTypeParam(p.type) -> types.substitute(p.type, bindings)
@@ -323,13 +494,76 @@ class Functions(private val cd: CompileData) {
                 else -> p.type
             }
         }
-        return o.instances.getOrPut(paramTypes) {
-            val returns = types.substitute(o.returns, bindings)
-            if (Overload.containsTypeParam(returns)) throw EcGenericNotEstablishedError(location, returns.toString())
+        val returns = types.substitute(o.returns, bindings)
+        if (Overload.containsTypeParam(returns)) throw EcGenericNotEstablishedError(location, returns.toString())
+        val varArg = o.varArg?.let { Parameter(it.location, it.name, types.substitute(it.type, bindings), null, it.isVarArg, it.isCVarArg) }
+        varArg?.takeIf { Overload.containsTypeParam(it.type) }?.let { throw EcGenericNotEstablishedError(location, it.type.toString()) }
+        // The result and the variadic part count: `list()` is a different function for each element type.
+        return o.instances.getOrPut(paramTypes + returns + listOfNotNull(varArg?.type)) {
             val params = o.params.mapIndexed { i, p -> Parameter(p.location, p.name, paramTypes[i], p.default) }
-            Overload(o.location, o.module, o.name, "${o.cName}_g${o.instances.size}", params, o.absent, returns, o.throws, o.varArg,
-                o.body, false, bindings.mapKeys { it.key.name }, isUnionCopy = true).also { toBuild += it; cd.reserveCName(it.cName) }
+            Overload(o.location, o.module, o.name, "${o.cName}_g${o.instances.size}", params, o.absent, returns, o.throws, varArg,
+                o.body, false, bindings.mapKeys { it.key.name }, isUnionCopy = true, declared = o.declared).also { toBuild += it; cd.reserveCName(it.cName) }
         }
+    }
+
+    /** Whether a function [name] can be called with one [argument]. */
+    fun accepts(name: String, argument: Type, qualifier: Module? = null) = visible(name, qualifier).any { !it.namedOnly && fitsArity(it, 1) && score(it, listOf(argument), HashMap()) != null }
+
+    /**
+     * The call `name(argument)` that a language feature makes for a type (`next` and `iter` of `for`), or null when nothing takes
+     * [argument]. The function may be in the module that declares the type, as the feature can be used anywhere the value gets to.
+     */
+    fun protocolCall(location: Loc, name: String, argument: Pair<Type, IIR>): CallTarget? {
+        if (accepts(name, argument.first)) return call(location, name, listOf(argument))
+        return owner(argument.first)?.takeIf { accepts(name, argument.first, it) }?.let { call(location, name, listOf(argument), it) }
+    }
+
+    /** For each type printed so far, the `str` function that prints it, or null when CTypes.show generates that. */
+    val printers = HashMap<Type, Overload?>()
+
+    /** Resolves the `str` functions used to print a [t] in `${...}`, and those of everything it holds (see CTypes.show). */
+    fun resolvePrinters(location: Loc, t: Type, seen: MutableSet<Type> = HashSet()) {
+        if (!seen.add(t) || IRFormat.spec(t) != null) return
+        if (t is Pointer) (t.target as? Record)?.descendants?.drop(1)?.forEach { resolvePrinters(location, types.pointer(it), seen) }
+        val own = if (t is Record || t is Tuple || t is Pointer || t is Distinct) printers.getOrPut(t) { findPrinter(location, t) } else null
+        if (own != null) { use(own.cName); return }
+        when (t) {
+            is Distinct -> resolvePrinters(location, t.base, seen)
+            is Record -> if (!t.isExternal) t.fields.values.forEach { resolvePrinters(location, it, seen) }
+            is Tuple -> t.elements.forEach { resolvePrinters(location, it, seen) }
+            is ArrayType -> if (!t.isC) resolvePrinters(location, t.element, seen)
+            is FixedArray -> resolvePrinters(location, t.element, seen)
+            is Union -> t.members.forEach { resolvePrinters(location, it, seen) }
+            is Pointer -> resolvePrinters(location, t.target, seen)
+            else -> {}
+        }
+    }
+
+    /**
+     * The `str` that prints a [t]: from the module that declares it, or the top level, wherever the value is printed, so one
+     * type prints one way in the whole program. A record without a `str` of its own also uses one that takes a pointer to it.
+     */
+    private fun findPrinter(location: Loc, t: Type): Overload? {
+        val modules = listOfNotNull(owner(t), cd.topLevel).distinct()
+        for (form in if (t is Record || t is Tuple) listOf(t, types.pointer(t)) else listOf(t)) for (m in modules) {
+            val best = overloads[key(m, "str")].orEmpty().filter { !it.isExternal && !it.namedOnly && it.params.size == 1 && it.varArg == null }.mapNotNull { o ->
+                val bindings = mutableMapOf<TypeParam, Type>()
+                score(o, listOf(form), bindings)?.let { Scored(o, it, bindings, listOf()) }
+            }.minByOrNull { it.cost } ?: continue
+            val target = if (best.overload.isTemplate) instantiate(location, best.overload, listOf(form), best.bindings, Types.None) else best.overload
+            if (target.returns !== Types.String || target.throws != null)
+                throw EcError(target.location, "`\${...}` prints a $t with `str`, so `str` must return a String and can't fail. Give it the result type String, or call it something else.")
+            return target
+        }
+        return null
+    }
+
+    /** The module that declares [t], when a module does. */
+    private fun owner(t: Type): Module? = when (t) {
+        is Declared -> cd.findModule(t.namespace)
+        is Distinct -> cd.findModule(t.namespace)
+        is Pointer -> owner(t.target)
+        else -> null
     }
 
     /** The single overload of [name], or null when there are none or several. */
@@ -378,12 +612,13 @@ class Functions(private val cd: CompileData) {
     }
 
     /**
-     * The C functions among [functions] that `main` or a global can reach. The others (most often copies made for union
-     * parameters that no call needs) are left out of the C file. They were still compiled, so their errors are reported.
+     * The C functions among [functions] that `main` (null in a library), a global or an exported function can reach. The others
+     * (most often copies made for union parameters that no call needs) are left out of the C file. They were still compiled, so
+     * their errors are reported.
      */
-    fun reachable(main: Overload, functions: List<IIR>): List<IIR> {
+    fun reachable(main: Overload?, functions: List<IIR>): List<IIR> {
         val seen = HashSet<String>()
-        val waiting = ArrayDeque(listOf(ROOT, main.cName))
+        val waiting = ArrayDeque(listOfNotNull(ROOT, main?.cName) + exported.map { it.cName })
         while (waiting.isNotEmpty()) {
             val next = waiting.removeFirst()
             if (seen.add(next)) uses[next]?.let { waiting.addAll(it) }
@@ -405,6 +640,7 @@ class Functions(private val cd: CompileData) {
         cd.newContext(o.cName, o.bindings)
         cd.function = o
         cd.functionHasErrors = false
+        cd.addressTaken = o.body!!.addressTaken
         o.params.forEach { cd.ctx().define(it.location, Constant(it.name, it.type, cd.localCName(it.name), kind = "a parameter")) }
         // `...rest: T` is the array of the extra arguments, the last C parameter.
         val rest = o.varArg?.takeIf { !it.isCVarArg }?.let { Parameter(it.location, it.name, types.array(it.type)) }
@@ -415,10 +651,12 @@ class Functions(private val cd: CompileData) {
         }
         val block = o.body!!.process(cd, Types.None).second as IRBlock
         if (o.returns !== Types.None && !block.diverges && !cd.functionHasErrors)
-            throw EcError(o.location, "Function ${o.name} returns ${o.returns}, so every path through it must end with `ret`.")
+            throw EcError(o.location, if (o.returns === Types.Never) "Function ${o.name} is declared `Never`, so it must not reach its end. End every path with something that doesn't come back, such as `exit(1)`, a call of another `Never` function, or a loop that doesn't end."
+                else "Function ${o.name} returns ${o.returns}, so every path through it must end with `ret`.")
         cd.function = null
+        cd.addressTaken = mapOf()
         val callType = o.throws?.let { types.result(o.returns, it) } ?: o.returns
         val params = IRParameters(o.location, (o.params + listOfNotNull(rest)).map { IRParameter(it.location, cd.localCName(it.name), it.type, null) })
-        IRFunctionOverride(o.location, block, o.cName, params, callType, o.throws != null && o.returns === Types.None, o.varArg?.isCVarArg == true)
+        IRFunctionOverride(o.location, block, o.cName, params, callType, o.throws != null && o.returns === Types.None, o.varArg?.isCVarArg == true, o.exportName != null)
     }
 }

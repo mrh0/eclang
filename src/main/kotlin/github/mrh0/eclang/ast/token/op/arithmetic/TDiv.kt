@@ -14,7 +14,7 @@ class TDiv(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> =
         arithmetic(cd, location, "/", left, right,
             { a, b -> if (b == 0L) throw ArithmeticException("division by zero") else a / b },
-            { a, b -> if (b == 0.0) throw ArithmeticException("division by zero") else a / b },
+            { a, b -> if (b == 0.0) throw ArithmeticException("division by zero") else a / b }, checked = "/",
         ) { l, r -> IRDiv(location, l, r) }
 
     override fun toString(): String {

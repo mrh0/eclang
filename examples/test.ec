@@ -1,6 +1,6 @@
 module "test"
 
-use "core:lib.ec"
+use "core:io.ec"
 
 val G: Int = 69
 var G2: Int = 420
@@ -45,18 +45,18 @@ fn main(): Int do
     throwsTest2(7)
     // val testUnitValue = 554.0testUnit
     val testCast = "Testing" as unsafe CString
-    log(genericTest("Test"c))
+    io.log(genericTest("Test"c))
     createPool(addrof(ROOT_POOL!), null)
-    log("Cloned String"c.clone())
+    io.log("Cloned String"c.clone())
     val array1 = ["One", "Two", "Three"]
     val array2: Int[] = [5, 3, 6, 0]
     val carray1 = ["One", "Two", "Three"]c
     val carray2: Int[]c = [5, 3, 6, 0]c
     const staticVal = 6
-    log(array1.len) if true
+    io.log(array1.len) if true
     for index in array1 do
-        log(array1[index])
-    log("Hello World")
+        io.log(array1[index])
+    io.log("Hello World")
     val tchar: Char = 10b
     val tshort: Short = 10s
     val tint: Int = 10i
@@ -71,8 +71,8 @@ fn main(): Int do
     val d: Bool = a === b // false
     val divRes: IntDivResult = div(245, 5)
     0.x()
-    log("Hello World"c)
-    log("World"c)
+    io.log("Hello World"c)
+    io.log("World"c)
     val addr: @Int = addrof G2
     val addr2: Int = @addr
     test(
@@ -97,25 +97,25 @@ fn main(): Int do
         iter = iter-1
     if "Test"c == "NotTest"c do
         val ff: CString = "DFE"c
-        log("Test1"c)
+        io.log("Test1"c)
     else if false do
-        log("Test2"c)
+        io.log("Test2"c)
     else
-        log("Test3"c)
+        io.log("Test3"c)
     ret if (true) 1 else 0
 
 declare type DefinedType as Int
 
 fn defTest(input: DefinedType): Int do
-    defer log("1"c)
-    log("2"c)
+    defer io.log("1"c)
+    io.log("2"c)
     if true do
-        defer log("3"c)
-        log("4"c)
+        defer io.log("3"c)
+        io.log("4"c)
     else
         defer do
-            log("5"c)
-        log(
+            io.log("5"c)
+        io.log(
             "test"c
         )
         ret 1
@@ -137,10 +137,10 @@ fn test(a: Int, b: Int | CString, c: Int = a): Int do
     ret c
 
 fn x(a: Int) do
-    log("Int"c)
+    io.log("Int"c)
 
 fn x(a: CString) do
-    log("Str"c)
+    io.log("Str"c)
 
 fn y(a: Int | CString) do
     x(a)

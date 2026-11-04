@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 val READ = 1 << 0
 val WRITE = 1 << 1
@@ -8,19 +8,19 @@ fn has(flags: Int, flag: Int): Bool = flags & flag != 0
 
 fn main(): Int do
     val flags = READ | EXEC
-    log(flags)
-    log(has(flags, WRITE))
-    log(has(flags, EXEC))
-    log(flags ^ READ)
-    log(~0)
-    log(256 >> 4)
+    io.log(flags)
+    io.log(has(flags, WRITE))
+    io.log(has(flags, EXEC))
+    io.log(flags ^ READ)
+    io.log(~0)
+    io.log(256 >> 4)
 
     // Shifts keep the type of the left side.
     val c: UChar = 200
-    log(c << 1)
-    log(~c)
+    io.log(c << 1)
+    io.log(~c)
     val big: Long = 1 << 40
-    log(big)
+    io.log(big)
     var x: Long = 3
-    log(x << 33)
+    io.log(x << 33)
     ret 0

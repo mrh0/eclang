@@ -1,0 +1,15 @@
+value 1
+nothing 1
+plain done
+plain failed 1
+value -1
+plain failed 2
+value 1
+tailIf done
+tailIf done
+tailIf failed 1
+deferred
+deferred failed 1
+value 2
+pooled done
+pooled failed 1

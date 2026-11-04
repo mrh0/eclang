@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // C only allows constant initializers for globals; the others are set at the start of the program, in order.
 fn twice(x: Int): Int do
@@ -11,9 +11,9 @@ val d = 1 << 3
 val names = ["x"c, "y"c]
 
 fn main(): Int do
-    log(a)
-    log(b)
-    log(c as Int)
-    log(d)
-    log(names[1])
+    io.log(a)
+    io.log(b)
+    io.log(c as Int)
+    io.log(d)
+    io.log(names[1])
     ret 0

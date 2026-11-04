@@ -2,6 +2,7 @@ use "apr_time.h"
 use "core:apr/apr.ec"
 use "core:apr/pools.ec"
 use "core:apr/errno.ec"
+use "core:c/time.ec"
 
 declare val apr_month_snames as @Char
 declare val apr_day_snames as @Char
@@ -22,7 +23,6 @@ declare val apr_day_snames as @Char
 declare type apr_time_t as apr_int64_t
 declare type apr_interval_time_t as apr_int64_t
 declare type apr_short_interval_time_t as apr_int32_t
-declare type time_t as Long
 
 // A time split into parts (apr_time_exp_lt, apr_time_exp_gmt).
 declare rec apr_time_exp_t as

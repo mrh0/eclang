@@ -28,9 +28,7 @@ class TTry(location: Loc, val expr: ITok) : Tok(location) {
         if (!cd.types.accepts(outerError, t.error))
             throw EcError(location, "This call can fail with ${t.error}, but ${fn.name} only throws $outerError: ${cd.types.explain(t.error, outerError)}.")
         val temp = cd.temp()
-        val deferred = cd.noHoist("`try` can't be used in `defer`.") {
-            cd.ctx().getDeferred().reversed().map { it.process(cd, Types.None).second }
-        }
+        val deferred = cd.compileDeferred(cd.ctx().getDeferred().reversed())
         // Inside a `pool do` block, the error may be allocated in a pool that leaving frees: pass on a copy instead.
         val copyInto = cd.poolEntry.takeIf { cd.poolBlocks.isNotEmpty() && Lifetimes.holdsPointer(outerError) }
         cd.hoist(location, IRTryPropagate(location, temp, t, ir, cd.types.result(fn.returns, outerError), deferred, copyInto))

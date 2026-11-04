@@ -11,7 +11,7 @@ import github.mrh0.ect2.Type
 
 class TMul(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> =
-        arithmetic(cd, location, "*", left, right, { a, b -> Math.multiplyExact(a, b) }, { a, b -> a * b }) { l, r -> IRMul(location, l, r) }
+        arithmetic(cd, location, "*", left, right, { a, b -> Math.multiplyExact(a, b) }, { a, b -> a * b }, checked = "*") { l, r -> IRMul(location, l, r) }
 
     override fun toString(): String {
         return "TMul($left, $right)"

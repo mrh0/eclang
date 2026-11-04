@@ -1,0 +1,11 @@
+tests/doc/warnings.ec:1:1: warning: This ecdoc doesn't document anything. Put it right before a declaration (`fn`, `rec`, `inter`, `val`, a record field, ...), before `module` or the first `use` to describe the file, or write `/*` instead of `/**` to make it an ordinary comment.
+tests/doc/warnings.ec:4:1: warning: `@param x`: 'add' has no parameter 'x'. Did you mean 'a'?
+tests/doc/warnings.ec:5:1: warning: `@param y`: 'add' has no parameter 'y'. Did you mean 'a'?
+tests/doc/warnings.ec:6:1: warning: `@param x` is written twice; merge the two into one.
+tests/doc/warnings.ec:7:1: warning: `@param` needs the parameter's name first: `@param count how many to read`.
+tests/doc/warnings.ec:8:1: warning: `@return`: 'add' returns nothing. Remove the tag, or give 'add' a return type (`fn add(...): Int`).
+tests/doc/warnings.ec:9:1: warning: `@throws`: 'add' doesn't throw. Remove the tag, or add the error type after the return type (`: Int throws Error`).
+tests/doc/warnings.ec:10:1: warning: Unknown ecdoc tag `@frobnicate`. The tags are `@param`, `@return`, `@returns`, `@throws`, `@exception`, `@see`, `@since`, `@deprecated`, `@author`. To start a line of the description with `@` (a pointer type, say), put it in backquotes: `` `@frobnicate` ``.
+tests/doc/warnings.ec:13:5: warning: This ecdoc doesn't document anything. Put it right before a declaration (`fn`, `rec`, `inter`, `val`, a record field, ...), before `module` or the first `use` to describe the file, or write `/*` instead of `/**` to make it an ordinary comment.
+tests/doc/warnings.ec:19:1: warning: `@return` documents a function, but this is a record field.
+tests/doc/warnings.ec:25:1: warning: This ecdoc doesn't document anything. Put it right before a declaration (`fn`, `rec`, `inter`, `val`, a record field, ...), before `module` or the first `use` to describe the file, or write `/*` instead of `/**` to make it an ordinary comment.

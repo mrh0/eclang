@@ -18,7 +18,10 @@ declare val APR_POLLSET_NOCOPY as Int
 declare val APR_POLLSET_WAKEABLE as Int
 declare val APR_POLLSET_NODEFAULT as Int
 
-declare rec apr_descriptor
+// A union in C: `f` when desc_type is APR_POLL_FILE, `s` when it is APR_POLL_SOCKET.
+declare struct apr_descriptor as
+    f: @apr_file_t?
+    s: @apr_socket_t?
 
 // enum  	apr_datatype_e { APR_NO_DESC, APR_POLL_SOCKET, APR_POLL_FILE, APR_POLL_LASTDESC }
 declare enum apr_pollset_method_e as
@@ -29,8 +32,18 @@ declare enum apr_pollset_method_e as
     :epoll = APR_POLLSET_EPOLL
     :poll = APR_POLLSET_POLL
 declare type apr_datatype_e as Int
+declare val APR_NO_DESC as apr_datatype_e
+declare val APR_POLL_SOCKET as apr_datatype_e
+declare val APR_POLL_FILE as apr_datatype_e
 
-declare rec apr_pollfd_t
+// What to wait for (reqevents, APR_POLL*) on what (desc); apr_poll sets rtnevents to what happened.
+declare struct apr_pollfd_t as
+    p: @apr_pool_t?
+    desc_type: apr_datatype_e
+    reqevents: Short
+    rtnevents: Short
+    desc: apr_descriptor
+    client_data: @Any?
 declare rec apr_pollset_t
 declare rec apr_pollcb_t
 

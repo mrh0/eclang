@@ -40,6 +40,8 @@ internal fun emptyValueProblem(t: Type): String? = when {
     t is Prim && (t.isNumber || t === Types.Bool || t === Types.Char || t === Types.String) -> null
     t is ArrayType && !t.isC -> null
     t is Tuple -> t.elements.firstNotNullOfOrNull { emptyValueProblem(it) }
+    t is FixedArray -> emptyValueProblem(t.element)
+    t is Distinct && t.base is FixedArray -> emptyValueProblem(t.base)
     // A C struct's fields are C's business: an out-parameter is filled in by C anyway.
     t is Record && t.isExternal -> null
     t is Record -> t.fields.entries.firstNotNullOfOrNull { (name, field) -> emptyValueProblem(field)?.let { "its field `$name` has no empty value ($it)" } }

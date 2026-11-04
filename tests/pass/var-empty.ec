@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // `var x: T` without a value starts out empty.
 rec Point as
@@ -25,19 +25,19 @@ fn main(): Int do
     var items: Int[]
     var name: CString?
     var p: Point
-    log(count)
-    log(done)
-    log(ratio)
-    log(text.len)
-    log(items.len)
-    log(name == null)
-    log(p.x + p.y)
+    io.log(count)
+    io.log(done)
+    io.log(ratio)
+    io.log(text.len)
+    io.log(items.len)
+    io.log(name == null)
+    io.log(p.x + p.y)
     fill(addrof(p))
-    log(p.x + p.y)
+    io.log(p.x + p.y)
     count += 2
-    log(count)
+    io.log(count)
     // A record in a hierarchy still knows its type.
     var sq: Square
     sq.w = 5
-    log(area(addrof(sq)))
+    io.log(area(addrof(sq)))
     ret 0

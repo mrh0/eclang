@@ -1,5 +1,5 @@
 // error: The error from parse(...) is ignored: it can fail with Error
-use "core:lib.ec"
+use "core:errors.ec"
 
 fn parse(c: Char): Int throws Error = 1
 

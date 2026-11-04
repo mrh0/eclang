@@ -1,0 +1,187 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "eclang",
+  "scopeName": "source.eclang",
+  "fileTypes": ["ec"],
+  "patterns": [{ "include": "#code" }],
+  "repository": {
+    "code": {
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#strings" },
+        { "include": "#chars" },
+        { "include": "#atoms" },
+        { "include": "#numbers" },
+        { "include": "#declarations" },
+        { "include": "#keywords" },
+        { "include": "#types" },
+        { "include": "#calls" },
+        { "include": "#operators" },
+        { "include": "#punctuation" }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.documentation.eclang",
+          "begin": "/\\*\\*(?!/)",
+          "end": "\\*/",
+          "patterns": [{ "include": "#ecdoc" }]
+        },
+        { "name": "comment.block.eclang", "begin": "/\\*", "end": "\\*/" },
+        { "name": "comment.line.double-slash.eclang", "match": "//.*$" }
+      ]
+    },
+    "ecdoc": {
+      "patterns": [
+        {
+          "match": "(?<=^|\\s|\\*)(@(?:param))\\s+(<\\w+>|[\\w.]+)",
+          "captures": {
+            "1": { "name": "storage.type.class.ecdoc.eclang" },
+            "2": { "name": "variable.parameter.ecdoc.eclang" }
+          }
+        },
+        {
+          "match": "(?<=^|\\s|\\*)(@(?:throws|exception|see))\\s+([\\w.#]+)",
+          "captures": {
+            "1": { "name": "storage.type.class.ecdoc.eclang" },
+            "2": { "name": "entity.name.type.ecdoc.eclang" }
+          }
+        },
+        {
+          "name": "storage.type.class.ecdoc.eclang",
+          "match": "(?<=^|\\s|\\*)@(?:returns?|since|deprecated|author)\\b"
+        },
+        {
+          "match": "(\\{)(@(?:link|linkplain|code))\\s+([^}]*)(})",
+          "captures": {
+            "1": { "name": "punctuation.definition.tag.eclang" },
+            "2": { "name": "storage.type.class.ecdoc.eclang" },
+            "3": { "name": "markup.inline.raw.eclang" },
+            "4": { "name": "punctuation.definition.tag.eclang" }
+          }
+        },
+        { "name": "markup.inline.raw.eclang", "match": "`[^`\\n]*`" }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.eclang",
+      "begin": "\"",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.eclang" } },
+      "end": "(\"c?)|$",
+      "endCaptures": { "1": { "name": "punctuation.definition.string.end.eclang" } },
+      "patterns": [
+        { "name": "constant.character.escape.eclang", "match": "\\\\(?:x[0-9a-fA-F]{2}|u\\{[0-9a-fA-F]+}|u[0-9a-fA-F]{4}|.)" },
+        {
+          "name": "meta.embedded.expression.eclang",
+          "contentName": "source.eclang",
+          "begin": "\\$\\{",
+          "beginCaptures": { "0": { "name": "punctuation.definition.interpolation.begin.eclang" } },
+          "end": "}|$",
+          "endCaptures": { "0": { "name": "punctuation.definition.interpolation.end.eclang" } },
+          "patterns": [{ "include": "#code" }]
+        }
+      ]
+    },
+    "chars": {
+      "name": "string.quoted.single.eclang",
+      "match": "'(?:(\\\\[nrt\\\\'\"0])|[^\\\\'])'",
+      "captures": { "1": { "name": "constant.character.escape.eclang" } }
+    },
+    "atoms": {
+      "name": "constant.other.symbol.eclang",
+      "match": "(?<![\\w:]):[a-zA-Z0-9][_a-zA-Z0-9]*"
+    },
+    "numbers": {
+      "patterns": [
+        { "name": "constant.numeric.hex.eclang", "match": "\\b0x[0-9a-fA-F]*\\b" },
+        { "name": "constant.numeric.binary.eclang", "match": "\\b0b[01]*\\b" },
+        { "name": "constant.numeric.float.eclang", "match": "\\b[0-9][_0-9]*\\.[0-9][_0-9]*(?:[eE][+-]?[0-9]+)?\\b" },
+        { "name": "constant.numeric.integer.eclang", "match": "\\b(?:0|[1-9][_0-9]*)\\b" }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(fn)\\s+([_a-zA-Z][_a-zA-Z0-9]*)\\b(?!\\s*\\.)",
+          "captures": {
+            "1": { "name": "storage.type.function.eclang" },
+            "2": { "name": "entity.name.function.eclang" }
+          }
+        },
+        {
+          "match": "\\b(rec|record|inter|struct|enum|type)\\s+([_a-zA-Z][_a-zA-Z0-9]*)\\b",
+          "captures": {
+            "1": { "name": "storage.type.eclang" },
+            "2": { "name": "entity.name.type.eclang" }
+          }
+        },
+        {
+          "match": "\\b(extends)\\s+([_a-zA-Z][_a-zA-Z0-9]*)\\b",
+          "captures": {
+            "1": { "name": "storage.modifier.eclang" },
+            "2": { "name": "entity.other.inherited-class.eclang" }
+          }
+        },
+        {
+          "match": "\\b(var|val|vol|const)\\s+([_a-zA-Z][_a-zA-Z0-9]*)\\b",
+          "captures": {
+            "1": { "name": "storage.type.eclang" },
+            "2": { "name": "variable.other.eclang" }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        { "name": "keyword.control.conditional.eclang", "match": "\\b(?:if|else|when)\\b" },
+        { "name": "keyword.control.loop.eclang", "match": "\\b(?:while|for|in|where|to|break|continue)\\b" },
+        { "name": "keyword.control.flow.eclang", "match": "\\b(?:ret|yield|pass|do|defer|errdefer|assert)\\b" },
+        { "name": "keyword.control.exception.eclang", "match": "\\b(?:try|catch|throw)\\b" },
+        { "name": "keyword.control.import.eclang", "match": "\\b(?:use|module)\\b" },
+        { "name": "keyword.control.pool.eclang", "match": "\\bpool(?=\\s+(?:[_a-zA-Z][_a-zA-Z0-9]*\\s+)?do\\b)" },
+        { "name": "storage.type.function.eclang", "match": "\\bfn\\b" },
+        { "name": "storage.type.eclang", "match": "\\b(?:var|val|vol|const|rec|record|inter|struct|enum|type|unit)\\b" },
+        { "name": "storage.modifier.eclang", "match": "\\b(?:declare|extern|priv|inline|extends|throws|anon|unsafe)\\b" },
+        { "name": "keyword.operator.word.eclang", "match": "\\b(?:and|or|xor|not|is|as|new|addrof|sizeof|alignof|offsetof|typeof)\\b" },
+        { "name": "constant.language.boolean.eclang", "match": "\\b(?:true|false)\\b" },
+        { "name": "constant.language.null.eclang", "match": "\\bnull\\b" },
+        { "name": "variable.language.eclang", "match": "\\b(?:it|here)\\b" }
+      ]
+    },
+    "types": {
+      "patterns": [
+        { "name": "support.type.primitive.eclang", "match": "\\b(?:Any|Never|None|Null|Bool|Char|Short|Int|Long|UChar|UShort|UInt|ULong|Size|Float|Double|Atom|String|CString)\\b" },
+        { "name": "constant.other.eclang", "match": "\\b[A-Z][A-Z0-9_]+\\b" },
+        { "name": "entity.name.type.eclang", "match": "\\b[A-Z][_a-zA-Z0-9]*\\b" }
+      ]
+    },
+    "calls": {
+      "name": "entity.name.function.call.eclang",
+      "match": "\\b[_a-zA-Z][_a-zA-Z0-9]*(?=\\()"
+    },
+    "operators": {
+      "patterns": [
+        { "name": "keyword.operator.pipe.eclang", "match": "\\|>" },
+        { "name": "keyword.operator.nullish.eclang", "match": "\\?\\?|\\?\\." },
+        { "name": "keyword.operator.range.eclang", "match": "\\.\\.[<=>]?(?!\\.)" },
+        { "name": "keyword.operator.arrow.eclang", "match": "=>" },
+        { "name": "keyword.operator.comparison.eclang", "match": "===|!==|==|!=|<=|>=" },
+        { "name": "keyword.operator.assignment.eclang", "match": "<<=|>>=|[-+*/%&|^]=" },
+        { "name": "keyword.operator.logical.eclang", "match": "&&|\\|\\||\\^\\^|!!|!is\\b|!as\\b" },
+        { "name": "keyword.operator.bitwise.eclang", "match": "<<|>>|[&|^~]" },
+        { "name": "keyword.operator.arithmetic.eclang", "match": "\\*\\*|[-+*/%]" },
+        { "name": "keyword.operator.comparison.eclang", "match": "[<>]" },
+        { "name": "keyword.operator.assignment.eclang", "match": "=" },
+        { "name": "keyword.operator.eclang", "match": "[!@?]" },
+        { "name": "keyword.operator.variadic.eclang", "match": "\\.\\.\\." }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        { "name": "punctuation.separator.eclang", "match": "[,:.]" },
+        { "name": "punctuation.definition.array.c.eclang", "match": "\\]c\\b" }
+      ]
+    }
+  }
+}

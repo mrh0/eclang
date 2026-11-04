@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // `...rest: T` takes any number of T arguments; inside the function rest is a T[].
 fn sum(...rest: Int): Int do
@@ -9,12 +9,12 @@ fn sum(...rest: Int): Int do
 
 fn greet(greeting: CString, ...names: CString) do
     for name in names do
-        log(greeting)
-        log(name)
+        io.log(greeting)
+        io.log(name)
 
 fn main(): Int do
-    log(sum(1, 2, 3))
-    log(sum())
+    io.log(sum(1, 2, 3))
+    io.log(sum())
     greet("hi"c, "Ada"c, "Bob"c)
     greet("nobody"c)
     ret 0

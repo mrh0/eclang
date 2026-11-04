@@ -1,7 +1,7 @@
 // error: Only declarations
-use "core:lib.ec"
+use "core:io.ec"
 
-log(1)
+io.log(1)
 
 fn main(): Int do
     ret 0

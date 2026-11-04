@@ -59,6 +59,9 @@ object Util {
      * looked up next to the file that has the `use` (inside core: for a bundled file), then in the working
      * directory. Returns an absolute path, or a core: path.
      */
+    /** What identifies [file] in a compilation: its canonical path, or `core:name.ec` for a bundled file. */
+    fun sourceName(file: File): String = if (file.path.startsWith("core:")) file.path else file.canonicalPath
+
     fun resolveUse(location: Loc, path: String): String {
         if (path.contains(":") || Path.of(path).isAbsolute) return path
         // Inside a bundled file, a plain path is another bundled file: `use "pools.ec"` in core:apr/env.ec.
@@ -88,6 +91,6 @@ object Util {
 
 
     private val tupleEntryNames: Array<String> = arrayOf("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth",
-        "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "seventeenth", "eighteenth", "nineteenth", "twentieth")
+        "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "eighteenth", "nineteenth", "twentieth")
     fun getTupleEntryName(index: Int, length: Int) = if (index < tupleEntryNames.size) tupleEntryNames[index] else "entry$index"
 }

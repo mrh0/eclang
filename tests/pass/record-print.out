@@ -1,0 +1,21 @@
+Point { x: 1, y: 2 }
+p is Point { x: 1, y: 2 }, and again Point { x: 1, y: 2 }!
+p=Point { x: 1, y: 2 }
+[    Point { x: 1, y: 2 }]
+(1, "two", 'c')
+Point { x: 3, y: 4 }
+Person { name: "Bob", nick: "b", initial: 'b', age: 31, height: 2, active: false, status: :no, home: Point { x: 3, y: 4 }, scores: [3], pair: (2, "y"), best: 7, next: Person { name: "Ann", nick: "annie", initial: 'a', age: 30, height: 1.5, active: true, status: :ok, home: Point { x: 1, y: 2 }, scores: [1, 2], pair: (1, "x"), best: null, next: null } }
+Pair2<Int> { first: 1, second: 2 }
+$12.05
+Wallet { owner: "w", balance: $1.50, history: [$0.01, $2.00] }
+#red
+#blue
+[box 5]
+[box s]
+Node { value: 1, next: Node { value: 2, next: ... } }
+Cat { name: "Tom", lives: 9 }
+the dog Rex
+Animal { name: "Thing" }
+Point { x: 1, y: 2 }
+Outer { inner: inner 1 }
+833

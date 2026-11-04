@@ -32,6 +32,14 @@ class ArrayType internal constructor(id: Int, val element: Type, val isC: Boolea
     override fun toString() = "${paren(element)}[]${if (isC) "c" else ""}"
 }
 
+/**
+ * `T[N]`: [size] elements stored in the value itself, like a C array in a struct. Assigning one copies its elements.
+ * Each length is a type of its own; the elements are reached as an array with `a[..]`, or as a C array with `a.data`.
+ */
+class FixedArray internal constructor(id: Int, val element: Type, val size: Long) : Type(id) {
+    override fun toString() = "${paren(element)}[$size]"
+}
+
 /** `(A, B, C)`: an ordered, fixed-size group of values. */
 class Tuple internal constructor(id: Int, val elements: List<Type>) : Type(id) {
     override fun toString() = elements.joinToString(", ", "(", ")")
@@ -90,7 +98,7 @@ class TypeParam internal constructor(id: Int, val name: String) : Type(id) {
  * different types. [fields] are set once with [define], after creation, so a record can refer to itself
  * (`rec Node as next: @Node?`).
  */
-sealed class Declared(id: Int, val namespace: String, val name: String) : Type(id) {
+sealed class Declared(id: Int, val namespace: String, val name: String, private val cBase: String = name) : Type(id) {
     private var ownFields: Map<String, Type>? = null
     val isDefined get() = ownFields != null
 
@@ -108,9 +116,18 @@ sealed class Declared(id: Int, val namespace: String, val name: String) : Type(i
     fun field(name: String): Type? = fields[name]
 
     /** The C name of a type defined in eclang: `fib__Point` for Point in module fib, plain `Point` elsewhere. */
-    val cName: String get() = if (namespace.isEmpty() || namespace == "core") name else "${namespace}__$name"
+    val cName: String get() = if (namespace.isEmpty() || namespace == "core") cBase else "${namespace}__$cBase"
 
     override fun toString() = name
+}
+
+/**
+ * How a record is laid out in memory: `packed` (no padding between fields), `align(n)` (its address is a multiple of n),
+ * and [isUnion], for `union Name as` (all fields start at the same address, so it holds one of them at a time).
+ */
+class Layout(val packed: Boolean = false, val align: Long? = null, val isUnion: Boolean = false) {
+    /** Whether C's default layout of a struct applies, so that a child record starts like its parent. */
+    val isDefault get() = !packed && align == null && !isUnion
 }
 
 /**
@@ -118,12 +135,24 @@ sealed class Declared(id: Int, val namespace: String, val name: String) : Type(i
  * - [externalName]: the C name, when it differs from [name] (`declare rec Pool extern "apr_pool_t"`).
  * - [isExternal]: declared in C, so eclang never emits its definition.
  * - [isCStruct]: named `struct x` in C rather than through a typedef.
+ * - [generic], [typeArgs]: for an instance of a generic record, `List<Int>`: its template and `[Int]`. Its [name] is
+ *   `List<Int>`, and [cBase] what C calls it.
+ * - [layout]: `packed`, `align(n)` and `union`.
  */
 class Record internal constructor(
     id: Int, namespace: String, name: String, val parent: Record?,
     val externalName: String? = null, val isExternal: Boolean = false, val isCStruct: Boolean = false,
-) : Declared(id, namespace, name) {
+    val generic: GenericRecord? = null, val typeArgs: List<Type> = listOf(), cBase: String = name, val layout: Layout = Layout(),
+) : Declared(id, namespace, name, cBase) {
     private val childList = ArrayList<Record>()
+
+    /** The bit-fields among the fields (`flags: UInt : 3`), with their widths in bits. */
+    val bitWidths = HashMap<String, Int>()
+
+    val isUnion get() = layout.isUnion
+
+    /** What each type parameter of [generic] stands for in this instance: `T` to Int. */
+    val typeBindings: Map<String, Type> get() = generic?.params?.zip(typeArgs)?.toMap() ?: mapOf()
 
     /** Records that directly extend this one. */
     val children: List<Record> get() = childList
@@ -149,6 +178,36 @@ class Record internal constructor(
         }
         return null
     }
+}
+
+/**
+ * `rec List<T> as ...`: not a type of values, but a template for them. Each `List<Int>` is a [Record] of its own, made
+ * once by [instantiate] (see [TypeContext.apply]), as each call of a generic function compiles a copy of the function.
+ */
+class GenericRecord internal constructor(
+    id: Int, val namespace: String, val name: String, val params: List<String>, val instantiate: (List<Type>) -> Record,
+) : Type(id) {
+    /** The instances made so far, by their type arguments. */
+    val instances = HashMap<List<Type>, Record>()
+    override fun toString() = name
+}
+
+/**
+ * `List<T>` where a type argument is still generic, in the signature of a generic function. [TypeContext.bind] matches it
+ * against an instance of [generic], and [TypeContext.substitute] turns it into one.
+ */
+class Applied internal constructor(id: Int, val generic: GenericRecord, val args: List<Type>) : Type(id) {
+    override fun toString() = args.joinToString(", ", "${generic.name}<", ">")
+}
+
+/**
+ * `type Name = distinct T`: a type of its own with the values of [base], at no cost at runtime (a C typedef). Nothing
+ * converts to or from it implicitly, except number literals; `as` converts between the two.
+ */
+class Distinct internal constructor(id: Int, val namespace: String, val name: String, val base: Type) : Type(id) {
+    /** The C name: `fib__UserId` in module fib, plain `UserId` elsewhere. */
+    val cName: String get() = if (namespace.isEmpty()) name else "${namespace}__$name"
+    override fun toString() = name
 }
 
 /** `inter Name as ...`: any record with (at least) these fields, with exactly these types, matches. */

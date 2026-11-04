@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // `while true` without `break` never ends normally, so no `ret` is needed after it.
 fn firstOver(limit: Int): Int do
@@ -8,5 +8,5 @@ fn firstOver(limit: Int): Int do
         ret i if i > limit
 
 fn main(): Int do
-    log(firstOver(20))
+    io.log(firstOver(20))
     ret 0

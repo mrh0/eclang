@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // Function values: parameters, variables and record fields of function type.
 
@@ -21,27 +21,27 @@ fn pick(big: Bool): (Int) => Int do
     ret fn double
 
 fn main(): Int do
-    log(apply(fn double, 5))
-    log(twice(fn square, 3))
+    io.log(apply(fn double, 5))
+    io.log(twice(fn square, 3))
 
     val f: (Int) => Int = fn double
-    log(f(21))
+    io.log(f(21))
 
     var g = pick(true)
-    log(g(4))
+    io.log(g(4))
     g = pick(false)
-    log(g(4))
+    io.log(g(4))
 
     val b = Button { label = "ok"c, onClick = fn square }
-    log(b.onClick(9))
+    io.log(b.onClick(9))
     val p = addrof(b)
-    log(p.onClick(2))
+    io.log(p.onClick(2))
 
     val h: (Int) => Int throws Error = fn half
-    log(h(10) ?? -1)
-    log(h(7) ?? -1)
+    io.log(h(10) ?? -1)
+    io.log(h(7) ?? -1)
 
     val maybe: ((Int) => Int)? = fn double
     if maybe != null do
-        log(maybe(50))
+        io.log(maybe(50))
     ret 0

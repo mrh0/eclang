@@ -72,7 +72,7 @@ declare fn apr_threadattr_detach_get as (attr: @apr_threadattr_t): apr_status_t
 declare fn apr_threadattr_stacksize_set as (attr: @apr_threadattr_t, stacksize: apr_size_t): apr_status_t
 declare fn apr_threadattr_guardsize_set as (attr: @apr_threadattr_t, guardsize: apr_size_t): apr_status_t
 
-declare fn apr_thread_create as (new_thread: @@apr_thread_t, attr: @apr_threadattr_t, func: apr_thread_start_t, data: @Any, cont: @apr_pool_t): apr_status_t
+declare fn apr_thread_create as (new_thread: @@apr_thread_t, attr: @apr_threadattr_t?, func: apr_thread_start_t, data: @Any, cont: @apr_pool_t): apr_status_t
 declare fn apr_thread_exit as (thd: @apr_thread_t, retval: apr_status_t): apr_status_t
 declare fn apr_thread_join as (retval: @apr_status_t, thd: @apr_thread_t): apr_status_t
 declare fn apr_thread_yield as ()
@@ -86,7 +86,7 @@ declare fn apr_thread_data_set as (data: @Any, key: CString, cleanup: (@Any) => 
 
 declare fn apr_threadkey_private_create as (key: @@apr_threadkey_t, dest: (@Any) => None, cont: @apr_pool_t): apr_status_t
 declare fn apr_threadkey_private_get as (new_mem: @@Any, key: @apr_threadkey_t): apr_status_t
-declare fn apr_threadkey_private_set as (priv: @Any, key: @apr_threadkey_t): apr_status_t
+declare fn apr_threadkey_private_set as (data: @Any, key: @apr_threadkey_t): apr_status_t
 declare fn apr_threadkey_private_delete as (key: @apr_threadkey_t): apr_status_t
 
 declare fn apr_threadkey_data_get as (data: @@Any, key: CString, threadkey: @apr_threadkey_t): apr_status_t

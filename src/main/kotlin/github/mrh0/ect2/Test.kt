@@ -36,6 +36,12 @@ fun main() {
     test("None is a None", t.accepts(None, None), true)
     test("None is Any", t.accepts(Any, None), true)
     test("Never fits anywhere", t.accepts(Int, Never), true)
+    val id = t.distinct("", "UserId", Int)
+    test("a distinct type doesn't accept its base", t.accepts(id, Int), false)
+    test("a distinct type doesn't fit its base", t.accepts(Int, id), false)
+    test("a distinct type accepts a number literal", t.accepts(id, t.intLiteral(5)), true)
+    test("a literal prefers the base of a distinct type", t.cost(t.intLiteral(5), Int) < t.cost(t.intLiteral(5), id), true)
+    test("two distinct types of one base differ", t.accepts(id, t.distinct("", "OrderId", Int)), false)
     test("String converts to Char[]", t.accepts(t.array(Char), String), true)
     test("Char[] is not a String", t.accepts(String, t.array(Char)), false)
 
@@ -72,6 +78,8 @@ fun main() {
 
     // Structural types
     test("Tuples are ordered", t.tuple(listOf(Int, Char)) === t.tuple(listOf(Char, Int)), false)
+    test("Tuples match exactly", t.accepts(t.tuple(listOf(Long, Int)), t.tuple(listOf(Int, Int))), false)
+    test("A tuple is a union member", t.accepts(t.nullable(t.tuple(listOf(Int, Int))), t.tuple(listOf(Int, Int))), true)
     test("Int[] is not a Long[] (different layout)", t.accepts(t.array(Long), t.array(Int)), false)
     test("@Int -> @Any (void*)", t.accepts(t.pointer(Any), t.pointer(Int)), true)
     test("@Int is not @Long", t.accepts(t.pointer(Long), t.pointer(Int)), false)

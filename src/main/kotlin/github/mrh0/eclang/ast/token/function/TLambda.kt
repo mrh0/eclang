@@ -28,6 +28,9 @@ import github.mrh0.ect2.Union
  * around it (closures aren't supported yet), but it can use globals and call functions.
  */
 class TLambda(location: Loc, private val params: List<Pair<String, ITok?>>, private val returns: ITok?, private val body: ITok) : Tok(location) {
+    /** Whether a parameter's type must come from the function type expected here. */
+    val hasUntypedParameters get() = params.any { it.second == null }
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val expected = hint as? FunctionType ?: (hint as? Union)?.members?.filterIsInstance<FunctionType>()?.singleOrNull()
         if (expected != null && expected.params.size != params.size && params.any { it.second == null })
@@ -46,11 +49,13 @@ class TLambda(location: Loc, private val params: List<Pair<String, ITok?>>, priv
             cd.newContext(cName)
             names.forEachIndexed { i, name -> cd.ctx().define(location, Constant(name, types[i], cd.localCName(name), kind = "a parameter")) }
             val (hoisted, value) = cd.collectHoisted { body.process(cd, declared ?: expected?.returns ?: Types.None) }
-            if (value.first === Types.None) {
+            val neverReturns = value.first === Types.Never && declared == null && expected?.returns.let { it == null || it === Types.None || it === Types.Never }
+            if (value.first === Types.None || neverReturns) {
                 if (declared != null) throw EcError(location, "The lambda is declared to return $declared, but its body has no value.")
-                Types.None to IRBlock(location, hoisted + IRStatement(location, value.second), listOf())
+                (if (neverReturns && expected?.returns !== Types.None) Types.Never else Types.None) to IRBlock(location, hoisted + IRStatement(location, value.second), listOf())
             } else {
-                val type = declared ?: cd.storable(location, value.first, "return value of the lambda")
+                val wanted = expected?.returns?.takeIf { it !== Types.None && cd.types.accepts(it, value.first) }
+                val type = declared ?: wanted ?: cd.types.concrete(cd.storable(location, value.first, "return value of the lambda"))
                 Lifetimes.checkReturn(cd, location, body, type)
                 type to IRBlock(location, hoisted + IRStatementReturn(location, cd.expect(location, value, type, "return value of the lambda")), listOf(), diverges = true)
             }

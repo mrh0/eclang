@@ -3,13 +3,17 @@ package github.mrh0.eclang.ast.token.op
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
+import github.mrh0.eclang.ir.arithmetic.IRCheckedArith
 import github.mrh0.ect2.*
 
 /** Typing rules shared by operators and array literals. */
 object Ops {
     fun isLiteral(t: Type) = t is IntLiteral || t is FloatLiteral
-    fun isNumeric(t: Type) = isLiteral(t) || (t is Prim && t.isNumber)
-    fun isInteger(t: Type) = t is IntLiteral || (t is Prim && t.isInteger)
+    fun isNumeric(t: Type): Boolean = isLiteral(t) || (t is Prim && t.isNumber) || (t is Distinct && isNumeric(t.base))
+    fun isInteger(t: Type): Boolean = t is IntLiteral || (t is Prim && t.isInteger) || (t is Distinct && isInteger(t.base))
+
+    /** What a value of type [t] is underneath: the base of a `distinct` type, otherwise [t]. */
+    fun base(t: Type) = if (t is Distinct) t.base else t
 
     /**
      * The type two values are combined as, e.g. `a + b` or the elements of `[a, b]`: the one the other converts
@@ -40,6 +44,8 @@ internal fun arithmetic(
     notNumberHint: (Type, Type) -> String = { _, _ -> "" },
     /** Added to the error when [integerOnly] and a side is a Float or Double, e.g. a hint to use `fmod`. */
     fractionHint: String = "",
+    /** The operator, when its result is checked at runtime on whole numbers (see [RuntimeChecks]). */
+    checked: String? = null,
     make: (github.mrh0.eclang.ir.IIR, github.mrh0.eclang.ir.IIR) -> github.mrh0.eclang.ir.IIR,
 ): Pair<Type, github.mrh0.eclang.ir.IIR> {
     val l = cd.usable(location, left.process(cd, Types.None), "left side of `$op`")
@@ -60,7 +66,28 @@ internal fun arithmetic(
         throw EcError(location, "`$op` on $lt and $rt: ${e.message}.")
     }
     val type = resultType(cd.types.concrete(Ops.common(cd, location, "`$op`", lt, rt)))
-    return type to make(cd.expect(location, l, type, "left side of `$op`"), cd.expect(location, r, type, "right side of `$op`"))
+    val (lc, rc) = cd.expect(location, l, type, "left side of `$op`") to cd.expect(location, r, type, "right side of `$op`")
+    if (checked != null && RuntimeChecks.needed(cd, checked, type, rt)) return type to IRCheckedArith(location, checked, Ops.base(type) as Prim, null, lc, rc)
+    return type to make(lc, rc)
+}
+
+/**
+ * Which whole-number operations are checked at runtime (see IRCheckedArith): `/` and `%` unless the divisor is a
+ * constant other than 0 and -1, shifts by a count that isn't a constant, and, with `--overflow-check`, `+`, `-`, `*`.
+ */
+internal object RuntimeChecks {
+    /** Whether `a op b` on [type], with a right side of type [right] (before conversion), needs a runtime check. */
+    fun needed(cd: CompileData, op: String, type: Type, right: Type): Boolean {
+        val whole = Ops.base(type)
+        if (whole !is Prim || !whole.isInteger) return false
+        val constant = (right as? IntLiteral)?.value
+        return when (op) {
+            "/", "%" -> cd.arithmeticChecks && (constant == null || constant == 0L || constant == -1L)
+            "<<", ">>" -> cd.arithmeticChecks && constant == null
+            "+", "-", "*" -> cd.overflowChecks
+            else -> false
+        }
+    }
 }
 
 private fun literalValue(t: Type) = when (t) {
@@ -82,6 +109,10 @@ internal fun comparison(
     cd.usable(location, l, "left side of `$op`")
     cd.usable(location, r, "right side of `$op`")
     val (lt, rt) = l.first to r.first
+    // A `distinct` value compares like its base, with a value of its own type or a literal.
+    val distinct = lt as? Distinct ?: rt as? Distinct
+    if (distinct != null && (lt === rt || cd.types.accepts(distinct, if (lt === distinct) rt else lt)))
+        return comparison(cd, location, op, Ops.base(lt) to l.second, Ops.base(rt) to r.second, equality)
     fun atomish(t: Type) = t === Types.Atom || t is AtomLiteral || (t is Union && t.members.all { it === Types.Atom || it is AtomLiteral || it === Types.Null })
     return when {
         Ops.isNumeric(lt) && Ops.isNumeric(rt) -> {
@@ -93,8 +124,12 @@ internal fun comparison(
         equality && lt === Types.Bool && rt === Types.Bool -> Triple(CompareKind.IDENTITY, l.second, r.second)
         equality && atomish(lt) && atomish(rt) -> Triple(CompareKind.IDENTITY, l.second, r.second)
         equality && lt is Pointer && lt === rt -> Triple(CompareKind.IDENTITY, l.second, r.second)
-        equality && lt is Record && lt === rt -> {
-            equalityProblem(lt)?.let { throw EcError(location, "`$op` can't compare $lt records: $it. Compare the fields you need yourself, e.g. `a.x == b.x`.") }
+        equality && (lt is Record || lt is Tuple || lt is FixedArray) && lt === rt -> {
+            equalityProblem(lt)?.let {
+                throw EcError(location, if (lt is Record) "`$op` can't compare $lt records: $it. Compare the fields you need yourself, e.g. `a.x == b.x`."
+                    else if (lt is FixedArray) "`$op` can't compare $lt arrays: $it. Compare the elements you need yourself."
+                    else "`$op` can't compare $lt tuples: $it. Compare the parts you need yourself, e.g. `a.first == b.first`.")
+            }
             Triple(CompareKind.RECORD, l.second, r.second)
         }
         else -> throw EcError(location, "`$op` can't compare $lt with $rt.")
@@ -106,11 +141,15 @@ internal fun comparison(
  * atoms, Strings and CStrings (by content), pointers (by address) and records of those.
  */
 internal fun equalityProblem(t: Type): String? = when {
+    t is Distinct -> equalityProblem(t.base)
     t is Prim || t is Pointer || t is FunctionType || t is AtomLiteral -> null
     t is Union && t.members.all { it === Types.Null || it === Types.Atom || it is AtomLiteral } -> null
     t is Union && t.isNullable && t.members.size == 2 && t.members.any { it is Pointer || it === Types.CString } -> null
+    t is Record && t.isUnion -> "${t.name} is a union, and which field it holds isn't known"
     t is Record && t.isExternal -> "${t.name} is a C type, which `==` can't look inside"
     t is Record -> t.fields.entries.firstNotNullOfOrNull { (name, field) -> equalityProblem(field)?.let { "field `$name`: $it" } }
+    t is Tuple -> t.elements.firstNotNullOfOrNull { equalityProblem(it) }
+    t is FixedArray -> equalityProblem(t.element)
     else -> "a $t can't be compared with `==` yet"
 }
 

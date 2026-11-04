@@ -1,5 +1,5 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 fn main(): Int do
-    log("Hello World"c)
+    io.log("Hello World"c)
     ret 0

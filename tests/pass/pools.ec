@@ -1,4 +1,4 @@
-use "core:lib.ec"
+use "core:io.ec"
 
 // Pools: the current pool, `pool do` blocks, `new`, `new T`, `new T[n]`, `clone`, and Strings built without naming a pool.
 
@@ -56,64 +56,64 @@ fn count(): Int do
 
 fn main(): Int do
     val p = makePoint(3, 4)
-    log(p.x + p.y)
+    io.log(p.x + p.y)
 
     val empty = new Point
-    log(empty.x)
+    io.log(empty.x)
     val n = new 41
     @n += 1
-    log(@n)
+    io.log(@n)
 
     val name = "Ada"
     val greeting = "Hello, ${name}!"
-    log(greeting)
-    log(concat(greeting, " Bye."))
-    log(format("${1} + ${1} = ${2}"))
+    io.log(greeting)
+    io.log(concat(greeting, " Bye."))
+    io.log(format("${1} + ${1} = ${2}"))
 
     val counts = new Int[3]
     counts[1] = 5
-    log(counts.len)
-    log(counts[0] + counts[1])
+    io.log(counts.len)
+    io.log(counts[0] + counts[1])
 
     val nodes = list(4)
-    log(sum(nodes))
-    log(nodes!.name)
+    io.log(sum(nodes))
+    io.log(nodes!.name)
 
     // A deep copy shares nothing with the original.
     val copy = clone(nodes)
     copy!.next!.value = 100
-    log(sum(nodes))
-    log(sum(copy))
-    log(copy!.next!.name)
+    io.log(sum(nodes))
+    io.log(sum(copy))
+    io.log(copy!.next!.name)
 
     val arr = clone([1, 2, 3])
     arr[0] = 10
-    log(arr[0] + arr[2])
+    io.log(arr[0] + arr[2])
 
     // A pointer to an Animal that is a Cat is copied as a Cat.
     val cat: @Animal = new Cat { name = "Tom", lives = 9 }
     val catCopy = clone(cat)
     if catCopy is @Cat do
-        log(catCopy.lives)
+        io.log(catCopy.lives)
 
     var kept: String = "nothing"
     val outer = pool
     pool scratch do
         val temp = "temporary ${42}"
-        log(temp)
+        io.log(temp)
         kept = clone(temp, outer)
         pool do
             val inner = new Point { x = 1, y = 2 } in scratch
-            log(inner.y)
-    log(kept)
+            io.log(inner.y)
+    io.log(kept)
 
-    log(count())
+    io.log(count())
     try checked(-5) catch e do
-        log(e.message)
+        io.log(e.message)
 
     val own = newPool()
     val s = label(own, 7)
-    log(s)
+    io.log(s)
     clearPool(own)
     freePool(own)
     ret 0

@@ -1,6 +1,8 @@
 package github.mrh0.eclang.context
 
+import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.atom.Atoms
 import github.mrh0.eclang.context.function.Functions
 import github.mrh0.eclang.context.function.Overload
@@ -11,7 +13,10 @@ import github.mrh0.eclang.error.EcTypeMismatchError
 import github.mrh0.eclang.error.EcUnknownTypeError
 import github.mrh0.eclang.ast.token.global.CEnum
 import github.mrh0.eclang.ir.IIR
+import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.ir.IRConvert
+import github.mrh0.eclang.ir.IRTempDeclare
+import github.mrh0.eclang.ast.token.TErrDefer
 import github.mrh0.eclang.util.Util
 import github.mrh0.ect2.*
 
@@ -29,6 +34,9 @@ class CompileData(val types: TypeContext = TypeContext()) {
     private var currentLocalContextBuilder = ContextBuilder("__top__")
     var genericContext: Map<String, Type>? = null
 
+    /** How many generic records are being made, one inside the other (see TTypeRecord). */
+    var instantiating = 0
+
     val functions = Functions(this)
 
     /** The atoms (`:name`) the program uses. */
@@ -43,8 +51,26 @@ class CompileData(val types: TypeContext = TypeContext()) {
     /** `.ec` files already loaded with `use`, so each is only loaded once. */
     val loadedFiles = mutableSetOf<String>()
 
+    /** The text of files as an editor has them, unsaved, by [Util.sourceName]. These are read instead of the disk. */
+    var sources: Map<String, String> = mapOf()
+
+    /** Checks the file without building a program from it, so it needn't have a `main`: it may be a library. */
+    var checkOnly = false
+
+    /** The text of [path] from [sources], or null when it should be read as usual. */
+    fun unsaved(path: String): java.io.InputStream? = sources[path]?.byteInputStream()
+
     /** Whether `a[i]` and slices of arrays and Strings check their bounds (turned off with `--no-bounds-check`). */
     var boundsChecks = true
+
+    /** The name of the library being compiled (`--lib`), which has no `main`; null for a program. */
+    var library: String? = null
+
+    /** Whether `/`, `%` and shifts by a computed count are checked at runtime (division by zero, ...); `--no-arithmetic-check` turns them off. */
+    var arithmeticChecks = true
+
+    /** Whether `+`, `-` and `*` on whole numbers stop the program when the result doesn't fit (`--overflow-check`). */
+    var overflowChecks = false
 
     fun moduleNamed(name: String): Module = modules.getOrPut(name) { Module(name) }
     fun findModule(name: String): Module? = modules[name]?.takeIf { !it.isTopLevel }
@@ -64,7 +90,7 @@ class CompileData(val types: TypeContext = TypeContext()) {
     fun visibleModules(): List<Module> = if (module.isTopLevel) listOf(module) else listOf(module, topLevel)
 
     /** The value called [name]: a local, then a global of this module, then a global of the top level. */
-    fun findVar(name: String): IVar? = ctx().getRaw(name) ?: visibleModules().firstNotNullOfOrNull { it.globals.getRaw(name) }
+    fun findVar(name: String): IVar? = ctx().getRaw(name) ?: visibleModules().firstNotNullOfOrNull { m -> m.globals.getRaw(name)?.takeIf { m === module || name !in m.privateGlobals } }
 
     fun getVar(location: Loc, name: String): IVar = findVar(name) ?: throw EcError(location, capturedProblem(name)
         ?: "'$name' is not defined.${whereElse(name) { it.globals.getRaw(name) != null }}")
@@ -77,7 +103,9 @@ class CompileData(val types: TypeContext = TypeContext()) {
     }
 
     /** `other.name`: the global [name] of module [m]. */
-    fun getVarIn(location: Loc, m: Module, name: String): IVar = m.globals.getRaw(name)
+    fun getVarIn(location: Loc, m: Module, name: String): IVar = m.globals.getRaw(name)?.also {
+            if (m !== module && name in m.privateGlobals) throw EcError(location, "'$name' is private to $m (`priv`), so only code in it can use it. Remove `priv` to use it here.")
+        }
         ?: throw EcError(location, "$m has no value called '$name'.${suggestion(name, m.globals.stack.getVars().map { it.getName() })}")
 
     /**
@@ -190,6 +218,24 @@ class CompileData(val types: TypeContext = TypeContext()) {
      */
     var functionHasErrors = false
 
+    /**
+     * The locals of the function being compiled whose address is taken somewhere in it (`addrof x`), with where.
+     * A write through such a pointer changes the variable behind flow typing's back, so they aren't narrowed.
+     */
+    var addressTaken: Map<String, Loc> = mapOf()
+
+    /** The checks that already warned that they don't narrow an address-taken local (a condition is analyzed more than once). */
+    val warnedAliased = HashSet<String>()
+
+    /** The functions each interface asks for (`fn area(): Double`), see `Functions.missingMethod`. */
+    val interfaceMethods = HashMap<github.mrh0.ect2.Interface, List<InterfaceMethod>>()
+
+    /** The default values of record fields (`age: Int = 0`), by record and field. */
+    val recordDefaults = HashMap<github.mrh0.ect2.Record, Map<String, ITok>>()
+
+    /** The values of the `|>` pipes Lifetimes is looking into, innermost last: what `it` stands for. */
+    val pipedTokens = mutableListOf<ITok>()
+
     /** Records [e] and continues. The same error (a body compiled once per union copy) is only reported once. */
     fun report(e: EcError) {
         functionHasErrors = true
@@ -210,11 +256,12 @@ class CompileData(val types: TypeContext = TypeContext()) {
     // Loops.
 
     /**
-     * A loop the code being compiled is inside. [label]: where `break` jumps, for a loop with an `else` block (a
-     * `break` must skip it), or null for a plain loop. [breaks]: a `break` leaves this loop. [depth]: the scope depth
-     * its body starts at, so `break` and `continue` know which deferred statements to run.
+     * A loop the code being compiled is inside. [name]: its label in the program (`outer: for ...`). [end]: the C label
+     * after it, where `break` jumps when a C `break` won't do: from a loop inside it, or past an `else` block. [next]:
+     * the C label at the end of its body, for `continue` from a loop inside it. [breaks]: a `break` leaves this loop.
+     * [depth]: the scope depth its body starts at, so `break` and `continue` know which deferred statements to run.
      */
-    private class LoopFrame(val label: String?, val depth: Int, var breaks: Boolean = false)
+    private class LoopFrame(val name: String?, val end: String, val next: String, val hasElse: Boolean, val depth: Int, var breaks: Boolean = false)
 
     /** The loops the code being compiled is inside, innermost last. */
     private val loops = ArrayList<LoopFrame>()
@@ -223,37 +270,73 @@ class CompileData(val types: TypeContext = TypeContext()) {
 
     val loopDepth get() = loops.size
 
-    /** A compiled loop body: [value], the label `break` jumps to (null when no `break` uses one), and whether any `break` leaves the loop. */
-    class LoopBody<T>(val value: T, val label: String?, val breaks: Boolean)
+    /**
+     * A compiled loop body: [value], the label `break` jumps to (null when no `break` uses one), the label `continue`
+     * from an inner loop jumps to (likewise), and whether any `break` leaves the loop.
+     */
+    class LoopBody<T>(val value: T, val label: String?, val nextLabel: String?, val breaks: Boolean)
 
-    /** Compiles a loop body. [hasElse]: the loop has an `else` block. */
-    fun <T> loop(hasElse: Boolean, compile: () -> T): LoopBody<T> {
-        val frame = LoopFrame(if (hasElse) "__ec_loop_end${labelCounter++}" else null, ctx().depth())
+    /** Compiles a loop body. [hasElse]: the loop has an `else` block. [name]: its label, if it has one. */
+    fun <T> loop(location: Loc, hasElse: Boolean, name: String?, compile: () -> T): LoopBody<T> {
+        if (name != null && loops.any { it.name == name }) throw EcError(location, "A loop around this one is already labelled '$name', so `break $name` wouldn't say which. Choose another label.")
+        val id = labelCounter++
+        val frame = LoopFrame(name, "__ec_loop_end$id", "__ec_loop_next$id", hasElse, ctx().depth())
         loops += frame
         try {
             val value = compile()
-            return LoopBody(value, frame.label?.takeIf { it in usedLabels }, frame.breaks)
+            return LoopBody(value, frame.end.takeIf { it in usedLabels }, frame.next.takeIf { it in usedLabels }, frame.breaks)
         } finally {
             loops.removeAt(loops.size - 1)
         }
     }
 
-    /** Where `break` in the innermost loop jumps: a label, or null for a plain C `break`. */
-    fun breakLabel(): String? = loops.last().also { it.breaks = true }.label?.also { usedLabels += it }
+    /** The loop called [label], or the innermost one. */
+    private fun loopNamed(location: Loc, label: String?, what: String): LoopFrame = if (label == null) loops.last() else loops.lastOrNull { it.name == label }
+        ?: throw EcError(location, "`$what $label`: no loop around this is labelled '$label'.${suggestion(label, loops.mapNotNull { it.name })} A loop gets a label like this: `$label: for ... do`.")
+
+    /** Where `break` jumps: a label, or null for a plain C `break`. */
+    fun breakLabel(location: Loc, label: String?): String? {
+        val frame = loopNamed(location, label, "break").also { it.breaks = true }
+        return if (frame.hasElse || frame !== loops.last()) frame.end.also { usedLabels += it } else null
+    }
+
+    /** Where `continue` jumps: a label, or null for a plain C `continue`. */
+    fun continueLabel(location: Loc, label: String?): String? {
+        val frame = loopNamed(location, label, "continue")
+        return if (frame !== loops.last()) frame.next.also { usedLabels += it } else null
+    }
 
     /**
-     * The deferred statements `break` or `continue` runs before leaving the current round of the innermost loop:
-     * those of the blocks inside the loop body, the last deferred first.
+     * The deferred statements `break` or `continue` ([what]) runs before leaving the current round of the loop called
+     * [label] (or the innermost one): those of the blocks inside the loop's body, the last deferred first.
      */
-    fun loopDeferred(): List<IIR> = noHoist("`try` can't be used in `defer`.") {
-        ctx().deferredSince(loops.last().depth).map { it.process(this, Types.None).second }
+    fun loopDeferred(location: Loc, label: String?, what: String): List<IIR> =
+        compileDeferred(TErrDefer.normal(ctx().deferredSince(loopNamed(location, label, what).depth)))
+
+    /**
+     * Compiles [deferred], statements to run at one exit of a scope. Each is compiled again at every exit. They can't
+     * hoist (`try`), but they can have temporaries, which they declare where they run.
+     */
+    fun compileDeferred(deferred: List<ITok>): List<IIR> = deferred.map { tok ->
+        val saved = hoisted
+        val temporaries = mutableListOf<IIR>()
+        hoisted = temporaries
+        try {
+            val ir = noHoist("`try` can't be used in `defer`.") { tok.process(this, Types.None).second }
+            if (temporaries.isEmpty()) ir else IRBlock((tok as Tok).location, temporaries + ir, listOf())
+        } finally {
+            hoisted = saved
+        }
     }
 
     /**
      * Called before compiling a loop's condition and body, with the variables the body assigns: they may hold
      * something else when the next round starts, so what flow typing knew about them no longer holds.
      */
-    fun forgetAssigned(location: Loc, assigned: Set<String>) = assigned.forEach { ctx().forget(Util.testIdentifier(location, it)) }
+    fun forgetAssigned(location: Loc, assigned: Set<String>) {
+        assigned.forEach { ctx().forget(Util.testIdentifier(location, it)) }
+        Lifetimes.loopKills(this, location, assigned)
+    }
 
     // ---------------------------------------------------------------------------------------------------
     // Type checks shared by all tokens.
@@ -288,7 +371,18 @@ class CompileData(val types: TypeContext = TypeContext()) {
     }
 
     /** Finds the type called [name] (or `module.Name`), with a hint when it doesn't exist. */
-    fun lookupType(location: Loc, name: String): Type {
+    fun lookupType(location: Loc, name: String): Type = lookupTypeAnywhere(location, name).also { t ->
+        val (namespace, typeName) = when (t) {
+            is Declared -> t.namespace to t.name
+            is GenericRecord -> t.namespace to t.name
+            else -> null to name
+        }
+        val owner = namespace?.let { modules[it] }
+        if (owner != null && owner !== module && typeName in owner.privateTypes)
+            throw EcError(location, "Type $typeName is private to $owner (`priv`), so only code in it can use it. Remove `priv` to use it here.")
+    }
+
+    private fun lookupTypeAnywhere(location: Loc, name: String): Type {
         if ('.' in name) {
             val (moduleName, member) = name.split('.', limit = 2)
             val m = findModule(moduleName) ?: throw EcError(location, "There is no module called '$moduleName' (in the type $name).")
@@ -310,8 +404,22 @@ class CompileData(val types: TypeContext = TypeContext()) {
     /** A fresh C variable name for generated temporaries. */
     fun temp(): String = "__ec_tmp${tempCounter++}"
 
+    /** [what] can't be used here (see [hoistProblem]): an error saying why and what to do instead. */
+    fun needsStatement(location: Loc, what: String, fix: String) = EcError(location, "$what can't be used here, because " +
+        (if (inBody) "this code may not run, or may run more than once. $fix" else "it needs a statement of its own, so it can only be used inside a function."))
+
     /** Why nothing can be hoisted here (see [noHoist]), or null when [hoist] works. */
     fun hoistProblem(): String? = hoistBarrier ?: if (hoisted == null) "This can only be used inside a function body." else null
+
+    /**
+     * A new temporary of type [type], declared before the statement being compiled but set where it is used
+     * ([github.mrh0.eclang.ir.IRTempSet]). Unlike [hoist], that also works in code that may not run, or runs repeatedly.
+     */
+    fun declareTemp(location: Loc, type: () -> Type): String {
+        val name = temp()
+        (hoisted ?: throw EcError(location, "This needs a temporary variable, so it can only be used inside a function body.")).add(IRTempDeclare(location, name, type))
+        return name
+    }
 
     /** Adds [ir] to run just before the statement currently being compiled. */
     fun hoist(location: Loc, ir: IIR) {
@@ -355,9 +463,12 @@ class CompileData(val types: TypeContext = TypeContext()) {
         const val MAX_ERRORS = 30
 
         /** The closest of [candidates] to [name] (edit distance at most 2), as " Did you mean 'x'?", or "". */
-        fun suggestion(name: String, candidates: Collection<String>): String {
-            val best = candidates.minByOrNull { distance(name.lowercase(), it.lowercase()) } ?: return ""
-            return if (distance(name.lowercase(), best.lowercase()) <= 2) " Did you mean '$best'?" else ""
+        fun suggestion(name: String, candidates: Collection<String>): String = closest(name, candidates)?.let { " Did you mean '$it'?" } ?: ""
+
+        /** The closest of [candidates] to [name], if its edit distance is at most 2. */
+        fun closest(name: String, candidates: Collection<String>): String? {
+            val best = candidates.minByOrNull { distance(name.lowercase(), it.lowercase()) } ?: return null
+            return best.takeIf { distance(name.lowercase(), it.lowercase()) <= 2 }
         }
 
         private fun distance(a: String, b: String): Int {
@@ -369,4 +480,9 @@ class CompileData(val types: TypeContext = TypeContext()) {
             return d[a.length][b.length]
         }
     }
+}
+
+/** A function an interface asks for: `x.name(params)` must be callable on a record that fits it, and return [returns]. */
+class InterfaceMethod(val name: String, val params: List<Type>, val returns: Type) {
+    override fun toString() = "fn $name(${params.joinToString()})" + if (returns === Types.None) "" else ": $returns"
 }

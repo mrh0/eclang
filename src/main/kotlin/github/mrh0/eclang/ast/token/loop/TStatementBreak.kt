@@ -9,12 +9,13 @@ import github.mrh0.eclang.ir.loop.IRBreak
 import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
-class TStatementBreak (location: Loc) : Tok(location) {
+/** `break`, or `break outer` to leave the loop labelled `outer` around this one. */
+class TStatementBreak (location: Loc, private val label: String? = null) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         if (cd.loopDepth == 0) throw EcError(location, "`break` can only be used inside a loop.")
-        val deferred = cd.loopDeferred()
+        val deferred = cd.loopDeferred(location, label, "break")
         cd.ctx().setReturned()
-        return Types.None to IRBreak(location, cd.breakLabel(), deferred)
+        return Types.None to IRBreak(location, cd.breakLabel(location, label), deferred)
     }
 
     override fun toString(): String {

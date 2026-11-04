@@ -7,9 +7,13 @@ import github.mrh0.eclang.ast.Visitor
 import github.mrh0.eclang.ast.token.TProgram
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.doc.DocExtractor
+import github.mrh0.eclang.doc.FileDocs
 import github.mrh0.eclang.error.EcAbort
 import github.mrh0.eclang.error.EcError
+import github.mrh0.eclang.ir.IRProgram
 import github.mrh0.eclang.output.c.CSource
+import github.mrh0.eclang.util.Util
 import github.mrh0.ect2.Types
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.BaseErrorListener
@@ -23,8 +27,8 @@ import java.io.InputStream
 import java.nio.file.Path
 
 object Compiler {
-    /** The result of compiling a program: its C source, or null when there were errors (listed in `cd.errors`). */
-    class Compilation(val cd: CompileData, val c: String?)
+    /** The result of compiling a program: its C source, or null when there were errors (listed in `cd.errors`). [header]: a library's C header. */
+    class Compilation(val cd: CompileData, val c: String?, val header: String? = null)
 
     /**
      * Compiles the program [file] (and the files it uses) to C. Each call has its own [CompileData], so one JVM can
@@ -35,11 +39,11 @@ object Compiler {
         // An error that escapes every recovery point stops the compilation; it is reported like the others.
         fun stop(e: EcError) { try { cd.report(e) } catch (_: EcAbort) {} }
         try {
-            val tree = tokenizeFile(file)
+            val tree = tokenizeStream(cd.unsaved(Util.sourceName(file)) ?: FileInputStream(file), file.path)
             if (DEBUG) println("-Tokens:\n$tree")
             val ir = tree.process(cd, Types.None).second
             if (DEBUG) println("-Intermediate:\n$ir")
-            if (cd.errors.isEmpty()) return Compilation(cd, CSource(cd.types).build(ir))
+            if (cd.errors.isEmpty()) return Compilation(cd, CSource(cd.types, cd.functions.printers, cd.library != null).build(ir), (ir as IRProgram).header(cd.types))
         } catch (e: EcError) {
             stop(e)
         } catch (_: EcAbort) {}
@@ -49,6 +53,15 @@ object Compiler {
     fun tokenizeFile(file: File): TProgram = tokenizeStream(FileInputStream(file), file.path)
 
     fun tokenizeStream(stream: InputStream, filename: String): TProgram {
+        val parsed = parse(stream, filename)
+        return (Visitor(parsed.file).visitProgram(parsed.tree) as TProgram).also { it.docs = parsed.docs }
+    }
+
+    /** A parsed file: its parse tree, and its declarations with their ecdocs. */
+    class Parsed(val file: File, val tree: EclangParser.ProgramContext, val docs: FileDocs)
+
+    /** Parses [stream] (the file [filename]); a syntax error is thrown as an [EcError]. */
+    fun parse(stream: InputStream, filename: String): Parsed {
         val file = File(filename)
         val text = stream.readBytes().toString(Charsets.UTF_8)
         val input = ANTLRInputStream(text)
@@ -62,7 +75,8 @@ object Compiler {
         parser.removeErrorListeners()
         parser.addErrorListener(failOnError)
 
-        return Visitor(file).visitProgram(parser.program()) as TProgram
+        val tree = parser.program()
+        return Parsed(file, tree, DocExtractor(file, lexer.ecdocs, lexer.strayEcdocs).extract(tree))
     }
 
     /** Parses [text], the expression inside `${...}` of a string literal at [at]; its tokens all report [at]. */

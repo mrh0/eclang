@@ -1,12 +1,12 @@
 module "fib"
 
-use "core:lib.ec"
+use "core:io.ec"
 
 fn main(): Int do
     var a = 0i
     var b = 1i
     for i in 0..<40 do
-        log(a)
+        io.log(a)
         val next = a + b
         a = b
         b = next
