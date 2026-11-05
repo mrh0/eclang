@@ -21,7 +21,10 @@ import github.mrh0.eclang.error.EcAssignConstError
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRNamed
+import github.mrh0.eclang.ir.IRRaw
 import github.mrh0.eclang.ir.IRStatementAssign
+import github.mrh0.eclang.ir.IRTempDefine
+import github.mrh0.eclang.ir.data.IRAddressOf
 import github.mrh0.eclang.util.Util.testIdentifier
 import github.mrh0.eclang.ast.token.op.RuntimeChecks
 import github.mrh0.eclang.ir.arithmetic.IRCheckedCompound
@@ -36,11 +39,14 @@ import github.mrh0.ect2.Types
  */
 class TStatementAssign(location: Loc, private val target: ITok, private val op: String, private val expr: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        val (effectsBefore, hoistedBefore) = cd.effects to cd.hoistMark
         val place = when (val t = target.unnested()) {
             is TNamed -> variable(cd, t.name, narrowed = op.isNotEmpty())
             is IAssignable -> t.place(cd).also { p -> p.readOnly?.let { throw EcError(location, it) } }
             else -> throw EcError(location, "Can't assign to this expression. You can assign to a variable (`x = 1`), a field (`p.x = 1`), an element (`a[i] = 1`) or what a pointer points to (`@p = 1`).")
         }
+        val targetRuns = cd.effects != effectsBefore || cd.hoistedSince(hoistedBefore)
+        val (effectsAtValue, hoistedAtValue) = cd.effects to cd.hoistMark
         var valueType: Type = place.type
         val value = if (op.isEmpty()) expr.process(cd, place.type).let { v ->
             (target.unnested() as? TAccessorNamed)?.let { t -> t.bitFieldOf?.let { record -> checkBits(location, record, t.fixedName, place.type, v.first) } }
@@ -48,11 +54,27 @@ class TStatementAssign(location: Loc, private val target: ITok, private val op: 
         } else compound(cd, place.type) { valueType = it }
         if (op.isEmpty()) Lifetimes.assign(cd, location, target, expr, place.type, describe())
         place.name?.let { cd.ctx().forget(it) }
+        val runBoth = targetRuns && (cd.effects != effectsAtValue || cd.hoistedSince(hoistedAtValue))
+        val targetIR = if (runBoth) pinned(cd, place, hoistedAtValue) else place.ir
         if (op.isNotEmpty() && RuntimeChecks.needed(cd, op, place.type, valueType)) {
             val count = if (op == "<<" || op == ">>") Ops.base(cd.types.concrete(valueType)) as Prim else null
-            return Types.None to IRCheckedCompound(location, place.ir, op, Ops.base(place.type) as Prim, count, value, cd.temp(), noPointer(place.type))
+            return Types.None to IRCheckedCompound(location, targetIR, op, Ops.base(place.type) as Prim, count, value, cd.temp(), noPointer(place.type))
         }
-        return Types.None to IRStatementAssign(location, place.ir, op, value)
+        return Types.None to IRStatementAssign(location, targetIR, op, value)
+    }
+
+    /**
+     * What to assign to when both the target and the value call something. C doesn't say which runs first, so the
+     * target's address goes into a temporary before the value (and what it hoisted, after [mark]) runs: `a[f()] = g()`
+     * runs f first. A target that calls nothing is left alone, and is read after the value.
+     */
+    private fun pinned(cd: CompileData, place: Place, mark: Int): IIR {
+        val t = target.unnested()
+        if ((t as? TAccessorNamed)?.bitFieldOf != null || (inPacked(t) && !alignedAnywhere(place.type)))
+            throw EcError(location, "The target and the value both call something, and C has no pointer to this field to keep their order. Put the value in a variable first: `val v = ...`, then assign v.")
+        val temp = cd.temp()
+        cd.hoistAt(mark, IRTempDefine(location, temp, cd.types.pointer(place.type), IRAddressOf(location, place.ir)))
+        return IRRaw(location, "(*$temp)")
     }
 
     /**

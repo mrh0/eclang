@@ -706,6 +706,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementTailIf(EclangParser.StatementTailIfContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code statementNullish}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementNullish(EclangParser.StatementNullishContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code statementTailWhile}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree

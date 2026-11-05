@@ -6,6 +6,7 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.token.function.TLambda
 import github.mrh0.eclang.ast.unnested
+import github.mrh0.eclang.context.ArgumentOrder
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.function.CallTarget
 import github.mrh0.eclang.context.Module
@@ -28,7 +29,8 @@ import github.mrh0.ect2.*
  * - `module.name(rest)`: a function of another module, when `first` names a module (and no variable);
  * - `first.name(rest)` where `first` is a record with a field `name` of function type: that function is called;
  * - `name(args)` where `name` is a variable of function type: that function is called;
- * - otherwise the closest matching overload of the function `name`.
+ * - otherwise the closest matching overload of the function `name`. A method-style call also finds the functions of the
+ *   module that declares `first`'s type, when no function visible here takes it.
  * [argNames]: for each argument after the receiver, the parameter it is for (null: the next one in order), when any has one.
  * A call to a function that can fail has a Result type, which the caller must handle (`try`, `??`, `try ... catch`).
  */
@@ -56,51 +58,51 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
         pools = listOf()
         aliased = listOf()
         val fixedName = testIdentifier(location, name)
+        val order = ArgumentOrder(cd)
 
         if (isMethod) {
             val receiver = args[0]
             if (receiver is TNamed && cd.findVar(receiver.name) == null) cd.findModule(receiver.name)?.let {
-                return callFunction(cd, fixedName, args.drop(1), it, hint = hint)
+                return callFunction(cd, order, fixedName, args.drop(1), it, hint = hint)
             }
-            val first = receiver.process(cd, cd.functions.hintFor(fixedName, args.size, 0))
+            val first = order.compile(0, receiver) { receiver.process(cd, cd.functions.hintFor(fixedName, args.size, 0)) }
             functionField(cd, first.first, fixedName)?.let { (type, throughPointer) ->
-                return callValue(cd, "field '$name'", type to IRAccessorNamed(location, first.second, fixedName, throughPointer), args.drop(1))
+                return callValue(cd, order, "field '$name'", type, args.drop(1)) { values -> IRAccessorNamed(location, values.getValue(0).second, fixedName, throughPointer) }
             }
-            return callFunction(cd, fixedName, args.drop(1), null, first, hint)
+            return callFunction(cd, order, fixedName, args.drop(1), cd.functions.methodModule(fixedName, first.first, args.size), first, hint)
         }
 
         cd.findVar(fixedName)?.let { v ->
             if (v.getType().let { it is FunctionType || isNullableFunction(it) } || !cd.functions.exists(fixedName))
-                return callValue(cd, "'$name'", v.getType() to v.toIR(location, cd, Types.None), args)
+                return callValue(cd, order, "'$name'", v.getType(), args) { v.toIR(location, cd, Types.None) }
         }
-        return callFunction(cd, fixedName, args, null, hint = hint)
+        return callFunction(cd, order, fixedName, args, null, hint = hint)
     }
 
     /** Calls the function [name] with [rest], after the already compiled [first] argument of a method-style call. */
-    private fun callFunction(cd: CompileData, name: String, rest: List<ITok>, qualifier: Module?, first: Pair<Type, IIR>? = null, hint: Type = Types.None): Pair<Type, IIR> {
+    private fun callFunction(cd: CompileData, order: ArgumentOrder, name: String, rest: List<ITok>, qualifier: Module?, first: Pair<Type, IIR>? = null, hint: Type = Types.None): Pair<Type, IIR> {
         if (qualifier == null && Builtins.has(name) && !cd.functions.exists(name)) {
             if (argNames != null) throw EcError(location, "`$name` is built in, and its arguments have no names. Pass them in order.")
             val (used, kept) = mutableListOf<ITok?>() to mutableListOf<ITok>()
-            return Builtins.call(cd, location, name, if (first != null) args else rest, first, used, kept).also { pools = used; aliased = kept }
+            return Builtins.call(cd, order, location, name, if (first != null) args else rest, first, used, kept).also { pools = used; aliased = kept }
         }
         val count = rest.size + (if (first != null) 1 else 0)
         val offset = count - rest.size
-        val slots = arrayOfNulls<Pair<Type, IIR>>(count)
-        first?.let { slots[0] = it }
         val names = argNames?.map { n -> n?.let { testIdentifier(location, it) } }
         fun hint(i: Int) = names?.get(i)?.let { cd.functions.hintForName(name, it, qualifier) } ?: cd.functions.hintFor(name, count, i + offset, qualifier)
         // Lambdas without parameter types last: the other arguments decide a generic function's `<T>`, which gives them their types.
-        rest.forEachIndexed { i, arg -> if (!isUntypedLambda(arg)) slots[i + offset] = arg.process(cd, hint(i)) }
+        val types = arrayOfNulls<Type>(count).also { if (first != null) it[0] = first.first }
+        rest.forEachIndexed { i, arg -> if (!isUntypedLambda(arg)) types[i + offset] = order.compile(i + offset, arg) { arg.process(cd, hint(i)) }.first }
         rest.forEachIndexed { i, arg ->
-            if (slots[i + offset] == null) {
+            if (types[i + offset] == null) order.compile(i + offset, arg) {
                 val fixed = hint(i)
-                slots[i + offset] = arg.process(cd, if (fixed !== Types.None || names?.get(i) != null) fixed else cd.functions.lambdaHint(name, count, i + offset, slots.map { it?.first }, qualifier))
-            }
+                arg.process(cd, if (fixed !== Types.None || names?.get(i) != null) fixed else cd.functions.lambdaHint(name, count, i + offset, types.toList(), qualifier))
+            }.also { types[i + offset] = it.first }
         }
-        val processed = slots.map { it!! }
+        val processed = order.finish(location).values.toList()
         // `hash(x)` of a type without a function of its own is generated, like `==`.
         if (qualifier == null && name == "hash" && names == null && count == 1 && !cd.functions.accepts(name, cd.usable(location, processed[0], "the argument of `hash`").first))
-            return Builtins.call(cd, location, name, if (first != null) args else rest, processed[0], mutableListOf(), mutableListOf())
+            return Builtins.call(cd, ArgumentOrder(cd), location, name, if (first != null) args else rest, processed[0], mutableListOf(), mutableListOf())
         // A function given a pool may return memory from it; an eclang function may also allocate in the current one.
         pools = (if (first != null) args else rest).filterIndexed { i, _ -> processed[i].first === cd.types.pool }
         val target = cd.functions.call(location, name, processed, qualifier, hint, names?.let { List<String?>(offset) { null } + it })
@@ -108,28 +110,33 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
         aliased = if (target.overload.isExternal && pools.isNotEmpty()) listOf()
             else (if (first != null) args else rest).filterIndexed { i, _ -> processed[i].first.let { !Ops.isNumeric(it) && it !== Types.Bool } }
         if (!target.overload.isExternal) pools = pools + null
-        return target.type to callIR(cd, location, name, target)
+        return target.type to order.wrap(location, callIR(cd, location, name, target))
     }
 
     private fun isUntypedLambda(arg: ITok) = (arg.unnested() as? TLambda)?.hasUntypedParameters == true
 
-    /** Calls a function value ([callee]: its type and IR), e.g. a parameter `f: (Int) => Int`. [what] names it in errors. */
-    private fun callValue(cd: CompileData, what: String, callee: Pair<Type, IIR>, rest: List<ITok>): Pair<Type, IIR> {
-        val type = callee.first
+    /**
+     * Calls a function value of type [type], e.g. a parameter `f: (Int) => Int`. [what] names it in errors. [callee]
+     * gives its IR, from what [order] holds when that is a field of the receiver at index 0.
+     */
+    private fun callValue(cd: CompileData, order: ArgumentOrder, what: String, type: Type, rest: List<ITok>, callee: (Map<Int, Pair<Type, IIR>>) -> IIR): Pair<Type, IIR> {
         if (argNames != null) throw EcError(location, "A function type doesn't name its parameters, so the arguments of $what can't have names. Pass them in order.")
         if (isNullableFunction(type))
             throw EcError(location, "Can't call $what because it may be null. Check it first, e.g. `if $name != null do`.")
         if (type !is FunctionType) throw EcError(location, "Can't call $what: it is a $type, not a function.")
         if (rest.size != type.params.size)
             throw EcError(location, "$what takes ${type.params.size} argument${if (type.params.size == 1) "" else "s"} ($type), but ${rest.size} were given.")
-        val irs = rest.mapIndexed { i, arg ->
-            val value = cd.usable(location, arg.process(cd, type.params[i]), "argument ${i + 1} of $what")
+        rest.forEachIndexed { i, arg -> order.compile(i + 1, arg) { arg.process(cd, type.params[i]) } }
+        val values = order.finish(location)
+        val irs = rest.indices.map { i ->
+            val value = cd.usable(location, values.getValue(i + 1), "argument ${i + 1} of $what")
             cd.expect(location, value, type.params[i], "argument ${i + 1} of $what")
         }
         val result = type.throws?.let { cd.types.result(type.returns, it) } ?: type.returns
         pools = listOf(null)
         aliased = rest
-        return result to IRCallValue(location, callee.second, irs)
+        cd.noteEffect()
+        return result to order.wrap(location, IRCallValue(location, callee(values), irs))
     }
 
     private fun isNullableFunction(t: Type) = t is Union && t.isNullable && t.members.any { it is FunctionType }
@@ -145,6 +152,7 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
 
 /** The C call of [target], a resolved call of the function [name]: what comes back from C is checked and converted to eclang's type. */
 internal fun callIR(cd: CompileData, location: Loc, name: String, target: CallTarget): IIR {
+    cd.noteEffect()
     val call = IRGlobalFunctionCall(location, name, target.overload.cName, IRArguments(location, target.args.map { IRArgument(location, it) }))
     val enum = if (target.overload.isExternal && target.overload.throws == null) cd.enums[target.type] else null
     val checked = if (target.overload.isExternal && target.overload.throws == null && mayBeNullInC(target.type))

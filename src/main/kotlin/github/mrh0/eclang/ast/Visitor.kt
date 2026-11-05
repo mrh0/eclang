@@ -548,6 +548,14 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
 
     override fun visitStatementTailIf(ctx: EclangParser.StatementTailIfContext): ITok = TTailIf(loc(ctx), TStatement(loc(ctx), visit(ctx.expression)), if (ctx.condition != null) visit(ctx.condition) else null)
 
+    override fun visitStatementNullish(ctx: EclangParser.StatementNullishContext): ITok {
+        val action = ctx.jump()?.let { visit(it) } ?: when (val right = visit(ctx.right)) {
+            is TExprCall -> TStatementCall(right.location, right.name, right.args, right.isMethod, right.argNames)
+            else -> throw EcError(loc(ctx.right), "As a statement, `a ?? b` runs b when a is null or failed, so b must be a call or a jump: `f() ?? panic(\"failed\")` or `f() ?? ret`. To use the value, assign it: `val x = a ?? b`.")
+        }
+        return TStatementNullish(loc(ctx), visit(ctx.left), action)
+    }
+
     // Branches
     override fun visitStatementWhen(ctx: EclangParser.StatementWhenContext): ITok =
         TStatementWhen(loc(ctx), ctx.NAME()?.text, ctx.kind?.text == "var", visit(ctx.subject), ctx.arms.map { whenArm(it.whenPattern(), armBody(it.body, it.line), false) })

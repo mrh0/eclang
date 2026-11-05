@@ -19,7 +19,7 @@ import github.mrh0.ect2.Types
  * `main`: what `main` does on start and on exit happens when the library is loaded and unloaded.
  */
 class IRProgram(
-    location: Loc, private val functions: List<IIR>, private val globals: List<IIR>, private val uses: List<IIR>,
+    location: Loc, private val functions: List<IIR>, private val globals: List<IIR>, private val initOrder: List<IRGlobalDefine>, private val uses: List<IIR>,
     private val main: Overload?, private val mainType: Type, private val atoms: Atoms,
     private val library: String? = null, private val exports: List<Overload> = listOf(),
 ) : IR(location) {
@@ -28,7 +28,7 @@ class IRProgram(
             val body = out.render { b ->
                 b.commentLine("Code")
                 functions.forEach { it.toC(b, c); b.putLine() }
-                val inits = b.render { init -> globals.forEach { (it as? IRGlobalDefine)?.toCInit(init, c) } }
+                val inits = b.render { init -> initOrder.forEach { it.toCInit(init, c) } }
                 if (main != null) {
                     b.commentLine("Main Entry")
                     b.put(mainEntry(main, b, inits))
@@ -49,7 +49,7 @@ class IRProgram(
         sb.types.helperAtoms.forEach { atoms.get(it) }
         val types = sb.types.definitions()
 
-        val standard = listOf("stdio.h", "stdlib.h", "string.h", "math.h", "stdbool.h", "stddef.h", "stdint.h", "limits.h", "stdalign.h", "apr_general.h", "apr_pools.h")
+        val standard = listOf("stdio.h", "stdlib.h", "string.h", "math.h", "stdbool.h", "stddef.h", "stdint.h", "limits.h", "stdalign.h", "signal.h", "sys/resource.h", "apr_general.h", "apr_pools.h")
         standard.forEach { sb.putLine("#include <$it>") }
         sb.putLine()
         sb.commentLine("Uses")
@@ -57,7 +57,7 @@ class IRProgram(
         sb.putLine()
         sb.commentLine("Runtime")
         sb.putLine(RUNTIME)
-        if (library != null) sb.putLine(LIBRARY_RUNTIME)
+        sb.putLine(if (library != null) LIBRARY_RUNTIME else PROGRAM_RUNTIME)
         sb.commentLine("Types")
         sb.put(types)
         sb.putLine()
@@ -104,8 +104,9 @@ class IRProgram(
             main.returns === Types.None -> "$call;\n\t__ec_ret = 0;"
             else -> "__ec_ret = $call;"
         }
-        return "int main(int argc, char** argv) {\n\t__ec_argc = argc;\n\t__ec_argv = argv;\n\tapr_initialize();\n\t__ec_pool = __ec_pool_create(NULL);\n$globalInits\tint __ec_ret;\n\t$body\n" +
-            "\tapr_pool_destroy(__ec_pool);\n\tapr_terminate();\n\treturn __ec_ret;\n}\n"
+        return "int main(int argc, char** argv) {\n\t__ec_watch_stack();\n\t__ec_argc = argc;\n\t__ec_argv = argv;\n\tapr_initialize();\n\t__ec_pool = __ec_pool_create(NULL);\n$globalInits\tint __ec_ret;\n\t$body\n" +
+            // No apr_terminate: a detached thread may still be allocating, and it would free the allocator under it.
+            "\tapr_pool_destroy(__ec_pool);\n\treturn __ec_ret;\n}\n"
     }
 
     /**
@@ -165,6 +166,54 @@ class IRProgram(
             static inline size_t __ec_index(size_t i, size_t len, const char* at) { if (i >= len) __ec_panic_index(at, i, len); return i; }
             static inline void* __ec_palloc_aligned(apr_pool_t* pool, size_t size, size_t align) { uintptr_t p = (uintptr_t)__ec_palloc(pool, size + align - 1); return (void*)((p + align - 1) & ~(uintptr_t)(align - 1)); }
             _Noreturn static inline void __ec_panic_slice(const char* at, size_t from, size_t to, size_t len) { fflush(stdout); fprintf(stderr, "%s: slice %lld..<%lld is out of bounds for length %zu\n", at, (long long)from, (long long)to, len); abort(); }
+        """.trimIndent()
+
+        /**
+         * Says so when the main thread runs out of stack, which would be a plain segfault otherwise. That is a fault next to
+         * the stack pointer, with the stack pointer at the end of the stack, which isn't known exactly: the arguments and
+         * environment above `main`, which take up at most a quarter of it, count too. The handler needs a stack of its own,
+         * and may only do what is safe in a signal handler: stdout may be locked by the code that stopped, and C headers only
+         * declare `write` in unistd.h, whose names would clash with a program's. Any other fault goes back to the
+         * default, and happens again when the handler returns.
+         */
+        private val PROGRAM_RUNTIME = """
+            extern long __ec_write(int file, const void* data, size_t size) __asm__("write");
+            static uintptr_t __ec_stack_low; /* a stack pointer below this is at the end of the main thread's stack */
+            static uintptr_t __ec_stack_pointer(void* context) {
+            #if defined(__linux__) && defined(__x86_64__)
+                return (uintptr_t)((ucontext_t*)context)->uc_mcontext.gregs[15];
+            #elif defined(__linux__) && defined(__aarch64__)
+                return (uintptr_t)((ucontext_t*)context)->uc_mcontext.sp;
+            #else
+                (void)context; return UINTPTR_MAX;
+            #endif
+            }
+            static void __ec_on_fault(int sig, siginfo_t* info, void* context) {
+                uintptr_t at = (uintptr_t)info->si_addr, sp = __ec_stack_pointer(context), near = 1 << 16;
+                if (sp < __ec_stack_low && at + near > sp && at < sp + near) {
+                    if (ftrylockfile(stdout) == 0) { fflush(stdout); funlockfile(stdout); }
+                    static const char message[] = "eclang: out of stack: the calls went too deep, or a local variable is too large. Check for recursion that never ends, and put large arrays in a pool with `new`.\n";
+                    (void)__ec_write(2, message, sizeof message - 1);
+                    abort();
+                }
+                signal(sig, SIG_DFL);
+            }
+            static void __ec_watch_stack(void) {
+                static char stack[1 << 16];
+                struct rlimit limit;
+                char here;
+                if (getrlimit(RLIMIT_STACK, &limit) != 0 || limit.rlim_cur == RLIM_INFINITY || limit.rlim_cur > (uintptr_t)&here) return;
+                __ec_stack_low = (uintptr_t)&here - limit.rlim_cur + limit.rlim_cur / 4 + (1 << 16);
+                stack_t alternate = { .ss_sp = stack, .ss_size = sizeof stack, .ss_flags = 0 };
+                if (sigaltstack(&alternate, NULL) != 0) return;
+                struct sigaction action;
+                memset(&action, 0, sizeof action);
+                action.sa_sigaction = __ec_on_fault;
+                action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+                sigemptyset(&action.sa_mask);
+                sigaction(SIGSEGV, &action, NULL);
+                sigaction(SIGBUS, &action, NULL);
+            }
         """.trimIndent()
 
         private val LIBRARY_RUNTIME = """

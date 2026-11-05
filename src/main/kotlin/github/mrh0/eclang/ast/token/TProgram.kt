@@ -19,6 +19,7 @@ import github.mrh0.eclang.error.EcAbort
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcUnknownTypeError
 import github.mrh0.eclang.ir.IIR
+import github.mrh0.eclang.ir.IRGlobalDefine
 import github.mrh0.eclang.ir.IRProgram
 import github.mrh0.eclang.util.Util
 import github.mrh0.ect2.Type
@@ -64,23 +65,27 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
         cd.checkpoint()
         // Constants first: other globals' initial values may use them.
         val globalIRs = constants.values.toList() + globals.filter { it.tok !is ITypeDeclaration && it.tok !is TGlobalTypeDefine && it.tok !is TGlobalEnumDeclare && it !in constants }.sortedBy { it.tok !is TGlobalConstant }
-            .mapNotNull { each(cd, it) { tok -> tok.process(cd, Types.None).second } }
+            .mapNotNull { each(cd, it) { tok ->
+                val (temps, ir) = cd.withGlobalTemps { cd.functions.initializerOf { tok.process(cd, Types.None).second } }
+                ir.also { (it as? IRGlobalDefine)?.temps = temps }
+            } }
         cd.checkpoint()
 
         val functionIRs = cd.functions.buildAll()
         cd.checkpoint()
+        val initOrder = cd.functions.initializationOrder(globalIRs.filterIsInstance<IRGlobalDefine>())
 
         cd.library?.let { library ->
             if (cd.functions.exported.isEmpty()) throw EcError(location, "A library needs at least one `export fn`: C code can't call anything else in it.")
             cd.claimCName(location, "${library}_clear", "the function a library is given to free its memory", renamable = false)
-            return Types.None to IRProgram(location, cd.functions.reachable(null, functionIRs), globalIRs, usesIRs, null, Types.None, cd.atoms, library, cd.functions.exported)
+            return Types.None to IRProgram(location, cd.functions.reachable(null, functionIRs), globalIRs, initOrder, usesIRs, null, Types.None, cd.atoms, library, cd.functions.exported)
         }
         if (cd.checkOnly && cd.functions.main(entryModule) == null) throw EcAbort()
         val main = cd.functions.main(entryModule) ?: throw EcError(location, "The program has no `main` function. Add one, for example:\n\nfn main(): Int do\n    ret 0\n\nA library has none: mark what C can call with `export fn`, and build it with `eclang lib`.")
         val mainType = main.throws?.let { cd.types.result(main.returns, it) } ?: main.returns
         if (mainType !== Types.Int && mainType !== Types.None && main.throws == null)
             throw EcError(main.location, "`main` must return Int or nothing, not ${main.returns}.")
-        return Types.None to IRProgram(location, cd.functions.reachable(main, functionIRs), globalIRs, usesIRs, main, mainType, cd.atoms)
+        return Types.None to IRProgram(location, cd.functions.reachable(main, functionIRs), globalIRs, initOrder, usesIRs, main, mainType, cd.atoms)
     }
 
     /**

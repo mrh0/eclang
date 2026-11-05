@@ -8,6 +8,7 @@ import github.mrh0.eclang.ast.token.data.TString
 import github.mrh0.eclang.ast.token.op.equalityProblem
 import github.mrh0.eclang.ast.token.statement.TStatementPool
 import github.mrh0.eclang.ast.unnested
+import github.mrh0.eclang.context.ArgumentOrder
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.output.c.CTypes
@@ -44,10 +45,10 @@ internal object Builtins {
      * [pools] each pool the result may be allocated in (null: the current pool), and to [kept] each argument the
      * result may still point into, for Lifetimes.
      */
-    fun call(cd: CompileData, location: Loc, name: String, args: List<ITok>, first: Pair<Type, IIR>?, pools: MutableList<ITok?>, kept: MutableList<ITok>): Pair<Type, IIR> {
+    fun call(cd: CompileData, order: ArgumentOrder, location: Loc, name: String, args: List<ITok>, first: Pair<Type, IIR>?, pools: MutableList<ITok?>, kept: MutableList<ITok>): Pair<Type, IIR> {
         val compiled = HashMap<Int, Pair<Type, IIR>>()
         first?.let { compiled[0] = it }
-        fun arg(i: Int, hint: Type = Types.None) = compiled.getOrPut(i) { args[i].process(cd, hint) }
+        fun arg(i: Int, hint: Type = Types.None) = compiled.getOrPut(i) { order.compile(i, args[i]) { args[i].process(cd, hint) } }
         fun isPoolArg(i: Int) = isPoolType(cd, cd.usable(location, arg(i), "argument ${i + 1} of `$name`").first)
         return when (name) {
             "format" -> when {
@@ -64,12 +65,14 @@ internal object Builtins {
                 val strings = if (explicit) args.indices.drop(1) else args.indices.toList()
                 if (strings.size < 2) throw EcError(location, "`concat` joins two or more Strings: `concat(a, b)` (or `concat(p, a, b)` to allocate in pool p).")
                 pools += if (explicit) args[0] else null
+                strings.forEach { arg(it, Types.String) }
+                val values = order.finish(location)
                 val parts = strings.mapIndexed { i, index ->
                     val what = "String ${i + 1} of `concat`"
-                    cd.expect(location, cd.usable(location, arg(index, Types.String), what), Types.String, what)
+                    cd.expect(location, cd.usable(location, values.getValue(index), what), Types.String, what)
                 }
-                val into = if (explicit) pool(cd, location, "`$name`", arg(0)) else current(location)
-                Types.String to parts.drop(1).fold(parts[0]) { joined, next -> IRRawCall(location, "__ec_str_concat", listOf(into, joined, next)) }
+                val into = if (explicit) pool(cd, location, "`$name`", values.getValue(0)) else current(location)
+                Types.String to order.wrap(location, parts.drop(1).fold(parts[0]) { joined, next -> IRRawCall(location, "__ec_str_concat", listOf(into, joined, next)) })
             }
             "clone" -> {
                 if (args.size !in 1..2) throw EcError(location, "`clone` takes the value to copy, and optionally the pool to copy it into: `clone(x)` or `clone(x, p)`.")
@@ -108,6 +111,7 @@ internal object Builtins {
                 val pool = pool(cd, location, "`$name`", arg(0))
                 (if (name == "freePool") freeProblem(cd, args[0]) else clearProblem(cd, args[0]))?.let { throw EcError(location, it) }
                 val call = IRRawCall(location, if (name == "freePool") "apr_pool_destroy" else "apr_pool_clear", listOf(pool))
+                cd.noteEffect()
                 Lifetimes.kill(cd, location, args[0], free = name == "freePool")
                 Types.None to call
             }
@@ -149,17 +153,20 @@ internal object Builtins {
         val format = StringBuilder()
         val args = mutableListOf<Pair<Type, IIR>>()
         val readers = mutableListOf<(String) -> String>()
-        template.parts.forEach { part ->
+        val order = ArgumentOrder(cd)
+        template.parts.forEachIndexed { i, part -> if (part is TInterpolated.Field) order.compile(i, part.value) { part.value.process(cd, Types.None) } }
+        val values = order.finish(location)
+        template.parts.forEachIndexed { index, part ->
             if (part is StringLiteral) {
                 // A 0 in a printf format would end it, so it is printed as a value.
                 part.splitAtZero().forEachIndexed { i, text ->
                     if (i > 0) { format.append("%c"); args += Types.Char to IRNumber(location, 0, Types.Char); readers += { a -> a } }
                     format.append(text.toC().replace("%", "%%"))
                 }
-                return@forEach
+                return@forEachIndexed
             }
             val field = part as TInterpolated.Field
-            val value = cd.usable(location, field.value.process(cd, Types.None), "`\${...}`")
+            val value = cd.usable(location, values.getValue(index), "`\${...}`")
             val type = value.first.let { if (it is AtomLiteral || isAtoms(it)) Types.Atom else cd.types.concrete(it) }
             val printed = printable(type)
             val shown = if (printed) Types.String else type
@@ -176,7 +183,7 @@ internal object Builtins {
             if (printed) printsItself(cd, field, type)?.let { throw EcError(location, it) }
             args += shown to if (printed) IRShow(location, type, converted) else converted
         }
-        return Types.String to IRFormat(location, pool, format.toString(), args, readers)
+        return Types.String to order.wrap(location, IRFormat(location, pool, format.toString(), args, readers))
     }
 
     /** Whether [t] is a union of atoms, which C holds as one atom. */

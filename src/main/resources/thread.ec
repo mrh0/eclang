@@ -1,6 +1,6 @@
 /**
  * Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic and Channel.
- * Built on APR's apr_thread_*.h and apr_atomic.h.
+ * Built on pthread.h, APR's apr_thread_*.h and apr_atomic.h.
  *
  *     use "core:thread.ec"
  *
@@ -30,6 +30,8 @@
 module "thread"
 use "core:errors.ec"
 use "core:apr/thread_proc.ec"
+use "core:c/pthread.ec"
+use "core:c/stdlib.ec"
 use "core:apr/thread_mutex.ec"
 use "core:apr/thread_rwlock.ec"
 use "core:apr/thread_cond.ec"
@@ -39,47 +41,51 @@ use "core:c/unistd.ec"
 // ---------------------------------------------------------------------------------------------------
 // Threads
 
+/** What {@link join} and {@link detach} know about a thread. Only the code holding the {@link Thread} uses it, never the thread itself. */
+priv rec Ending as
+    /** The thread was joined or detached, so its handle can't be used any more. */
+    done: Bool
+
 /** A running thread, from {@link spawn}. {@link join} or {@link detach} it. */
 rec Thread as
-    /** The APR thread. */
-    handle: @apr_thread_t
+    /** The system's thread. */
+    handle: pthread_t
+    /** Whether it was joined or detached. */
+    ending: @Ending
 
-/** What a thread started with data runs. */
+/** What a thread runs, with what it is given (null for a function that takes nothing). Allocated with `malloc`, not in a pool: the thread can outlive every pool of the code starting it. */
 priv rec Task as
-    /** The function to run. */
-    body: (@Any) => None
-    /** What it is given. */
-    data: @Any
+    /** The function to run, when it takes data. */
+    body: ((@Any) => None)?
+    /** The function to run, when it takes nothing. */
+    plain: (() => None)?
+    /** What `body` is given. */
+    data: @Any?
 
-/** What a thread started without data runs. */
-priv rec PlainTask as
-    /** The function to run. */
-    body: () => None
-
-/** The entry point of a thread running a {@link Task}, in a pool of its own. */
-priv fn start(t: @apr_thread_t, arg: @Any): @Any do
-    val task = arg !as @Task
+/** The entry point of a thread, in a pool of its own. It frees its {@link Task}. */
+priv fn start(arg: @Any): @Any? do
+    val task = @(arg !as @Task)
+    free(arg)
     pool do
-        task.body(task.data)
-    apr_thread_exit(t, APR_SUCCESS)
-    ret arg
-
-/** The entry point of a thread running a {@link PlainTask}, in a pool of its own. */
-priv fn startPlain(t: @apr_thread_t, arg: @Any): @Any do
-    val task = arg !as @PlainTask
-    pool do
-        task.body()
-    apr_thread_exit(t, APR_SUCCESS)
-    ret arg
+        if val body = task.body do
+            body(task.data!)
+        else if val plain = task.plain do
+            plain()
+    ret null
 
 /**
- * Starts a thread that runs `entry` with `task`.
+ * Starts a thread that runs `task`.
  * @throws when the system can't start a thread
  */
-priv fn launch(entry: (@apr_thread_t, @Any) => @Any, task: @Any): Thread throws OsError do
-    var handle: @apr_thread_t? = null
-    try checkStatus(apr_thread_create(addrof(handle!), null, entry, task, pool), "start a thread"c)
-    ret Thread { handle! }
+priv fn launch(task: Task): Thread throws OsError do
+    val copy = (malloc(sizeof Task)! !as @Task)
+    @copy = task
+    var handle: pthread_t = 0
+    val status = pthread_create(addrof(handle), null, fn start, copy)
+    if status != 0 do
+        free(copy)
+    try checkStatus(status as apr_status_t, "start a thread"c)
+    ret Thread { handle, new Ending { false } }
 
 /**
  * Starts a thread that runs `body(data)`. The thread must be joined (or detached).
@@ -89,8 +95,7 @@ priv fn launch(entry: (@apr_thread_t, @Any) => @Any, task: @Any): Thread throws 
  * @throws when the system can't start a thread
  */
 fn spawn(body: (@<T>) => None, data: @<T>): Thread throws OsError do
-    val task = new Task { body = body !as (@Any) => None, data = data }
-    ret try launch(fn start, task)
+    ret try launch(Task { body = body !as (@Any) => None, plain = null, data = data })
 
 /**
  * Starts a thread that runs `body()`. The thread must be joined (or detached).
@@ -98,23 +103,30 @@ fn spawn(body: (@<T>) => None, data: @<T>): Thread throws OsError do
  * @throws when the system can't start a thread
  */
 fn spawn(body: () => None): Thread throws OsError do
-    val task = new PlainTask { body }
-    ret try launch(fn startPlain, task)
+    ret try launch(Task { body = null, plain = body, data = null })
+
+/** Marks the thread as joined or detached: EINVAL if it already is, as its handle may be gone. */
+priv fn claim(t: Thread): apr_status_t do
+    if t.ending.done do
+        ret APR_EINVAL
+    t.ending.done = true
+    ret APR_SUCCESS
 
 /**
  * Waits until the thread has finished.
- * @throws when it can't be joined (it was detached, say)
+ * @throws when it can't be joined (it was detached or joined before, say)
  */
 fn join(t: Thread) throws OsError do
-    var result: apr_status_t = 0
-    try checkStatus(apr_thread_join(addrof(result), t.handle), "join a thread"c)
+    try checkStatus(claim(t), "join a thread"c)
+    try checkStatus(pthread_join(t.handle, null) as apr_status_t, "join a thread"c)
 
 /**
  * Lets the thread run on its own: it can't be joined, and its resources are freed when it ends.
  * @throws when it can't be detached
  */
 fn detach(t: Thread) throws OsError do
-    try checkStatus(apr_thread_detach(t.handle), "detach a thread"c)
+    try checkStatus(claim(t), "detach a thread"c)
+    try checkStatus(pthread_detach(t.handle) as apr_status_t, "detach a thread"c)
 
 /** Lets other threads run before this one goes on. */
 fn yieldNow() do

@@ -38,6 +38,7 @@ One file per C header, with the C names unchanged. Undocumented declarations are
 |---|---|---|---|
 | [ctype](c/ctype.md) | `core:c/ctype.ec` | `ctype.h` | 14 |
 | [ioctl](c/ioctl.md) | `core:c/ioctl.ec` | `sys/ioctl.h` | 3 |
+| [pthread](c/pthread.md) | `core:c/pthread.ec` | `pthread.h` | 3 |
 | [signal](c/signal.md) | `core:c/signal.ec` | `signal.h` | 22 |
 | [stdio](c/stdio.md) | `core:c/stdio.ec` | `stdio.h` | 29 |
 | [stdlib](c/stdlib.md) | `core:c/stdlib.ec` | `stdlib.h` | 31 |

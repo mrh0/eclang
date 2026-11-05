@@ -1216,6 +1216,18 @@ public class EclangBaseListener implements EclangListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterStatementNullish(EclangParser.StatementNullishContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStatementNullish(EclangParser.StatementNullishContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterStatementTailWhile(EclangParser.StatementTailWhileContext ctx) { }
 	/**
 	 * {@inheritDoc}

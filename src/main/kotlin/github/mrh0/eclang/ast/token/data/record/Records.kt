@@ -4,6 +4,7 @@ import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.token.type.checkBits
+import github.mrh0.eclang.context.ArgumentOrder
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
@@ -44,29 +45,34 @@ internal fun createRecord(cd: CompileData, location: Loc, record: Record, values
             "Give them a value, or give the field a default in the record (`${missing[0]}: ${fields[missing[0]]} = ...`).")
         names
     }
-    val irs = given.mapIndexed { i, name ->
+    val order = ArgumentOrder(cd)
+    given.forEachIndexed { i, name ->
         val type = fields[name]!!
-        val value = values[i].process(cd, type)
-        checkBits(location, record, name, type, value.first)
-        cd.expect(location, value, type, "field '$name' of ${record.name}")
+        order.compile(i, values[i]) { values[i].process(cd, type).also { checkBits(location, record, name, type, it.first) } }
     }
     val defaulted = if (record.isUnion) listOf() else fields.keys.filter { it !in given }
     // A default is compiled where the record is made, as if in a function of its own: it can't see local variables,
     // and it sees the names of the module that declares it, not those of the code making the record.
-    val defaults = defaulted.map { name ->
+    defaulted.forEachIndexed { i, name ->
         val type = fields[name]!!
-        cd.inModule(cd.moduleNamed(defaultOwner(cd, record, name).namespace)) {
-            cd.isolated {
-                cd.newContext("${record.name} default", record.typeBindings)
-                val value = defaultOf(cd, record, name)!!.process(cd, type)
-                checkBits(location, record, name, type, value.first)
-                cd.expect(location, value, type, "the default of field '$name' of ${record.name}")
+        val default = defaultOf(cd, record, name)!!
+        order.compile(given.size + i, default) {
+            cd.inModule(cd.moduleNamed(defaultOwner(cd, record, name).namespace)) {
+                cd.isolated {
+                    cd.newContext("${record.name} default", record.typeBindings)
+                    val value = default.process(cd, type)
+                    checkBits(location, record, name, type, value.first)
+                    type to cd.expect(location, value, type, "the default of field '$name' of ${record.name}")
+                }
             }
         }
     }
+    val finished = order.finish(location)
+    val irs = given.indices.map { i -> cd.expect(location, finished.getValue(i), fields[given[i]]!!, "field '${given[i]}' of ${record.name}") }
+    val defaults = defaulted.indices.map { finished.getValue(given.size + it).second }
     val allocates = defaulted.any { Lifetimes.holdsPointer(fields[it]!!) }
     val onStack = defaulted.any { Lifetimes.usesStack(defaultOf(cd, record, it)!!) }
-    return RecordDefaults(given.zip(values).toMap(), allocates, onStack) to IRCreateRecord(location, record, given + defaulted, irs + defaults)
+    return RecordDefaults(given.zip(values).toMap(), allocates, onStack) to order.wrap(location, IRCreateRecord(location, record, given + defaulted, irs + defaults))
 }
 
 /** The record that gives [field] of [record] its default value: [record], or a record it extends. */

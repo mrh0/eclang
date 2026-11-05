@@ -11,7 +11,6 @@ import github.mrh0.eclang.context.InterfaceMethod
 import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.context.Module
 import github.mrh0.eclang.context.state.Constant
-import github.mrh0.eclang.context.state.InlineConstant
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcGenericNotEstablishedError
 import github.mrh0.eclang.error.fn.EcAmbiguousSignatureError
@@ -21,7 +20,9 @@ import github.mrh0.eclang.error.fn.EcNoMatchingCallSignatureError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.ir.IRCCast
+import github.mrh0.eclang.ir.IRGlobalDefine
 import github.mrh0.eclang.ir.IREnumConvert
+import github.mrh0.eclang.ir.IRStatementDefineVal
 import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.ir.data.IRCreateArray
 import github.mrh0.eclang.ir.data.IRFormat
@@ -146,8 +147,13 @@ class Functions(private val cd: CompileData) {
         (qualifier ?: cd.topLevel).takeIf { name in it.privateFunctions && it !== cd.module }?.let {
             throw EcError(location, "'$name' is private to $it (`priv fn`), so only code in it can call it. Remove `priv` to use it here.")
         }
+        // `x.hidden()` finds nothing here, and `shapes.hidden(x)` wouldn't either, so that is no advice to give.
+        fun public(m: Module) = overloads.containsKey(key(m, name)) && name !in m.privateFunctions
+        if (qualifier == null) overloads.values.flatten().firstOrNull { it.name == name && it.module !== cd.module }?.module?.takeIf { name in it.privateFunctions && cd.modulesWhere(::public).isEmpty() }?.let {
+            throw EcError(location, "'$name' is private to $it (`priv fn`), so only code in it can call it. Remove `priv` to use it here.")
+        }
         val hint = if (qualifier != null) CompileData.suggestion(name, visibleNames(qualifier))
-            else cd.whereElse(name) { overloads.containsKey(key(it, name)) }.ifEmpty { CompileData.suggestion(name, visibleNames(null)) }
+            else cd.whereElse(name, ::public).ifEmpty { CompileData.suggestion(name, visibleNames(null)) }
                 .ifEmpty { suggestionElsewhere(name) }
         throw EcFunctionNotDefinedError(location, name, qualifier?.toString(), hint)
     }
@@ -262,6 +268,7 @@ class Functions(private val cd: CompileData) {
         /** Above this many copies of one function (from splitting its union parameters), declaring it gives a warning. */
         const val MANY_COPIES = 16
         private const val ROOT = ""
+        private const val INITIALIZER = "#initializer"
     }
 
     /** The parameter type to use as a hint for argument [index], when every candidate agrees on it. */
@@ -436,7 +443,7 @@ class Functions(private val cd: CompileData) {
         if (!checking.add(arg to i)) return null
         try {
             return methods.firstOrNull { m ->
-                visible(m.name).none { o ->
+                (visible(m.name) + owners(arg).flatMap { visible(m.name, it) }).none { o ->
                     fitsArity(o, m.params.size + 1) && score(o, listOf(arg) + m.params, HashMap()) != null &&
                         (m.returns === Types.None || Overload.containsTypeParam(o.returns) || types.cost(resultOf(o), m.returns) != TypeContext.NO)
                 }
@@ -572,6 +579,23 @@ class Functions(private val cd: CompileData) {
         else -> null
     }
 
+    /** The modules that declare [t] and, for a record, its parents: a function of a parent's module takes a child too. */
+    private fun owners(t: Type): List<Module> {
+        val declared = if (t is Pointer) t.target else t
+        val chain = if (declared is Record) generateSequence(declared) { it.parent }.toList() else listOf(declared)
+        return chain.mapNotNull { owner(it) }.distinct()
+    }
+
+    /**
+     * The module to look in for the method call `receiver.name(...)` of [count] arguments, the receiver included, when
+     * only the module that declares the receiver's type has it: `f.close()` outside module io. Null when a function
+     * this code sees takes the receiver, as those come first, or when no function does.
+     */
+    fun methodModule(name: String, receiver: Type, count: Int): Module? {
+        fun takes(o: Overload) = fitsArity(o, count) && score(o, listOf(receiver), HashMap()) != null
+        return if (visible(name).any(::takes)) null else owners(receiver).firstOrNull { m -> visible(name, m).any(::takes) }
+    }
+
     /** The single overload of [name], or null when there are none or several. */
     fun onlyOverload(name: String, qualifier: Module? = null): Overload? = visible(name, qualifier).singleOrNull()?.takeIf { it.varArg == null && !it.isTemplate }
 
@@ -614,7 +638,71 @@ class Functions(private val cd: CompileData) {
 
     /** Notes that the code being compiled calls or refers to the function [cName]. */
     private fun use(cName: String) {
-        uses.getOrPut(lambdaOwners.lastOrNull() ?: cd.function?.cName ?: ROOT) { HashSet() } += cName
+        uses.getOrPut(lambdaOwners.lastOrNull() ?: cd.function?.cName ?: initializer ?: ROOT) { HashSet() } += cName
+    }
+
+    /** Notes that the code being compiled reads or changes the global [cName]. C names are unique, so these share [uses] with functions. */
+    fun useGlobal(cName: String) = use(cName)
+
+    /** Stands for the global being compiled in [uses], until [initializerOf] knows its C name. */
+    private var initializer: String? = null
+
+    /** The globals with code in [uses], under their C names. */
+    private val initialized = HashSet<String>()
+
+    /** Compiles the global with [compile], and from then on [uses] has what its initial value uses under its C name. */
+    fun initializerOf(compile: () -> IIR): IIR {
+        initializer = INITIALIZER
+        val ir = try { compile() } finally { initializer = null }
+        val used = uses.remove(INITIALIZER) ?: return ir
+        val name = (ir as? IRGlobalDefine)?.cName
+        if (name == null) uses.getOrPut(ROOT) { HashSet() } += used
+        else { uses[name] = used; initialized += name }
+        return ir
+    }
+
+    /**
+     * The order to set [globals] in: as written, except that a global comes after those its value needs, also through the
+     * functions it calls, so that `val a = f()` sees the `val b = new 1` that f reads, wherever b is written. Globals that
+     * need each other can't be ordered, so they are warned about and keep their written order.
+     */
+    fun initializationOrder(globals: List<IRGlobalDefine>): List<IRGlobalDefine> {
+        val byName = globals.filter { it.setAtStart }.associateBy { it.cName }
+        val order = LinkedHashSet<IRGlobalDefine>()
+        val open = LinkedHashSet<IRGlobalDefine>()
+
+        /** The globals set at the start that the code of [global] reaches. Those stop the search: their own needs are theirs. */
+        fun needs(global: IRGlobalDefine): List<IRGlobalDefine> {
+            val found = LinkedHashSet<IRGlobalDefine>()
+            val seen = HashSet<String>()
+            val waiting = ArrayDeque(uses[global.cName].orEmpty().sorted())
+            while (waiting.isNotEmpty()) {
+                val next = waiting.removeFirst()
+                if (!seen.add(next)) continue
+                val needed = byName[next]
+                if (needed != null) found += needed else if (next !in initialized) uses[next]?.let { waiting.addAll(it.sorted()) }
+            }
+            return globals.filter { it in found }
+        }
+
+        fun visit(global: IRGlobalDefine) {
+            if (global in order) return
+            open += global
+            for (needed in needs(global)) {
+                if (needed in open) cycleWarning(global, needed, open.toList()) else visit(needed)
+            }
+            open -= global
+            order += global
+        }
+        globals.forEach { visit(it) }
+        return order.toList()
+    }
+
+    /** [global]'s value needs [needed], which is waiting for it, as the last of [open] are. */
+    private fun cycleWarning(global: IRGlobalDefine, needed: IRGlobalDefine, open: List<IRGlobalDefine>) {
+        val cycle = open.dropWhile { it !== needed }.joinToString(" -> ") { "'${it.name}'" } + " -> '${needed.name}'"
+        cd.warn(global.location, "The value of '${global.name}' depends on itself ($cycle), through the functions it calls, so code reads a global that isn't set yet. " +
+            "That value is zero, and a crash if it is a pointer. Set one of them in `main`, or stop those functions reading it.")
     }
 
     /**
@@ -624,7 +712,7 @@ class Functions(private val cd: CompileData) {
      */
     fun reachable(main: Overload?, functions: List<IIR>): List<IIR> {
         val seen = HashSet<String>()
-        val waiting = ArrayDeque(listOfNotNull(ROOT, main?.cName) + exported.map { it.cName })
+        val waiting = ArrayDeque(listOfNotNull(ROOT, main?.cName) + initialized + exported.map { it.cName })
         while (waiting.isNotEmpty()) {
             val next = waiting.removeFirst()
             if (seen.add(next)) uses[next]?.let { waiting.addAll(it) }
@@ -654,12 +742,16 @@ class Functions(private val cd: CompileData) {
             cd.ctx().define(it.location, Constant(it.name, it.type, cd.localCName(it.name), kind = "a parameter"))
             Lifetimes.defineRest(cd, it.name)
         }
-        o.absent.forEach { p ->
-            val value = cd.expect(p.location, p.default!!.process(cd, p.type), p.type, "default value of '${p.name}'")
-            cd.ctx().define(p.location, InlineConstant(p.name, p.type, value))
-            Lifetimes.define(cd, p.name, p.default, p.type)
+        // A parameter left out is a local set on entry, so its default runs once however often the body reads it.
+        val defaults = o.absent.flatMap { p ->
+            val default = p.default!!
+            val (hoisted, value) = cd.collectHoisted { cd.expect(p.location, default.process(cd, p.type), p.type, "default value of '${p.name}'") }
+            val local = cd.ctx().define(p.location, Constant(p.name, p.type, cd.localCName(p.name), kind = "a parameter"))
+            Lifetimes.define(cd, p.name, default, p.type)
+            hoisted + IRStatementDefineVal(p.location, local, value)
         }
-        val block = o.body!!.process(cd, Types.None).second as IRBlock
+        val body = o.body!!.process(cd, Types.None).second as IRBlock
+        val block = IRBlock(body.location, defaults + body.statements, body.deferred, body.diverges)
         if (o.returns !== Types.None && !block.diverges && !cd.functionHasErrors)
             throw EcError(o.location, if (o.returns === Types.Never) "Function ${o.name} is declared `Never`, so it must not reach its end. End every path with something that doesn't come back, such as `exit(1)`, a call of another `Never` function, or a loop that doesn't end."
                 else "Function ${o.name} returns ${o.returns}, so every path through it must end with `ret`.")

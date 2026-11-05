@@ -32,7 +32,17 @@ object Util {
         Util::class.java.classLoader.getResourceAsStream("c-reserved.txt")!!.bufferedReader().readLines().toSet()
     }
 
-    /** True when [cName] can't be used for a definition in the generated C, because C or its headers already use it. */
+    /** What each header the core: library can include declares on top of [cReserved] (see tools/gen-c-reserved.py). */
+    private val headerReserved: Map<String, List<String>> by lazy {
+        Util::class.java.classLoader.getResourceAsStream("c-reserved-headers.txt")!!.bufferedReader().readLines().associate { line ->
+            line.substringBefore(": ") to line.substringAfter(": ", "").split(' ').filter { it.isNotEmpty() }
+        }
+    }
+
+    /** The names [header] adds to those every program has. Empty for a header the core: library doesn't include: nothing is known about it. */
+    fun namesOfHeader(header: String): List<String> = headerReserved[header].orEmpty()
+
+    /** True when [cName] can't be used for a definition in the generated C, because C or the headers of every program already use it. */
     fun isCReserved(cName: String) = cName in cReserved || cName.startsWith("__") || Regex("_[A-Z].*").matches(cName) ||
         cName.startsWith("apr_") || cName.startsWith("APR_")
 

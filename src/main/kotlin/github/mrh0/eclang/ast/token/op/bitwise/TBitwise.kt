@@ -5,6 +5,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.op.Ops
 import github.mrh0.eclang.ast.token.op.arithmetic
+import github.mrh0.eclang.ast.token.op.operands
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
@@ -35,9 +36,11 @@ class TBitwise(location: Loc, private val op: String, private val left: ITok, pr
         ) { l, r -> IRBitwise(location, op, l, r, null) }
     }
 
-    private fun shift(cd: CompileData): Pair<Type, IIR> {
-        val l = cd.usable(location, left.process(cd, Types.None), "left side of `$op`")
-        val r = cd.usable(location, right.process(cd, Types.None), "right side of `$op`")
+    private fun shift(cd: CompileData): Pair<Type, IIR> = operands(cd, location, left, right) { a, b ->
+        shiftOf(cd, cd.usable(location, a, "left side of `$op`"), cd.usable(location, b, "right side of `$op`"))
+    }
+
+    private fun shiftOf(cd: CompileData, l: Pair<Type, IIR>, r: Pair<Type, IIR>): Pair<Type, IIR> {
         val (lt, rt) = l.first to r.first
         if (!Ops.isInteger(lt) || !Ops.isInteger(rt)) throw EcError(location, "`$op` needs two whole numbers, but got $lt and $rt.")
         val count = (rt as? IntLiteral)?.value

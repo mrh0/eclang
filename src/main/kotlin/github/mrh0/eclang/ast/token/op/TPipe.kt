@@ -65,6 +65,7 @@ class TCallValue(location: Loc, private val callee: ITok, val args: List<ITok>) 
         if (values.size != type.params.size) throw EcError(location, "This function takes ${type.params.size} arguments ($type), but ${values.size} were given.")
         val irs = values.mapIndexed { i, v -> cd.expect(location, v, type.params[i], "argument ${i + 1}") }
         val result = type.throws?.let { cd.types.result(type.returns, it) } ?: type.returns
+        cd.noteEffect()
         return result to IRCallValue(location, ir, irs)
     }
 

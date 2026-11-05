@@ -267,6 +267,8 @@ statement:
     | 'ret' return=expr? ('if' condition=expr)? NL                                           #statementReturn
     | 'ret' whenExpr                                                                         #statementReturn
     | expression=expr 'if' condition=expr NL                                                 #statementTailIf
+    // What to do when a value is missing or a call failed, with no value to keep: `f() ?? panic("x")`, `x ?? ret`.
+    | left=expr '??' (jump | right=expr) NL                                                  #statementNullish
 
     | expression=expr 'while' condition=expr NL                                                 #statementTailWhile
     //| expression=expr 'for' condition=expr NL                                                 #statementTailFor

@@ -5,6 +5,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.unnested
+import github.mrh0.eclang.context.ArgumentOrder
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
@@ -23,10 +24,11 @@ import github.mrh0.ect2.Union
 class TCreateTuple(location: Loc, val values: List<ITok>) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val expected = expected(cd, hint)?.elements
-        val processed = values.mapIndexed { i, value -> value.process(cd, expected?.get(i) ?: Types.None) }
+        val order = ArgumentOrder(cd)
+        val processed = order.inOrder(location, values) { i, value -> value.process(cd, expected?.get(i) ?: Types.None) }
         val parts = expected ?: processed.mapIndexed { i, value -> stored(cd, value, i) }
         val tuple = cd.types.tuple(parts)
-        return tuple to IRCreateTuple(location, tuple, processed.mapIndexed { i, value -> cd.expect(location, value, parts[i], "part ${i + 1} of the tuple") })
+        return tuple to order.wrap(location, IRCreateTuple(location, tuple, processed.mapIndexed { i, value -> cd.expect(location, value, parts[i], "part ${i + 1} of the tuple") }))
     }
 
     /** The tuple type of the right size in [hint], which may be a union such as `(Int, Int)?`. */

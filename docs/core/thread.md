@@ -1,7 +1,7 @@
 # Module `thread`
 
 Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic and Channel.
-Built on APR's apr_thread_*.h and apr_atomic.h.
+Built on pthread.h, APR's apr_thread_*.h and apr_atomic.h.
 
     use "core:thread.ec"
 
@@ -40,7 +40,8 @@ A running thread, from [`spawn`](#thread.spawn). [`join`](#thread.join) or [`det
 
 **Fields**
 
-- <a id="thread.Thread.handle"></a>`handle: @apr_thread_t` — The APR thread.
+- <a id="thread.Thread.handle"></a>`handle: pthread_t` — The system's thread.
+- <a id="thread.Thread.ending"></a>`ending: @Ending` — Whether it was joined or detached.
 
 ### <a id="thread.Mutex"></a>`Mutex`
 
@@ -194,7 +195,7 @@ Waits until the thread has finished.
 
 **Throws**
 
-- `OsError` — when it can't be joined (it was detached, say)
+- `OsError` — when it can't be joined (it was detached or joined before, say)
 
 ### <a id="thread.detach"></a>`detach`
 

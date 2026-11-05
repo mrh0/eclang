@@ -51,6 +51,9 @@ class CompileData(val types: TypeContext = TypeContext()) {
     /** `.ec` files already loaded with `use`, so each is only loaded once. */
     val loadedFiles = mutableSetOf<String>()
 
+    /** The C libraries the program links to (`use "lib:z"`), by the name `-l` takes. */
+    val linkedLibraries = linkedSetOf<String>()
+
     /** The text of files as an editor has them, unsaved, by [Util.sourceName]. These are read instead of the disk. */
     var sources: Map<String, String> = mapOf()
 
@@ -90,7 +93,7 @@ class CompileData(val types: TypeContext = TypeContext()) {
     fun visibleModules(): List<Module> = if (module.isTopLevel) listOf(module) else listOf(module, topLevel)
 
     /** The value called [name]: a local, then a global of this module, then a global of the top level. */
-    fun findVar(name: String): IVar? = ctx().getRaw(name) ?: visibleModules().firstNotNullOfOrNull { m -> m.globals.getRaw(name)?.takeIf { m === module || name !in m.privateGlobals } }
+    fun findVar(name: String): IVar? = ctx().getRaw(name) ?: visibleModules().firstNotNullOfOrNull { m -> m.globals.getRaw(name)?.takeIf { m === module || name !in m.privateGlobals } }?.also { functions.useGlobal(it.cName()) }
 
     fun getVar(location: Loc, name: String): IVar = findVar(name) ?: throw EcError(location, capturedProblem(name)
         ?: "'$name' is not defined.${whereElse(name) { it.globals.getRaw(name) != null }}")
@@ -104,6 +107,7 @@ class CompileData(val types: TypeContext = TypeContext()) {
 
     /** `other.name`: the global [name] of module [m]. */
     fun getVarIn(location: Loc, m: Module, name: String): IVar = m.globals.getRaw(name)?.also {
+            functions.useGlobal(it.cName())
             if (m !== module && name in m.privateGlobals) throw EcError(location, "'$name' is private to $m (`priv`), so only code in it can use it. Remove `priv` to use it here.")
         }
         ?: throw EcError(location, "$m has no value called '$name'.${suggestion(name, m.globals.stack.getVars().map { it.getName() })}")
@@ -113,10 +117,13 @@ class CompileData(val types: TypeContext = TypeContext()) {
      * " It is defined in module 'fib'; write `fib.name`." Empty when there's none.
      */
     fun whereElse(name: String, has: (Module) -> Boolean): String {
-        val found = modules.values.filter { !it.isTopLevel && it !== module && has(it) }
+        val found = modulesWhere(has)
         if (found.isEmpty()) return ""
         return " It is defined in ${found.joinToString(" and ")}; write `${found[0].name}.$name`."
     }
+
+    /** The modules other than this one and the top level for which [has] holds. */
+    fun modulesWhere(has: (Module) -> Boolean) = modules.values.filter { !it.isTopLevel && it !== module && has(it) }
 
     private val cNames = HashMap<String, Loc>()
     /** Every C name used at file scope: [cNames], functions and `declare`d C names. Locals must not hide them. */
@@ -128,9 +135,9 @@ class CompileData(val types: TypeContext = TypeContext()) {
      * whose C name is fixed) that is an error instead.
      */
     fun claimCName(location: Loc, cName: String, what: String, renamable: Boolean = true): String {
-        val name = if (!Util.isCReserved(cName)) cName
+        val name = if (!isCReserved(cName)) cName
             else if (renamable) "__ec_v_$cName"
-            else throw EcError(location, "The name of $what is already used by C (it is declared by the C headers every program includes). Rename it.")
+            else throw EcError(location, "The name of $what is already used by C (it is declared by the C headers this program includes). Rename it.")
         cNames.putIfAbsent(name, location)?.let { throw EcError(location, "The C name '$name' of $what is already used by the definition at $it. Rename one of them.") }
         fileScopeNames += name
         return name
@@ -144,7 +151,15 @@ class CompileData(val types: TypeContext = TypeContext()) {
      * would hide something at file scope that the generated code may use (a local `log_6` would hide the function
      * `log_6`, a local `strcmp` the C function).
      */
-    fun localCName(name: String): String = if (name in fileScopeNames || Util.isCReserved(name)) "__ec_v_$name" else name
+    fun localCName(name: String): String = if (name in fileScopeNames || isCReserved(name)) "__ec_v_$name" else name
+
+    /** What the C headers this program includes with `use "x.h"` declare, on top of what every program has. */
+    private val headerNames = HashSet<String>()
+
+    /** Notes that the program includes [header]. `use`s are compiled first, so this is known before any name is claimed. */
+    fun includeHeader(header: String) { headerNames += Util.namesOfHeader(header) }
+
+    private fun isCReserved(cName: String) = Util.isCReserved(cName) || cName in headerNames
 
     fun newContext(contextName: String, generics: Map<String, Type> = mapOf()): ContextBuilder {
         genericContext = generics
@@ -165,18 +180,22 @@ class CompileData(val types: TypeContext = TypeContext()) {
         val (savedContext, savedGenerics, savedFunction) = Triple(currentLocalContextBuilder, genericContext, function)
         val (savedHoisted, savedBarrier) = hoisted to hoistBarrier
         val savedLiteralHome = literalHome
+        val savedEffects = effects
         val savedLoops = ArrayList(loops)
         val savedPipes = ArrayList(pipeValues)
         val savedPools = ArrayList(poolBlocks)
         enclosing += currentLocalContextBuilder
         loops.clear(); pipeValues.clear(); poolBlocks.clear()
-        function = null; hoisted = null; hoistBarrier = null; literalHome = null
+        val savedGlobalTemps = globalTemps
+        function = null; hoisted = null; hoistBarrier = null; literalHome = null; globalTemps = null
         try {
             return compile()
         } finally {
+            globalTemps = savedGlobalTemps
             enclosing.removeAt(enclosing.size - 1)
             currentLocalContextBuilder = savedContext; genericContext = savedGenerics; function = savedFunction
             hoisted = savedHoisted; hoistBarrier = savedBarrier; literalHome = savedLiteralHome
+            effects = savedEffects // a lambda's body doesn't run where it is written
             loops.clear(); loops += savedLoops
             pipeValues.clear(); pipeValues += savedPipes
             poolBlocks.clear(); poolBlocks += savedPools
@@ -430,10 +449,53 @@ class CompileData(val types: TypeContext = TypeContext()) {
      * A new temporary of type [type], declared before the statement being compiled but set where it is used
      * ([github.mrh0.eclang.ir.IRTempSet]). Unlike [hoist], that also works in code that may not run, or runs repeatedly.
      */
-    fun declareTemp(location: Loc, type: () -> Type): String {
-        val name = temp()
-        (hoisted ?: throw EcError(location, "This needs a temporary variable, so it can only be used inside a function body.")).add(IRTempDeclare(location, name, type))
-        return name
+    fun declareTemp(location: Loc, type: () -> Type): String = temp().also { declareTemp(location, it, type) }
+
+    /** Declares the temporary [name], see the other [declareTemp]. */
+    fun declareTemp(location: Loc, name: String, type: () -> Type) {
+        (hoisted ?: globalTemps ?: throw EcError(location, "This needs a temporary variable, so it can only be used inside a function body.")).add(IRTempDeclare(location, name, type))
+    }
+
+    /** False where there is nowhere to declare a temporary, as in the default of a record field. */
+    val canDeclareTemps get() = hoisted != null || globalTemps != null
+
+    /** The temporaries of the global being compiled, see [withGlobalTemps]. */
+    private var globalTemps: MutableList<IIR>? = null
+
+    /**
+     * Compiles the initializer of a global, which has no statement to hoist anything before, but is set in the C
+     * `main`, where it can have temporaries. Gives them with the result of [compile].
+     */
+    fun <T> withGlobalTemps(compile: () -> T): Pair<List<IIR>, T> {
+        val temps = mutableListOf<IIR>()
+        globalTemps = temps
+        try {
+            return temps to compile()
+        } finally {
+            globalTemps = null
+        }
+    }
+
+    /** How many calls have been compiled, so that comparing two counts tells whether the code between them runs any (see [ArgumentOrder]). */
+    var effects = 0
+        private set
+    private var effectsAtStatement = 0
+
+    /** Records that the code being compiled calls something, which can do anything. */
+    fun noteEffect() { effects++ }
+
+    /** True while the statement being compiled has called nothing so far, so hoisting something ahead of it keeps the order. */
+    val nothingRanInStatement get() = effects == effectsAtStatement
+
+    /** Where the next hoisted statement goes, for [hoistedSince] and [hoistAt]. */
+    val hoistMark get() = hoisted?.size ?: 0
+
+    /** Whether statements that run were hoisted since [mark]. Temporaries that are only declared don't count. */
+    fun hoistedSince(mark: Int) = hoisted?.drop(mark)?.any { it !is IRTempDeclare } ?: false
+
+    /** Like [hoist], but at the place [mark] in the list, to run before what was hoisted after it. */
+    fun hoistAt(mark: Int, ir: IIR) {
+        hoisted!!.add(mark, ir)
     }
 
     /**
@@ -466,15 +528,18 @@ class CompileData(val types: TypeContext = TypeContext()) {
     fun <T> collectHoisted(compile: () -> T): Pair<List<IIR>, T> {
         val savedList = hoisted
         val savedBarrier = hoistBarrier
+        val savedStart = effectsAtStatement
         val list = mutableListOf<IIR>()
         hoisted = list
         hoistBarrier = null
+        effectsAtStatement = effects
         try {
             val result = compile()
             return list to result
         } finally {
             hoisted = savedList
             hoistBarrier = savedBarrier
+            effectsAtStatement = savedStart
         }
     }
 

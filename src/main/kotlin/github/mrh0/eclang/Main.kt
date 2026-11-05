@@ -102,6 +102,9 @@ private const val NO_ABI_NOTE = "-Wno-psabi"
 /** What the generated C needs: `+` on an Int wraps, and a pointer to a child record is used as a pointer to its parent. */
 private val C_SEMANTICS = listOf("-fwrapv", "-fno-strict-aliasing")
 
+/** The linker flags for the libraries a program asks for with `use "lib:z"`. */
+private fun linkFlags(compiled: Compiler.Compilation) = compiled.cd.linkedLibraries.map { "-l$it" }
+
 private fun sourceFile(path: String): File {
     val file = Util.getPath(Loc.IDENTITY, path).toFile()
     if (!file.isFile) {
@@ -156,7 +159,8 @@ private fun run(allArgs: List<String>): Int {
     }
     DEBUG = cmd.hasOption("d")
     val file = sourceFile(path)
-    val c = compileOrExit(file, cmd).c!!
+    val compiled = compileOrExit(file, cmd)
+    val c = compiled.c!!
 
     val dir = cmd.getOptionValue("k")?.let { File(it).apply { mkdirs() } } ?: Files.createTempDirectory("eclang").toFile().apply { deleteOnExit() }
     val name = file.nameWithoutExtension
@@ -164,14 +168,15 @@ private fun run(allArgs: List<String>): Int {
     val exe = File(dir, name)
     val keep = cmd.hasOption("k")
     try {
-        val gcc = listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + listOf(source.path, "-o", exe.path) + aprFlags() + "-lm"
+        val gcc = listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + listOf(source.path, "-o", exe.path) + linkFlags(compiled) + aprFlags() + "-lm"
         if (DEBUG) println(gcc.joinToString(" "))
         val built = try { ProcessBuilder(gcc).inheritIO().start().waitFor() } catch (e: IOException) {
             System.err.println("error: couldn't start the C compiler '$CC' (${e.message}). Install gcc, or set CC to your C compiler.")
             return 1
         }
         if (built != 0) {
-            System.err.println("error: the C compiler failed on the generated code${if (keep) " ($source)" else ""}. This is a bug in eclang if the program compiled without errors; please report it.")
+            val libraries = if (compiled.cd.linkedLibraries.isEmpty()) "" else " If it says a library wasn't found, install ${compiled.cd.linkedLibraries.joinToString(", ")} or add its directory to LIBRARY_PATH."
+            System.err.println("error: the C compiler failed on the generated code${if (keep) " ($source)" else ""}. This is a bug in eclang if the program compiled without errors; please report it.$libraries")
             return 1
         }
         return ProcessBuilder(listOf(exe.path) + programArgs).inheritIO().start().waitFor()
@@ -221,8 +226,9 @@ private fun lib(args: List<String>): Int {
     try {
         val built = if (cmd.hasOption("s")) runTool(listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + listOf("-c", "-fPIC", source.path, "-o", objectFile.path) + aprFlags()) &&
                 runTool(listOf("ar", "rcs", File(dir, "lib$name.a").path, objectFile.path))
-            else runTool(listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + listOf("-shared", "-fPIC", source.path, "-o", File(dir, "lib$name.so").path) + aprFlags() + "-lm")
+            else runTool(listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + listOf("-shared", "-fPIC", source.path, "-o", File(dir, "lib$name.so").path) + linkFlags(compiled) + aprFlags() + "-lm")
         if (!built) System.err.println("error: the C compiler failed on the generated code. This is a bug in eclang if the program compiled without errors; please report it.")
+        else if (cmd.hasOption("s") && compiled.cd.linkedLibraries.isNotEmpty()) System.err.println("note: a static library doesn't hold the libraries it uses, so link lib$name.a with ${linkFlags(compiled).joinToString(" ")} too.")
         return if (built) 0 else 1
     } finally {
         objectFile.delete()

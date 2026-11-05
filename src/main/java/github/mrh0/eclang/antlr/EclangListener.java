@@ -1198,6 +1198,18 @@ public interface EclangListener extends ParseTreeListener {
 	 */
 	void exitStatementTailIf(EclangParser.StatementTailIfContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code statementNullish}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterStatementNullish(EclangParser.StatementNullishContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code statementNullish}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitStatementNullish(EclangParser.StatementNullishContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code statementTailWhile}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree

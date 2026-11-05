@@ -69,6 +69,9 @@ object Lifetimes {
     /** The current pool outside `pool do` blocks: it belongs to the caller, so it holds what the caller holds. */
     const val CALLER_POOL = "#caller"
 
+    /** Starts the key of what a place behind a pointer parameter holds, in [ContextStack.Scope.allocations] (`@o.name`). */
+    private const val BEHIND_PARAMETER = "@"
+
     /** The local memory the value of [tok] points into, or null when it lives at least as long as the function call. */
     fun value(cd: CompileData, tok: ITok): Local? = when (val t = tok.unnested()) {
         is TAddressOf -> place(cd, t.expr)
@@ -241,7 +244,8 @@ object Lifetimes {
 
     /**
      * `clearPool(tok)` or, with [free], `freePool(tok)` at [location]: what was allocated in that pool so far is freed,
-     * and with [free] the pool can't be used any more. A global can't be left pointing there: no code here can tell it did.
+     * and with [free] the pool can't be used any more. A global, or what a pointer parameter points at, can't be left pointing
+     * there: no code here can tell it did.
      */
     fun kill(cd: CompileData, location: Loc, tok: ITok, free: Boolean) {
         val stack = cd.ctx().stack
@@ -251,6 +255,11 @@ object Lifetimes {
         stack.scopeStack.last().let { top ->
             top.allocations.forEach { (holder, allocs) ->
                 val alloc = allocs.firstOrNull { it.pool in freed } ?: return@forEach
+                if (holder.startsWith(BEHIND_PARAMETER)) {
+                    val place = holder.removePrefix(BEHIND_PARAMETER)
+                    throw EcError(location, "Can't call `$verb(${shown(tok)})` here: `$place` is the caller's memory and still points to memory of pool '${alloc.poolName}', " +
+                        "so the caller would be left pointing to freed memory. Give it another value first, or store a copy in a pool that lives on: `$place = clone(..., other)`.")
+                }
                 if (top.vars[holder] == null) throw EcError(location, "Can't call `$verb(${shown(tok)})` here: the global '$holder' still points to memory of pool '${alloc.poolName}', " +
                     "so it would be left pointing to freed memory. Give it another value first, or store a copy in a pool that lives on: `$holder = clone(..., other)`.")
             }
@@ -305,11 +314,18 @@ object Lifetimes {
         stack.rounds[stack.rounds.size - 1 - out].ends += stack.roundEnd()
     }
 
+    /** A `break` here leaves the loop [out] loops out from the innermost, after running what it defers. */
+    fun loopBroken(cd: CompileData, out: Int) {
+        val stack = cd.ctx().stack
+        stack.rounds[stack.rounds.size - 1 - out].breaks += stack.roundEnd()
+    }
+
     /** The body of the innermost loop has been compiled: checks what a round leaves for the next one. */
     fun loopCompiled(cd: CompileData) {
         val stack = cd.ctx().stack
         val round = stack.rounds.last()
         round.open = false
+        stack.mergeBreaks(round.breaks)
         if (cd.functionHasErrors) return
         checkCarried(cd, round, round.ends + stack.roundEnd())
         if (stack.rounds.size == 1 && !cd.functionHasErrors) replay(cd)
@@ -508,6 +524,22 @@ object Lifetimes {
         val base = baseVariable(target) ?: return
         val held = allocations(cd, value)
         (pointees(cd, base) + Util.testIdentifier(base.location, base.name)).forEach { stack.setAllocations(it, held, add = true) }
+        storeBehindParameter(cd, target, base, held)
+    }
+
+    /**
+     * `target = value`, with the pool memory [held], through the parameter [base]: the caller sees this after the function
+     * has returned, so [kill] needs to know. It is kept per place, for a new value to replace it. An element has no place of
+     * its own. What only may be in a pool, through a call, doesn't count, as in [checkLeaving].
+     */
+    private fun storeBehindParameter(cd: CompileData, target: ITok, base: TNamed, held: Set<Alloc>) {
+        val name = Util.testIdentifier(base.location, base.name)
+        if (localRoot(cd, target) != null || cd.ctx().getRaw(name)?.kind() != "a parameter") return
+        val stack = cd.ctx().stack
+        val certain = held.filter { !it.viaCall && it.carried == null }.toSet()
+        val place = path(cd, target)
+        if (place == null) stack.setAllocations("$BEHIND_PARAMETER${shown(base)}[...]", certain, add = true)
+        else stack.replaceAllocations("$BEHIND_PARAMETER$place", certain)
     }
 
     /** The variable a place is in or reached from: x for `x.f`, `x.next.f`, `x[i]`, `@x`. */

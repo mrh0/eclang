@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """Regenerates src/main/resources/c-reserved.txt: the file-scope names (functions, variables, typedefs, enum
-constants, macros) that the headers every generated C file includes declare. eclang renames user names that would
-clash with them (see Util.cName). Names starting with `_` or `apr_`/`APR_` are reserved by rule, so they aren't listed.
+constants, macros, tags) that the headers every generated C file includes declare, and c-reserved-headers.txt: what each
+other header the core: library can include adds to those, for the programs that include it. eclang renames user names
+that would clash with them (see CompileData.isCReserved). Names starting with `_` or `apr_`/`APR_` are reserved by rule,
+so they aren't listed.
 Usage: tools/gen-c-reserved.py   (needs gcc and the APR headers)"""
-import os, re, subprocess, tempfile
+import glob, os, re, subprocess, tempfile
 
-HEADERS = ["stdio.h", "stdlib.h", "string.h", "math.h", "stdbool.h", "stddef.h", "stdalign.h", "apr_general.h", "apr_pools.h",
-           "termios.h", "sys/ioctl.h"]  # the last two: core:term.ec, whose macros (B0, ECHO, ...) are plain words
+HEADERS = ["stdio.h", "stdlib.h", "string.h", "math.h", "stdbool.h", "stddef.h", "stdint.h", "limits.h", "stdalign.h", "signal.h", "sys/resource.h", "apr_general.h", "apr_pools.h"]
 INC = ["-I/usr/include/apr-1.0"]
-root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+resources = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src/main/resources")
 
-with tempfile.TemporaryDirectory() as d:
+def declared(d, headers):
+    """The names [headers], included in this order, declare at file scope."""
     src = os.path.join(d, "h.c")
-    open(src, "w").write("".join(f"#include <{h}>\n" for h in HEADERS))
+    open(src, "w").write("".join(f"#include <{h}>\n" for h in headers))
     names = set()
     # Functions: gcc writes every prototype it sees.
     aux = os.path.join(d, "aux.txt")
@@ -27,6 +29,8 @@ with tempfile.TemporaryDirectory() as d:
     text = subprocess.run(["gcc", "-E", "-P", src] + INC, capture_output=True, text=True, check=True).stdout
     for body in re.findall(r"enum\s*\w*\s*\{([^}]*)\}", text):
         names.update(re.findall(r"(?:^|,)\s*([A-Za-z_]\w*)", body))
+    # Tags: a record is a C struct of the same name.
+    names.update(re.findall(r"\b(?:struct|union|enum)\s+([A-Za-z_]\w*)", text))
     depth, decl = 0, ""
     for ch in text:
         if ch == "{": depth += 1
@@ -42,6 +46,21 @@ with tempfile.TemporaryDirectory() as d:
                     if m: names.add(m.group(1))
                 decl = ""
             else: decl += ch
-    names = sorted(n for n in names if not n.startswith(("_", "apr_", "APR_")))
-    open(os.path.join(root, "src/main/resources/c-reserved.txt"), "w").write("\n".join(names) + "\n")
-    print(f"{len(names)} names")
+    return {n for n in names if not n.startswith(("_", "apr_", "APR_"))}
+
+def bundled():
+    """The headers the core: library can include. Its bundled C includes none (see vendor/README.md)."""
+    found = set()
+    for path in glob.glob(os.path.join(resources, "**", "*.ec"), recursive=True):
+        found.update(re.findall(r'^\s*(?:priv\s+)?use "([^":]+\.h)"', open(path).read(), re.M))
+    return sorted(found - set(HEADERS))
+
+with tempfile.TemporaryDirectory() as d:
+    base = declared(d, HEADERS)
+    open(os.path.join(resources, "c-reserved.txt"), "w").write("\n".join(sorted(base)) + "\n")
+    print(f"{len(base)} names in every program")
+    with open(os.path.join(resources, "c-reserved-headers.txt"), "w") as out:
+        for header in bundled():
+            names = declared(d, HEADERS + [header]) - base
+            out.write(f"{header}: {' '.join(sorted(names))}\n")
+            print(f"{header}: {len(names)} more")

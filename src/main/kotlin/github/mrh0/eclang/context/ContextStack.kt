@@ -18,8 +18,8 @@ data class Alloc(val seq: Int, val pool: String, val poolName: String, val carri
 /** `clearPool`/`freePool` of a pool at point [seq]: what was allocated in it before is freed. [how] says so in errors. */
 data class Kill(val seq: Int, val how: String)
 
-/** What is known about pools where a round of a loop ends: at the end of its body, or at a `continue`. */
-class RoundEnd(val allocations: Map<String, Set<Alloc>>, val killed: Map<String, Kill>, val pools: Map<String, String>, val freed: Map<String, String>)
+/** What is known about pools where a round of a loop ends: at the end of its body, at a `continue` or at a `break`. [vars] tells a variable from a later one of the same name. */
+class RoundEnd(val vars: Map<String, Int>, val allocations: Map<String, Set<Alloc>>, val killed: Map<String, Kill>, val pools: Map<String, String>, val freed: Map<String, String>)
 
 /** A use of [variable] (written [shown]) at [location] that may see its value from the previous round, after the pools in [killed] were freed in this round. */
 class CarriedRead(val location: Loc, val shown: String, val variable: String, val killed: Map<String, Kill>)
@@ -37,6 +37,8 @@ class LoopRound(val head: Int) {
     val reads = mutableListOf<CarriedRead>()
     val poolReads = mutableListOf<PoolRead>()
     val ends = mutableListOf<RoundEnd>()
+    /** Where a `break` leaves the loop, after what it runs: the code after the loop may see what is known there. */
+    val breaks = mutableListOf<RoundEnd>()
 }
 
 /** A step of [Lifetimes] made in a loop, run again when the loop has been compiled, in the scopes it was made in. */
@@ -195,18 +197,28 @@ open class ContextStack {
         val scope = scopeStack.removeLastOrNull() ?: throw Error("Scope empty")
         val parent = scopeStack.lastOrNull() ?: return scope
         if (scope.returned) return scope
-        scope.killed.forEach { (pool, kill) -> parent.killed.merge(pool, kill) { a, b -> if (b.seq > a.seq) b else a } }
-        parent.freed.putAll(scope.freed)
-        // A name that isn't local in either is a global, which outlives both.
-        scope.allocations.forEach { (name, allocs) ->
-            if (parent.vars[name] == scope.vars[name]) parent.allocations.merge(name, allocs, Set<Alloc>::plus)
-        }
-        scope.pools.forEach { (name, pool) ->
-            val root = name.substringBefore('.')
-            if (parent.vars[root] == scope.vars[root]) parent.pools[name] = pool
-        }
+        merge(parent, snapshot(scope))
         return scope
     }
+
+    /** What [end] knows carries on in [into], as far as it is about what [into] can see. */
+    private fun merge(into: Scope, end: RoundEnd) {
+        end.killed.forEach { (pool, kill) -> into.killed.merge(pool, kill) { a, b -> if (b.seq > a.seq) b else a } }
+        into.freed.putAll(end.freed)
+        // A name that isn't local in either is a global, which outlives both.
+        end.allocations.forEach { (name, allocs) ->
+            if (into.vars[name] == end.vars[name]) into.allocations.merge(name, allocs, Set<Alloc>::plus)
+        }
+        end.pools.forEach { (name, pool) ->
+            val root = name.substringBefore('.')
+            if (into.vars[root] == end.vars[root]) into.pools[name] = pool
+        }
+    }
+
+    private fun snapshot(s: Scope) = RoundEnd(s.vars.toMap(), s.allocations.toMap(), s.killed.toMap(), s.pools.toMap(), s.freed.toMap())
+
+    /** The code after a loop can be reached from each `break` in it ([ends]) too. */
+    fun mergeBreaks(ends: List<RoundEnd>) = ends.forEach { merge(scopeStack.last(), it) }
 
     /** Runs [run], the deferred statements of a way out of this scope: what they free stays freed on that way out only. Also says whether they free anything. */
     fun <R> onExit(run: () -> R): Pair<R, Boolean> {
@@ -232,7 +244,7 @@ open class ContextStack {
     }
 
     /** What is known about pools at this point, for a round of a loop that ends here. */
-    fun roundEnd(): RoundEnd = scopeStack.last().let { RoundEnd(it.allocations.toMap(), it.killed.toMap(), it.pools.toMap(), it.freed.toMap()) }
+    fun roundEnd(): RoundEnd = snapshot(scopeStack.last())
 
     /** Pools freed since the start of [round]. */
     fun killedSince(round: LoopRound): Map<String, Kill> = scopeStack.last().killed.filterValues { it.seq > round.head }
@@ -249,6 +261,13 @@ open class ContextStack {
     fun setAllocations(name: String, allocs: Set<Alloc>, add: Boolean = false) {
         val top = scopeStack.last()
         if (add) top.allocations.merge(name, allocs, Set<Alloc>::plus) else top.allocations[name] = allocs
+    }
+
+    /** The place [name] now holds a value in [allocs], and so do the fields of it (`x.a` and `x.a.b` after `x.a = v`), which were replaced with it. */
+    fun replaceAllocations(name: String, allocs: Set<Alloc>) {
+        val top = scopeStack.last()
+        top.allocations.keys.removeAll { it.startsWith("$name.") }
+        top.allocations[name] = allocs
     }
 
     /** The pool that [name], a pool variable, global or field (`h.p`), holds. */

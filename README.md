@@ -158,6 +158,12 @@ Include a C header or source file with the `use` keyword. It is emitted as an `#
 use "stdio.h"
 ```
 
+Link a C library with the `lib:` prefix and the name `-l` takes. `run` and `lib` pass it to the C compiler, also when a file the program uses asks for it, so a binding file can name its own library. A library outside the usual directories needs `LIBRARY_PATH`, and its header `C_INCLUDE_PATH`. The C file has a comment for each one, for those who build it by hand: `// Link with -lz`. A static library (`lib -s`) doesn't hold them, so the program that links it must name them too.
+```plaintext
+use "zlib.h"
+use "lib:z"
+```
+
 Import another `.ec` file. A plain path is looked up next to the file that has the `use`, then in the working directory. The `core:` prefix loads files bundled with the compiler (from [src/main/resources](src/main/resources)). Each file is loaded once, however many files use it.
 ```plaintext
 use "core:io.ec"
@@ -191,7 +197,7 @@ A record held in a `val` (or a parameter) is a fixed value, so its fields can't 
 
 A name can only be defined once in a function: a `val` inside an `if` can't reuse the name of an outer variable (no shadowing), so a name means the same thing everywhere in a function. Choose a different name.
 
-`val`, `var`, `vol` and `const` can also be used at the top level to define globals. A global whose value isn't a C constant (`val start = now()`) is set when the program starts, before `main` runs, in the order the globals are written.
+`val`, `var`, `vol` and `const` can also be used at the top level to define globals. A global whose value isn't a C constant (`val start = now()`) is set when the program starts, before `main` runs, in the order the globals are written, except that a global comes after the globals its value needs, also through the functions it calls: `val a = f()` is set after `val b = new 1` when f reads b, wherever b is written. Globals that need each other can't be ordered, which is a warning: one of them reads the other before it is set.
 
 ### Constants
 
@@ -471,6 +477,8 @@ bool c = strcmp(a, b) == 0; // strcmp from string.h
 bool d = a==b;
 ```
 
+Arguments, the parts of a `${...}`, the two sides of an operator and the values of a record, tuple or array literal run left to right, so `add(next(), next())` passes the first value first, and `"${next()} ${count}"` reads `count` after the call. C doesn't promise this, so the compiler stores a value in a temporary when a later one could change it or depend on it. In an assignment, calls in the target run before the value: `a[next()] = next()`. A target without calls is read when C likes, so `a[i] = f()` may or may not see what f does to a global i.
+
 `<` `<=` `>` `>=` can be chained: `0 <= x < n` means `0 <= x and x < n`, with `x` evaluated once, and later parts only when the earlier ones hold.
 
 #### Nullish Coalescing Operator
@@ -483,6 +491,14 @@ fn nameOf(id: Int): CString do
     val user = find(id) ?? ret "nobody"c      // `?? ret` alone in a function that returns nothing
     val age = parseInt(user.age) ?? throw Error { 1, "bad age" }
     ret user.name
+```
+
+As a statement, `??` needs no value on the left, so it also works on a call that returns nothing. The right side is a jump, or a call that runs when the left side is null or failed. After a jump, or a call that never returns, a variable on the left is known not to be null.
+
+```plaintext
+save(file) ?? panic("can't save")
+save(file) ?? ret false
+find(id) ?? log("no such user")
 ```
 
 #### Safe Access
@@ -557,7 +573,7 @@ fn test(a: Int, b: Int | CString, c: Int = a): Int do
 
 In this example:
 - `a` and `b` are mandatory parameters.
-- `c` is optional and defaults to the value of `a`.
+- `c` is optional and defaults to the value of `a`. A default value runs once, when the function is entered without that argument.
 - `b` accepts either type. The compiler generates one C function per combination: (Int, Int), (Int, CString), (Int, Int, Int), (Int, CString, Int).
 
 A union with `Null` is split the same way, with one more function for `null`: `Int | CString | Null` gives Int, CString and Null versions. A plain `T?` stays one function, and so does a union of atoms. Because each version is compiled separately, a check such as `if v is Int` is decided at compile time inside each version, and the branch that can't run is skipped.
@@ -601,6 +617,8 @@ a.x()
 ```
 
 When the receiver is a record with a field of function type, `button.onClick(5)` calls that field instead.
+
+A method can also be in the module that declares the receiver's type, or one of its parents: with `f` an `io.File`, `f.close()` calls `io.close` from any module. Functions the code can see without that come first, so a `close` of your own that takes a File wins. Interfaces find their functions the same way.
 
 ### Variadic Parameters
 
@@ -1109,6 +1127,10 @@ fn twice(i: Int): Int throws Error do
 // 3. Run a block when the call fails.
 try throwsTest(50) catch error do
     io.log(error.message)
+
+// 4. Leave, or call something, when the call fails. As a statement this also works on a function that returns nothing.
+throwsTest(50) ?? ret
+throwsTest(50) ?? panic("can't go on")
 ```
 
 Ignoring the error is a compile error:
@@ -1396,6 +1418,8 @@ rename(addrof(duck), "Daisy"c)
 
 ## Memory Management
 
+A program that runs out of stack stops with `eclang: out of stack`, after the output so far is written. That comes from recursion that goes too deep or never ends, or from a very large local variable (`var a: Int[100000000]`). Put large arrays in a pool with `new`. Only the main thread has this check; in another thread it is a plain segfault.
+
 ### Defer
 
 `defer` runs a statement when the enclosing scope exits, including on early return, when `try` passes an error on, and when `break` or `continue` leaves a loop body. Deferred statements run in reverse order: the last one deferred runs first.
@@ -1522,7 +1546,7 @@ pool do
 
 Passing such pointers to functions is fine (`fill(addrof(info))`). The compiler follows values through variables, record and array literals, `new`, pipes, and calls: a call's result may point into its arguments (`ret id(addrof x)` is an error), or into the pools it is given (a C function given a pool is taken to allocate its result there). What is read out of memory (`r.field`, `p.next`, `s[a..<b]`, `@p`) may point where r, p and s do, because anything stored there must live at least as long. An element of a stack array is an exception: `ret names[0]` is fine when the Strings in `names` outlive the function. Names bound by `if val`, `when` arms, `catch` and `for` are followed like variables, a write through a pointer changes what it points at (`@pp = addrof x` after `pp = addrof o`), and a value left by one round of a loop reaches the code before it in the next round. `clone` makes new memory, except for what it can't copy (`@Any`, for one), which still points where it did. `try` inside a `pool do` block copies the error into the pool that was current before the block, because leaving the block frees its pool.
 
-A pool made with `newPool()` is followed the same way: after `clearPool(p)` or `freePool(p)`, a variable holding something allocated in p or a child pool of p before can't be used (and after `freePool(p)`, neither can p). A global can't hold such memory when the pool is freed. This also covers another name for the pool, a `Pool` field (`h.p`), a global pool, and reading through a pointer (`@ps`).
+A pool made with `newPool()` is followed the same way: after `clearPool(p)` or `freePool(p)`, a variable holding something allocated in p or a child pool of p before can't be used (and after `freePool(p)`, neither can p). A global can't hold such memory when the pool is freed, and neither can what a pointer parameter points at: after `o.name = format(p, ...)`, `freePool(p)` is an error unless `o.name` was given another value first, since the caller would be left with freed memory. This also covers another name for the pool, a `Pool` field (`h.p`), a global pool, and reading through a pointer (`@ps`).
 
 ```plaintext
 val p = newPool()
@@ -1716,7 +1740,7 @@ try thread.join(t)
 
 `io.args()` gives the program's command-line arguments and `io.programName()` its name. `core:encoding.ec` turns bytes into text and back: `encoding.base64(s)`, `try encoding.fromBase64(text)`, `encoding.hex(s)`, `encoding.urlEscape(s)`.
 
-A thread gets a pointer to its data, since lambdas don't capture variables: join it before that data's block ends. Each thread has its own current pool. Locks, conditions and channels are allocated in the current pool and freed with it; lock calls that fail (only possible when they are used wrongly) stop the program.
+A thread gets a pointer to its data, since lambdas don't capture variables: join it before that data's block ends. Each thread has its own current pool. A detached thread doesn't depend on the pool it was started in, and is stopped when the program ends. A thread can be joined or detached once; another try is an error. Locks, conditions and channels are allocated in the current pool and freed with it; lock calls that fail (only possible when they are used wrongly) stop the program.
 
 ### Terminals
 

@@ -5,6 +5,7 @@
 #   tests/doc/NAME.ec   `eclang doc` must print exactly tests/doc/NAME.md, with the warnings in tests/doc/NAME.err
 #   tests/fail/NAME.ec  must be rejected by the compiler with a message containing its first line's `// error:` text
 #   tests/lib/NAME.ec   `eclang lib` must build it, and the C program tests/lib/NAME.main.c linked to it must print exactly tests/lib/NAME.out
+#   tests/link/greet.ec must build and run against a C library given with `use "lib:greet"`
 #   tests/panic/NAME.ec must compile and build, then stop at runtime with a message containing its first line's `// panic:` text
 # Usage: tests/run.sh [name-filter]
 cd "$(dirname "$0")/.." || exit 1
@@ -38,6 +39,18 @@ fi
 if [ -z "$1" ] || [[ args == *"$1"* ]]; then
     if [ "$(java -jar "$JAR" run tests/pass/stdlib-args.ec -- one "two words" 2>&1 | tr '\n' '|')" = "2|one|two words|true|" ]; then echo "pass eclang run with arguments"; passed=$((passed + 1))
     else fail "eclang run with arguments" "the program didn't get its arguments"; fi
+fi
+
+# `use "lib:greet"` links a C library: `run` and `lib` pass -lgreet, once, and the C file says so.
+if [ -z "$1" ] || [[ link == *"$1"* ]]; then
+    gcc -fPIC -c tests/link/greet.c -o "$OUT/greet.o" && ar rcs "$OUT/libgreet.a" "$OUT/greet.o"
+    export_paths=(env "LIBRARY_PATH=$OUT" "C_INCLUDE_PATH=tests/link")
+    if "${export_paths[@]}" java -jar "$JAR" run tests/link/greet.ec > "$OUT/link.out" 2> "$OUT/link.err" && diff -q tests/link/greet.out "$OUT/link.out" > /dev/null; then echo "pass eclang run with a C library"; passed=$((passed + 1))
+    else fail "link run" "$(head -5 "$OUT/link.err" "$OUT/link.out")"; fi
+    if java -jar "$JAR" -c tests/link/greet.ec -o "$OUT/link.c" > /dev/null 2>&1 && grep -q 'Link with -lgreet' "$OUT/link.c"; then echo "pass C file names its libraries"; passed=$((passed + 1))
+    else fail "link comment" "the C file doesn't say to link with -lgreet"; fi
+    if "${export_paths[@]}" java -jar "$JAR" lib tests/link/greetlib.ec -o "$OUT/greetlib" > /dev/null 2> "$OUT/link.err" && ! ldd -r "$OUT/greetlib/libgreetlib.so" 2>&1 | grep -q 'undefined symbol: greet_add'; then echo "pass eclang lib with a C library"; passed=$((passed + 1))
+    else fail "link lib" "$(head -5 "$OUT/link.err")"; fi
 fi
 
 # The bundled C bindings must match their C headers (see tools/check-bindings.py).

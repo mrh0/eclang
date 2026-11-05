@@ -79,6 +79,30 @@ fun main() {
         val core = Compiler.compile(File("core:apr/allocator.ec")) { it.checkOnly = true; it.sources = mapOf("core:apr/allocator.ec" to Util.getStream(Loc.IDENTITY, "core:apr/allocator.ec").readBytes().decodeToString()) }
         check("A bundled file can be checked with unsaved text, and is loaded once", core.cd.errors.map { it.reason }, listOf<String>())
 
+        val cycle = program("cycle", """
+            val first: Int = readSecond()
+            val second: Int = readFirst()
+            fn readFirst(): Int = first
+            fn readSecond(): Int = second
+            fn main(): Int = 0
+        """)
+        check("Globals that need each other are warned about", Compiler.compile(cycle).cd.warnings.map { it.message.substringBefore(", through") }, listOf("The value of 'second' depends on itself ('first' -> 'second' -> 'first')"))
+        val own = program("own", """
+            val own: Int = readOwn()
+            fn readOwn(): Int = own
+            fn main(): Int = 0
+        """)
+        check("A global that reads itself is warned about", Compiler.compile(own).cd.warnings.size, 1)
+        val order = program("order", """
+            val first: Int = second()
+            val value: Int = 1 + zero()
+            fn zero(): Int = 0
+            fn second(): Int = value
+            fn main(): Int = first
+        """)
+        val orderC = Compiler.compile(order)
+        check("A global is set after what its value needs, without a warning", orderC.c!!.indexOf("value = ") < orderC.c!!.indexOf("first = ") && orderC.cd.warnings.isEmpty(), true)
+
         val request = "check 1 ${library.path}\n".toByteArray() + "9 ${library.path}\n".toByteArray() + "fn f( do\n".toByteArray()
         val reply = java.io.ByteArrayOutputStream()
         Checker.serve(request.inputStream(), java.io.PrintStream(reply))

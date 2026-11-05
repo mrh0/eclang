@@ -35,6 +35,22 @@ object Ops {
 }
 
 /** `a op b` on numbers. When both sides are literals the result is computed now, so it can still adapt its type. */
+/**
+ * Compiles the two sides of an operator so that the left one runs first (see ArgumentOrder), and gives them to [use],
+ * which makes the operation. [rightHint] is the expected type of the right side, given the type of the left one.
+ */
+internal fun operands(
+    cd: CompileData, location: Loc, left: github.mrh0.eclang.ast.ITok, right: github.mrh0.eclang.ast.ITok, rightHint: (Type) -> Type = { Types.None },
+    use: (Pair<Type, github.mrh0.eclang.ir.IIR>, Pair<Type, github.mrh0.eclang.ir.IIR>) -> Pair<Type, github.mrh0.eclang.ir.IIR>,
+): Pair<Type, github.mrh0.eclang.ir.IIR> {
+    val order = github.mrh0.eclang.context.ArgumentOrder(cd)
+    val l = order.compile(0, left) { left.process(cd, Types.None) }
+    order.compile(1, right) { right.process(cd, rightHint(l.first)) }
+    val values = order.finish(location)
+    val (type, ir) = use(values.getValue(0), values.getValue(1))
+    return type to order.wrap(location, ir)
+}
+
 internal fun arithmetic(
     cd: CompileData, location: Loc, op: String, left: github.mrh0.eclang.ast.ITok, right: github.mrh0.eclang.ast.ITok,
     intFold: ((Long, Long) -> Long)?, floatFold: ((Double, Double) -> Double)?, integerOnly: Boolean = false,
@@ -47,9 +63,18 @@ internal fun arithmetic(
     /** The operator, when its result is checked at runtime on whole numbers (see [RuntimeChecks]). */
     checked: String? = null,
     make: (github.mrh0.eclang.ir.IIR, github.mrh0.eclang.ir.IIR) -> github.mrh0.eclang.ir.IIR,
+): Pair<Type, github.mrh0.eclang.ir.IIR> = operands(cd, location, left, right) { a, b ->
+    val l = cd.usable(location, a, "left side of `$op`")
+    val r = cd.usable(location, b, "right side of `$op`")
+    arithmeticOf(cd, location, op, l, r, intFold, floatFold, integerOnly, resultType, notNumberHint, fractionHint, checked, make)
+}
+
+private fun arithmeticOf(
+    cd: CompileData, location: Loc, op: String, l: Pair<Type, github.mrh0.eclang.ir.IIR>, r: Pair<Type, github.mrh0.eclang.ir.IIR>,
+    intFold: ((Long, Long) -> Long)?, floatFold: ((Double, Double) -> Double)?, integerOnly: Boolean, resultType: (Type) -> Type,
+    notNumberHint: (Type, Type) -> String, fractionHint: String, checked: String?,
+    make: (github.mrh0.eclang.ir.IIR, github.mrh0.eclang.ir.IIR) -> github.mrh0.eclang.ir.IIR,
 ): Pair<Type, github.mrh0.eclang.ir.IIR> {
-    val l = cd.usable(location, left.process(cd, Types.None), "left side of `$op`")
-    val r = cd.usable(location, right.process(cd, Types.None), "right side of `$op`")
     val (lt, rt) = l.first to r.first
     if (!Ops.isNumeric(lt) || !Ops.isNumeric(rt)) throw EcError(location, "`$op` needs two ${if (integerOnly) "whole " else ""}numbers, but got $lt and $rt.${notNumberHint(lt, rt)}")
     if (integerOnly && (!Ops.isInteger(lt) || !Ops.isInteger(rt))) throw EcError(location, "`$op` needs two whole numbers, but got $lt and $rt.$fractionHint")

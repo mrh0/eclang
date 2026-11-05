@@ -41,8 +41,8 @@ nothing, used 5
 :press :left 2,3 used 9
 :release :left 2,3 used 9
 :drag :left 4,5 used 10
-:scrollup :none 0,0 used 10
-:scrolldown :none 0,0 used 10
+:scrollUp :none 0,0 used 10
+:scrollDown :none 0,0 used 10
 true
 false
 é

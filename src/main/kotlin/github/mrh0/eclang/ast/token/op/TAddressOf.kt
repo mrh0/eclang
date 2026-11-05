@@ -12,6 +12,7 @@ import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
+import github.mrh0.eclang.ir.IRComma
 import github.mrh0.eclang.ir.data.IRAddressOf
 import github.mrh0.eclang.ir.data.IRAddressOfKept
 import github.mrh0.eclang.output.c.CTypes
@@ -36,7 +37,11 @@ class TAddressOf(location: Loc, val expr: ITok) : Tok(location) {
             throw EcError(location, "Can't take the address of bit-field '${inner.name}': it doesn't start at a whole byte. Copy it into a variable first.")
         if (inPacked(inner) && !alignedAnywhere(t))
             throw EcError(location, "Can't take the address of this $t: it is inside a `packed` record, so it may be at any address, where C can't use a pointer to it. Copy it into a variable first.")
-        if (Lifetimes.isLiteral(inner)) cd.literalStorage(location, t)?.let { return cd.types.pointer(t) to IRAddressOfKept(location, it, ir) }
+        if (Lifetimes.isLiteral(inner)) {
+            // A literal whose values went into temporaries is a comma expression, which C can't take the address of.
+            val storage = cd.literalStorage(location, t) ?: if (ir is IRComma) cd.declareTemp(location) { t } else null
+            storage?.let { return cd.types.pointer(t) to IRAddressOfKept(location, it, ir) }
+        }
         return cd.types.pointer(t) to IRAddressOf(location, ir)
     }
 

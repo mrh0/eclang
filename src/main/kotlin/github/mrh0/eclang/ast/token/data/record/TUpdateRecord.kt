@@ -7,6 +7,7 @@ import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.token.accessor.readField
 import github.mrh0.eclang.ast.token.type.checkBits
 import github.mrh0.eclang.ast.unnested
+import github.mrh0.eclang.context.ArgumentOrder
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
@@ -25,7 +26,8 @@ import github.mrh0.ect2.Types
  */
 class TUpdateRecord(location: Loc, private val named: TCreateRecordTyped?, val base: ITok, val values: List<ITok>, private val names: List<String>) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
-        val (baseType, baseIR) = cd.usable(location, base.process(cd, hint), "`...`")
+        val order = ArgumentOrder(cd)
+        val (baseType, compiledBase) = order.compile(0, base) { cd.usable(location, base.process(cd, hint), "`...`") }
         if (baseType is Pointer && baseType.target is Record)
             throw EcError(location, "`...` copies the fields of a record, but this is a pointer to one ($baseType). Read the record first: `...@p`.")
         val record = named?.record(cd, baseType) ?: baseType as? Record
@@ -37,19 +39,20 @@ class TUpdateRecord(location: Loc, private val named: TCreateRecordTyped?, val b
         names.forEach { if (it !in fields) throw EcError(location, "${record.name} has no field '$it'.${CompileData.suggestion(it, fields.keys)}") }
         names.groupBy { it }.filter { it.value.size > 1 }.keys.firstOrNull()?.let { throw EcError(location, "Field '$it' is given twice.") }
 
-        val given = names.mapIndexed { i, name ->
+        names.forEachIndexed { i, name ->
             val type = fields[name]!!
-            val value = values[i].process(cd, type)
-            checkBits(location, record, name, type, value.first)
-            cd.expect(location, value, type, "field '$name' of ${record.name}")
+            order.compile(i + 1, values[i]) { values[i].process(cd, type).also { checkBits(location, record, name, type, it.first) } }
         }
-        // Each other field is read from the value, so anything but a variable goes into a temporary.
-        val simple = base.unnested() is TNamed
+        val finished = order.finish(location)
+        val given = names.mapIndexed { i, name -> cd.expect(location, finished.getValue(i + 1), fields[name]!!, "field '$name' of ${record.name}") }
+        val baseIR = finished.getValue(0).second
+        // Each other field is read from the value, so anything but a variable goes into a temporary, unless it is in one already.
+        val simple = base.unnested() is TNamed || baseIR !== compiledBase
         val temp = if (simple) null else cd.declareTemp(location) { baseType }
         val read = temp?.let { IRRaw(location, it) } ?: baseIR
         val kept = fields.keys.filter { it !in names }
         val copy = IRCreateRecord(location, record, names + kept, given + kept.map { readField(location, read, baseType, it, fields[it]!!, false) })
-        return record to if (temp == null) copy else IRComma(location, IRTempSet(location, temp, baseIR), copy)
+        return record to order.wrap(location, if (temp == null) copy else IRComma(location, IRTempSet(location, temp, baseIR), copy))
     }
 
     override fun toString() = "TUpdateRecord($base, $names)"
