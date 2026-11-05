@@ -5,8 +5,13 @@
 ### <a id="apr_descriptor"></a>`apr_descriptor`
 
 ```ec
-declare rec apr_descriptor
+declare struct apr_descriptor
 ```
+
+**Fields**
+
+- <a id="apr_descriptor.f"></a>`f: @apr_file_t?`
+- <a id="apr_descriptor.s"></a>`s: @apr_socket_t?`
 
 ### <a id="apr_pollset_method_e"></a>`apr_pollset_method_e`
 
@@ -32,8 +37,17 @@ declare type apr_datatype_e as Int
 ### <a id="apr_pollfd_t"></a>`apr_pollfd_t`
 
 ```ec
-declare rec apr_pollfd_t
+declare struct apr_pollfd_t
 ```
+
+**Fields**
+
+- <a id="apr_pollfd_t.p"></a>`p: @apr_pool_t?`
+- <a id="apr_pollfd_t.desc_type"></a>`desc_type: apr_datatype_e`
+- <a id="apr_pollfd_t.reqevents"></a>`reqevents: Short`
+- <a id="apr_pollfd_t.rtnevents"></a>`rtnevents: Short`
+- <a id="apr_pollfd_t.desc"></a>`desc: apr_descriptor`
+- <a id="apr_pollfd_t.client_data"></a>`client_data: @Any?`
 
 ### <a id="apr_pollset_t"></a>`apr_pollset_t`
 
@@ -113,6 +127,24 @@ declare val APR_POLLSET_WAKEABLE as Int
 
 ```ec
 declare val APR_POLLSET_NODEFAULT as Int
+```
+
+### <a id="APR_NO_DESC"></a>`APR_NO_DESC`
+
+```ec
+declare val APR_NO_DESC as apr_datatype_e
+```
+
+### <a id="APR_POLL_SOCKET"></a>`APR_POLL_SOCKET`
+
+```ec
+declare val APR_POLL_SOCKET as apr_datatype_e
+```
+
+### <a id="APR_POLL_FILE"></a>`APR_POLL_FILE`
+
+```ec
+declare val APR_POLL_FILE as apr_datatype_e
 ```
 
 ## Functions

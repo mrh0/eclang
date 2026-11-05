@@ -40,6 +40,17 @@ class StringLiteral private constructor(private val bytes: ByteArray, private va
         return out.toString()
     }
 
+    /** The parts of this text between its 0 bytes. */
+    fun splitAtZero(): List<StringLiteral> {
+        val parts = mutableListOf<StringLiteral>()
+        var start = 0
+        for (i in 0..bytes.size) if (i == bytes.size || bytes[i] == 0.toByte()) {
+            parts += StringLiteral(bytes.copyOfRange(start, i), fromEscape.copyOfRange(start, i))
+            start = i + 1
+        }
+        return parts
+    }
+
     override fun toString() = String(bytes, Charsets.UTF_8)
 
     companion object {

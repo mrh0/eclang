@@ -19,6 +19,10 @@ declare fn fputs as (s: CString, stream: @FILE): Int
 declare fn fputc as (c: Int, stream: @FILE): Int
 declare fn fwrite as (data: @Any, size: Size, count: Size, stream: @FILE): Size
 declare fn fflush as (stream: @FILE?): Int
+// How a stream buffers: fully, or not at all. buffer may be null. 0 on success.
+declare val _IOFBF as Int
+declare val _IONBF as Int
+declare fn setvbuf as (stream: @FILE, buffer: CString?, mode: Int, size: Size): Int
 
 declare fn getchar as (): Int
 declare fn fgetc as (stream: @FILE): Int

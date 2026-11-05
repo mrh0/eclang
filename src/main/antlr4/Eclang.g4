@@ -106,6 +106,8 @@ expr:
 
     | ((qualifier=NAME '.')? recordType=NAME ('<' typeArgs+=type (',' typeArgs+=type)* '>')?)? '{' names+=NAME '=' expr (',' names+=NAME '=' expr)* '}'                         #exprCreateRecordNamed
     | ((qualifier=NAME '.')? recordType=NAME ('<' typeArgs+=type (',' typeArgs+=type)* '>')?)? '{' INDENT names+=NAME '=' expr (',' NL names+=NAME '=' expr)* NL DEDENT '}'     #exprCreateRecordNamed
+    // `Options {}`: every field has its default. It needs the type: nothing else says what the fields are.
+    | (qualifier=NAME '.')? recordType=NAME ('<' typeArgs+=type (',' typeArgs+=type)* '>')? '{' '}'                                                                             #exprCreateRecordNamed
     | ((qualifier=NAME '.')? recordType=NAME ('<' typeArgs+=type (',' typeArgs+=type)* '>')?)? '{' expr (',' expr)* '}'                                                         #exprCreateRecord
     | ((qualifier=NAME '.')? recordType=NAME ('<' typeArgs+=type (',' typeArgs+=type)* '>')?)? '{' INDENT expr (',' NL expr)* NL DEDENT '}'                                     #exprCreateRecord
 
@@ -262,7 +264,7 @@ statement:
     | 'yield' ('if' condition=expr)? NL                                                      #statementYield
     | 'throw' throw=expr ('if' condition=expr)? NL                                           #statementThrow
     | 'assert' condition=expr (',' message=STRING)? NL                                       #statementAssert
-    | 'ret' return=expr ('if' condition=expr)? NL                                            #statementReturn
+    | 'ret' return=expr? ('if' condition=expr)? NL                                           #statementReturn
     | 'ret' whenExpr                                                                         #statementReturn
     | expression=expr 'if' condition=expr NL                                                 #statementTailIf
 
@@ -276,9 +278,9 @@ statement:
 
     | 'when' (kind=('val' | 'var') NAME '=')? subject=expr 'do' INDENT (arms+=whenArm)+ DEDENT                                       #statementWhen
 
-    | 'if' kind=('val' | 'var') NAME '=' value=expr 'do' body=block ('else' 'do'? elseBody=block)?                                    #statementLetIf
+    | 'if' kind=('val' | 'var') NAME '=' value=expr 'do' body=block ('else' 'do'? elseBody=block | 'else' next=statement)?             #statementLetIf // `next`: `else if ...`, see Visitor
 
-    | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block)?      	#statementIf
+    | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block | 'else' next=statement)?      	#statementIf // `next`: `else if val ...`
     | label=NAME ':' statement                                                                                                        #statementLabeled // `outer: for ...`
     | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           	#statementWhile
 
@@ -368,8 +370,8 @@ global:
 
     | 'unit' NAME '(' NAME ':' type ')' '=' expr NL                                                                                 #globalUnitDeclare // Number sufix
 
-    | (modifiers+=recordModifier)* ('rec' | 'record') name=NAME ('<' typeParams+=NAME (',' typeParams+=NAME)* '>')? ('extends' extending=NAME)? 'as' INDENT (fields+=recordField)+ DEDENT    #globalRecordDefine
-    | ('rec' | 'record') name=NAME 'extends' extending=NAME NL                                                                                   #globalRecordDefine
+    | (modifiers+=recordModifier)* ('rec' | 'record') name=NAME ('<' typeParams+=NAME (',' typeParams+=NAME)* '>')? ('extends' (qualifier=NAME '.')? extending=NAME)? 'as' INDENT (fields+=recordField)+ DEDENT    #globalRecordDefine
+    | ('rec' | 'record') name=NAME 'extends' (qualifier=NAME '.')? extending=NAME NL                                                              #globalRecordDefine
     // `union Name as`: the fields share their memory. `union` isn't a keyword (`union(a, b)` is a function of Set), so Visitor checks the word.
     | (modifiers+=recordModifier)* keyword=NAME name=NAME 'as' INDENT (fields+=recordField)+ DEDENT                                              #globalUnionDefine
     | 'declare' ('rec' | 'record') name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type widths+=fieldWidth NL)+  DEDENT               #globalRecordDeclareDefine
@@ -390,7 +392,7 @@ global:
 // What an interface asks of a record: a field `name: Type`, or a function `fn name(Types): R` callable on it (`x.name(...)`).
 interfaceMember:
       name=NAME ':' type NL                                                                          #interfaceField
-    | 'fn' name=NAME '(' (params+=type (',' params+=type)*)? ')' (':' returnType=type)? NL           #interfaceMethod
+    | 'fn' name=NAME '(' (params+=type (',' params+=type)*)? ')' (':' returnType=type)? ('throws' throwing=type)? NL    #interfaceMethod
     ;
 
 // A field of a record: `name: Type`, or `name: Type = default`, the value a record literal gets when it leaves the field out.

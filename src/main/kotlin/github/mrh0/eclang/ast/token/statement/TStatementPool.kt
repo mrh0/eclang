@@ -24,13 +24,15 @@ class TStatementPool(location: Loc, private val name: String?, private val body:
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val parent = cd.temp().replace("tmp", "parent")
         cd.ctx().push()
-        val local = Lifetimes.poolBlock(cd.ctx().depth(), location.getLine())
-        val pool = if (name == null) "__ec_pool" else {
-            val fixedName = testIdentifier(location, name)
-            val ivar = cd.ctx().define(location, Constant(fixedName, cd.types.pool, cd.localCName(fixedName), kind = KIND))
-            cd.ctx().stack.setOrigin(fixedName, local)
-            ivar.cName()
-        }
+        val stack = cd.ctx().stack
+        val fixedName = name?.let { testIdentifier(location, it) }
+        val ivar = fixedName?.let { cd.ctx().define(location, Constant(it, cd.types.pool, cd.localCName(it), kind = KIND)) }
+        val id = fixedName?.let { stack.poolOf(it) } ?: "block${stack.next()}"
+        val local = Lifetimes.poolBlock(cd.ctx().depth(), location.getLine(), id)
+        stack.blockPools += id
+        stack.setPoolParents(id, setOfNotNull(cd.poolOrigin()?.pool ?: Lifetimes.CALLER_POOL))
+        fixedName?.let { stack.setOrigin(it, local) }
+        val pool = ivar?.cName() ?: "__ec_pool"
         // Deferred like any statement, so every way out of the block frees the pool after the block's own defers.
         cd.ctx().defer(location, Leave(location, parent, pool))
         if (cd.poolBlocks.isEmpty()) cd.poolEntry = parent

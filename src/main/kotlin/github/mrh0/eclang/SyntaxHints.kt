@@ -45,8 +45,9 @@ object SyntaxHints {
     private val declarationWords = setOf("packed", "align", "union", "export")
 
     /** A line at the top level starting with a name that starts no declaration: `io.log(1)`. */
-    private fun startsTopLevelStatement(p: Problem) = p.column > 0 && p.indentOf(p.line) == 0 && p.keyword.isNotEmpty() && p.keyword !in declarationWords &&
-        p.code.startsWith(p.keyword) && p.lines[p.line - 1].length >= p.column && p.expected.none { it == "as" } && p.keyword !in EclangParser.VOCABULARY.let { v -> (1..v.maxTokenType).mapNotNull { t -> v.getLiteralName(t)?.removeSurrounding("'") } }
+    private fun startsTopLevelStatement(p: Problem) = p.column > 0 && p.indentOf(p.line) == 0 && p.keyword.isNotEmpty() && p.keyword !in declarationWords && p.keyword !in reservedWords
+
+    private val reservedWords = EclangParser.VOCABULARY.let { v -> (1..v.maxTokenType).mapNotNull { v.getLiteralName(it)?.removeSurrounding("'") } }.toSet()
 
     private fun rule(check: (Problem) -> Hint?) = check
 

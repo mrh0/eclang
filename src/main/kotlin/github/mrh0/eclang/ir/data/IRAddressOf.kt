@@ -16,3 +16,12 @@ class IRAddressOf(location: Loc, val expr: IIR) : IR(location) {
         expr.toC(sb, c)
     }
 }
+
+/** `addrof` of a literal that must outlive its C block: stores [value] in [storage], and points there. */
+class IRAddressOfKept(location: Loc, val storage: String, val value: IIR) : IR(location) {
+    override fun toC(sb: CSourceBuilder, c: Context) {
+        sb.put("($storage = ")
+        value.toC(sb, c)
+        sb.put(", &$storage)")
+    }
+}

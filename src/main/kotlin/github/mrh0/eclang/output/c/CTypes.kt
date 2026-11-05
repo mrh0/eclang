@@ -85,10 +85,15 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
 
     private fun recordName(r: Record): String {
         val name = r.externalName ?: r.cName
+        if (r.isExternal) usesCTypes = true
         if (r.isCStruct) return "${keyword(r)} $name"
         if (!r.isExternal) struct(r, null)
         return name
     }
+
+    /** Whether anything named so far is a type from a C header. */
+    var usesCTypes = false
+        private set
 
     private fun keyword(r: Record) = if (r.isUnion) "union" else "struct"
 
@@ -145,7 +150,7 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
                     if (m === Types.Null) null else { complete(m); "${cName(m)} m$i;" }
                 }
                 bodies.append("struct ${cName(t)} { int tag; union { ${payload.joinToString(" ")} } v; }; /* $t */\n")
-            }
+            } else t.members.filterIsInstance<FunctionType>().forEach { complete(it) } // Held as the function's typedef, see cName.
             is Result -> {
                 complete(t.error)
                 val value = if (t.value === Types.None) "" else { complete(t.value); "${cName(t.value)} value; " }
@@ -165,8 +170,6 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
             is Record -> if (!t.isExternal) {
                 val fields = t.fields.map { (name, type) -> complete(type); "\t${fieldDeclaration(t, name, type)};\n" }
                 val tid = if (t.inHierarchy) "\tint __ec_tid;\n" else ""
-                // gcc notes that the ABI of over-aligned parameters changed in 2011; that's nothing a program can act on.
-                if (t.layout.align != null && !bodies.contains(NO_ABI_NOTE)) bodies.insert(0, NO_ABI_NOTE)
                 bodies.append("${keyword(t)} ${attributes(t.layout)}${t.cName} {\n$tid${fields.joinToString("")}};\n")
             }
             else -> {}
@@ -604,7 +607,7 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         // One map of copied pointers for the whole value, so a value two elements share stays shared in the copy.
         else -> "${helper("__ec_clone_root_${mangle(t)}") { name ->
             val c = cName(t)
-            "static inline $c $name(apr_pool_t* pool, $c v) {\n\t__ec_clone_enter(pool, NULL);\n\t$c r = ${cloner(t)}(pool, v);\n\t__ec_clone_leave(NULL);\n\treturn r;\n}\n"
+            "static inline $c $name(apr_pool_t* pool, $c v) {\n\t__ec_clone_enter(pool, NULL, 0);\n\t$c r = ${cloner(t)}(pool, v);\n\t__ec_clone_leave(NULL);\n\treturn r;\n}\n"
         }}($pool, $expr)"
     }
 
@@ -646,13 +649,7 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         }
     }
 
-    /** Whether C knows the size of [t], so a copy of it can be allocated. */
-    private fun sized(t: Type): Boolean = when (t) {
-        Types.Any, Types.None, Types.Never -> false
-        is Record -> !(t.isExternal && t.fields.isEmpty())
-        is Interface, is TypeParam -> false
-        else -> true
-    }
+    private fun sized(t: Type) = isSized(t)
 
     /**
      * `__ec_div_Int(a, b, at)` and friends: `a op b` on whole numbers of [t] that stops the program instead of crashing
@@ -683,6 +680,7 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
     private var shiftRuntime = false
 
     private var cloneRuntime = false
+    private val cloneKinds = HashMap<Type, Int>()
 
     /**
      * What pointer clones use to copy each pointer once (see [cloner]): a map from the pointers copied so far to their
@@ -693,32 +691,32 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         if (cloneRuntime) return
         cloneRuntime = true
         prototypes.append("""
-            typedef struct { const void** from; void** to; size_t cap, n; int depth; apr_pool_t* scratch; } __ec_clone_map_t;
+            typedef struct { const void* from; void* to; int kind; } __ec_clone_entry_t;
+            typedef struct { __ec_clone_entry_t* entries; size_t cap, n; int depth; apr_pool_t* scratch; } __ec_clone_map_t;
             static _Thread_local __ec_clone_map_t __ec_clone_map;
-            static inline size_t __ec_clone_slot(const void* v, size_t cap) { size_t h = (size_t)(uintptr_t)v; h ^= h >> 17; h *= 0x9E3779B97F4A7C15u; return (h ^ (h >> 29)) & (cap - 1); }
-            static inline void* __ec_clone_enter(apr_pool_t* pool, const void* v) {
+            static inline size_t __ec_clone_slot(const void* v, int kind, size_t cap) { size_t h = (size_t)(uintptr_t)v ^ (size_t)kind; h ^= h >> 17; h *= 0x9E3779B97F4A7C15u; return (h ^ (h >> 29)) & (cap - 1); }
+            static inline void* __ec_clone_enter(apr_pool_t* pool, const void* v, int kind) {
             	__ec_clone_map_t* m = &__ec_clone_map;
-            	if (m->depth++ == 0) { m->scratch = __ec_pool_create(pool); m->cap = 64; m->n = 0; m->from = apr_pcalloc(m->scratch, m->cap * sizeof(void*)); m->to = apr_palloc(m->scratch, m->cap * sizeof(void*)); }
+            	if (m->depth++ == 0) { m->scratch = __ec_pool_create(pool); m->cap = 64; m->n = 0; m->entries = apr_pcalloc(m->scratch, m->cap * sizeof(__ec_clone_entry_t)); }
             	if (v == NULL) return NULL;
-            	for (size_t i = __ec_clone_slot(v, m->cap); m->from[i] != NULL; i = (i + 1) & (m->cap - 1)) if (m->from[i] == v) return m->to[i];
+            	for (size_t i = __ec_clone_slot(v, kind, m->cap); m->entries[i].from != NULL; i = (i + 1) & (m->cap - 1)) if (m->entries[i].from == v && m->entries[i].kind == kind) return m->entries[i].to;
             	return NULL;
             }
-            static inline void __ec_clone_put(const void* v, void* copy) {
+            static inline void __ec_clone_put(const void* v, int kind, void* copy) {
             	__ec_clone_map_t* m = &__ec_clone_map;
             	if (2 * (m->n + 1) > m->cap) {
             		size_t cap = m->cap * 2;
-            		const void** from = apr_pcalloc(m->scratch, cap * sizeof(void*));
-            		void** to = apr_palloc(m->scratch, cap * sizeof(void*));
-            		for (size_t j = 0; j < m->cap; j++) if (m->from[j] != NULL) {
-            			size_t i = __ec_clone_slot(m->from[j], cap);
-            			while (from[i] != NULL) i = (i + 1) & (cap - 1);
-            			from[i] = m->from[j]; to[i] = m->to[j];
+            		__ec_clone_entry_t* entries = apr_pcalloc(m->scratch, cap * sizeof(__ec_clone_entry_t));
+            		for (size_t j = 0; j < m->cap; j++) if (m->entries[j].from != NULL) {
+            			size_t i = __ec_clone_slot(m->entries[j].from, m->entries[j].kind, cap);
+            			while (entries[i].from != NULL) i = (i + 1) & (cap - 1);
+            			entries[i] = m->entries[j];
             		}
-            		m->from = from; m->to = to; m->cap = cap;
+            		m->entries = entries; m->cap = cap;
             	}
-            	size_t i = __ec_clone_slot(v, m->cap);
-            	while (m->from[i] != NULL) i = (i + 1) & (m->cap - 1);
-            	m->from[i] = v; m->to[i] = copy; m->n++;
+            	size_t i = __ec_clone_slot(v, kind, m->cap);
+            	while (m->entries[i].from != NULL) i = (i + 1) & (m->cap - 1);
+            	m->entries[i] = (__ec_clone_entry_t){v, copy, kind}; m->n++;
             }
             static inline void* __ec_clone_leave(void* copy) {
             	__ec_clone_map_t* m = &__ec_clone_map;
@@ -727,6 +725,18 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
             }
 
         """.trimIndent() + "\n")
+    }
+
+    /**
+     * What tells copies at one address apart in the map of copied pointers: a record and its first field start at the
+     * same address, but a copy of one can't stand in for the other. Pointers to the same object share a kind, so that
+     * they stay shared: all the records of a hierarchy (a pointer to the parent copies the whole child) and a `distinct`
+     * type and its base.
+     */
+    private fun cloneKind(target: Type): Int {
+        val plain = generateSequence(target) { (it as? Distinct)?.base }.last()
+        val root = if (plain is Record) generateSequence(plain) { it.parent }.last() else plain
+        return cloneKinds.getOrPut(root) { cloneKinds.size + 1 }
     }
 
     /** `__ec_clone_T(pool, v)`: a deep copy of `v`, a [t]; see [clone]. */
@@ -746,15 +756,16 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
                 cloneRuntime()
                 // A pointer to a record that is extended may point to a child record: copy the whole child.
                 val target = t.target
+                val kind = cloneKind(target)
                 val children = (target as? Record)?.descendants?.drop(1) ?: listOf()
                 val cases = children.joinToString("") { child ->
                     val cc = cName(child)
-                    "\tcase ${child.id}: { $cc* p = ${allocate("pool", "sizeof($cc)", child)}; __ec_clone_put(v, p); *p = ${copy(child, "*($cc*)v", "pool")}; return ($c)__ec_clone_leave(p); }\n"
+                    "\tcase ${child.id}: { $cc* p = ${allocate("pool", "sizeof($cc)", child)}; __ec_clone_put(v, $kind, p); *p = ${copy(child, "*($cc*)v", "pool")}; return ($c)__ec_clone_leave(p); }\n"
                 }
                 val dispatch = if (cases.isEmpty()) "" else "\tswitch (*(int*)v) {\n$cases\tdefault: break;\n\t}\n"
                 val tc = cName(target)
-                "\tvoid* seen = __ec_clone_enter(pool, v);\n\tif (seen != NULL) return ($c)__ec_clone_leave(seen);\n" +
-                    "$dispatch\t$tc* p = ${allocate("pool", "sizeof($tc)", target)};\n\t__ec_clone_put(v, p);\n\t*p = ${copy(target, "*v", "pool")};\n\treturn __ec_clone_leave(p);\n"
+                "\tvoid* seen = __ec_clone_enter(pool, v, $kind);\n\tif (seen != NULL) return ($c)__ec_clone_leave(seen);\n" +
+                    "$dispatch\t$tc* p = ${allocate("pool", "sizeof($tc)", target)};\n\t__ec_clone_put(v, $kind, p);\n\t*p = ${copy(target, "*v", "pool")};\n\treturn __ec_clone_leave(p);\n"
             }
             t is Union && isPlain(t) -> {
                 val member = t.members.first { it !== Types.Null }
@@ -928,7 +939,28 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         /** What `apr_palloc` aligns memory to. */
         private const val POOL_ALIGNMENT = 8L
 
-        private const val NO_ABI_NOTE = "#pragma GCC diagnostic ignored \"-Wpsabi\"\n"
+        /** Whether C knows the size of [t], so a copy of it can be allocated. */
+        fun isSized(t: Type): Boolean = when (t) {
+            Types.Any, Types.None, Types.Never -> false
+            is Record -> !(t.isExternal && t.fields.isEmpty())
+            is Interface, is TypeParam -> false
+            else -> true
+        }
+
+        /** Whether a copy of a [t] made by `clone` may still hold a pointer of the original: see `ownsMemory` for what it doesn't copy. */
+        fun cloneKeepsPointers(t: Type, seen: MutableSet<Type> = HashSet()): Boolean {
+            if (!seen.add(t)) return false
+            return when (t) {
+                is Distinct -> cloneKeepsPointers(t.base, seen)
+                is ArrayType -> t.isC || cloneKeepsPointers(t.element, seen)
+                is FixedArray -> cloneKeepsPointers(t.element, seen)
+                is Pointer -> !isSized(t.target) || cloneKeepsPointers(t.target, seen)
+                is Union -> t.members.any { cloneKeepsPointers(it, seen) }
+                is Tuple -> t.elements.any { cloneKeepsPointers(it, seen) }
+                is Record -> t.isUnion || t.fields.values.any { cloneKeepsPointers(it, seen) }
+                else -> false
+            }
+        }
 
         /** [t] when it is a `T[N]`, also under a `distinct` name. */
         fun fixedOf(t: Type): FixedArray? = t as? FixedArray ?: (t as? Distinct)?.let { fixedOf(it.base) }

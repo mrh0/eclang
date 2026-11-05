@@ -1,0 +1,68 @@
+Ada
+36
+3.25
+true
+true
+false
+ec
+7
+true
+true
+null all the way
+true
+7
+2
+name langs age pi on none nested 
+c
+ec
+{"ok":true,"count":4,"ratio":0.1,"text":"a\"b\\c\n\t\u0001é","list":["a",1,2.5,false,null,{},[]]}
+{
+  "ok": true,
+  "count": 4,
+  "ratio": 0.1,
+  "text": "a\"b\\c\n\t\u0001é",
+  "list": [
+    "a",
+    1,
+    2.5,
+    false,
+    null,
+    {},
+    []
+  ]
+}
+true
+[0,0,9223372036854775807,-9223372036854775807,9.223372036854776e+18,0.1,1000,1.5e+300,3,0.01]
+"é 😀 / \u0008\u000c"
+{"a":2}
+null
+line 1, column 1: the text ended where a value should be
+line 1, column 3: the text ended where a value should be
+line 1, column 1: this array has no closing ']'
+line 1, column 6: a ',' must be followed by another element; remove this one
+line 1, column 6: a ',' must be followed by another element; remove this one
+line 1, column 8: a ',' must be followed by another field; remove this one
+line 1, column 4: expected ',' or ']' after an array element
+line 1, column 8: a ',' must be followed by another field; remove this one
+line 1, column 6: expected ':' after the name of a field
+line 1, column 2: the name of a field is a string in double quotes
+line 1, column 1: this object has no closing '}'
+line 1, column 2: the name of a field is a string in double quotes
+line 1, column 2: strings use double quotes in JSON
+line 3, column 3: expected a value (a string, a number, an array, an object, true, false or null), not 't'
+line 1, column 1: JSON has no comments
+line 1, column 1: a number can't start with 0 unless it is 0
+line 1, column 2: expected a digit after the '-'
+line 1, column 3: expected a digit after the '.'
+line 1, column 3: expected a digit in the exponent
+line 1, column 1: this number is too large for a Double
+line 1, column 6: there is more text after the value: 'f'
+line 1, column 1: this string has no closing '"'
+line 1, column 3: a line break or control character can't be in a string; write it as an escape, such as \n
+line 1, column 2: unknown escape: the escapes are \" \\ \/ \b \f \n \r \t and \u
+line 1, column 4: \u needs four hexadecimal digits, such as \u00e9
+line 1, column 2: this \u escape is the first half of a surrogate pair, and the second is missing
+line 1, column 2: this \u escape is the second half of a surrogate pair, and the first is missing
+line 1, column 1: this string isn't valid UTF-8
+line 1, column 513: arrays and objects are nested more than 512 deep
+2 3 6

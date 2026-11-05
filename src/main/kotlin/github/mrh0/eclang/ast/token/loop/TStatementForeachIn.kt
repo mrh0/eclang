@@ -120,7 +120,7 @@ class TStatementForeachIn(
         val indexC = names.index?.let { cd.localCName(it) } ?: cd.temp()
         return compileLoop(cd, location, hint, elseBody, label = label, compileBody = {
             // The index is always in bounds, so the element is read without a check.
-            round(cd, hint, names, indexC, element, listOf(), IRAccessorArray(location, source, IRRaw(location, indexC), t, checked = false), follow = converted)
+            round(cd, hint, names, indexC, element, listOf(), IRAccessorArray(location, source, IRRaw(location, indexC), t, checked = false), elements = !converted)
         }) {
             IRStatementForeachInRange(location, indexC, IRType(location, Types.Size), IRNumber(location, 0, Types.Size),
                 if (t is FixedArray) IRNumber(location, t.size, Types.Size) else IRAccessorNamed(location, source, "len"), it)
@@ -155,7 +155,7 @@ class TStatementForeachIn(
             // A plain C `break`: the loop ended normally, so its `else` block runs.
             val end = IRStatementIf(location, listOf(IRIs(location, IRRaw(location, result), next.returns, Types.Null)), listOf(IRBreak(location)))
             round(cd, hint, names, indexC ?: "", next.element, listOf(IRTempDefine(location, result, next.returns, next.call), end),
-                IRConvert(location, IRRaw(location, result), next.returns, next.element, IRConvert.Mode.NARROW), follow = true)
+                IRConvert(location, IRRaw(location, result), next.returns, next.element, IRConvert.Mode.NARROW), elements = false)
         }) { IRStatementForeachNext(location, indexC, it) }
     }
 
@@ -182,12 +182,12 @@ class TStatementForeachIn(
         })
     }
 
-    /** One round: [before], then the loop variable set to [read] (and taken apart), then the body. [follow]: the variable may point into what is looped over (see Lifetimes). */
-    private fun round(cd: CompileData, hint: Type, names: Names, indexC: String, element: Type, before: List<IIR>, read: IIR, follow: Boolean): IIR {
+    /** One round: [before], then the loop variable set to [read] (and taken apart), then the body. [elements]: it is an element of the array after `in`; otherwise, a call gave it, so it may point into what is looped over (see Lifetimes). */
+    private fun round(cd: CompileData, hint: Type, names: Names, indexC: String, element: Type, before: List<IIR>, read: IIR, elements: Boolean): IIR {
         cd.ctx().push()
         names.index?.let { cd.ctx().define(location, Constant(it, Types.Size, indexC, kind = "a loop variable")) }
         cd.ctx().define(location, Constant(names.value, element, names.valueC, kind = "a loop variable"))
-        if (follow) Lifetimes.define(cd, names.value, iterable, element)
+        Lifetimes.define(cd, names.value, iterable, element, element = elements)
         val parts = names.pattern?.let { destructured(location, it, element, TNamed(location, names.value)) }?.map { (part, value) -> defineLocal(cd, location, part, value, false) }
         return filtered(cd, hint, before + IRTempDefine(location, names.valueC, element, read) + parts.orEmpty()).also { cd.ctx().pop() }
     }

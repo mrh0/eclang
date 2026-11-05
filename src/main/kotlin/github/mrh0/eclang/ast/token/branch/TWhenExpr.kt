@@ -31,7 +31,7 @@ class TWhenExpr(location: Loc, private val binding: String?, private val mutable
         val bodies = arms.map { arm ->
             arm.with(if (arm.isValue) TBlock(arm.location, listOf(Value(arm.location, arm.body, hint, temp, values))) else Leaving(arm.location, arm.body))
         }
-        val (_, chain) = TStatementWhen(location, binding, mutable, subject, bodies, exhaustive = true).process(cd, Types.None)
+        val (_, chain) = cd.keepingLiterals { TStatementWhen(location, binding, mutable, subject, bodies, exhaustive = true).process(cd, Types.None) }
         type = resultType(cd, hint, values.map { it.compiled.first })
         values.forEach { it.assign.value = cd.expect(it.location, it.compiled, type, "this arm of `when`") }
         cd.hoist(location, chain)

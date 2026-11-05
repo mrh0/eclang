@@ -171,7 +171,7 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
         while (waiting.isNotEmpty()) {
             val ready = waiting.filter { item ->
                 val parent = (item.tok as ITypeDeclaration).parentName
-                parent == null || cd.inModule(item.module) { cd.types.lookup(item.module.name, parent) } != null
+                parent == null || cd.inModule(item.module) { cd.typeDeclared(parent) }
             }
             if (ready.isEmpty()) {
                 cd.checkpoint() // a record whose parent failed to declare

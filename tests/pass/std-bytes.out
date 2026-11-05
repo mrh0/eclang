@@ -1,0 +1,75 @@
+ab0102010203040102030405060708
+ab0201040302010807060504030201
+fffffefffffffdfffffffffffffffc
+-1
+-2
+-3
+-4
+true
+18446744073709551615
+-9223372036854775808
+4294967295
+-32768
+3fc00000c002000000000000
+1.5
+-2.25
+3f800000
+3ff0000000000000
+3.14159
+0000c03f
+8
+8
+6162636400000000
+ab
+cd
+0
+0
+1
+7
+true
+0800000005beef68656c6c6f
+0807060504030201
+00
+0
+01
+1
+7f
+127
+8001
+128
+ac02
+300
+ffffffffffffffffff01
+18446744073709551615
+00
+0
+01
+-1
+02
+1
+03
+-2
+7e
+63
+7f
+-64
+8001
+64
+feffffffffffffffff01
+9223372036854775807
+ffffffffffffffffff01
+-9223372036854775808
+the data ended early: reading 4 byte(s) at position 0, with 3 left
+0
+0
+258
+the data ended early: reading 2 byte(s) at position 2, with 1 left
+the data ended early: reading 2 byte(s) at position 2, with 1 left
+byte 4 is past the end of the 3 bytes of data
+the data ended early: reading 1 byte(s) at position 3, with 0 left
+the data ended early: the string at byte 0 has no 0 byte after it
+the data ended early: the number at byte 0 isn't finished
+the number at byte 0 doesn't fit 64 bits
+0
+1
+1

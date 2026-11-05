@@ -96,6 +96,12 @@ fun main(args: Array<String>) {
 /** The C compiler `run` uses: `$CC`, or gcc. */
 private val CC = System.getenv("CC")?.takeIf { it.isNotBlank() } ?: "gcc"
 
+/** gcc notes that the ABI of over-aligned parameters changed in 2011, which nothing can be done about. Only this flag stops it. */
+private const val NO_ABI_NOTE = "-Wno-psabi"
+
+/** What the generated C needs: `+` on an Int wraps, and a pointer to a child record is used as a pointer to its parent. */
+private val C_SEMANTICS = listOf("-fwrapv", "-fno-strict-aliasing")
+
 private fun sourceFile(path: String): File {
     val file = Util.getPath(Loc.IDENTITY, path).toFile()
     if (!file.isFile) {
@@ -158,7 +164,7 @@ private fun run(allArgs: List<String>): Int {
     val exe = File(dir, name)
     val keep = cmd.hasOption("k")
     try {
-        val gcc = listOf(CC, source.path, "-o", exe.path) + aprFlags() + "-lm"
+        val gcc = listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + listOf(source.path, "-o", exe.path) + aprFlags() + "-lm"
         if (DEBUG) println(gcc.joinToString(" "))
         val built = try { ProcessBuilder(gcc).inheritIO().start().waitFor() } catch (e: IOException) {
             System.err.println("error: couldn't start the C compiler '$CC' (${e.message}). Install gcc, or set CC to your C compiler.")
@@ -213,9 +219,9 @@ private fun lib(args: List<String>): Int {
     }
     val objectFile = File(dir, "$name.o")
     try {
-        val built = if (cmd.hasOption("s")) runTool(listOf(CC, "-c", "-fPIC", source.path, "-o", objectFile.path) + aprFlags()) &&
+        val built = if (cmd.hasOption("s")) runTool(listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + listOf("-c", "-fPIC", source.path, "-o", objectFile.path) + aprFlags()) &&
                 runTool(listOf("ar", "rcs", File(dir, "lib$name.a").path, objectFile.path))
-            else runTool(listOf(CC, "-shared", "-fPIC", source.path, "-o", File(dir, "lib$name.so").path) + aprFlags() + "-lm")
+            else runTool(listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + listOf("-shared", "-fPIC", source.path, "-o", File(dir, "lib$name.so").path) + aprFlags() + "-lm")
         if (!built) System.err.println("error: the C compiler failed on the generated code. This is a bug in eclang if the program compiled without errors; please report it.")
         return if (built) 0 else 1
     } finally {

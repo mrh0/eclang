@@ -4,6 +4,7 @@ import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.context.state.Constant
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
@@ -21,6 +22,7 @@ class TStatementTryCatch(location: Loc, val expr: ITok, val errorName: String, v
         val name = testIdentifier(location, errorName)
         cd.ctx().push()
         cd.ctx().define(location, Constant(name, t.error, cd.localCName(name), kind = "a caught error"))
+        Lifetimes.define(cd, name, expr, t.error)
         val bodyIr = body.process(cd, Types.None).second
         cd.ctx().pop()
         return Types.None to IRTryCatch(location, cd.temp(), t, ir, cd.localCName(name), bodyIr)

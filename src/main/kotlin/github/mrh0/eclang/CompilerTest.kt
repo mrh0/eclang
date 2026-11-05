@@ -36,6 +36,19 @@ fun main() {
         check("Atoms of one compilation don't leak into the next", other?.contains("__ec_atom_red"), false)
         check("A program has its own atoms", other?.contains("__ec_atom_blue"), true)
 
+        val exporting = program("exporting", """
+            fn f(): Int = 1
+
+            export fn g(): Int = f()
+        """)
+        check("A program needs a `main`, and the error says how to make a library", Compiler.compile(exporting).cd.errors.single().reason.contains("build it with `eclang lib`"), true)
+        val built = Compiler.compile(exporting) { it.library = "exporting" }
+        check("A library needs no `main`", built.c?.contains("int main("), false)
+        check("A library's header declares what it exports", built.header?.contains("int g(void);"), true)
+        check("A library's header has no APR when its functions don't use it", built.header?.contains("apr"), false)
+        check("Only what is exported is visible outside a library", built.c?.contains("static int f_0(void)"), true)
+        check("A file without exports is no library", Compiler.compile(a) { it.library = "a" }.cd.errors.single().reason.contains("at least one `export fn`"), true)
+
         val errors = program("errors", """
             fn f(): Int do
                 val x: Int = "a"c

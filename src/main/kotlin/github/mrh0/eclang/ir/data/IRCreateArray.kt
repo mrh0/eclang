@@ -8,7 +8,7 @@ import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRCreateArray(location: Loc, val arrayType: IRType, val type: IRType, val entries: List<IIR>) : IR(location) {
+class IRCreateArray(location: Loc, val arrayType: IRType, val type: IRType, val entries: List<IIR>, val storage: String? = null) : IR(location) {
     override fun isConstant() = entries.all { it.isConstant() }
 
     override fun toC(sb: CSourceBuilder, c: Context) {
@@ -21,7 +21,13 @@ class IRCreateArray(location: Loc, val arrayType: IRType, val type: IRType, val 
         }
         sb.put("){")
         sb.put(entries.size)
-        sb.put(",(")
+        sb.put(',')
+        if (storage != null) {
+            fillStorage(sb, c, storage, entries)
+            sb.put('}')
+            return
+        }
+        sb.put('(')
         type.toC(sb, c)
         sb.put("[]){")
         entries.forEachIndexed {
@@ -31,4 +37,16 @@ class IRCreateArray(location: Loc, val arrayType: IRType, val type: IRType, val 
         }
         sb.put("}}")
     }
+}
+
+/** The C array [storage] (see [github.mrh0.eclang.context.CompileData.literalStorage]), after setting its elements to [entries]. */
+fun fillStorage(sb: CSourceBuilder, c: Context, storage: String, entries: List<IIR>) {
+    sb.put('(')
+    entries.forEachIndexed { index, it ->
+        sb.put("$storage[$index] = ")
+        it.toC(sb, c)
+        sb.put(", ")
+    }
+    sb.put(storage)
+    sb.put(')')
 }

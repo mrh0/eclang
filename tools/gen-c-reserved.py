@@ -5,7 +5,8 @@ clash with them (see Util.cName). Names starting with `_` or `apr_`/`APR_` are r
 Usage: tools/gen-c-reserved.py   (needs gcc and the APR headers)"""
 import os, re, subprocess, tempfile
 
-HEADERS = ["stdio.h", "stdlib.h", "string.h", "math.h", "stdbool.h", "stddef.h", "stdalign.h", "apr_general.h", "apr_pools.h"]
+HEADERS = ["stdio.h", "stdlib.h", "string.h", "math.h", "stdbool.h", "stddef.h", "stdalign.h", "apr_general.h", "apr_pools.h",
+           "termios.h", "sys/ioctl.h"]  # the last two: core:term.ec, whose macros (B0, ECHO, ...) are plain words
 INC = ["-I/usr/include/apr-1.0"]
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

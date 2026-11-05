@@ -1,0 +1,6 @@
+// error: 'y' is the pool of a `pool` block
+fn main(): Int do
+    pool x do
+        val y = x
+        freePool(y)
+    ret 0

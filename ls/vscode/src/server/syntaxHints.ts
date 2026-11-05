@@ -48,6 +48,13 @@ const destructuringFor = /^for\s*\([\w\s,()]*\)\s*in\b/;
 
 const blockKeywords = ["fn", "if", "else", "while", "for", "inline", "defer"];
 const declarationKeywords = "`fn`, `val`, `var`, `const`, `rec`, `inter`, `use`, `module` or `declare`";
+
+/** Words a declaration can start with that are no keywords, so the parser reads any name there as one and fails after it. */
+const declarationWords = new Set(["packed", "align", "union", "export"]);
+const reservedWords = new Set(EclangParser.literalNames.flatMap(n => n === null ? [] : [n.replace(/^'|'$/g, "")]));
+
+/** A line at the top level starting with a name that starts no declaration: `io.log(1)`. */
+const startsTopLevelStatement = (p: Problem) => p.column > 0 && p.indentOf(p.line) === 0 && p.keyword.length > 0 && !declarationWords.has(p.keyword) && !reservedWords.has(p.keyword);
 const CLOSE: Record<string, string> = { "(": ")", "[": "]", "{": "}" };
 
 /** The table of common mistakes, most specific first. Each returns null when it doesn't apply. */
@@ -165,7 +172,7 @@ const rules: ((p: Problem) => Hint | null)[] = [
         return at(p, `The line ends in the middle of an expression${last.length > 0 ? ` (after \`${last}\`)` : ""}. Finish it on this line.`);
     },
     // Statements at the top level of a file.
-    p => p.expected.includes("<EOF>") && p.expected.includes("fn")
+    p => (p.expected.includes("<EOF>") && p.expected.includes("fn")) || startsTopLevelStatement(p)
         ? hint(p.line, 0, `Only declarations (${declarationKeywords}) can be at the top level of a file. Put statements inside a function, such as \`fn main(): Int do\`.`)
         : null,
 ];

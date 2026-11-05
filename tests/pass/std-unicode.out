@@ -1,0 +1,78 @@
+10 bytes: 61 e9 20ac 1f600
+0: 61
+1: e9
+3: 20ac
+6: 1f600
+2
+é€
+7f 1 1 true
+80 2 2 true
+7ff 2 2 true
+800 3 3 true
+ffff 3 3 true
+10000 4 4 true
+10ffff 4 4 true
+3 bytes: fffd
+3 bytes: fffd
+3
+false 2 false 0
+false 2 false 0
+false 3 false 0
+false 3 false 0
+false 4 false 0
+false 4 false 0
+false 4 false 0
+false 2 false 0
+false 1 false 0
+false 1 false 0
+true
+2
+true
+héllo
+this text isn't valid UTF-8: the byte at 1 doesn't fit
+1
+ok
+12 bytes: 61 fffd 62 fffd fffd 63
+true
+1f600 4
+20ac 3
+e9 2
+61 1
+fffd 1
+fffd 1
+fffd 1
+5
+0
+3
+6
+99
+él
+lo
+0
+0
+aé€😀
+0 0 true
+1 1 true
+2 1 true
+3 3 true
+4 3 true
+5 3 true
+6 6 true
+7 6 true
+8 6 true
+9 6 true
+10 10 true
+true
+d83d de00
+true
+false
+true
+false
+true
+false
+true
+false
+1
+2
+0
+4

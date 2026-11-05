@@ -25,8 +25,9 @@ class IRFixedStorage(location: Loc, val array: IIR, private val type: Type, priv
 /** The elements of [expr], a [type], as C sees them. Those of a [IRFixedStorage] are the C array, unless they are arrays too, which C sees differently. */
 private fun elements(expr: IIR, type: FixedArray, sb: CSourceBuilder, c: Context) {
     if (expr is IRFixedStorage && type.element !is FixedArray) return expr.array.toC(sb, c)
-    expr.toC(sb, c)
-    sb.put(".data")
+    // `.` binds tighter than the `*` of `@p`.
+    val value = sb.render { expr.toC(it, c) }
+    sb.put(if (value.startsWith("*")) "($value).data" else "$value.data")
 }
 
 /** `a.data` on [type], a `T[N]`, or through a pointer to one. */

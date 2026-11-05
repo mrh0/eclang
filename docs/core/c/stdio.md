@@ -40,6 +40,18 @@ declare val EOF as Int
 declare val BUFSIZ as Int
 ```
 
+### <a id="_IOFBF"></a>`_IOFBF`
+
+```ec
+declare val _IOFBF as Int
+```
+
+### <a id="_IONBF"></a>`_IONBF`
+
+```ec
+declare val _IONBF as Int
+```
+
 ## Functions
 
 ### <a id="printf"></a>`printf`
@@ -113,6 +125,14 @@ fn fflush(stream: @FILE?): Int
 ```
 
 *Binds the C function `fflush`.*
+
+### <a id="setvbuf"></a>`setvbuf`
+
+```ec
+fn setvbuf(stream: @FILE, buffer: CString?, mode: Int, size: Size): Int
+```
+
+*Binds the C function `setvbuf`.*
 
 ### <a id="getchar"></a>`getchar`
 

@@ -1,0 +1,70 @@
+off
+^[0;31mred^[0m
+^[0;96mbright^[0m
+^[0;38;5;208mpal^[0m
+^[0;38;2;1;2;3mrgb^[0m
+^[0;1mb^[0m
+^[0;4;7;37;44mx^[0m
+plain
+clean
+3
+never
+5
+6
+0
+[abc  ]
+[abcd…]
+[日… ]
+:char 97  used 1
+:enter 0  used 1
+:tab 0  used 1
+:backspace 0  used 1
+:char 99 C used 1
+:char 233  used 2
+:char 26085  used 3
+nothing, used 0
+nothing, used 1
+:escape 0  used 1
+nothing, used 0
+:up 0  used 3
+:right 0 C used 6
+:home 0 S used 6
+:delete 0  used 4
+:f12 0  used 5
+:tab 0 S used 3
+:f1 0  used 3
+:char 120 A used 2
+nothing, used 0
+nothing, used 0
+nothing, used 4
+nothing, used 5
+:press :left 2,3 used 9
+:release :left 2,3 used 9
+:drag :left 4,5 used 10
+:scrollup :none 0,0 used 10
+:scrolldown :none 0,0 used 10
+true
+false
+é
+^[0m^[2J
+
+^[1;2H^[0mhi
+^[1;2H^[0;1mho^[0m
+^[1;2H^[0m  ^[2;3H日
+^[2;3H^[0m x
+12
+32
+^[3;11H^[0mcu^[3;5H^[?25h
+^[?25l
+╭─ ab ───╮
+│in      │
+│───     │
+╰────────╯
+2
+^[0m^[2J
+██░░░░░░
+████
+██
+⠋
+⠙
+copying ██████████████████████████████ 100%

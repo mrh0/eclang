@@ -61,6 +61,12 @@ declare type apr_port_t as apr_uint16_t
 declare rec apr_sockaddr_t
 ```
 
+**Fields**
+
+- <a id="apr_sockaddr_t.port"></a>`port: apr_port_t`
+- <a id="apr_sockaddr_t.family"></a>`family: apr_int32_t`
+- <a id="apr_sockaddr_t.next"></a>`next: @apr_sockaddr_t?`
+
 ## Values
 
 ### <a id="APR_MAX_SECS_TO_LINGER"></a>`APR_MAX_SECS_TO_LINGER`
@@ -229,6 +235,18 @@ declare val APR_PROTO_SCTP as Int
 
 ```ec
 declare val APR_SENDFILE_DISCONNECT_SOCKET as Int
+```
+
+### <a id="SOCK_STREAM"></a>`SOCK_STREAM`
+
+```ec
+declare val SOCK_STREAM as Int
+```
+
+### <a id="SOCK_DGRAM"></a>`SOCK_DGRAM`
+
+```ec
+declare val SOCK_DGRAM as Int
 ```
 
 ## Functions

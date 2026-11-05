@@ -1,0 +1,44 @@
+.hid :dir 0 1
+.hid/w.ec :file 0 2
+a :dir 0 1
+a/b :dir 0 2
+a/b/y.ec :file 1 3
+a/x.txt :file 12 2
+empty :file 0 1
+z.ec :file 2 1
+a/b/y.ec
+z.ec
+a/x.txt
+a/b
+a/b/y.ec
+a/x.txt
+0
+.hid
+a
+empty
+z.ec
+true
+true
+true
+false
+false
+false
+true
+true
+a/c
+/
+../../a
+.
+../c/d
+.
+true
+true
+2
+hello
+world
+
+0
+true
+false
+false
+refusing to delete '/': name the directory itself, not the root, '.' or '..'

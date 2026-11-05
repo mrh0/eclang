@@ -22,6 +22,24 @@ declare val _SC_NPROCESSORS_ONLN as Int
 declare val _SC_PAGESIZE as Int
 ```
 
+### <a id="_SC_PHYS_PAGES"></a>`_SC_PHYS_PAGES`
+
+```ec
+declare val _SC_PHYS_PAGES as Int
+```
+
+### <a id="_SC_AVPHYS_PAGES"></a>`_SC_AVPHYS_PAGES`
+
+```ec
+declare val _SC_AVPHYS_PAGES as Int
+```
+
+### <a id="X_OK"></a>`X_OK`
+
+```ec
+declare val X_OK as Int
+```
+
 ### <a id="STDIN_FILENO"></a>`STDIN_FILENO`
 
 ```ec
@@ -73,3 +91,27 @@ fn isatty(fd: Int): Int
 ```
 
 *Binds the C function `isatty`.*
+
+### <a id="access"></a>`access`
+
+```ec
+fn access(path: CString, mode: Int): Int
+```
+
+*Binds the C function `access`.*
+
+### <a id="readlink"></a>`readlink`
+
+```ec
+fn readlink(path: CString, buf: CString, size: Size): Long
+```
+
+*Binds the C function `readlink`.*
+
+### <a id="write"></a>`write`
+
+```ec
+fn write(fd: Int, data: @Any, count: Size): Long
+```
+
+*Binds the C function `write`.*

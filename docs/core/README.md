@@ -8,13 +8,27 @@ Each page is the output of `eclang doc core:<file>.ec`; edit the sources, not th
 
 | File | `use` | Contents |
 |---|---|---|
+| [args](args.md) | `core:args.ec` | Command-line arguments: flags, options, positional arguments and subcommands, with a generated --help. |
+| [bytes](bytes.md) | `core:bytes.ec` | Binary data: reading and writing numbers and strings in a given byte order, for network protocols and file formats. |
+| [csv](csv.md) | `core:csv.ec` | CSV (RFC 4180): reading and writing tables of text, with error positions. |
 | [errors](errors.md) | `core:errors.ec` | Common error types, for `throws`. |
+| [fs](fs.md) | `core:fs.ec` | The file system beyond single files: walking a directory tree, glob patterns, temporary files, normalising paths and memory-mapped reads. |
+| [hash](hash.md) | `core:hash.ec` | Checksums and hashes: CRC32, FNV-1a, MD5, SHA-1, SHA-256 and HMAC. |
+| [http](http.md) | `core:http.ec` | HTTP/1.1: parsing URLs, a client, and a small server. |
 | [io](io.md) | `core:io.ec` | Input and output: the console, files, directories and paths. |
+| [json](json.md) | `core:json.ec` | JSON (RFC 8259): parsing with error positions, building values, and writing them, compact or pretty. |
+| [log](log.md) | `core:log.ec` | Logging: levels, timestamps, and output to stderr or a file, from any thread. |
 | [math](math.md) | `core:math.ec` | Maths: constants, C's math.h, whole-number helpers, checked arithmetic, and random numbers. |
+| [net](net.md) | `core:net.ec` | Networking: TCP clients and servers, UDP, DNS lookups and timeouts. |
+| [os](os.md) | `core:os.ec` | The operating system: what system this is, the environment, users, and running other programs. |
+| [regex](regex.md) | `core:regex.ec` | Regular expressions: matching, capturing, replacing and splitting, in linear time. |
 | [stdarg](stdarg.md) | `core:stdarg.ec` | stdarg.h: C's va_list, for the v* variants of formatting functions (vprintf, apr_pvsprintf, ...). |
 | [string](string.md) | `core:string.ec` | Strings: searching, changing case, splitting and joining, padding, parsing numbers, and a StringBuilder. |
+| [term](term.md) | `core:term.ec` | Terminal tools: colours and styles, the cursor, key and mouse input, a screen buffer to draw on, and prompts. |
+| [test](test.md) | `core:test.ec` | Tests: assertions that say what differs, and a small runner. |
 | [thread](thread.md) | `core:thread.ec` | Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic and Channel. |
 | [time](time.md) | `core:time.ec` | Time: moments (Time), lengths of time (Duration), a steady clock for measuring (Instant), and calendar dates (Date) in UTC, local time or a fixed offset. |
+| [unicode](unicode.md) | `core:unicode.ec` | Unicode text in UTF-8: going through code points, encoding and decoding them, validating, and repairing broken text. |
 
 ## C bindings
 
@@ -23,11 +37,15 @@ One file per C header, with the C names unchanged. Undocumented declarations are
 | File | `use` | Header | Declarations |
 |---|---|---|---|
 | [ctype](c/ctype.md) | `core:c/ctype.ec` | `ctype.h` | 14 |
-| [stdio](c/stdio.md) | `core:c/stdio.ec` | `stdio.h` | 26 |
-| [stdlib](c/stdlib.md) | `core:c/stdlib.ec` | `stdlib.h` | 29 |
+| [ioctl](c/ioctl.md) | `core:c/ioctl.ec` | `sys/ioctl.h` | 3 |
+| [signal](c/signal.md) | `core:c/signal.ec` | `signal.h` | 22 |
+| [stdio](c/stdio.md) | `core:c/stdio.ec` | `stdio.h` | 29 |
+| [stdlib](c/stdlib.md) | `core:c/stdlib.ec` | `stdlib.h` | 31 |
 | [string](c/string.md) | `core:c/string.ec` | `string.h` | 14 |
+| [termios](c/termios.md) | `core:c/termios.ec` | `termios.h` | 12 |
 | [time](c/time.md) | `core:c/time.ec` | `time.h` | 19 |
-| [unistd](c/unistd.md) | `core:c/unistd.ec` | `unistd.h` | 10 |
+| [unistd](c/unistd.md) | `core:c/unistd.ec` | `unistd.h` | 16 |
+| [utsname](c/utsname.md) | `core:c/utsname.ec` | `sys/utsname.h` | 2 |
 
 ## APR bindings
 
@@ -40,7 +58,7 @@ One file per APR header, with the C names unchanged. These have no ecdocs, so th
 | [atomic](apr/atomic.md) | `core:apr/atomic.ec` | `apr_atomic.h` | 11 |
 | [dso](apr/dso.md) | `core:apr/dso.ec` | `apr_dso.h` | 6 |
 | [env](apr/env.md) | `core:apr/env.ec` | `apr_env.h` | 3 |
-| [errno](apr/errno.md) | `core:apr/errno.ec` | `apr_errno.h` | 28 |
+| [errno](apr/errno.md) | `core:apr/errno.ec` | `apr_errno.h` | 32 |
 | [file_info](apr/file_info.md) | `core:apr/file_info.ec` | `apr_file_info.h` | 85 |
 | [file_io](apr/file_io.md) | `core:apr/file_io.ec` | `apr_file_io.h` | 104 |
 | [fnmatch](apr/fnmatch.md) | `core:apr/fnmatch.ec` | `apr_fnmatch.h` | 8 |
@@ -51,8 +69,8 @@ One file per APR header, with the C names unchanged. These have no ecdocs, so th
 | [inherit](apr/inherit.md) | `core:apr/inherit.ec` | `apr_inherit.h` | none |
 | [lib](apr/lib.md) | `core:apr/lib.ec` | `apr_lib.h`, `apr.h`, `ctype.h` | 19 |
 | [mmap](apr/mmap.md) | `core:apr/mmap.ec` | `apr_mmap.h` | 9 |
-| [network_io](apr/network_io.md) | `core:apr/network_io.ec` | `apr_network_io.h`, `netinet/in.h`, `arpa/inet.h` | 79 |
-| [poll](apr/poll.md) | `core:apr/poll.ec` | `apr_poll.h`, `netinet/in.h` | 32 |
+| [network_io](apr/network_io.md) | `core:apr/network_io.ec` | `apr_network_io.h`, `netinet/in.h`, `arpa/inet.h`, `sys/socket.h` | 81 |
+| [poll](apr/poll.md) | `core:apr/poll.ec` | `apr_poll.h`, `netinet/in.h` | 35 |
 | [pools](apr/pools.md) | `core:apr/pools.ec` | `apr_pools.h` | 39 |
 | [portable](apr/portable.md) | `core:apr/portable.ec` | `apr_portable.h`, `dirent.h`, `fcntl.h`, `pthread.h` | 41 |
 | [proc_mutex](apr/proc_mutex.md) | `core:apr/proc_mutex.ec` | `apr_proc_mutex.h` | 13 |
@@ -71,3 +89,11 @@ One file per APR header, with the C names unchanged. These have no ecdocs, so th
 | [user](apr/user.md) | `core:apr/user.ec` | `apr_user.h` | 8 |
 | [version](apr/version.md) | `core:apr/version.ec` | `apr_version.h` | 8 |
 | [want](apr/want.md) | `core:apr/want.ec` | `apr_want.h` | none |
+
+## Bundled C
+
+C code that neither C nor APR provide, written into the generated C of the programs that use it. See [vendor/README.md](../../src/main/resources/vendor/README.md) for where it comes from.
+
+| File | `use` | Source | Declarations |
+|---|---|---|---|
+| [digest](vendor/digest.md) | `core:vendor/digest.ec` | `core:vendor/digest.c` | 4 |

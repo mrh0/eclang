@@ -6,6 +6,7 @@ use "core:apr/errno.ec"
 use "core:apr/inherit.ec"
 use "netinet/in.h"
 use "arpa/inet.h"
+use "sys/socket.h"
 
 declare val APR_MAX_SECS_TO_LINGER as Int
 declare val APRMAXHOSTLEN as Int
@@ -35,6 +36,9 @@ declare val APR_PROTO_TCP as Int
 declare val APR_PROTO_UDP as Int
 declare val APR_PROTO_SCTP as Int
 declare val APR_SENDFILE_DISCONNECT_SOCKET as Int
+// The kinds of socket, for apr_socket_create; sys/socket.h has them.
+declare val SOCK_STREAM as Int
+declare val SOCK_DGRAM as Int
 
 declare fn apr_inet_addr as (cp: CString): UInt
 
@@ -51,7 +55,11 @@ declare rec apr_hdtr_t
 declare rec apr_in_addr_t
 declare rec apr_ipsubnet_t
 declare type apr_port_t as apr_uint16_t
-declare rec apr_sockaddr_t
+// Only these fields of the C struct are declared. `next` is the next address of the same name.
+declare rec apr_sockaddr_t as
+    port: apr_port_t
+    family: apr_int32_t
+    next: @apr_sockaddr_t?
 
 declare fn apr_socket_create as (new_sock: @@apr_socket_t, family: Int, sock_type: Int, protocol: Int, cont: @apr_pool_t): apr_status_t
 declare fn apr_socket_shutdown as (thesocket: @apr_socket_t, how: apr_shutdown_how_e): apr_status_t

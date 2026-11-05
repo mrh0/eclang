@@ -1,0 +1,44 @@
+false
+true
+true
+false
+INFO  app: shown
+WARN  app: careful
+ERROR app: broken
+ERROR app: parse error: bad
+DEBUG app: now visible
+WARN  app: still here
+ERROR app.db: from the child
+INFO  app.db.queries: from the grandchild
+INFO  app: the parent is still at :info
+INFO  first: no dot before the name
+INFO  no name
+
+true
+INFO  stamped
+
+true
+true
+/nonexistent/dir/x.log
+INFO  still the first file
+
+4000
+500
+500
+500
+500
+500
+500
+500
+500
+INFO  to stderr
+WARN  to stderr too
+ERROR and this
+ERROR range error: out of range
+DEBUG visible
+false
+INFO  in the file
+
+:warn
+:debug
+'loud' is not a log level: the levels are debug, info, warn, error and off

@@ -6,6 +6,7 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.unnested
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.context.state.Constant
 import github.mrh0.eclang.context.state.Variable
 import github.mrh0.eclang.error.EcError
@@ -59,6 +60,7 @@ class TStatementLetIf(
         val cName = cd.localCName(name)
         val define = if (mutable) IRStatementDefineVar(location, cd.ctx().define(location, Variable(name, type, cName)), read)
             else IRStatementDefineVal(location, cd.ctx().define(location, Constant(name, type, cName)), read)
+        Lifetimes.define(cd, name, value, type)
         val block = body.process(cd, hint).second as IRBlock
         cd.ctx().pop()
         val bodyIR = IRBlock(location, listOf(define) + block.statements, block.deferred, block.diverges)

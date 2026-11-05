@@ -172,7 +172,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
 
     // Records
     override fun visitGlobalRecordDefine(ctx: EclangParser.GlobalRecordDefineContext): ITok =
-        TTypeRecord(loc(ctx), ctx.name.text, ctx.fields.map { it.name.text }, ctx.fields.map { visit(it.type()) }, ctx.extending?.text, ctx.fields.map { f -> f.value?.let { visit(it) } }, ctx.typeParams.map { it.text },
+        TTypeRecord(loc(ctx), ctx.name.text, ctx.fields.map { it.name.text }, ctx.fields.map { visit(it.type()) }, ctx.extending?.let { recordTypeName(ctx.qualifier, it) }, ctx.fields.map { f -> f.value?.let { visit(it) } }, ctx.typeParams.map { it.text },
             layout(ctx.modifiers), widths(ctx.fields.map { it.fieldWidth() }))
     override fun visitGlobalUnionDefine(ctx: EclangParser.GlobalUnionDefineContext): ITok {
         checkUnion(ctx, ctx.keyword)
@@ -363,7 +363,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
             listOfNotNull(field.label?.let { StringLiteral.parse(at, it) }, TInterpolated.Field(github.mrh0.eclang.Compiler.parseInterpolation(field.expression, at), field.spec))
         })
     }
-    override fun visitPrimitiveAtom(ctx: EclangParser.PrimitiveAtomContext): ITok = TAtom(loc(ctx), ctx.text.substring(1).lowercase())
+    override fun visitPrimitiveAtom(ctx: EclangParser.PrimitiveAtomContext): ITok = TAtom(loc(ctx), ctx.text.substring(1))
     override fun visitPrimitiveChar(ctx: EclangParser.PrimitiveCharContext): ITok = TChar(loc(ctx), ctx.text)
 
     override fun visitExprNull(ctx: EclangParser.ExprNullContext): ITok = TNull(loc(ctx))
@@ -479,7 +479,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitGlobalInterfaceDefine(ctx: EclangParser.GlobalInterfaceDefineContext): ITok {
         val fields = ctx.members.filterIsInstance<EclangParser.InterfaceFieldContext>()
         val methods = ctx.members.filterIsInstance<EclangParser.InterfaceMethodContext>().map { m ->
-            TInterface.MethodDecl(loc(m), m.name.text, m.params.map { visit(it) }, m.returnType?.let { visit(it) })
+            TInterface.MethodDecl(loc(m), m.name.text, m.params.map { visit(it) }, returns(m, m.returnType, m.throwing))
         }
         return TInterface(loc(ctx), ctx.name.text, fields.map { it.name.text }, fields.map { visit(it.type()) }, methods)
     }
@@ -493,7 +493,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitGlobalDefineTyped(ctx: EclangParser.GlobalDefineTypedContext): ITok = TGlobalDefineTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
     override fun visitGlobalDefineConstTyped(ctx: EclangParser.GlobalDefineConstTypedContext): ITok = TGlobalDefineConstTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
     override fun visitGlobalConstant(ctx: EclangParser.GlobalConstantContext): ITok = TGlobalConstant(loc(ctx), ctx.NAME().text, visit(ctx.expr()), ctx.type()?.let { visit(it) })
-    override fun visitGlobalTypeDefine(ctx: EclangParser.GlobalTypeDefineContext): ITok = TGlobalTypeDefine(loc(ctx), ctx.NAME().text, visit(ctx.type()))
+    override fun visitGlobalTypeDefine(ctx: EclangParser.GlobalTypeDefineContext): ITok = TGlobalTypeDefine(loc(ctx), ctx.NAME().text, visit(ctx.type()), external = true)
     override fun visitGlobalTypeAlias(ctx: EclangParser.GlobalTypeAliasContext): ITok {
         // `distinct` isn't a keyword, so it stays usable as a name.
         if (ctx.modifier != null && ctx.modifier.text != "distinct") throw EcError(loc(ctx), "`type ${ctx.name.text} = ${ctx.modifier.text} ...`: the only word that can come before the type is `distinct`.")
@@ -578,7 +578,15 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitWhenValueUpTo(ctx: EclangParser.WhenValueUpToContext): ITok = TRange(loc(ctx), null, visit(ctx.to), ctx.op.text == "..=")
 
     override fun visitStatementIf(ctx: EclangParser.StatementIfContext): ITok {
-        return TStatementIf(loc(ctx), visit(ctx.conditions), visit(ctx.bodies), if(ctx.elseBody == null) null else visit(ctx.elseBody))
+        return TStatementIf(loc(ctx), visit(ctx.conditions), visit(ctx.bodies), elseOf(ctx.elseBody, ctx.next))
+    }
+
+    /** What follows `else`: a block, or [next], one more `if`, as a block of its own. */
+    private fun elseOf(body: EclangParser.BlockContext?, next: EclangParser.StatementContext?): ITok? = when {
+        body != null -> visit(body)
+        next == null -> null
+        next is EclangParser.StatementIfContext || next is EclangParser.StatementLetIfContext -> TBlock(loc(next), listOf(visit(next)))
+        else -> throw EcError(loc(next), "`else` is followed by `do` and a block, or by another `if`. Put this on an indented line of its own after `else do`.")
     }
 
     override fun visitExprInlineIf(ctx: EclangParser.ExprInlineIfContext): ITok = TInlineIf(loc(ctx), visit(ctx.condition), visit(ctx.body), visit(ctx.elseBody))
@@ -608,7 +616,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitStatementBreak(ctx: EclangParser.StatementBreakContext): ITok = TTailIf(loc(ctx), TStatementBreak(loc(ctx), ctx.label?.text), if (ctx.condition != null) visit(ctx.condition) else null)
     override fun visitStatementPass(ctx: EclangParser.StatementPassContext): ITok = TTailIf(loc(ctx), TPass(loc(ctx)), if (ctx.condition != null) visit(ctx.condition) else null)
     override fun visitStatementThrow(ctx: EclangParser.StatementThrowContext): ITok = TTailIf(loc(ctx), TStatementThrow(loc(ctx), visit(ctx.throw_)), if (ctx.condition != null) visit(ctx.condition) else null)
-    override fun visitStatementReturn(ctx: EclangParser.StatementReturnContext): ITok = TTailIf(loc(ctx), TStatementReturn(loc(ctx), visit(ctx.return_ ?: ctx.whenExpr())), if (ctx.condition != null) visit(ctx.condition) else null)
+    override fun visitStatementReturn(ctx: EclangParser.StatementReturnContext): ITok = TTailIf(loc(ctx), TStatementReturn(loc(ctx), (ctx.return_ ?: ctx.whenExpr())?.let { visit(it) } ?: TNoValue(loc(ctx))), if (ctx.condition != null) visit(ctx.condition) else null)
 
     override fun visitStatementLabeled(ctx: EclangParser.StatementLabeledContext): ITok {
         val tok: ITok = visit(ctx.statement())
@@ -634,7 +642,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     }
 
     override fun visitStatementLetIf(ctx: EclangParser.StatementLetIfContext): ITok =
-        TStatementLetIf(loc(ctx), ctx.NAME().text, ctx.kind.text == "var", visit(ctx.value), visit(ctx.body), ctx.elseBody?.let { visit(it) })
+        TStatementLetIf(loc(ctx), ctx.NAME().text, ctx.kind.text == "var", visit(ctx.value), visit(ctx.body), elseOf(ctx.elseBody, ctx.next))
 
     // Pipes and lambdas
     override fun visitExprIt(ctx: EclangParser.ExprItContext): ITok {

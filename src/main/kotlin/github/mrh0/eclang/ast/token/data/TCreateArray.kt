@@ -12,6 +12,7 @@ import github.mrh0.eclang.ir.data.IRCreateArray
 import github.mrh0.eclang.ir.data.IRCreateFixed
 import github.mrh0.ect2.FixedArray
 import github.mrh0.ect2.Type
+import github.mrh0.ect2.Union
 
 class TCreateArray(location: Loc, val values: List<ITok>) : Tok(location) {
     /** Whether the last compiled literal was a `T[N]`, whose elements are in the value and not on the stack (see Lifetimes). */
@@ -19,7 +20,9 @@ class TCreateArray(location: Loc, val values: List<ITok>) : Tok(location) {
         private set
 
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
-        val expected = cd.types.nonNull(hint).let { if (it is FixedArray) it else Ops.base(it).takeIf { base -> base is FixedArray }?.let { _ -> it } }
+        // `T[N]?` and `T[N] | String` hold a `T[N]` too; among several lengths the literal's own decides.
+        val expected = ((hint as? Union)?.members ?: listOf(hint)).filter { Ops.base(it) is FixedArray }
+            .let { fixed -> fixed.singleOrNull() ?: fixed.singleOrNull { (Ops.base(it) as FixedArray).size == values.size.toLong() } }
         val fixed = expected?.let { Ops.base(it) as FixedArray }
         isFixed = fixed != null
         if (fixed != null) {
@@ -29,7 +32,8 @@ class TCreateArray(location: Loc, val values: List<ITok>) : Tok(location) {
         }
         val (element, irs) = arrayElements(cd, location, values, hint, false)
         val arrayType = cd.types.array(element)
-        return arrayType to IRCreateArray(location, IRType(location, arrayType), IRType(location, element), irs)
+        val storage = if (irs.isEmpty()) null else cd.literalStorage(location, element, irs.size)
+        return arrayType to IRCreateArray(location, IRType(location, arrayType), IRType(location, element), irs, storage)
     }
 
     override fun toString(): String {

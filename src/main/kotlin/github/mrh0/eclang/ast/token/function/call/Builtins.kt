@@ -10,6 +10,7 @@ import github.mrh0.eclang.ast.token.statement.TStatementPool
 import github.mrh0.eclang.ast.unnested
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.Lifetimes
+import github.mrh0.eclang.output.c.CTypes
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRRaw
@@ -17,9 +18,9 @@ import github.mrh0.eclang.ir.IRRawCall
 import github.mrh0.eclang.ir.data.IRClone
 import github.mrh0.eclang.ir.data.IRFormat
 import github.mrh0.eclang.ir.data.IRHash
+import github.mrh0.eclang.ir.data.IRNumber
 import github.mrh0.eclang.ir.data.IRShow
 import github.mrh0.eclang.util.StringLiteral
-import github.mrh0.eclang.util.Util
 import github.mrh0.ect2.*
 
 /**
@@ -40,9 +41,10 @@ internal object Builtins {
 
     /**
      * Calls builtin [name] with [args] (for `x.name(...)`, x is `args[0]`, already compiled as [first]). Adds to
-     * [pools] each pool the result may be allocated in (null: the current pool), for Lifetimes.
+     * [pools] each pool the result may be allocated in (null: the current pool), and to [kept] each argument the
+     * result may still point into, for Lifetimes.
      */
-    fun call(cd: CompileData, location: Loc, name: String, args: List<ITok>, first: Pair<Type, IIR>?, pools: MutableList<ITok?>): Pair<Type, IIR> {
+    fun call(cd: CompileData, location: Loc, name: String, args: List<ITok>, first: Pair<Type, IIR>?, pools: MutableList<ITok?>, kept: MutableList<ITok>): Pair<Type, IIR> {
         val compiled = HashMap<Int, Pair<Type, IIR>>()
         first?.let { compiled[0] = it }
         fun arg(i: Int, hint: Type = Types.None) = compiled.getOrPut(i) { args[i].process(cd, hint) }
@@ -74,6 +76,7 @@ internal object Builtins {
                 val value = cd.usable(location, arg(0), "`clone`")
                 val type = cd.storable(location, value.first, "`clone`")
                 pools += args.getOrNull(1)
+                if (CTypes.cloneKeepsPointers(type)) kept += args[0]
                 val into = if (args.size == 2) pool(cd, location, "`$name`", arg(1)) else current(location)
                 type to IRClone(location, type, cd.expect(location, value, type, "`clone`"), into)
             }
@@ -102,8 +105,9 @@ internal object Builtins {
             }
             else -> { // clearPool, freePool
                 if (args.size != 1) throw EcError(location, "`$name` takes one pool: `$name(p)`.")
-                if (name == "freePool") freeProblem(cd, args[0])?.let { throw EcError(location, it) }
-                val call = IRRawCall(location, if (name == "freePool") "apr_pool_destroy" else "apr_pool_clear", listOf(pool(cd, location, "`$name`", arg(0))))
+                val pool = pool(cd, location, "`$name`", arg(0))
+                (if (name == "freePool") freeProblem(cd, args[0]) else clearProblem(cd, args[0]))?.let { throw EcError(location, it) }
+                val call = IRRawCall(location, if (name == "freePool") "apr_pool_destroy" else "apr_pool_clear", listOf(pool))
                 Lifetimes.kill(cd, location, args[0], free = name == "freePool")
                 Types.None to call
             }
@@ -112,12 +116,25 @@ internal object Builtins {
 
     /** Why `freePool(tok)` would free a pool that something else frees, or null when it's fine. */
     private fun freeProblem(cd: CompileData, tok: ITok): String? {
-        val t = tok.unnested() as? TNamed ?: return null
-        if (TNamed.isCurrentPool(cd, t.name))
-            return "Can't free the current pool: what is still running allocates in it. To free memory early, put the code in a `pool do` block (its pool is freed when the block ends), or use `clearPool(pool)`."
-        if (cd.findVar(Util.testIdentifier(t.location, t.name))?.kind() == TStatementPool.KIND)
-            return "'${t.name}' is ${TStatementPool.KIND}, which is freed when the block ends; freeing it here would free it twice. Use `clearPool(${t.name})` to free what is in it now."
+        val id = Lifetimes.poolId(cd, tok) ?: return null
+        val shown = Lifetimes.shown(tok)
+        val fix = "To free memory early, put the code in a `pool do` block (its pool is freed when the block ends), or allocate in a pool of your own (`val p = newPool()`) and free that."
+        if ((tok.unnested() as? TNamed)?.let { TNamed.isCurrentPool(cd, it.name) } == true) return "Can't free the current pool: what is still running allocates in it. $fix"
+        if (id == Lifetimes.CALLER_POOL) return "Can't free '$shown': it holds the current pool of this function, which its callers allocate in too. $fix"
+        if (id in cd.ctx().stack.blockPools) return "'$shown' is ${TStatementPool.KIND}, which is freed when the block ends; freeing it here would free it twice. Use `clearPool($shown)` to free what is in it now."
         return null
+    }
+
+    /** Why `clearPool(tok)` would free what code outside this function holds, or null when it's fine. */
+    private fun clearProblem(cd: CompileData, tok: ITok): String? {
+        val id = Lifetimes.poolId(cd, tok) ?: return null
+        if (id != Lifetimes.CALLER_POOL) {
+            // Clearing a pool frees the pools made in it, and a block still running frees its own when it ends.
+            val running = cd.poolBlocks.any { it.pool != id && it.pool in cd.ctx().stack.freedWith(id) }
+            return if (running) "Can't clear '${Lifetimes.shown(tok)}' here: a `pool` block inside it is still running, and clearing it would free that block's pool too. Clear it after that block." else null
+        }
+        val what = if ((tok.unnested() as? TNamed)?.let { TNamed.isCurrentPool(cd, it.name) } == true) "the current pool here" else "'${Lifetimes.shown(tok)}', the current pool of this function"
+        return "Can't clear $what: it belongs to the callers too, so this would also free everything they hold in it. Put the code in a `pool do` block (its pool is freed when the block ends), or allocate in a pool of your own (`val p = newPool()`) and clear that."
     }
 
     /** `format(pool, template)`: [template] must be a String literal, with or without `${...}`. */
@@ -133,16 +150,23 @@ internal object Builtins {
         val args = mutableListOf<Pair<Type, IIR>>()
         val readers = mutableListOf<(String) -> String>()
         template.parts.forEach { part ->
-            if (part is StringLiteral) { format.append(part.toC().replace("%", "%%")); return@forEach }
+            if (part is StringLiteral) {
+                // A 0 in a printf format would end it, so it is printed as a value.
+                part.splitAtZero().forEachIndexed { i, text ->
+                    if (i > 0) { format.append("%c"); args += Types.Char to IRNumber(location, 0, Types.Char); readers += { a -> a } }
+                    format.append(text.toC().replace("%", "%%"))
+                }
+                return@forEach
+            }
             val field = part as TInterpolated.Field
             val value = cd.usable(location, field.value.process(cd, Types.None), "`\${...}`")
-            val type = value.first.let { if (it is AtomLiteral) Types.Atom else cd.types.concrete(it) }
+            val type = value.first.let { if (it is AtomLiteral || isAtoms(it)) Types.Atom else cd.types.concrete(it) }
             val printed = printable(type)
             val shown = if (printed) Types.String else type
             val spec = IRFormat.spec(shown) ?: throw EcError(location, "Can't put a $type into a String with `\${...}`. " + when {
                 type is Union && type.isNullable -> "It may be null: check it first, or write `\${x ?? default}`."
                 type is Declared -> "Put its fields in instead, e.g. `\${p.x}`."
-                else -> "Numbers, Bools, Chars, atoms, Strings, CStrings, records and tuples can be put in."
+                else -> "Numbers, Bools, Chars, atoms, Strings, CStrings, `T[N]` arrays, records and tuples can be put in."
             })
             val (conversion, read) = field.spec?.apply(location, shown, spec) ?: spec
             format.append(conversion)
@@ -154,6 +178,9 @@ internal object Builtins {
         }
         return Types.String to IRFormat(location, pool, format.toString(), args, readers)
     }
+
+    /** Whether [t] is a union of atoms, which C holds as one atom. */
+    private fun isAtoms(t: Type) = t is Union && t.members.all { it is AtomLiteral || it === Types.Atom }
 
     /** Whether `${...}` prints a [t] with CTypes.show: records and tuples, and pointers to them. */
     private fun printable(t: Type): Boolean = when (t) {

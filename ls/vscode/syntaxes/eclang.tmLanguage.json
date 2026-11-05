@@ -141,6 +141,8 @@
         { "name": "keyword.control.import.eclang", "match": "\\b(?:use|module)\\b" },
         { "name": "keyword.control.pool.eclang", "match": "\\bpool(?=\\s+(?:[_a-zA-Z][_a-zA-Z0-9]*\\s+)?do\\b)" },
         { "name": "storage.type.function.eclang", "match": "\\bfn\\b" },
+        { "name": "storage.type.eclang", "match": "^\\s*(?:(?:packed|align\\([^)]*\\))\\s+)*\\bunion(?=\\s+[_a-zA-Z])|(?<=\\bdeclare\\s)union\\b" },
+        { "name": "storage.modifier.eclang", "match": "^(?:packed|align|export)\\b|\\bpacked(?=\\s+(?:align|rec|record|union)\\b)" },
         { "name": "storage.type.eclang", "match": "\\b(?:var|val|vol|const|rec|record|inter|struct|enum|type|unit)\\b" },
         { "name": "storage.modifier.eclang", "match": "\\b(?:declare|extern|priv|inline|extends|throws|anon|unsafe)\\b" },
         { "name": "keyword.operator.word.eclang", "match": "\\b(?:and|or|xor|not|is|as|new|addrof|sizeof|alignof|offsetof|typeof)\\b" },

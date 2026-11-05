@@ -18,7 +18,7 @@ import github.mrh0.ect2.Types
 class TPrimitiveUnit(location: Loc, private val expr: ITok, private val name: String) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         testIdentifier(location, name)
-        val (literal, _) = expr.process(cd, Types.None)
+        val (literal, unsigned) = expr.process(cd, Types.None)
         val to = when (name) {
             "i", "i32" -> Types.Int
             "u", "ui", "u32" -> Types.UInt
@@ -32,6 +32,10 @@ class TPrimitiveUnit(location: Loc, private val expr: ITok, private val name: St
             "d", "f64" -> Types.Double
             "z" -> Types.Size
             else -> throw EcUnknownUnitTypeError(location, name, literal)
+        }
+        if (literal === Types.ULong) { // Above the largest Long, see TInteger.
+            if (to !== Types.ULong) throw EcError(location, "This literal is above the largest Long, so it can only be a ULong: write it with `ul`.")
+            return to to unsigned
         }
         if (!cd.types.accepts(to, literal)) throw EcError(location, "The literal $literal can't be a $to: ${cd.types.explain(literal, to)}.")
         val value: Number = when (literal) {

@@ -14,14 +14,14 @@ import github.mrh0.ect2.Type
 
 /** `Point { 1, 2 }` or `Point { x = 1, y = 2 }`; for a generic record `Box<Int> { 1 }`, or `Box { 1 }` where a `Box<Int>` is expected. */
 class TCreateRecordTyped(location: Loc, private val typeName: String, val values: List<ITok>, private val names: List<String>? = null, private val typeArgs: List<ITok> = listOf()) : Tok(location) {
-    /** Whether the last compiled literal used a default value that may point to memory (see Lifetimes). */
-    var usedDefaults = false
+    /** What the last compiled literal gave and left to defaults (see Lifetimes). */
+    var defaults = RecordDefaults()
         private set
 
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val record = record(cd, hint)
-        val (allocates, ir) = createRecord(cd, location, record, values, names)
-        usedDefaults = allocates
+        val (used, ir) = createRecord(cd, location, record, values, names)
+        defaults = used
         return record to ir
     }
 

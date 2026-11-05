@@ -8,6 +8,10 @@
 declare rec apr_proc_t
 ```
 
+**Fields**
+
+- <a id="apr_proc_t.pid"></a>`pid: Int`
+
 ### <a id="apr_thread_t"></a>`apr_thread_t`
 
 ```ec
@@ -532,7 +536,7 @@ fn apr_proc_fork(proc: @apr_proc_t, cont: @apr_pool_t): apr_status_t
 ### <a id="apr_proc_create"></a>`apr_proc_create`
 
 ```ec
-fn apr_proc_create(new_proc: @apr_proc_t, progname: CString, args: @CString, env: @CString, attr: @apr_procattr_t, pool: @apr_pool_t): apr_status_t
+fn apr_proc_create(new_proc: @apr_proc_t, progname: CString, args: @CString, env: @CString?, attr: @apr_procattr_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_proc_create`.*

@@ -1,0 +1,107 @@
+$ tool --help
+Copies files around.
+
+Usage: tool [options] <command>
+
+Options:
+  -v, --verbose      Say more
+      --dry-run      Change nothing
+  -o, --output FILE  Where to write (default: out.txt)
+  -j, --jobs N       How many at once
+  -h, --help         Show this help
+
+Commands:
+  build  Build a target
+  test   Run the tests
+
+Run 'tool <command> --help' for the options of a command.
+$ tool build --help
+Build a target
+
+Usage: tool build [options] <target> [mode] [more]...
+
+Arguments:
+  target  What to build
+  mode    How
+  more    Other targets
+
+Options:
+  -r, --release  Optimise
+  -l, --level N  Level (required)
+  -h, --help     Show this help
+$ tool -h build
+Copies files around.
+
+Usage: tool [options] <command>
+
+Options:
+  -v, --verbose      Say more
+      --dry-run      Change nothing
+  -o, --output FILE  Where to write (default: out.txt)
+  -j, --jobs N       How many at once
+  -h, --help         Show this help
+
+Commands:
+  build  Build a target
+  test   Run the tests
+
+Run 'tool <command> --help' for the options of a command.
+$ tool test
+verbose=0 output=out.txt dry=no command=test target=- mode=- more= release=no level=- sees-verbose=no 
+$ tool -vvv --dry-run -ofile --jobs=4 test
+verbose=3 output=file dry=yes jobs=4 command=test target=- mode=- more= release=no level=- sees-verbose=yes 
+$ tool -v -o x --output y -j 2 build a b c d -r -l=3
+verbose=1 output=y dry=no jobs=2 command=build target=a mode=b more=c+d release=yes level=3 sees-verbose=yes 
+$ tool build a --level -1
+verbose=0 output=out.txt dry=no command=build target=a mode=- more= release=no level=-1 sees-verbose=no 
+$ tool build a --level 2 -- -x --y
+verbose=0 output=out.txt dry=no command=build target=a mode=-x more=--y release=no level=2 sees-verbose=no 
+$ tool build -1 - --level 2
+verbose=0 output=out.txt dry=no command=build target=-1 mode=- more= release=no level=2 sees-verbose=no 
+$ tool build a -l2 -rl3
+verbose=0 output=out.txt dry=no command=build target=a mode=- more= release=yes level=3 sees-verbose=no 
+$ tool --verbos test
+error: unknown option '--verbos'. Did you mean '--verbose'? | --verbos | Try 'tool --help'.
+$ tool --zzzzzz test
+error: unknown option '--zzzzzz'. | --zzzzzz | Try 'tool --help'.
+$ tool -x test
+error: unknown option '-x'. | -x | Try 'tool --help'.
+$ tool --verbose=1 test
+error: the flag '--verbose' doesn't take a value; remove '=1' | --verbose | Try 'tool --help'.
+$ tool --output
+error: the option '--output' needs a value: --output FILE | --output | Try 'tool --help'.
+$ tool -o
+error: the option '-o' needs a value: -o FILE | -o | Try 'tool --help'.
+$ tool bild
+error: unknown command 'bild'. Did you mean 'build'? The commands are: build, test | bild | Try 'tool --help'.
+$ tool zzzzzz
+error: unknown command 'zzzzzz'. The commands are: build, test | zzzzzz | Try 'tool --help'.
+$ tool 
+error: a command is missing: build, test | command | Try 'tool --help'.
+$ tool build
+error: the option '--level' is required: --level N | --level | Try 'tool build --help'.
+$ tool build a
+error: the option '--level' is required: --level N | --level | Try 'tool build --help'.
+$ tool test extra
+error: unexpected argument 'extra'. Usage: tool test [options] | extra | Try 'tool test --help'.
+$ tool -j abc test
+verbose=0 output=out.txt dry=no error: 'jobs' must be a whole number, not 'abc' | jobs | Try 'tool --help'.
+Usage: cat [options] <file> [again]
+
+Arguments:
+  file   What to show
+  again  What else
+
+Options:
+  -h, --help  Show this help
+Tracks files.
+
+Usage: git [options] [command]
+
+Options:
+  -h, --help  Show this help
+
+Commands:
+  log  Show the history
+
+Run 'git <command> --help' for the options of a command.

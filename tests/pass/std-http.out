@@ -1,0 +1,202 @@
+[http] [] [example.com] 0 [] [] [] -> http://example.com
+[http] [ada:pw] [example.com] 8080 [/a/b] [x=1&y=2] [top] -> http://ada:pw@example.com:8080/a/b?x=1&y=2#top
+[http] [] [example.com] 0 [/] [] [] -> http://example.com/
+[http] [] [::1] 8080 [/x] [] [] -> http://[::1]:8080/x
+[http] [] [::1] 0 [/] [] [] -> http://[::1]/
+[] [] [] 0 [/a/b] [x=1] [] -> /a/b?x=1
+[] [] [] 0 [../c] [] [] -> ../c
+[] [] [] 0 [] [q] [] -> ?q
+[] [] [] 0 [] [] [f] -> #f
+[mailto] [] [] 0 [ada@example.com] [] [] -> mailto:ada@example.com
+[http] [] [a] 0 [/] [b=c/d] [e?f] -> http://a/?b=c/d#e?f
+[] [] [] 0 [] [] [] -> 
+a URL can't have white space or control characters in it: write them as %XX
+a URL can't have white space or control characters in it: write them as %XX
+a URL can't have white space or control characters in it: write them as %XX
+the port of a URL is a number from 1 to 65535
+the port of a URL is a number from 1 to 65535
+the port of a URL is a number from 1 to 65535
+the [ of this IPv6 address has no closing ]
+only a port can follow the ] of an IPv6 address
+/
+/b?c=d
+resolved
+[a] [1]
+[b] [x y]
+[c] [A&]
+[d] []
+[] [e]
+[f] []
+a%20b=c%26d&%C3%A9=%3D
+1
+two words
+true
+true
+'z' is not a hexadecimal digit
+a
+2
+true
+1
+d
+false
+true
+Not Found
+0
+200
+OK
+hello 127.0.0.1
+
+text/plain; charset=utf-8
+16
+true
+true
+404 Not Found no /nope
+
+200
+some data
+text/x-thing
+POST
+true
+a%20b=c%26d
+application/x-www-form-urlencoded
+x
+PUT
+DELETE
+0
+16
+x y|1 2
+decoded
+201
+application/json
+text/html; charset=utf-8
+204 0
+false
+yes
+Basic YWRhOnNlY3JldA==
+Basic YWRhQHg6cA==
+the header X-Bad has a line break or control character in its value
+this isn't the name of a header: "Bad Name"
+this isn't a method: "BAD METHOD"
+https isn't supported: it needs a TLS library, which a program can't link yet
+true
+this URL should start with http://, and it is: ftp://example.com/
+this URL should start with http://, and it is: /relative
+a URL can't have white space or control characters in it: write them as %XX
+200
+true
+302
+/
+200 kept
+POST
+200 []
+GET
+none
+200
+too many redirects: the last one is to /loop
+too many redirects: the last one is to /
+500
+false
+HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+HTTP/1.1 404 Not Found
+HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+h0
+HTTP/1.1 200 OK
+h1
+HTTP/1.1 200 OK
+h2
+true
+true
+false
+true
+true
+0
+true
+true
+HTTP/1.1 100 Continue
+0
+true
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 505 HTTP Version Not Supported
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 501 Not Implemented
+HTTP/1.1 501 Not Implemented
+HTTP/1.1 400 Bad Request
+HTTP/1.1 400 Bad Request
+HTTP/1.1 413 Content Too Large
+HTTP/1.1 413 Content Too Large
+HTTP/1.1 431 Request Header Fields Too Large
+HTTP/1.1 431 Request Header Fields Too Large
+HTTP/1.1 431 Request Header Fields Too Large
+HTTP/1.1 431 Request Header Fields Too Large
+200 1000
+413
+200 [OK] ? "hello"
+200 [OK] ? "hello"
+200 [OK] a/b "until it closes"
+200 [OK] ? "hello 0123456789"
+200 [OK] ? "old"
+200 [] ? ""
+200 [] ? ""
+299 [Odd Status] ? ""
+200 [OK] ? "ok"
+204 [No Content] ? ""
+304 [Not Modified] ? ""
+200 [OK] ? ""
+200 [OK] ? "ok"
+the server closed the connection without an answer
+this isn't an HTTP response: "not http"
+this isn't an HTTP status: "abc"
+this isn't an HTTP response: "HTTP/1.1 20 OK"
+this isn't an HTTP response: "HTTP/2 200 OK"
+this header has no colon
+the connection ended inside the headers
+the connection to <here> ended after 5 of 10 bytes
+Content-Length isn't a number
+this message has two different values of Content-Length
+this message has both Transfer-Encoding and Content-Length
+the only Transfer-Encoding here is chunked
+the connection to <here> ended after 2 of 5 bytes
+the connection ended inside a chunked body
+this isn't the size of a chunk: "zz"
+a chunk doesn't end where its size says
+a URL can't have white space or control characters in it: write them as %XX
+this body is larger than 10 bytes
+this body is larger than 10 bytes
+true
+200
+true
+true
+true
+true
+5
+500
+Internal Server Error
+
+ERROR http: GET /x: parse error: not a number: it has other characters than digits
+
+stopping
+stopped
+true

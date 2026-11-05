@@ -70,6 +70,18 @@ declare val APR_INCOMPLETE as Int
 declare val APR_EOF as Int
 ```
 
+### <a id="APR_CHILD_DONE"></a>`APR_CHILD_DONE`
+
+```ec
+declare val APR_CHILD_DONE as Int
+```
+
+### <a id="APR_CHILD_NOTDONE"></a>`APR_CHILD_NOTDONE`
+
+```ec
+declare val APR_CHILD_NOTDONE as Int
+```
+
 ### <a id="APR_NOTFOUND"></a>`APR_NOTFOUND`
 
 ```ec
@@ -174,6 +186,14 @@ fn APR_STATUS_IS_EOF(s: apr_status_t): Int
 
 *Binds the C function `APR_STATUS_IS_EOF`.*
 
+### <a id="APR_STATUS_IS_EINTR"></a>`APR_STATUS_IS_EINTR`
+
+```ec
+fn APR_STATUS_IS_EINTR(s: apr_status_t): Int
+```
+
+*Binds the C function `APR_STATUS_IS_EINTR`.*
+
 ### <a id="APR_STATUS_IS_TIMEUP"></a>`APR_STATUS_IS_TIMEUP`
 
 ```ec
@@ -197,3 +217,11 @@ fn APR_STATUS_IS_ENOTIMPL(s: apr_status_t): Int
 ```
 
 *Binds the C function `APR_STATUS_IS_ENOTIMPL`.*
+
+### <a id="apr_get_os_error"></a>`apr_get_os_error`
+
+```ec
+fn apr_get_os_error(): apr_status_t
+```
+
+*Binds the C function `apr_get_os_error`.*

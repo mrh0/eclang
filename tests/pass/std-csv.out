@@ -1,0 +1,99 @@
+2 row(s)
+"aaa" | "bbb" | "ccc"
+"zzz" | "yyy" | "xxx"
+2 row(s)
+"aaa" | "bbb" | "ccc"
+"zzz" | "yyy" | "xxx"
+2 row(s)
+"aaa" | "bbb" | "ccc"
+"zzz" | "yyy" | "xxx"
+2 row(s)
+"aaa" | "b\r\nbb" | "ccc"
+"zzz" | "yyy" | "xxx"
+1 row(s)
+"aaa" | "b\"bb" | "ccc"
+4 row(s)
+"a"
+"b"
+"c"
+"d"
+0 row(s)
+1 row(s)
+""
+1 row(s)
+"a" | "b" | ""
+1 row(s)
+"a" | "b" | ""
+1 row(s)
+"" | "" | ""
+1 row(s)
+"" | ""
+3 row(s)
+"a"
+""
+"b"
+2 row(s)
+"a"
+"b"
+1 row(s)
+" a " | " b "
+3 row(s)
+"a" | "b"
+"c"
+"d" | "e" | "f"
+1 row(s)
+"a" | "b"
+1 row(s)
+"\""
+1 row(s)
+"a\"\"b" | "\"x" | "y\""
+line 2, column 3: this quoted field has no closing " (2:3 at 6)
+line 1, column 6: only , or a line break can follow a closing ". A " inside a field is written twice (1:6 at 5)
+line 1, column 4: a " in a field needs quotes around the whole field, and is written twice (1:4 at 3)
+line 3, column 3: only , or a line break can follow a closing ". A " inside a field is written twice (3:3 at 7)
+line 3, column 1: this quoted field has no closing " (3:1 at 6)
+line 1, column 1: a table needs a header row, and this text has none
+line 3, column 1: this row has 1 field(s), and the header has 2
+line 4, column 1: this row has 3 field(s), and the header has 2
+1 row(s)
+"a" | "b\"c" | "de" | "f\"gh"
+1 row(s)
+"ab"
+1 row(s)
+"a" | "b,c" | "d\te"
+1 row(s)
+"a" | "b;c" | "d'e"
+2
+1
+true
+2
+Hopper, Grace
+36
+no row
+no column
+36;85
+true
+1
+"name,age\r\nAda,36\r\n\"Hopper, Grace\",85\r\n"
+1
+"plain,\"a,b\",\"c\"\"d\",\"e\nf\",\"g\rh\", i \r\n"
+"\"\"\r\n"
+",\r\n"
+"a;b\n"
+",\"a,b\"\r\n\"\"\r\n\"\"\"\",\"\"\"\"\"\"\r\n\"x\r\ny\",\"\n\"\r\né, sp \r\n"
+5 row(s)
+"" | "a,b"
+""
+"\"" | "\"\""
+"x\r\ny" | "\n"
+"é" | " sp "
+5 row(s)
+"" | "a,b"
+""
+"\"" | "\"\""
+"x\r\ny" | "\n"
+"é" | " sp "
+2 row(s)
+"a,b" | "c"
+"1" | "2"
+true

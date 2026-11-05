@@ -8,6 +8,7 @@ import github.mrh0.eclang.ast.token.function.TFunc
 import github.mrh0.eclang.ast.token.function.TFuncExternal
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.InterfaceMethod
+import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.context.Module
 import github.mrh0.eclang.context.state.Constant
 import github.mrh0.eclang.context.state.InlineConstant
@@ -350,6 +351,8 @@ class Functions(private val cd: CompileData) {
         val winners = scored.filter { it.cost == best }
             .let { w -> w.filter { !it.overload.isTemplate }.ifEmpty { w } }
             .let { w -> w.filter { it.overload.module === cd.module }.ifEmpty { w } }
+            // Copies of one function, made for its default values: arguments in order fill its parameters in order.
+            .let { w -> if (w.distinctBy { it.overload.location }.size > 1) w else w.filter { (o) -> o.params.map { it.name } == o.declared.take(o.params.size) }.ifEmpty { w } }
         if (winners.size > 1) throw EcAmbiguousSignatureError(location, name, written.map { it.first }, winners.map { it.overload.describe() })
 
         val (chosen, _, bindings, args) = winners[0]
@@ -435,13 +438,16 @@ class Functions(private val cd: CompileData) {
             return methods.firstOrNull { m ->
                 visible(m.name).none { o ->
                     fitsArity(o, m.params.size + 1) && score(o, listOf(arg) + m.params, HashMap()) != null &&
-                        (m.returns === Types.None || Overload.containsTypeParam(o.returns) || types.cost(o.returns, m.returns) != TypeContext.NO)
+                        (m.returns === Types.None || Overload.containsTypeParam(o.returns) || types.cost(resultOf(o), m.returns) != TypeContext.NO)
                 }
             }
         } finally {
             checking.remove(arg to i)
         }
     }
+
+    /** What a call of [o] gives: its return type, as a Result when it can fail. */
+    private fun resultOf(o: Overload): Type = o.throws?.let { types.result(o.returns, it) } ?: o.returns
 
     /** Total cost of calling [o] with [argTypes], or null when it doesn't fit. Generic parameters cost extra. */
     private fun score(o: Overload, argTypes: List<Type>, bindings: MutableMap<TypeParam, Type>): Int? {
@@ -475,7 +481,7 @@ class Functions(private val cd: CompileData) {
                     return "Argument ${i + 1} should be $p: ${types.explain(a, p)}."
                 if (Overload.isInterface(p)) missingMethod(a, p)?.let { m ->
                     val params = (listOf("x: $a") + m.params.mapIndexed { j, t -> "p${j + 1}: $t" }).joinToString(", ")
-                    val returns = if (m.returns === Types.None) "" else ": ${m.returns}"
+                    val returns = (m.returns as? Result)?.let { r -> (if (r.value === Types.None) "" else ": ${r.value}") + " throws ${r.error}" } ?: if (m.returns === Types.None) "" else ": ${m.returns}"
                     return "Argument ${i + 1} should be $p, which asks for `$m`, but there is no function '${m.name}' for a $a. Define one: `fn ${m.name}($params)$returns`."
                 }
             }
@@ -644,10 +650,14 @@ class Functions(private val cd: CompileData) {
         o.params.forEach { cd.ctx().define(it.location, Constant(it.name, it.type, cd.localCName(it.name), kind = "a parameter")) }
         // `...rest: T` is the array of the extra arguments, the last C parameter.
         val rest = o.varArg?.takeIf { !it.isCVarArg }?.let { Parameter(it.location, it.name, types.array(it.type)) }
-        rest?.let { cd.ctx().define(it.location, Constant(it.name, it.type, cd.localCName(it.name), kind = "a parameter")) }
+        rest?.let {
+            cd.ctx().define(it.location, Constant(it.name, it.type, cd.localCName(it.name), kind = "a parameter"))
+            Lifetimes.defineRest(cd, it.name)
+        }
         o.absent.forEach { p ->
             val value = cd.expect(p.location, p.default!!.process(cd, p.type), p.type, "default value of '${p.name}'")
             cd.ctx().define(p.location, InlineConstant(p.name, p.type, value))
+            Lifetimes.define(cd, p.name, p.default, p.type)
         }
         val block = o.body!!.process(cd, Types.None).second as IRBlock
         if (o.returns !== Types.None && !block.diverges && !cd.functionHasErrors)

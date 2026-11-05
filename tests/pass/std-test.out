@@ -1,0 +1,165 @@
+0
+  a
+- b
++ c
+1
+ok   passing
+FAIL mismatches
+  check 1: the values differ
+      expected: 3
+      actual:   2
+  check 2, the count: the values differ
+      expected: 6
+      actual:   5
+  check 3: the values differ
+      expected: 2.5
+      actual:   1.5
+  check 4: the values differ
+      expected: 'b'
+      actual:   'a'
+  check 5: the values differ
+      expected: false
+      actual:   true
+  check 6: the values differ
+      expected: :off
+      actual:   :on
+  check 7: the values differ
+      expected: Point { x: 1, name: "b" }
+      actual:   Point { x: 1, name: "a" }
+  check 8: the values differ
+      expected: (2, "a")
+      actual:   (1, "a")
+  check 9: element 2 differs
+      expected: [1, 2, 4]
+      actual:   [1, 2, 3]
+  check 10: the lengths differ: 2 expected, 3 here
+      expected: [1, 2]
+      actual:   [1, 2, 3]
+  check 11, the names: element 0 differs
+      expected: ["b"]
+      actual:   ["a"]
+  check 12: these should differ, and both are 1
+  check 13, the text: these should differ, and both are "a"
+  check 14, thing: this should be true, and it is false
+  check 15: this should be true, and it is false
+  check 16: this should be false, and it is true
+  check 17: these should be within 0.01 of each other
+      expected: 1.1
+      actual:   1
+  check 18, the name: this should be null, and it is "x"
+  check 19: this should have a value, and it is null
+  check 20: the text doesn't have this in it
+      wanted: "z"
+      actual: "hello"
+  check 21: this shouldn't happen
+FAIL strings
+  check 1: the strings differ at byte 6
+      expected: "hello there"
+      actual:   "hello world"
+                       ^
+  check 2: the strings differ at byte 3
+      expected: "abcd"
+      actual:   "abc"
+                    ^
+  check 3: the strings differ at byte 0
+      expected: "x"
+      actual:   ""
+                 ^
+  check 4: the strings differ at byte 4
+      expected: "tab\tthere"
+      actual:   "tab\there"
+                      ^
+  check 5: the strings differ at byte 12
+      expected: "héllo wörlx"
+      actual:   "héllo wörld"
+                           ^
+  check 6: the strings differ at byte 9
+      expected: "日本語y"
+      actual:   "日本語x"
+                       ^
+  check 7: the strings differ at byte 1
+      expected: "aè"
+      actual:   "aé"
+                  ^
+  check 8: the strings differ at byte 200
+      expected: ..."cdefghijabcdefghijabcdefghijabcdefghijYabcdefghijabcdefghijabcdefghijabcdefg"...
+      actual:   ..."cdefghijabcdefghijabcdefghijabcdefghijXabcdefghijabcdefghijabcdefghijabcdefg"...
+                                                          ^
+  check 9: the strings differ at byte 0
+      expected: "Yabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcde"...
+      actual:   "Xabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcde"...
+                 ^
+  check 10: the strings differ at byte 200
+      expected: ..."cdefghijabcdefghijabcdefghijabcdefghijY"
+      actual:   ..."cdefghijabcdefghijabcdefghijabcdefghijX"
+                                                          ^
+FAIL diffs
+  check 1, one line: the strings differ (- expected, + actual)
+      ...
+        c
+        d
+      - X
+      + e
+        f
+        g
+      ...
+  check 2, a line too many: the strings differ (- expected, + actual)
+        a
+      + b
+        c
+  check 3, a line missing: the strings differ (- expected, + actual)
+        a
+      - b
+        c
+  check 4, the last line break: the strings differ (- expected, + actual)
+        a
+        b
+      + ""
+  check 5, a carriage return: the strings differ (- expected, + actual)
+      - a
+      + "a\r"
+        b
+  check 6, a space at the end: the strings differ (- expected, + actual)
+      - a
+      + "a "
+        b
+  check 7, two changes: the strings differ (- expected, + actual)
+      - 0
+      + 1
+        2
+        3
+      ...
+        8
+        9
+      - X
+      + 10
+  check 8, empty lines: the strings differ (- expected, + actual)
+        
+      - y
+      + ""
+      + x
+  check 9, only one has a line break: the strings differ (- expected, + actual)
+        one
+      - two
+ok   sized
+FAIL stopping
+  check 3, the number: this should be true, and it is false
+FAIL failing
+  it stopped with an error: parse error: not a number: it has other characters than digits
+ok   fine
+
+8 test(s): 3 passed, 5 failed
+  failed: mismatches
+  failed: strings
+  failed: diffs
+  failed: stopping
+  failed: failing
+1
+ok   passing
+
+1 test(s): 1 passed, 0 failed, 2 left out
+0
+
+0 test(s): 0 passed, 0 failed, 1 left out
+no test has 'nothing' in its name
+1

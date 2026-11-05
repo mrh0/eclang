@@ -164,18 +164,19 @@ class CompileData(val types: TypeContext = TypeContext()) {
     fun <T> isolated(compile: () -> T): T {
         val (savedContext, savedGenerics, savedFunction) = Triple(currentLocalContextBuilder, genericContext, function)
         val (savedHoisted, savedBarrier) = hoisted to hoistBarrier
+        val savedLiteralHome = literalHome
         val savedLoops = ArrayList(loops)
         val savedPipes = ArrayList(pipeValues)
         val savedPools = ArrayList(poolBlocks)
         enclosing += currentLocalContextBuilder
         loops.clear(); pipeValues.clear(); poolBlocks.clear()
-        function = null; hoisted = null; hoistBarrier = null
+        function = null; hoisted = null; hoistBarrier = null; literalHome = null
         try {
             return compile()
         } finally {
             enclosing.removeAt(enclosing.size - 1)
             currentLocalContextBuilder = savedContext; genericContext = savedGenerics; function = savedFunction
-            hoisted = savedHoisted; hoistBarrier = savedBarrier
+            hoisted = savedHoisted; hoistBarrier = savedBarrier; literalHome = savedLiteralHome
             loops.clear(); loops += savedLoops
             pipeValues.clear(); pipeValues += savedPipes
             poolBlocks.clear(); poolBlocks += savedPools
@@ -284,11 +285,16 @@ class CompileData(val types: TypeContext = TypeContext()) {
         loops += frame
         try {
             val value = compile()
+            Lifetimes.loopCompiled(this)
             return LoopBody(value, frame.end.takeIf { it in usedLabels }, frame.next.takeIf { it in usedLabels }, frame.breaks)
         } finally {
             loops.removeAt(loops.size - 1)
+            Lifetimes.loopLeft(this)
         }
     }
+
+    /** How far out the loop called [label] (or the innermost one) is: 0 for the innermost. */
+    fun loopsOut(location: Loc, label: String?, what: String): Int = loops.size - 1 - loops.indexOf(loopNamed(location, label, what))
 
     /** The loop called [label], or the innermost one. */
     private fun loopNamed(location: Loc, label: String?, what: String): LoopFrame = if (label == null) loops.last() else loops.lastOrNull { it.name == label }
@@ -336,6 +342,7 @@ class CompileData(val types: TypeContext = TypeContext()) {
     fun forgetAssigned(location: Loc, assigned: Set<String>) {
         assigned.forEach { ctx().forget(Util.testIdentifier(location, it)) }
         Lifetimes.loopKills(this, location, assigned)
+        Lifetimes.loopStarts(this)
     }
 
     // ---------------------------------------------------------------------------------------------------
@@ -382,6 +389,13 @@ class CompileData(val types: TypeContext = TypeContext()) {
             throw EcError(location, "Type $typeName is private to $owner (`priv`), so only code in it can use it. Remove `priv` to use it here.")
     }
 
+    /** Whether [name], maybe `module.Type`, can be looked up yet. A module that doesn't exist is for [lookupType] to report. */
+    fun typeDeclared(name: String): Boolean {
+        if ('.' !in name) return types.lookup(module.name, name) != null
+        val (moduleName, member) = name.split('.', limit = 2)
+        return findModule(moduleName)?.let { types.lookupIn(it.name, member) != null } ?: true
+    }
+
     private fun lookupTypeAnywhere(location: Loc, name: String): Type {
         if ('.' in name) {
             val (moduleName, member) = name.split('.', limit = 2)
@@ -399,6 +413,7 @@ class CompileData(val types: TypeContext = TypeContext()) {
 
     private var hoisted: MutableList<IIR>? = null
     private var hoistBarrier: String? = null
+    private var literalHome: MutableList<IIR>? = null
     private var tempCounter = 0
 
     /** A fresh C variable name for generated temporaries. */
@@ -419,6 +434,26 @@ class CompileData(val types: TypeContext = TypeContext()) {
         val name = temp()
         (hoisted ?: throw EcError(location, "This needs a temporary variable, so it can only be used inside a function body.")).add(IRTempDeclare(location, name, type))
         return name
+    }
+
+    /**
+     * Compiles the arms of a `when` used as a value. They are C blocks, but what they give is used after them, so a
+     * literal in them can't be a C compound literal, which is gone when its block ends: it asks for [literalStorage],
+     * declared before the statement the `when` is in. That is the scope Lifetimes gives it.
+     */
+    fun <T> keepingLiterals(compile: () -> T): T {
+        val saved = literalHome
+        literalHome = saved ?: hoisted
+        try {
+            return compile()
+        } finally {
+            literalHome = saved
+        }
+    }
+
+    /** The name of a C variable to hold a literal of type [type] ([length] of them: a C array), or null when a compound literal lives long enough. */
+    fun literalStorage(location: Loc, type: Type, length: Int? = null): String? = literalHome?.let { home ->
+        temp().also { home += IRTempDeclare(location, it, { type }, length) }
     }
 
     /** Adds [ir] to run just before the statement currently being compiled. */

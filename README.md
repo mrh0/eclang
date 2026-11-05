@@ -31,7 +31,8 @@ The compiler is written in Kotlin and uses an ANTLR 4 grammar ([Eclang.g4](src/m
 - Union types, duck-typing, interfaces.
 - Generating human-readable C source.
 - Function overloads, functional paradigms.
-- Null safety.
+- Null safety. Lifetimes. Catch most common memory safety issues.
+- High preformance, but generally prefer safe code over performance.
 - Pool memory management, defer, deep-clone, APR (Apache Portable Runtime).
 - Modernized syntax (inspired by languages such as Python, Kotlin, Go, Elixir).
 - Error handling by value.
@@ -88,7 +89,7 @@ One run reports the errors of every function (up to 30). Inside a function, chec
 ```
 java -jar target/eclang-0.1.0.jar run examples/fizzbuzz.ec
 ```
-`run` compiles the program, builds it with `gcc` (or `$CC`) using the APR flags from `apr-1-config` and `-lm`, runs it, and exits with its exit code. It takes `-nb`, `-na`, `-oc`, `-d`, and `-k <dir>` to keep the generated `.c` file and the executable. What follows `--` goes to the program, which reads it with `io.args()`: `eclang run app.ec -- -v in.txt`.
+`run` compiles the program, builds it with `gcc` (or `$CC`) using the APR flags from `apr-1-config`, `-lm`, `-fwrapv` and `-fno-strict-aliasing`, runs it, and exits with its exit code. It takes `-nb`, `-na`, `-oc`, `-d`, and `-k <dir>` to keep the generated `.c` file and the executable. What follows `--` goes to the program, which reads it with `io.args()`: `eclang run app.ec -- -v in.txt`.
 
 ### Generate documentation
 ```
@@ -98,8 +99,10 @@ java -jar target/eclang-0.1.0.jar doc examples/fib.ec [more.ec ...] [-o docs.md]
 
 ### Compile generated .c source with gcc
 ```
-gcc out.c -o out -I/usr/include/apr-1.0 -L/usr/lib -lapr-1 -lm
+gcc -fwrapv -fno-strict-aliasing out.c -o out -I/usr/include/apr-1.0 -L/usr/lib -lapr-1 -lm
 ```
+
+The generated C needs both flags, and `run` and `lib` pass them: `-fwrapv` because `+` on an Int wraps, and `-fno-strict-aliasing` because a pointer to a child record is used as a pointer to its parent.
 
 The Makefile wraps both steps:
 ```
@@ -111,7 +114,7 @@ make compile-run FILE=./examples/fizzbuzz.ec
 ```
 tests/run.sh
 ```
-Programs in [tests/pass](tests/pass) must compile, build and print their `.out` file; programs in [tests/fail](tests/fail) must be rejected with the error on their first line; programs in [tests/panic](tests/panic) must compile, then stop at runtime with the message on their first line. Files in [tests/doc](tests/doc) must give their `.md` file from `eclang doc`, with the warnings in their `.err` file.
+Programs in [tests/pass](tests/pass) must compile, build and print their `.out` file; programs in [tests/fail](tests/fail) must be rejected with the error on their first line; programs in [tests/panic](tests/panic) must compile, then stop at runtime with the message on their first line. Files in [tests/doc](tests/doc) must give their `.md` file from `eclang doc`, with the warnings in their `.err` file. Libraries in [tests/lib](tests/lib) must build with `eclang lib`, and the C program next to them must link to them and print their `.out` file.
 
 ## Modules and Imports
 
@@ -163,8 +166,8 @@ use "geo.ec"
 ```
 
 Bundled libraries:
-- The standard library (see [Standard Library](#standard-library)): `core:string.ec`, `core:errors.ec` (`Error` and the error types that extend it), `core:array.ec`, `core:structures.ec`, and the modules `core:io.ec` (`io.log`, ...), `core:math.ec`, `core:time.ec`, `core:thread.ec` and `core:encoding.ec`.
-- [c/](src/main/resources/c): declarations for C's standard headers, one file per header (`core:c/stdio.ec`, `core:c/stdlib.ec`, `core:c/string.ec`, `core:c/ctype.ec`, `core:c/time.ec`, `core:c/unistd.ec`).
+- The standard library (see [Standard Library](#standard-library)): `core:string.ec`, `core:errors.ec` (`Error` and the error types that extend it), `core:array.ec`, `core:structures.ec`, and the modules `core:io.ec` (`io.log`, ...), `core:math.ec`, `core:time.ec`, `core:thread.ec`, `core:os.ec`, `core:term.ec`, `core:encoding.ec`, `core:net.ec`, `core:fs.ec`, `core:json.ec`, `core:hash.ec` and `core:args.ec`.
+- [c/](src/main/resources/c): declarations for C's standard headers, one file per header (`core:c/stdio.ec`, `core:c/stdlib.ec`, `core:c/string.ec`, `core:c/ctype.ec`, `core:c/time.ec`, `core:c/unistd.ec`, `core:c/termios.ec`, `core:c/ioctl.ec`, ...).
 - [apr/](src/main/resources/apr): declarations for the Apache Portable Runtime, one file per APR header (`core:apr/pools.ec`, `core:apr/strings.ec`, `core:apr/tables.ec`, `core:apr/hash.ec`, ...).
 
 ## Variables
@@ -219,6 +222,8 @@ val f: Float = 2.5        // fits a Float
 val folded: Char = 60 + 6 // computed at compile time: 66
 val bad: Char = 300       // error: 300 does not fit in Char (-128 to 127)
 ```
+
+A hexadecimal or binary literal above the largest Long (`0xFFFFFFFFFFFFFFFF`) is a ULong.
 
 A literal can also be given a specific type with a suffix:
 
@@ -302,7 +307,7 @@ After the value, `:` gives a format, and `=` also prints the expression itself, 
 
 A format is `[<|>][+][0][width][.precision][type]`. The type is `d`, `x`, `X` or `o` for whole numbers, `f`, `e`, `E`, `g` or `G` for Float and Double, and `s` for text. Numbers are aligned right by default and text left; on a String or CString the precision is the most bytes to print. A format that doesn't fit the value's type is a compile error. It becomes a `printf` conversion, so a fill character and centering (`^`) aren't available, and an atom can't be padded.
 
-`${...}` takes numbers (`%g` for Float and Double), Bools, Chars, atoms, Strings, CStrings, and records and tuples ([printed with their fields](#printing-and-hashing), or pointers to them); for anything else, put in a field or convert it first. The expression inside can't contain a string literal. Write `\$` for a plain dollar sign. `format` and `concat` are built in, but a function of your own with either name takes precedence. In C, `${...}` becomes a small generated function calling `snprintf` and allocating in the pool.
+`${...}` takes numbers (`%g` for Float and Double), Bools, Chars, atoms, Strings, CStrings, `T[N]` arrays, and records and tuples ([printed with their fields](#printing-and-hashing), or pointers to them); for anything else, put in a field or convert it first. The expression inside can't contain a string literal. Write `\$` for a plain dollar sign. `format` and `concat` are built in, but a function of your own with either name takes precedence. In C, `${...}` becomes a small generated function calling `snprintf` and allocating in the pool.
 
 ### Arrays and C-Arrays
 
@@ -318,6 +323,35 @@ val carray2: Int[]c = [5, 3, 6, 0]c
 `a[i]` on an array (or String) checks that `i` is less than `a.len`; otherwise the program stops with `file:line: index 10 is out of bounds for length 3`. To skip the check where speed matters, index the raw data instead: `a.data[i]` (a C array, which has no length). The `--no-bounds-check` option turns all the checks off.
 
 `a[from..<to]` and `a[from..=to]` slice an array, sharing its elements: changing an element of the slice changes the array. C arrays have no length, so they can't be sliced.
+
+### Fixed-Size Arrays
+
+`T[N]` holds N elements in the value itself, like an array inside a C struct. N is a number or a `const`, known when the program compiles. Assigning, passing or returning one copies its elements, so it behaves like a number, not like a `T[]`, which only points to its elements.
+
+```plaintext
+const SIZE = 3
+
+fn doubled(a: Int[SIZE]): Int[SIZE] do
+    var b = a                   // a copy
+    for i in 0..<b.len do
+        b[i] = b[i] * 2
+    ret b
+
+var empty: Int[4]               // all zero
+val values: Int[3] = [1, 2, 3]  // the literal must have all 3 elements
+```
+
+`a[i]` checks i against N: when the program runs, or when it compiles if i is a literal. `==`, `hash`, `clone`, `for` and `${...}` work on the elements; a `Char[N]` prints as text, up to its first 0.
+
+A `T[N]` turns into nothing else by itself, because what it turns into would point into it:
+
+| You want | Write | You get |
+| --- | --- | --- |
+| an array | `a[..]`, `a[1..<3]` | a `T[]` sharing a's memory |
+| a C pointer | `a.data` | a `T[]c`, or a `CString` for a `Char[N]` |
+| the length | `a.len` | a Size, known at compile time |
+
+These pointers follow the usual [lifetime](#lifetimes) rules: returning `a[..]` of a local `a` is an error. `T[N]` has a different meaning from `new T[n]`, which allocates a `T[]`. Note that in `x as Int[i]` the `[i]` belongs to the type; write `(x as Int)[i]` to index the result. `@Int[4]` is an array of four pointers, and `@(Int[4])` is a pointer to an array.
 
 ### Tuples
 
@@ -359,6 +393,8 @@ Atoms are named symbols, prefixed with `:`.
 ```plaintext
 val k = :test_atom
 ```
+
+Their spelling counts: `:scrollUp` and `:scrollup` are two atoms, and `${...}` prints an atom as it was written.
 
 ## Operators
 
@@ -500,7 +536,7 @@ or as a single expression:
 fn function_name(parameter_list): return_type = expression
 ```
 
-The return type may be omitted for functions that return nothing. A function that returns something must end with `ret` on every path.
+The return type may be omitted for functions that return nothing. A function that returns something must end with `ret` on every path. One that returns nothing can leave early with a bare `ret`, or `ret if condition`.
 
 ### Hello World
 
@@ -644,6 +680,56 @@ declare struct Point extern "point_t" as
     y: Int
 ```
 
+### C Arrays, Bit-Fields and Unions in Structs
+
+A struct's fields use the same types, so a binding can match its C definition exactly. Only the fields you need have to be listed; `sizeof` and `offsetof` are C's own. C's layout comes from its header, so `packed` and `align(n)` don't apply here.
+
+```plaintext
+declare struct utsname as       // struct utsname { char sysname[65]; ... }
+    sysname: Char[65]
+
+declare rec Packet as           // typedef struct { unsigned kind : 4; } Packet;
+    kind: UInt : 4
+
+declare union sigval as         // union sigval
+    sival_int: Int
+    sival_ptr: @Any
+
+declare union rec value_t as    // typedef union { ... } value_t;
+    i: Int
+
+declare var tzname as CString[2]    // a global array
+
+var u: utsname
+uname(addrof u)
+io.log(u.sysname.data)
+```
+
+`int m[2][3]` is `m: Int[3][2]`, read from the left: 2 rows of `Int[3]`. C passes arrays as pointers, so `declare fn` rejects `T[N]` parameters: declare `int a[4]` as `T[]c` or `@T`, and pass `a.data`.
+
+### Exporting Functions
+
+`export fn` lets C call an eclang function by its own name, whichever module it is in. `export extern "c_name" fn` gives it another name.
+
+```plaintext
+module "geo"
+
+export fn distance(p: Point): Int = p.x + p.y   // `distance` in C
+export extern "geo_count" fn count(): Int = 3   // `geo_count` in C
+```
+
+C sees one function with one signature, so an exported function can't have default values, `...` parameters, generic or interface parameters, or union parameters other than `T?`. Types keep their module prefix in C (`geo__Point`).
+
+A file with `export fn`s and no `main` is a library. `eclang lib` builds it, with a header declaring the exported functions and the types they use:
+
+```
+java -jar eclang.jar lib geo.ec -o build      # build/libgeo.so, build/geo.h
+java -jar eclang.jar lib geo.ec -o build -s   # build/libgeo.a, build/geo.h (link with -lapr-1 -lm)
+java -jar eclang.jar -c geo.ec --lib -o geo.c --header geo.h    # only the C
+```
+
+Only exported functions are visible to the linker. Loading the library sets up APR and its globals, and unloading it frees them. Each thread that calls into the library gets a pool of its own, and what the exported functions allocate stays there, so a returned String or pointer stays valid. It stays until that thread calls `NAME_clear()` (here `geo_clear()`), which frees all of it. A long-running program should call it once it is done with the results; a thread's pool is otherwise only freed when the library is unloaded.
+
 ### Enums
 
 eclang code uses atoms instead of C enums. `declare enum` gives each C constant (an enum member or a `#define`) an atom:
@@ -693,6 +779,8 @@ val a = Config { name = "a"c }       // retries 3, verbose false
 val b = Config { "b"c, 5 }           // verbose false
 ```
 
+When every field has a default, `Config {}` gives them all.
+
 `var c: Config` without a value is still empty (every field 0, see [Variables](#variables)); defaults apply to record literals.
 
 A record may refer to records declared later, and to itself through a pointer:
@@ -712,6 +800,39 @@ val p = Point { 1, 2 }
 val q = Point { ...p, x = 5 }     // 5, 2
 val r = { ...p, y = 0 }           // a Point too
 ```
+
+### Memory Layout
+
+By default a record has the layout a C compiler gives a struct with the same fields. These change it. `packed`, `align` and `union` are only special here, so they stay usable as names.
+
+```plaintext
+packed rec Header as        // no padding: 5 bytes, not 8
+    tag: UChar
+    size: Int
+
+align(64) rec Line as       // its address is a multiple of 64
+    x: Int
+
+packed align(4) rec Both as // both
+    a: UChar
+    b: Int
+
+rec Flags as                // bit-fields: `name: Type : width`
+    mode: UInt : 3
+    delta: Int : 4
+    on: Bool : 1
+
+union Value as              // the fields share their memory
+    i: Int
+    f: Float
+    bytes: UChar[4]
+```
+
+**`packed`** fields may be at any address, where C can't use a pointer to them. So `addrof`, `a[..]` and `.data` are errors on a field wider than a byte; reading and assigning work. **`align(n)`** takes a power of two; `new` and `clone` honour it too, past what a pool aligns to. Records with `packed` or `align` can't take part in `extends`, since a child must start like its parent, but they can be generic.
+
+**Bit-fields** are whole numbers or Bools. A literal must fit (`mode = 8` is an error for 3 bits), but other values are cut to the width as in C, so check them first if that matters. They have no address, so `addrof` and `offsetof` are errors.
+
+**Unions** hold one field at a time. A literal gives exactly one (`Value { f = 1.5 }`, or `Value { 1 }` for the first), and reading another field reinterprets the same bytes, which is only meaningful for plain data. eclang doesn't know which field is set, so a union has no `==` or `hash`, prints as `Value { ... }`, and `clone` copies its bytes without following pointers. Keep a field next to it to say what it holds, or use a [union type](#union-types), which does that for you.
 
 ### Printing and Hashing
 
@@ -762,7 +883,7 @@ rec Cat extends Animal as
 val tom = Cat { name = "Tom"c, lives = 9 }
 ```
 
-A record that adds no fields is written without `as`: `rec Tabby extends Cat`. It is still a type of its own, so `is` and `as` tell it apart (core:errors.ec uses this for error types such as `rec RangeError extends Error`).
+A record that adds no fields is written without `as`: `rec Tabby extends Cat`. It is still a type of its own, so `is` and `as` tell it apart (core:errors.ec uses this for error types such as `rec RangeError extends Error`). A record of another module is named with its module: `rec Square extends shapes.Shape as`.
 
 A `Cat` fits wherever an `Animal` is expected. Through a pointer (`@Cat` → `@Animal`) it is the same value; by value, the `Animal` fields are copied. Going back down is checked at runtime:
 
@@ -803,6 +924,8 @@ else do
 
 if val n = parse(text) do           // parse can fail
     io.log(n)
+else if text == "none" do           // `else if` and `else if val` work on both kinds of `if`
+    io.log(0)
 ```
 
 `assert condition` stops the program with an error naming the file, the line and the condition when the condition is false. `assert condition, "message"` reports the message instead. The code after an `assert` knows that the condition holds (see [Flow Typing](#flow-typing)).
@@ -1246,7 +1369,7 @@ greet(Duck { "Donald"c, 9 })
 
 A pointer parameter works the same way: `@Named` accepts a pointer to any record with a `name: CString`, so the function can change it.
 
-An interface can also ask for functions, written without the record parameter: a record fits when a function of that name takes it first (so `x.area()` works on it) with the other parameter types, and returns the type.
+An interface can also ask for functions, written without the record parameter: a record fits when a function of that name takes it first (so `x.area()` works on it) with the other parameter types, and returns the type. It may say `throws`: `fn tell(): Long throws Error`, or `fn write(String) throws Error` when it returns nothing.
 
 ```plaintext
 inter Shape as
@@ -1356,7 +1479,7 @@ pool results do
         val point = new Point { x = 1, y = 2 } in results
 ```
 
-A pool that isn't tied to a block is made with `newPool()` (a child of the current pool, freed with it at the latest) or `newPool(parent)`. `clearPool(p)` frees everything in `p` and keeps the pool, and `freePool(p)` frees it. The pool of a `pool do` block, and the current pool, are freed for you, so `freePool` rejects them.
+A pool that isn't tied to a block is made with `newPool()` (a child of the current pool, freed with it at the latest) or `newPool(parent)`. `clearPool(p)` frees everything in `p` and keeps the pool, and `freePool(p)` frees it. Either also frees the pools made in `p`. The pool of a `pool do` block, and the current pool, are freed for you, so `freePool` rejects them, also through another name (`val q = pool`, or a field `h.p`). `clearPool` rejects the current pool outside a `pool do` block, as that pool is also the caller's, and clearing it would free what the callers hold in it. Inside a `pool do` block, `clearPool(pool)` clears that block's pool.
 
 `Pool` is `@apr_pool_t`, so pools can be passed to the APR functions in [apr/](src/main/resources/apr) (`apr_psprintf(pool, "%d items"c, 3)`, with `use "core:apr/strings.ec"`). In C, the current pool is a thread-local `__ec_pool` that the generated `main` creates. A thread started from C code has no current pool until its code opens a `pool do` block. Running out of memory stops the program with an error.
 
@@ -1374,7 +1497,7 @@ val buffer = new Char[size] in p        // Char[], in pool p
 
 ### Clone
 
-`clone(x)` (or `x.clone()`) makes a deep copy of x in the current pool, and `clone(x, p)` makes one in pool p. Strings, CStrings and arrays are copied, and what a pointer points to is copied too, recursively, so the copy shares no memory with the original. A pointer to a record that is extended copies the record it really points to (`@Animal` holding a `Cat` copies the Cat). What `clone` can't copy is kept as it is: C arrays (`T[]c`, which have no length), `@Any`, function values, and pointers to C types whose fields eclang doesn't know (such as `Pool`). Each pointer is copied once: a value that two parts of x point to is one value in the copy too, and a value that points back to itself (a cycle) is copied as the same cycle.
+`clone(x)` (or `x.clone()`) makes a deep copy of x in the current pool, and `clone(x, p)` makes one in pool p. Strings, CStrings and arrays are copied, and what a pointer points to is copied too, recursively, so the copy shares no memory with the original. A pointer to a record that is extended copies the record it really points to (`@Animal` holding a `Cat` copies the Cat). What `clone` can't copy is kept as it is: C arrays (`T[]c`, which have no length), `@Any`, function values, C unions, and pointers to C types whose fields eclang doesn't know (such as `Pool`). Each pointer is copied once: a value that two parts of x point to is one value in the copy too, and a value that points back to itself (a cycle) is copied as the same cycle. A pointer into a value (`addrof r.first`) is a copy of its own: in the copy it doesn't point into the copy of r.
 
 ```plaintext
 val copy = clone(list)                  // a @Node? with every node and name copied
@@ -1383,7 +1506,7 @@ val numbers = clone([1, 2, 3])          // an array literal copied out of the st
 
 ### Lifetimes
 
-The compiler rejects pointers that would outlive the memory they point to. That memory is a local variable or parameter (freed when its block ends), the elements of an array literal (stored on the stack), or a `pool do` block's pool, together with whatever was allocated in it, including by the functions called inside the block. A value pointing into such memory can't be returned or thrown, and can't be stored in a variable defined outside its block, in a global, or behind a pointer:
+The compiler rejects pointers that would outlive the memory they point to. That memory is a local variable or parameter (freed when its block ends), the elements of an array literal (stored on the stack, like those of a default value and the array of a `...rest` parameter), a literal that `addrof` points at, or a `pool do` block's pool, together with whatever was allocated in it, including by the functions called inside the block. A value pointing into such memory can't be returned or thrown, and can't be stored in a variable defined outside its block, in a global, or behind a pointer:
 
 ```plaintext
 fn leak(): @Int do
@@ -1397,9 +1520,9 @@ pool do
     name = "n is ${n}"      // error: ... 'name' lives longer
 ```
 
-Passing such pointers to functions is fine (`fill(addrof(info))`). The compiler follows values through variables, record and array literals, `new`, pipes, and calls: a call's result may point into its arguments (`ret id(addrof x)` is an error), or into the pools it is given (a C function given a pool is taken to allocate its result there). What is read out of memory (`r.field`, `p.next`, `a[i]`, `s[a..<b]`, `@p`) may point where r, p, a and s do, because anything stored there must live at least as long. `try` inside a `pool do` block copies the error into the pool that was current before the block, because leaving the block frees its pool.
+Passing such pointers to functions is fine (`fill(addrof(info))`). The compiler follows values through variables, record and array literals, `new`, pipes, and calls: a call's result may point into its arguments (`ret id(addrof x)` is an error), or into the pools it is given (a C function given a pool is taken to allocate its result there). What is read out of memory (`r.field`, `p.next`, `s[a..<b]`, `@p`) may point where r, p and s do, because anything stored there must live at least as long. An element of a stack array is an exception: `ret names[0]` is fine when the Strings in `names` outlive the function. Names bound by `if val`, `when` arms, `catch` and `for` are followed like variables, a write through a pointer changes what it points at (`@pp = addrof x` after `pp = addrof o`), and a value left by one round of a loop reaches the code before it in the next round. `clone` makes new memory, except for what it can't copy (`@Any`, for one), which still points where it did. `try` inside a `pool do` block copies the error into the pool that was current before the block, because leaving the block frees its pool.
 
-A pool made with `newPool()` is followed the same way: after `clearPool(p)` or `freePool(p)`, a variable holding something allocated in p before can't be used (and after `freePool(p)`, neither can p).
+A pool made with `newPool()` is followed the same way: after `clearPool(p)` or `freePool(p)`, a variable holding something allocated in p or a child pool of p before can't be used (and after `freePool(p)`, neither can p). A global can't hold such memory when the pool is freed. This also covers another name for the pool, a `Pool` field (`h.p`), a global pool, and reading through a pointer (`@ps`).
 
 ```plaintext
 val p = newPool()
@@ -1408,7 +1531,9 @@ clearPool(p)
 io.log(s)                      // error: 's' points to memory of pool 'p' that `clearPool(p)` freed
 ```
 
-This holds across `if`s, and a loop that clears or frees p frees what was allocated in it before the loop. A value carried from one round of a loop into the next, past a `clearPool` in the loop, isn't followed.
+This holds across `if`s and across the rounds of a loop: a value left by one round can't be used in the next if the loop clears its pool in between, and a loop can't free a pool it made outside.
+
+`ret` and `throw` also count what `defer` frees: with `defer freePool(p)`, `ret s` of a String in p is an error, since the pool is freed after s is read. Return a copy: `ret clone(s)`. The result of a call isn't rejected there, because a function working in a scratch pool often returns a call's result that isn't in that pool. `try` copies the error it passes on when a deferred statement frees a pool.
 
 ### APR Bindings
 
@@ -1460,9 +1585,22 @@ The standard library is bundled with the compiler. Each part is loaded with `use
 | `core:io.ec` | `io.` | `log`, console, command-line arguments, files, directories, paths, environment variables |
 | `core:time.ec` | `time.` | `Time`, `Duration`, a steady clock, calendar dates, ISO 8601 |
 | `core:thread.ec` | `thread.` | threads, `Mutex`, `RwLock`, `Cond`, `WaitGroup`, `Atomic`, `Channel` |
+| `core:os.ec` | `os.` | system information, environment variables, users, running programs, signals |
 | `core:array.ec` | top level | algorithms on arrays of any type: `sort`, `map`, `filter`, `reduce`, `binarySearch`, ... |
 | `core:structures.ec` | top level | data structures: `List`, `Map`, `Set`, `Deque`, `Heap` |
 | `core:encoding.ec` | `encoding.` | hexadecimal, Base64 and URL escapes |
+| `core:net.ec` | `net.` | TCP clients and servers, UDP, DNS lookups, timeouts |
+| `core:fs.ec` | `fs.` | walking directory trees, glob patterns, temporary files, normalising paths, memory-mapped reads |
+| `core:json.ec` | `json.` | parsing JSON with error positions, building values, writing them |
+| `core:hash.ec` | `hash.` | CRC32, FNV-1a, MD5, SHA-1, SHA-256, HMAC |
+| `core:args.ec` | `args.` | flags, options, subcommands, a generated `--help` |
+| `core:unicode.ec` | `unicode.` | code points of UTF-8 text: going through them, encoding, validating, repairing |
+| `core:bytes.ec` | `bytes.` | a binary reader and writer with a byte order, varints |
+| `core:csv.ec` | `csv.` | reading and writing CSV (RFC 4180), tables with a header |
+| `core:log.ec` | `log.` | levels, timestamps, output to stderr or a file, from any thread |
+| `core:regex.ec` | `regex.` | matching, capturing, replacing and splitting, in linear time |
+| `core:http.ec` | `http.` | URLs, an HTTP/1.1 client and a small server |
+| `core:test.ec` | `test.` | assertions with readable diffs and a small test runner |
 
 Every file starts with an ecdoc that shows how to use it, and every declaration has one, so `eclang doc core:string.ec` writes its reference.
 
@@ -1579,3 +1717,368 @@ try thread.join(t)
 `io.args()` gives the program's command-line arguments and `io.programName()` its name. `core:encoding.ec` turns bytes into text and back: `encoding.base64(s)`, `try encoding.fromBase64(text)`, `encoding.hex(s)`, `encoding.urlEscape(s)`.
 
 A thread gets a pointer to its data, since lambdas don't capture variables: join it before that data's block ends. Each thread has its own current pool. Locks, conditions and channels are allocated in the current pool and freed with it; lock calls that fail (only possible when they are used wrongly) stop the program.
+
+### Terminals
+
+[core:term.ec](src/main/resources/term.ec) is for programs that talk to a person in a terminal: colours, prompts, key and mouse input, and full-screen programs. It needs a POSIX system; [examples/tui.ec](examples/tui.ec) is a small full-screen program.
+
+```plaintext
+use "core:term.ec"
+
+io.log(term.color("done", term.GREEN))              // plain text when stdout isn't a terminal or NO_COLOR is set
+val name = term.ask("name: ") ?? ""
+val secret = term.password("password: ") ?? ""
+val ok = term.confirm("Delete it?")
+val pick = term.select("Colour", ["red", "green"])   // arrow keys and Enter; null for Esc
+term.progress("copying", i, total)
+
+try term.enterFullscreen()
+defer term.leaveFullscreen()
+val s = term.screen()
+while true do
+    term.clear(s)
+    term.box(s, 0, 0, s.cols, s.rows, :rounded, "Demo")
+    term.text(s, 2, 1, "press q", term.Style { bold = true })
+    term.render(s)                                   // writes only the cells that changed
+    val e = term.readEvent()
+    when e do
+        is term.Key do break if term.isChar(e, 'q')
+        is term.Resize do term.resize(s, e.size)
+        is term.Mouse do continue
+        is term.Eof do break
+```
+
+`term.pollEvent(micros)` gives up after a while, for a program with other things to do. The terminal is put back however the program ends, also after a panic or a fatal signal, and while it is stopped with Ctrl-Z. In full-screen mode stderr is held back until the mode ends, so a panic's message stays readable.
+
+### Operating System
+
+`core:os.ec` tells about the system and runs other programs. It is built on APR where APR has the call.
+
+```plaintext
+use "core:os.ec"
+
+io.log("${os.name()} ${os.arch()}, ${os.cpuCount()} CPUs")   // Linux x86_64, 8 CPUs
+io.log(try os.hostName())
+io.log((try os.user()).home)
+try os.setEnv("LANG", "C")
+
+val r = try os.run("git", ["status", "--short"])     // waits; r.stdout, r.stderr, r.code, r.signal
+io.print(r.stdout) if os.ok(r)
+val n = try os.shell("ls | wc -l")                    // a command line, run by /bin/sh
+
+val p = try os.spawn("sort", ["-r"], :pipe)           // runs next to this program
+try io.writeLine(p.stdin!, "a")
+io.close(p.stdin!)
+io.print(try io.readAll(p.stdout!))
+val exit = try os.wait(p)                             // or os.poll(p), os.kill(p, SIGKILL)
+```
+
+`run` and `spawn` find a program as a shell does and pass the arguments as they are, so text from outside the program is safe there, and not in `shell`. A program that can't be found is an error; one that fails is not: check `os.ok`. `os.run` reads both of a program's streams at once, so a program writing a lot can't get stuck. With `spawn` and `:pipe` that is up to the caller. Writing to a program that ended raises SIGPIPE, which ends this program unless `os.ignoreSignal(SIGPIPE)` was called.
+
+### Networking
+
+`core:net.ec` has TCP, UDP and DNS, built on APR's sockets and poll. There is no TLS.
+
+```plaintext
+use "core:net.ec"
+
+val c = try net.connect("example.com", 80, time.seconds(5))    // gives up after 5 seconds
+defer net.close(c)
+net.setTimeout(c, time.seconds(10))                            // for each read and write from now on
+try net.send(c, "GET / HTTP/1.0\r\nHost: example.com\r\n\r\n")
+val status = try net.readLine(c)                               // or net.read, net.readExactly, net.readAll
+
+val server = try net.listen(8080)                              // 0 lets the system choose; server.address.port tells
+while true do
+    pool do                                                    // what one connection uses is freed after it
+        val client = try net.accept(server)
+        try net.send(client, "hello ${client.remote.host}\n")
+        net.close(client)
+
+val u = try net.udp()
+try net.sendTo(u, "127.0.0.1", 9000, "ping")
+val d = try net.receiveFrom(u)                                 // d.data, d.source.host, d.source.port
+
+val ips = try net.lookup("example.com")
+```
+
+A timeout is an error with the code `ERR_TIMEOUT`, and the connection can still be used. `net.waitReadable(c, timeout)` waits without reading. To serve many clients at once, give each its own thread. Opening a connection makes the program ignore SIGPIPE, so writing to a peer that has gone is an error and doesn't end the program.
+
+### Files and Directories
+
+`core:fs.ec` adds to [core:io.ec](src/main/resources/io.ec) what works on trees and paths, built on APR.
+
+```plaintext
+use "core:fs.ec"
+
+for e in try fs.walk("src") do                   // parents first, sorted; e.path, e.kind, e.size, e.modified, e.depth
+    io.log(e.path) if e.kind == :file
+
+val sources = fs.glob("src/**/*.ec")             // sorted; a whole part ** is any number of directories
+val isText = fs.matches("*.txt", "notes.txt")    // the same patterns, without the file system
+
+val t = try fs.tempFile("report")                // deleted when it is closed
+try io.writeLine(t.file, "hello")
+io.close(t.file)
+val dir = try fs.tempDir()                       // stays until it is removed
+try fs.removeAll(dir)
+
+io.log(fs.normalize("a/./b/../c"))               // a/c, as text
+io.log(try fs.absolute("notes.txt"))             // /home/ada/notes.txt
+io.log(try fs.relative("/a/b", "/a/c/d"))        // ../c/d
+
+val m = try fs.map("big.log")                    // m.text isn't a copy: the system reads what is used
+io.log(m.text.count('\n'))
+fs.unmap(m)
+```
+
+`walk` and `**` don't follow symbolic links, so a link can't make them loop. As in a shell, a name starting with a dot only fits a pattern that says so.
+
+### JSON
+
+`core:json.ec` reads and writes JSON. Parsing follows RFC 8259 strictly, and an error says what is wrong and where (`line 3, column 3: ...`, also as `e.line`, `e.column`, `e.position`).
+
+```plaintext
+use "core:json.ec"
+
+val v = try json.parse(text)
+val name = json.asString(json.field(v, "name")) ?? "?"
+val city = json.asString(json.find(v, "users[2].address.city")) ?? "?"
+for tag in json.items(json.field(v, "tags")) do
+    io.log(json.asString(tag) ?? "?")
+
+val out = json.object()
+json.put(out, "ok", true)
+val list = json.array()
+json.add(list, 1)
+json.put(out, "list", list)
+io.log(json.stringify(out))                      // {"ok":true,"list":[1]}
+io.log(json.pretty(out))
+```
+
+The readers take and give null, so they chain: what isn't there comes out as null at the end. An object keeps its fields in order, and whole numbers that fit a Long stay exact.
+
+### Unicode
+
+`core:unicode.ec` works with the code points of UTF-8 text. A String is bytes, and nothing checks that they are UTF-8: reading never fails, and each broken byte counts as one U+FFFD. Overlong forms, surrogates and what is above U+10FFFF are broken too.
+
+```plaintext
+use "core:unicode.ec"
+
+for cp in unicode.codePoints("héllo") do         // 104, 233, 108, 108, 111
+    io.log(cp)
+for at, cp in unicode.codePoints("héllo") do     // at is the byte where it starts
+    io.log(at)
+io.log(unicode.length("héllo"))                  // 5, where .len is 6
+io.log(unicode.slice("héllo", 1, 3))             // él
+io.log(unicode.encode(0x1F600))                  // 😀
+val (cp, n) = unicode.decode("é!", 0)            // 233, and its 2 bytes
+val at = unicode.firstInvalid(text) ?? text.len  // where it stops being UTF-8
+val shown = unicode.sanitize(text)               // broken bytes become U+FFFD
+```
+
+There are no tables of the Unicode character database, so no case mapping, normalisation or categories.
+
+### Binary Data
+
+`core:bytes.ec` reads and writes binary formats. A `Reader` and a `Writer` each have a byte order, in their `endian` field, which can change on the way. Reading past the end is a `ParseError` that says where, and reads nothing.
+
+```plaintext
+use "core:bytes.ec"
+
+val w = bytes.writer()                           // big-endian; bytes.writer(:little) for the other
+bytes.writeU16(w, 0xCAFE)
+val size = bytes.position(w)
+bytes.writeU32(w, 0)                             // filled in below
+bytes.writeString(w, "hello")
+bytes.setU32(w, size, 5)
+val data = bytes.finish(w)                       // a String of 11 bytes
+
+val r = bytes.reader(data)
+val magic = try bytes.readU16(r)
+val n = try bytes.readU32(r)
+val text = try bytes.read(r, n as Size)          // a slice of the data
+```
+
+There are `U8` to `U64`, `I8` to `I64`, `F32` and `F64`, C strings, and varints (`writeVarint`, `writeSignedVarint`), which are the same bytes as in Protocol Buffers.
+
+### CSV
+
+`core:csv.ec` follows RFC 4180. Reading also takes `\n` and `\r` for line breaks, a last line without one, and a UTF-8 byte order mark; writing uses `\r\n`, and quotes only the fields that need it. An error has the line and column, also as `e.line` and `e.column`.
+
+```plaintext
+use "core:csv.ec"
+
+val rows = try csv.parse("name,age\nAda,36\n\"Hopper, Grace\",85\n")
+io.log(rows[2][0])                               // Hopper, Grace
+
+val t = try csv.table("name,age\nAda,36\n")      // the first row names the columns
+io.log(csv.value(t, 0, "age") ?? "?")            // 36
+
+val r = csv.reader(text)                         // a row at a time
+while true do
+    val row = try csv.next(r) ?? break
+    io.log(row.len)
+
+io.log(csv.stringify([["a,b", "c"], ["1", "2"]]))
+val tabs = csv.Options { separator = '\t' }       // also quote, lineBreak, skipBlankLines, strict
+val cells = try csv.parse(text, tabs)
+```
+
+### Logging
+
+`core:log.ec` writes messages with a level and a time, to stderr or a file. Each line is written whole, so lines from several threads don't mix, and logging can't fail: when a file can't be written, the line goes to stderr.
+
+```plaintext
+use "core:log.ec"
+
+log.info("started")                              // 2026-03-14T09:26:53.589Z INFO  started
+log.warn("disk ${percent}% full")
+log.error(problem)                               // a message, or any Error
+
+log.setLevel(:debug)                             // :debug, :info (the first setting), :warn, :error, :off
+try log.toFile("app.log")                        // adds to the end of the file
+log.setTimestamps(:local)                        // :utc (the first setting), :local, :none
+
+val db = log.logger("db")                        // settings of its own
+log.info(db, "connected")                        // ... INFO  db: connected
+log.debug("state: ${expensive()}") if log.enabled(:debug)
+```
+
+### Regular Expressions
+
+`core:regex.ec` runs in linear time: at worst, the size of the pattern times the length of the text, so no pattern can hang a program. That rules out backreferences and look-around, which `compile` rejects with the reason. A pattern is limited in size too. A `Regex` doesn't change once it is made, so threads can share it.
+
+```plaintext
+use "core:regex.ec"
+
+val date = try regex.compile("(\\d{4})-(\\d{2})-(?P<day>\\d{2})")
+io.log(regex.matches(date, "2024-02-29"))        // the whole text
+io.log(regex.contains(date, "on 2024-02-29!"))   // a part of it
+
+if val m = regex.find(date, "on 2024-02-29!") do
+    io.log(regex.text(m))                        // 2024-02-29
+    io.log(regex.group(m, 1) ?? "")              // 2024; null when it took no part
+    io.log(regex.group(m, "day") ?? "")          // 29
+    io.log(regex.start(m))                       // 3
+
+for m in regex.findAll(try regex.compile("\\w+"), "two words") do
+    io.log(regex.text(m))
+
+io.log(try regex.replaceAll(date, "2024-02-29", "$3/$2/$1"))
+val parts = regex.split(try regex.compile(",\\s*"), "a, b,c")
+val quiet = try regex.compile("hello", ignoreCase = true)   // also multiline, dotAll
+val exact = try regex.compile(regex.escape(userText))
+```
+
+The syntax is that of Perl and Python, with the leftmost match and greedy repeats; [its reference](docs/core/regex.md) has all of it. Text is UTF-8, so `.` takes a whole code point, while positions are bytes. `ignoreCase`, `\d`, `\w`, `\s` and `\b` are ASCII only.
+
+### HTTP
+
+`core:http.ec` parses URLs and has an HTTP/1.1 client and a small server, on top of `core:net.ec`. There is no HTTPS: that needs a TLS library, which a program can't link yet, so an `https:` URL is an error that says so.
+
+```plaintext
+use "core:http.ec"
+
+val r = try http.get("http://example.com/")      // follows redirects
+io.log(r.status)                                 // 404 and the like aren't errors
+io.log(http.get(r.headers, "Content-Type") ?? "?")
+io.log(r.body)
+val sent = try http.post("http://example.com/api", "{}", "application/json")
+val quick = try http.get(url, http.Options { timeout = time.seconds(5), redirects = 0 })
+
+val u = try http.parseUrl("http://example.com:8080/a/b?x=1#top")
+io.log(u.host)                                   // example.com
+io.log(http.param(u, "x") ?? "?")                // 1
+io.log(http.text(try http.resolve(u, "../c")))   // http://example.com:8080/c
+```
+
+A server is a function from a request to a response. It runs on a fixed number of threads, so handlers run at the same time; each request has its own pool. As functions can't capture variables, a handler reaches the program's data through `req.context`, from `ServerOptions`.
+
+```plaintext
+fn hello(req: @http.Request): @http.Response do
+    ret http.text(404, "nothing here\n") if req.path != "/"
+    val name = http.param(req.url, "name") ?? "world"
+    ret http.text(200, "hello ${name}\n")
+
+fn main(): Int throws Error do
+    val server = try http.server(8080)           // also a host, and http.ServerOptions
+    try http.run(server, fn hello)               // until http.stop(server)
+    ret 0
+```
+
+`http.start` serves on other threads and goes on, and a handler that `throws Error` gives the client a 500 and writes to `core:log.ec`. The server refuses what isn't valid HTTP/1.1, including what could smuggle a request past a proxy, and limits the size of a request. It is small, though: in front of the open Internet, put it behind a reverse proxy.
+
+### Tests
+
+`core:test.ec` has assertions that say what differs, and a small runner. A failed check doesn't end a test. Tests are listed by hand, because finding them needs compiler support.
+
+```plaintext
+use "core:test.ec"
+
+fn addition(t: @test.Test) do
+    test.equal(t, 1 + 1, 2)
+    test.equal(t, render(), "line one\nline two\n", "the rendered text")
+
+fn parsing(t: @test.Test) throws Error do        // an error that gets out fails the test
+    test.equal(t, try parseInt("12"), 12)
+
+fn main(): Int do
+    val s = test.suite()                         // `./tests pars` only runs tests with "pars" in their name
+    test.run(s, "addition", fn addition)
+    test.run(s, "parsing", fn parsing)
+    ret test.finish(s)                           // 0, or 1 when something failed
+```
+
+Strings show a line by line diff, or a mark under the first difference. There are also `equalArrays`, `notEqual`, `isTrue`, `isFalse`, `near`, `isNull`, `notNull`, `hasText`, `fail`, and `require`, for a check the rest of the test can't do without.
+
+```plaintext
+FAIL addition
+  check 2, the rendered text: the strings differ (- expected, + actual)
+      line one
+    - line two
+    + line 2
+```
+
+### Hashes
+
+`core:hash.ec` has checksums and hashes. MD5, SHA-1 and SHA-256 are [C code bundled with eclang](src/main/resources/vendor/README.md); a program using them still builds from one C file.
+
+```plaintext
+use "core:hash.ec"
+
+io.log(hash.sha256("hello"))                     // in hexadecimal; also hash.md5, hash.sha1
+io.log(hash.crc32("hello"))                      // also hash.fnv32, hash.fnv64
+io.log(hash.hmac(:sha256, key, message))
+io.log(try hash.file("big.iso"))                 // read a part at a time
+
+val h = hash.hasher(:sha1)                       // data that arrives in parts
+hash.update(h, "hel")
+hash.update(h, "lo")
+io.log(hash.hex(h))                              // or hash.finish(h) for the raw bytes
+```
+
+MD5 and SHA-1 are broken for security, none of these is a password hash, and the code isn't hardened against timing attacks. Compare signatures with `hash.equal`, not `==`.
+
+### Command-Line Arguments
+
+`core:args.ec` reads the command line, and makes the `--help` and the errors.
+
+```plaintext
+use "core:args.ec"
+
+val p = args.parser("tool", "Builds things.")
+args.flag(p, "verbose", "Say more", 'v')
+args.option(p, "output", "Where to write", 'o', "FILE", "out.txt")   // with a default
+val build = args.command(p, "build", "Build a target")
+args.positional(build, "target", "What to build")
+args.requiredOption(build, "level", "How much", 'l', "N")
+val r = args.run(p)                              // --help or a mistake ends the program here
+
+io.log(args.times(r, "verbose"))                 // 2 for -vv; args.isSet tells if it was given
+io.log(args.value(r, "output") ?? "")
+if val sub = r.sub do                            // what follows the command in r.command
+    io.log(args.value(sub, "target") ?? "")
+```
+
+A mistake gets an answer such as `tool: unknown option '--verbos'. Did you mean '--verbose'?`, with exit code 2. `args.parse(p, words)` does the same work, but gives the error to the program.

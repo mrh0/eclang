@@ -30,7 +30,9 @@ declare val APR_OC_REASON_RUNNING as Int
 declare val APR_PROC_DETACH_FOREGROUND as Int
 declare val APR_PROC_DETACH_DAEMONIZE as Int
 
-declare rec apr_proc_t
+// Its `in` field can't be declared (`in` is an eclang keyword); core:os.ec reads the pipes through a record of the same layout.
+declare rec apr_proc_t as
+    pid: Int
 declare rec apr_thread_t
 declare rec apr_threadattr_t
 declare rec apr_procattr_t
@@ -108,7 +110,7 @@ declare fn apr_procattr_addrspace_set as (attr: @apr_procattr_t, addrspace: apr_
 declare fn apr_procattr_user_set as (attr: @apr_procattr_t, username: CString, password: CString): apr_status_t
 declare fn apr_procattr_group_set as (attr: @apr_procattr_t, groupname: CString): apr_status_t
 declare fn apr_proc_fork as (proc: @apr_proc_t, cont: @apr_pool_t): apr_status_t
-declare fn apr_proc_create as (new_proc: @apr_proc_t, progname: CString, args: @CString, env: @CString, attr: @apr_procattr_t, pool: @apr_pool_t): apr_status_t
+declare fn apr_proc_create as (new_proc: @apr_proc_t, progname: CString, args: @CString, env: @CString?, attr: @apr_procattr_t, pool: @apr_pool_t): apr_status_t
 // exitwhy: the address of an Int (C: apr_exit_why_e*), set to APR_PROC_EXIT, APR_PROC_SIGNAL or APR_PROC_SIGNAL_CORE.
 declare fn apr_proc_wait as (proc: @apr_proc_t, exitcode: @Int, exitwhy: @Any, waithow: apr_wait_how_e): apr_status_t
 declare fn apr_proc_wait_all_procs as (proc: @apr_proc_t, exitcode: @Int, exitwhy: @Any, waithow: apr_wait_how_e, p: @apr_pool_t): apr_status_t

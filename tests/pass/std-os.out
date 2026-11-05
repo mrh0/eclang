@@ -1,0 +1,61 @@
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true
+false
+false
+true
+true
+true
+true
+true
+a=b
+a=b
+1
+a=b
+true
+empty name refused
+root
+0
+0
+/root
+no such user
+/somewhere
+/
+true
+two words $HOME
+oops
+3
+0
+false
+true
+/
+123000
+123000
+true
+can't find the program 'no-such-program-here': it isn't in a directory of PATH, or can't be run
+127
+an absolute path
+true
+true
+/bin/sh
+b
+a
+true
+before, from the child
+true
+true
+true
+143
+true
+false
+true
+already waited for
+broken pipe

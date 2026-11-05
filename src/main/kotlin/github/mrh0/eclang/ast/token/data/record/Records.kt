@@ -11,12 +11,17 @@ import github.mrh0.eclang.ir.data.record.IRCreateRecord
 import github.mrh0.ect2.Record
 
 /**
+ * What a record literal holds, for Lifetimes: [given] are the fields it gives, [allocates] whether a default that may
+ * point to memory was used (it may allocate in the current pool), and [onStack] whether a default is an array on the stack.
+ */
+class RecordDefaults(val given: Map<String, ITok> = mapOf(), val allocates: Boolean = false, val onStack: Boolean = false)
+
+/**
  * Builds a value of [record] from [values], given in field order, or by name when [names] is set
  * (`{name = "Jeff", age = 3}`). Every field must be given, including inherited ones, except fields with a default
- * value (`age: Int = 0`): left out by name, or at the end in field order, they get it. Returns whether a default that
- * may point to memory was used (it may allocate in the current pool; see Lifetimes) with the IR.
+ * value (`age: Int = 0`): left out by name, or at the end in field order, they get it. Returns what Lifetimes needs with the IR.
  */
-internal fun createRecord(cd: CompileData, location: Loc, record: Record, values: List<ITok>, names: List<String>?): Pair<Boolean, IIR> {
+internal fun createRecord(cd: CompileData, location: Loc, record: Record, values: List<ITok>, names: List<String>?): Pair<RecordDefaults, IIR> {
     if (!record.isDefined || (record.isExternal && record.fields.isEmpty()))
         throw EcError(location, "${record.name} is declared without fields, so it can't be created here (it is created by C code).")
     val fields = record.fields
@@ -46,18 +51,29 @@ internal fun createRecord(cd: CompileData, location: Loc, record: Record, values
         cd.expect(location, value, type, "field '$name' of ${record.name}")
     }
     val defaulted = if (record.isUnion) listOf() else fields.keys.filter { it !in given }
-    // A default is compiled where the record is made, as if in a function of its own: it can't see local variables.
+    // A default is compiled where the record is made, as if in a function of its own: it can't see local variables,
+    // and it sees the names of the module that declares it, not those of the code making the record.
     val defaults = defaulted.map { name ->
         val type = fields[name]!!
-        cd.isolated {
-            cd.newContext("${record.name} default", record.typeBindings)
-            val value = defaultOf(cd, record, name)!!.process(cd, type)
-            checkBits(location, record, name, type, value.first)
-            cd.expect(location, value, type, "the default of field '$name' of ${record.name}")
+        cd.inModule(cd.moduleNamed(defaultOwner(cd, record, name).namespace)) {
+            cd.isolated {
+                cd.newContext("${record.name} default", record.typeBindings)
+                val value = defaultOf(cd, record, name)!!.process(cd, type)
+                checkBits(location, record, name, type, value.first)
+                cd.expect(location, value, type, "the default of field '$name' of ${record.name}")
+            }
         }
     }
     val allocates = defaulted.any { Lifetimes.holdsPointer(fields[it]!!) }
-    return allocates to IRCreateRecord(location, record, given + defaulted, irs + defaults)
+    val onStack = defaulted.any { Lifetimes.usesStack(defaultOf(cd, record, it)!!) }
+    return RecordDefaults(given.zip(values).toMap(), allocates, onStack) to IRCreateRecord(location, record, given + defaulted, irs + defaults)
+}
+
+/** The record that gives [field] of [record] its default value: [record], or a record it extends. */
+private fun defaultOwner(cd: CompileData, record: Record, field: String): Record {
+    var r: Record = record
+    while (cd.recordDefaults[r]?.containsKey(field) != true) r = r.parent ?: return record
+    return r
 }
 
 /** The default value of [field] of [record] (or of the record it extends), or null. */

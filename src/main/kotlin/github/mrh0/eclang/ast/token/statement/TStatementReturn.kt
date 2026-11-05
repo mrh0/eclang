@@ -3,6 +3,7 @@ package github.mrh0.eclang.ast.token.statement
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
+import github.mrh0.eclang.ast.token.op.TNoValue
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.error.EcError
@@ -32,10 +33,13 @@ class TStatementReturn(location: Loc, val next: ITok) : Tok(location) {
             val ret = returnWithDefers(cd, location, IRResultValue(location, result, false, null), result)
             return Types.None to IRBlock(location, listOf(IRStatement(location, res.second), ret), listOf())
         }
+        if (next is TNoValue) throw EcError(location, "Function ${fn.name} returns a ${fn.returns}, so `ret` needs a value: `ret x`.")
         val value = cd.expect(location, res, fn.returns, "return value of '${fn.name}'")
         Lifetimes.checkReturn(cd, location, next, fn.returns)
-        if (result != null) return Types.None to returnWithDefers(cd, location, IRResultValue(location, result, false, value), result)
-        return Types.None to returnWithDefers(cd, location, value, fn.returns)
+        val leaving = Lifetimes.leaving(cd, next, fn.returns)
+        val check = { Lifetimes.checkLeaving(cd, location, leaving) }
+        if (result != null) return Types.None to returnWithDefers(cd, location, IRResultValue(location, result, false, value), result, onExit = check)
+        return Types.None to returnWithDefers(cd, location, value, fn.returns, onExit = check)
     }
 
     override fun toString(): String {

@@ -11,12 +11,12 @@ import github.mrh0.ect2.Types
 
 /**
  * Leaving the function: runs the deferred statements of every enclosing block (innermost first), then returns. [error]: it
- * is leaving with an error, so `errdefer` statements run too.
+ * is leaving with an error, so `errdefer` statements run too. [onExit] runs with what they free known; the code after this `ret` doesn't see that.
  */
-internal fun returnWithDefers(cd: CompileData, location: Loc, value: IIR?, type: Type, hasValue: Boolean = true, error: Boolean = false): IIR {
+internal fun returnWithDefers(cd: CompileData, location: Loc, value: IIR?, type: Type, hasValue: Boolean = true, error: Boolean = false, onExit: () -> Unit = {}): IIR {
     cd.ctx().setReturned()
     val all = cd.ctx().getDeferred()
-    val deferred = cd.compileDeferred((if (error) all else TErrDefer.normal(all)).reversed())
+    val (deferred, _) = cd.ctx().stack.onExit { cd.compileDeferred((if (error) all else TErrDefer.normal(all)).reversed()).also { onExit() } }
     if (deferred.isEmpty()) return IRStatementReturn(location, value, hasValue)
     return IRStatementReturnDefer(location, value, type, deferred, cd.temp(), hasValue)
 }

@@ -124,8 +124,8 @@ class IRProgram(
         val c = CTypes(types)
         val prototypes = exports.map { c.prototype(it) } + "/* Frees what the exported functions gave this thread so far. */\nvoid ${name}_clear(void);"
         val definitions = c.definitions().trim()
-        val includes = listOf("stdbool.h", "stddef.h", "stdint.h") + (if ("apr_pool_t" in definitions + prototypes) listOf("apr_pools.h") else listOf()) +
-            uses.filterIsInstance<IRInclude>().map { it.path }
+        // Which header declares a C type isn't known, so a signature with one takes them all; most libraries need none.
+        val includes = listOf("stdbool.h", "stddef.h", "stdint.h") + if (c.usesCTypes) listOf("apr_pools.h") + uses.filterIsInstance<IRInclude>().map { it.path } else listOf()
         val guard = "${name.uppercase()}_H"
         return "#ifndef $guard\n#define $guard\n\n${includes.distinct().joinToString("") { "#include <$it>\n" }}\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n" +
             "typedef struct { size_t len; char* data; } __ec_string_t;\n$definitions\n\n${prototypes.joinToString("\n")}\n\n#ifdef __cplusplus\n}\n#endif\n\n#endif\n"
@@ -154,6 +154,7 @@ class IRProgram(
             static inline void* __ec_c_nn(void* p, const char* at, const char* fn) { if (p == NULL) { fflush(stdout); fprintf(stderr, "%s: the C function %s returned NULL, but its `declare fn` says it never does. If it can, declare its result nullable (`: T?`) and check it.\n", at, fn); abort(); } return p; }
             static inline bool __ec_str_eq(__ec_string_t a, __ec_string_t b) { return a.len == b.len && memcmp(a.data, b.data, a.len) == 0; }
             static int __ec_argc; static char** __ec_argv; /* the command line, for io.args in core:io.ec */
+            extern char** __ec_environ __asm__("environ"); /* the environment, for os.environment in core:os.ec (C headers only declare `environ` with _GNU_SOURCE) */
             static _Thread_local apr_pool_t* __ec_pool; /* the current pool (`pool`): the root pool, or the innermost `pool do` block's */
             static int __ec_out_of_memory(int status) { (void)status; __ec_panic("eclang", "out of memory"); }
             static inline apr_pool_t* __ec_pool_create(apr_pool_t* parent) { apr_pool_t* p = NULL; if (apr_pool_create_ex(&p, parent, __ec_out_of_memory, NULL) != APR_SUCCESS) __ec_panic("eclang", "can't create a pool"); return p; }

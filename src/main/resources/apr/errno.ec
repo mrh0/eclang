@@ -14,6 +14,8 @@ declare val APR_EAGAIN as Int
 declare val APR_TIMEUP as Int
 declare val APR_INCOMPLETE as Int
 declare val APR_EOF as Int
+declare val APR_CHILD_DONE as Int
+declare val APR_CHILD_NOTDONE as Int
 declare val APR_NOTFOUND as Int
 
 declare fn apr_strerror as (statcode: apr_status_t, buf: CString, bufsize: apr_size_t): CString
@@ -31,6 +33,10 @@ declare fn APR_STATUS_IS_ENOMEM as (s: apr_status_t): Int
 declare fn APR_STATUS_IS_EAGAIN as (s: apr_status_t): Int
 declare fn APR_STATUS_IS_EBUSY as (s: apr_status_t): Int
 declare fn APR_STATUS_IS_EOF as (s: apr_status_t): Int
+declare fn APR_STATUS_IS_EINTR as (s: apr_status_t): Int
 declare fn APR_STATUS_IS_TIMEUP as (s: apr_status_t): Int
 declare fn APR_STATUS_IS_ETIMEDOUT as (s: apr_status_t): Int
 declare fn APR_STATUS_IS_ENOTIMPL as (s: apr_status_t): Int
+
+// The status of the last failed system call (errno on Unix), for calls that aren't APR's.
+declare fn apr_get_os_error as (): apr_status_t

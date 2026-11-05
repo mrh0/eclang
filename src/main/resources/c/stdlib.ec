@@ -11,6 +11,10 @@ declare fn atexit as (func: () => None): Int
 // null when the variable isn't set.
 declare fn getenv as (name: CString): CString?
 declare fn system as (command: CString): Int
+// Makes a new directory from a template ending in XXXXXX, which it fills in; null when it fails.
+declare fn mkdtemp as (template: CString): CString?
+// The system's load averages over 1, 5 and 15 minutes; gives how many it wrote, or -1.
+declare fn getloadavg as (loadavg: @Double, count: Int): Int
 
 // The strto* functions set `end` to where parsing stopped (pass null when not needed).
 declare fn strtol as (s: CString, end: @CString?, base: Int): Long

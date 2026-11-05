@@ -22,11 +22,13 @@ import github.mrh0.eclang.ast.token.statement.TStatementDefineVal
 import github.mrh0.eclang.ast.token.statement.TStatementDefineVar
 import github.mrh0.eclang.ast.unnested
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.context.state.InlineConstant
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.ir.IRRaw
+import github.mrh0.eclang.ir.IRScoped
 import github.mrh0.eclang.ir.IRTempDefine
 import github.mrh0.eclang.util.Util
 import github.mrh0.ect2.*
@@ -63,7 +65,7 @@ class TStatementWhen(
             val define = if (mutable) TStatementDefineVar(location, binding, subject) else TStatementDefineVal(location, binding, subject)
             val ir = TBlock(location, listOf(define, WhenOn(location, TNamed(location, binding), arms, exhaustive))).process(cd, hint).second as IRBlock
             if (ir.diverges) cd.ctx().setReturned()
-            return Types.None to ir
+            return Types.None to IRScoped(location, ir)
         }
         if (subject.unnested() is TNamed) return WhenOn(location, subject, arms, exhaustive).process(cd, hint)
         // Any other value is evaluated once, into a temporary.
@@ -71,20 +73,22 @@ class TStatementWhen(
         val type = cd.storable(location, value.first, "the value of `when`")
         val temp = cd.temp()
         val define = IRTempDefine(location, temp, type, cd.expect(location, value, type, "the value of `when`"))
-        val (_, chain) = WhenOn(location, TFixed(location, type, IRRaw(location, temp)), arms, exhaustive).process(cd, hint)
+        val (_, chain) = WhenOn(location, TFixed(location, type, IRRaw(location, temp)), arms, exhaustive, subject).process(cd, hint)
         return Types.None to IRBlock(location, listOf(define, chain), listOf(), cd.ctx().hasReturned())
     }
 
     override fun toString() = "TStatementWhen($subject, ${arms.size} arms)"
 }
 
-/** [inner] compiled with [name] standing for [subject], for the condition and the body of an arm `n if c do`. */
-private class Bound(location: Loc, private val name: String, private val subject: ITok, private val inner: ITok) : Tok(location) {
+/** [inner] compiled with [name] standing for [subject], for the condition and the body of an arm `n if c do`. [written]: the value as written, for Lifetimes. */
+private class Bound(location: Loc, private val name: String, private val subject: ITok, private val written: ITok, private val inner: ITok) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         cd.ctx().push()
         try {
             val (type, ir) = subject.process(cd, Types.None)
-            cd.ctx().define(location, InlineConstant(Util.testIdentifier(location, name), type, ir))
+            val fixedName = Util.testIdentifier(location, name)
+            cd.ctx().define(location, InlineConstant(fixedName, type, ir))
+            Lifetimes.define(cd, fixedName, written, type)
             return inner.process(cd, hint)
         } finally {
             cd.ctx().pop()
@@ -92,8 +96,8 @@ private class Bound(location: Loc, private val name: String, private val subject
     }
 }
 
-/** The arms of a `when` on [subject] (a name, or a [TFixed] value), as an `if` chain. */
-private class WhenOn(location: Loc, private val subject: ITok, private val arms: List<WhenArm>, private val exhaustive: Boolean) : Tok(location) {
+/** The arms of a `when` on [subject] (a name, or a [TFixed] value of the expression [written]), as an `if` chain. */
+private class WhenOn(location: Loc, private val subject: ITok, private val arms: List<WhenArm>, private val exhaustive: Boolean, private val written: ITok = subject) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val type = subjectType(cd)
         var elseArm = arms.lastOrNull()?.takeIf { it.isElse }
@@ -104,13 +108,13 @@ private class WhenOn(location: Loc, private val subject: ITok, private val arms:
         if (elseArm == null && exhaustive) throw EcError(location, "A `when` used as a value must give a value in every case, but these arms may not match. Add an `else do` arm for the rest.")
         val matching = arms.filter { it !== elseArm }
         val conditions = matching.map { arm -> condition(arm) }
-        val bodies = matching.map { arm -> arm.binding?.let { Bound(arm.location, it, subject, arm.body) } ?: arm.body }
+        val bodies = matching.map { arm -> arm.binding?.let { Bound(arm.location, it, subject, written, arm.body) } ?: arm.body }
         return TStatementIf(location, conditions, bodies, elseArm?.body).process(cd, hint)
     }
 
     /** What makes [arm] match, as a condition on the subject. */
     private fun condition(arm: WhenArm): ITok {
-        if (arm.binding != null) return Bound(arm.location, arm.binding, subject, arm.guard!!)
+        if (arm.binding != null) return Bound(arm.location, arm.binding, subject, written, arm.guard!!)
         val match = if (arm.type != null) TIs(arm.location, subject, arm.type, false)
             else arm.values.map { matches(arm.location, it) }.reduce { a, b -> TOr(arm.location, a, b) }
         return if (arm.guard != null) TAnd(arm.location, TExprNest(arm.location, match), arm.guard) else match

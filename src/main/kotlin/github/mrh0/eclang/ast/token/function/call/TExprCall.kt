@@ -20,6 +20,7 @@ import github.mrh0.eclang.ir.function.call.IRArguments
 import github.mrh0.eclang.ir.function.call.IRCallValue
 import github.mrh0.eclang.ir.function.call.IRGlobalFunctionCall
 import github.mrh0.eclang.util.Util.testIdentifier
+import github.mrh0.eclang.ast.token.op.Ops
 import github.mrh0.ect2.*
 
 /**
@@ -45,7 +46,7 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
 
     /**
      * The arguments the result of the last compiled call may point into (a function may return a pointer it was
-     * given): all of them, except for builtins, which return new memory, and for C functions given a pool, which
+     * given): all of them, except for builtins, which return new memory (but `clone` keeps what it can't copy), and for C functions given a pool, which
      * allocate their result in it. See Lifetimes.
      */
     var aliased: List<ITok> = listOf()
@@ -79,7 +80,8 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
     private fun callFunction(cd: CompileData, name: String, rest: List<ITok>, qualifier: Module?, first: Pair<Type, IIR>? = null, hint: Type = Types.None): Pair<Type, IIR> {
         if (qualifier == null && Builtins.has(name) && !cd.functions.exists(name)) {
             if (argNames != null) throw EcError(location, "`$name` is built in, and its arguments have no names. Pass them in order.")
-            return mutableListOf<ITok?>().let { used -> Builtins.call(cd, location, name, if (first != null) args else rest, first, used).also { pools = used } }
+            val (used, kept) = mutableListOf<ITok?>() to mutableListOf<ITok>()
+            return Builtins.call(cd, location, name, if (first != null) args else rest, first, used, kept).also { pools = used; aliased = kept }
         }
         val count = rest.size + (if (first != null) 1 else 0)
         val offset = count - rest.size
@@ -98,11 +100,13 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
         val processed = slots.map { it!! }
         // `hash(x)` of a type without a function of its own is generated, like `==`.
         if (qualifier == null && name == "hash" && names == null && count == 1 && !cd.functions.accepts(name, cd.usable(location, processed[0], "the argument of `hash`").first))
-            return Builtins.call(cd, location, name, if (first != null) args else rest, processed[0], mutableListOf())
+            return Builtins.call(cd, location, name, if (first != null) args else rest, processed[0], mutableListOf(), mutableListOf())
         // A function given a pool may return memory from it; an eclang function may also allocate in the current one.
         pools = (if (first != null) args else rest).filterIndexed { i, _ -> processed[i].first === cd.types.pool }
         val target = cd.functions.call(location, name, processed, qualifier, hint, names?.let { List<String?>(offset) { null } + it })
-        aliased = if (target.overload.isExternal && pools.isNotEmpty()) listOf() else if (first != null) args else rest
+        // A number can't point anywhere: `list(values.len)` has nothing to do with the memory of `values`.
+        aliased = if (target.overload.isExternal && pools.isNotEmpty()) listOf()
+            else (if (first != null) args else rest).filterIndexed { i, _ -> processed[i].first.let { !Ops.isNumeric(it) && it !== Types.Bool } }
         if (!target.overload.isExternal) pools = pools + null
         return target.type to callIR(cd, location, name, target)
     }

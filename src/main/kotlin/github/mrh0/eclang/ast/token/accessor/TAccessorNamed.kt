@@ -9,6 +9,7 @@ import github.mrh0.eclang.ast.unnested
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.token.op.Ops
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.error.EcUndefinedAccessorPropertyError
 import github.mrh0.eclang.ir.IIR
@@ -94,6 +95,8 @@ class TAccessorNamed(location: Loc, val expr: ITok, val name: String, private va
         val (t, ir) = cd.usable(location, expr.process(cd, Types.None), "`$op$name`")
         if (!safe) return field(cd, t, fixedName).let { (type, throughPointer) ->
             this.throughPointer = throughPointer
+            if (throughPointer) Lifetimes.checkThrough(cd, location, expr)
+            if (type === cd.types.pool) Lifetimes.checkPoolField(cd, location, this)
             arrayOf(t)?.let { fixed ->
                 if (fixedName == "len") return type to IRNumber(location, fixed.size, Types.Size)
                 checkData(fixed)

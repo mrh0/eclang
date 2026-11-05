@@ -110,11 +110,14 @@ fn main(): Int do
     optional = [1, 2]
     if optional != null do
         io.log("${optional[1]}")
-    var mixed: Int[2] | CString = "text"
+    var mixed: Int[2] | String = "text"
     mixed = [3, 4]
     if mixed is Int[2] do
         io.log("${mixed}")
-    val list = List<Int[2]> { 0 }
+    val pairs: @List<Int[2]> = list()
+    val onePair: Int[2] = [1, 2]
+    pairs.push(onePair)
+    io.log("${pairs.get(0)}")
     val distinct_ = [1, 2] as Pair
     io.log("${distinct_ as Int[2]}")
 
@@ -123,7 +126,7 @@ fn main(): Int do
     val copy = clone(named)
     io.log("${@copy}")
     io.log(copy.names[1] == named.names[1])
-    io.log(copy.names.data != named.names.data)
+    io.log((copy.names[1].data !as @Any) != (named.names[1].data !as @Any))
 
     // Pointers
     var filled: Int[3]

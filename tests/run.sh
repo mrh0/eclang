@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Runs the eclang test suite. Build the compiler first: `mvn clean package`.
-#   the ect2 unit tests, the compiler tests (src/main/kotlin/github/mrh0/eclang/CompilerTest.kt), `eclang run`, and a check that the bundled `declare fn` bindings (core:*.ec, core:c/*.ec, core:apr/*.ec) match their C headers
+#   the ect2 unit tests, the compiler tests (src/main/kotlin/github/mrh0/eclang/CompilerTest.kt), `eclang run`, a check that the bundled `declare fn` bindings (core:*.ec, core:c/*.ec, core:apr/*.ec, core:vendor/*.ec) match their C headers, and core:term.ec in a pseudo-terminal (tests/term-pty.py)
 #   tests/pass/NAME.ec  must compile, build with gcc (no warnings, except unused local variables, which are the program's own) and print exactly tests/pass/NAME.out
 #   tests/doc/NAME.ec   `eclang doc` must print exactly tests/doc/NAME.md, with the warnings in tests/doc/NAME.err
 #   tests/fail/NAME.ec  must be rejected by the compiler with a message containing its first line's `// error:` text
+#   tests/lib/NAME.ec   `eclang lib` must build it, and the C program tests/lib/NAME.main.c linked to it must print exactly tests/lib/NAME.out
 #   tests/panic/NAME.ec must compile and build, then stop at runtime with a message containing its first line's `// panic:` text
 # Usage: tests/run.sh [name-filter]
 cd "$(dirname "$0")/.." || exit 1
@@ -42,17 +43,23 @@ fi
 # The bundled C bindings must match their C headers (see tools/check-bindings.py).
 if [ -z "$1" ] || [[ bindings == *"$1"* ]]; then
     bindings=()
-    for f in src/main/resources/*.ec src/main/resources/c/*.ec src/main/resources/apr/*.ec; do
+    for f in src/main/resources/*.ec src/main/resources/c/*.ec src/main/resources/apr/*.ec src/main/resources/vendor/*.ec; do
         bindings+=("core:${f#src/main/resources/}")
     done
     if tools/check-bindings.py "$OUT/bindings" "${bindings[@]}" > "$OUT/bindings.out" 2>&1; then echo "pass bindings (${#bindings[@]} files)"; passed=$((passed + 1))
     else fail "bindings" "$(grep -m5 -E 'error' "$OUT/bindings.out")"; fi
 fi
 
+# core:term.ec in a real pseudo-terminal: raw mode, keys, and that the terminal comes back however the program ends.
+if [ -z "$1" ] || [[ term-pty == *"$1"* ]]; then
+    if tests/term-pty.py "$JAR" "$OUT/pty" > "$OUT/pty.out" 2>&1; then echo "pass term in a pseudo-terminal ($(grep -c '^ok' "$OUT/pty.out") scenarios)"; passed=$((passed + 1))
+    else fail "term-pty" "$(grep -v '^ok' "$OUT/pty.out" | head -5)"; fi
+fi
+
 for src in tests/pass/*${1}*.ec; do
     name=$(basename "$src" .ec)
     if ! java -jar "$JAR" -c "$src" -o "$OUT/$name.c" 2> "$OUT/$name.err"; then fail "$name" "$(cat "$OUT/$name.err")"; continue; fi
-    if ! gcc -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-but-set-variable "$OUT/$name.c" -o "$OUT/$name" -I/usr/include/apr-1.0 -lapr-1 -lm 2> "$OUT/$name.err"; then fail "$name" "gcc: $(head -5 "$OUT/$name.err")"; continue; fi
+    if ! gcc -fwrapv -fno-strict-aliasing -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-but-set-variable "$OUT/$name.c" -o "$OUT/$name" -I/usr/include/apr-1.0 -lapr-1 -lm 2> "$OUT/$name.err"; then fail "$name" "gcc: $(head -5 "$OUT/$name.err")"; continue; fi
     if ! "$OUT/$name" > "$OUT/$name.out" 2>&1; then fail "$name" "exited with an error: $(tail -3 "$OUT/$name.out")"; continue; fi
     if ! diff -u "tests/pass/$name.out" "$OUT/$name.out" > "$OUT/$name.diff"; then fail "$name" "wrong output:"; cat "$OUT/$name.diff"; continue; fi
     echo "pass $name"; passed=$((passed + 1))
@@ -68,11 +75,30 @@ for src in tests/doc/*${1}*.ec; do
     echo "pass doc $name"; passed=$((passed + 1))
 done
 
+# `eclang lib`: tests/lib/NAME.ec must build as a shared and as a static library, and the C program tests/lib/NAME.main.c must print tests/lib/NAME.out with each.
+for src in tests/lib/*${1}*.ec; do
+    name=$(basename "$src" .ec)
+    dir=$OUT/lib-$name; c=tests/lib/$name.main.c
+    flags=(-Wall -Wextra -Werror -I"$dir") # no APR: the header only needs it for an API with APR's types
+    if ! java -jar "$JAR" lib "$src" -o "$dir" 2> "$OUT/$name.err"; then fail "lib $name" "$(cat "$OUT/$name.err")"; continue; fi
+    if ! gcc "${flags[@]}" "$c" -o "$dir/shared" -L"$dir" -l"$name" -Wl,-rpath,"$dir" -lpthread 2> "$OUT/$name.err"; then fail "lib $name" "gcc: $(head -5 "$OUT/$name.err")"; continue; fi
+    if ! java -jar "$JAR" lib "$src" -s -o "$dir" 2> "$OUT/$name.err"; then fail "lib $name" "$(cat "$OUT/$name.err")"; continue; fi
+    if ! gcc "${flags[@]}" "$c" "$dir/lib$name.a" -o "$dir/static" -lapr-1 -lm -lpthread 2> "$OUT/$name.err"; then fail "lib $name" "gcc: $(head -5 "$OUT/$name.err")"; continue; fi
+    wrong=
+    for program in shared static; do
+        "$dir/$program" > "$OUT/$name.out" 2>&1 && diff -u "tests/lib/$name.out" "$OUT/$name.out" > "$OUT/$name.diff" || wrong=$program
+    done
+    if [ -n "$wrong" ]; then fail "lib $name" "wrong output with the $wrong library:"; cat "$OUT/$name.diff" "$OUT/$name.out"; continue; fi
+    # Only what is exported is visible to the linker.
+    if nm -D --defined-only "$dir/lib$name.so" | grep -qE ' T (hidden|geo__)'; then fail "lib $name" "exports a function that isn't \`export\`ed"; continue; fi
+    echo "pass lib $name"; passed=$((passed + 1))
+done
+
 for src in tests/panic/*${1}*.ec; do
     name=$(basename "$src" .ec)
     expected=$(head -1 "$src" | sed 's|^// panic: ||')
     if ! java -jar "$JAR" -c "$src" -o "$OUT/$name.c" 2> "$OUT/$name.err"; then fail "$name" "$(cat "$OUT/$name.err")"; continue; fi
-    if ! gcc -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-but-set-variable "$OUT/$name.c" -o "$OUT/$name" -I/usr/include/apr-1.0 -lapr-1 -lm 2> "$OUT/$name.err"; then fail "$name" "gcc: $(head -5 "$OUT/$name.err")"; continue; fi
+    if ! gcc -fwrapv -fno-strict-aliasing -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-but-set-variable "$OUT/$name.c" -o "$OUT/$name" -I/usr/include/apr-1.0 -lapr-1 -lm 2> "$OUT/$name.err"; then fail "$name" "gcc: $(head -5 "$OUT/$name.err")"; continue; fi
     # Its stderr redirected, so the shell's "Aborted" report of the expected crash doesn't clutter the output.
     if { "$OUT/$name" > "$OUT/$name.out" 2>&1; } 2> /dev/null; then fail "$name" "ran to the end, but should stop with: $expected"; continue; fi
     if ! grep -qF -- "$expected" "$OUT/$name.out"; then fail "$name" "expected '$expected', got: $(tail -3 "$OUT/$name.out")"; continue; fi

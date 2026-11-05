@@ -49,7 +49,7 @@ declare val RAND_MAX as Int
 ### <a id="exit"></a>`exit`
 
 ```ec
-fn exit(status: Int)
+fn exit(status: Int): Never
 ```
 
 *Binds the C function `exit`.*
@@ -57,7 +57,7 @@ fn exit(status: Int)
 ### <a id="abort"></a>`abort`
 
 ```ec
-fn abort()
+fn abort(): Never
 ```
 
 *Binds the C function `abort`.*
@@ -85,6 +85,22 @@ fn system(command: CString): Int
 ```
 
 *Binds the C function `system`.*
+
+### <a id="mkdtemp"></a>`mkdtemp`
+
+```ec
+fn mkdtemp(template: CString): CString?
+```
+
+*Binds the C function `mkdtemp`.*
+
+### <a id="getloadavg"></a>`getloadavg`
+
+```ec
+fn getloadavg(loadavg: @Double, count: Int): Int
+```
+
+*Binds the C function `getloadavg`.*
 
 ### <a id="strtol"></a>`strtol`
 

@@ -22,16 +22,21 @@ If the new code only sometimes runs, or runs repeatedly, wrap the processing in 
 - A new built-in primitive: add it to `ect2/Types.kt` (it is registered by name automatically) and map it in `CTypes.primName`.
 - If values need converting at runtime, extend `CTypes.convert`. Write C helpers with `helper(name) { name -> "static inline ..." }`.
 
+## Export a library
+Mark the API with `export fn`, build with `eclang lib file.ec -o dir` (`-s` for a static library), and add `tests/lib/NAME.ec` with a C program `NAME.main.c` and its output `NAME.out`.
+
 ## Add a type-specialised operator
 Use the shared helpers in `ast/token/op/Ops.kt` (`arithmetic`, `comparison`), and choose the IR class from the operand types, as `TEquals` does for CStrings.
 
 ## Bind a C library
 Add `src/main/resources/<lib>.ec` with `use "header.h"` and `declare fn/val/var/rec/struct/type` (see `c/*.ec` and `apr/*.ec`, one file per header; a library built on them, such as `math.ec`, can be a `module`). Users load it with `use "core:<lib>.ec"`. Inside a bundled file, `use "other.ec"` means another bundled file in the same folder.
+- A struct's `char name[64]` is `name: Char[64]`, `unsigned x : 3` is `x: UInt : 3`, and a C union is `declare union name` (or `declare union rec name_t` for a typedef). An array parameter is `T[]c` or `@T`: `declare fn` rejects `T[N]`.
 - `...` for C varargs, `@Any` for `void*`, `CString` for `char*` and `const char*` (eclang has no `const`).
 - A C function-pointer typedef is a function type: `declare type cb_t as (@Any, Int) => Int`, and a `cb_t*` parameter is plain `cb_t`.
 - Opaque C types (`DIR`, `pthread_t`, `struct tm`) are `declare rec name` (or `declare struct name` for `struct name`): they keep their C name and can be passed around.
 - A pointer result that may be `NULL` gets a nullable type (`CString?`, `@T?`), so callers must check it.
 - C enums used as parameters or results of `declare fn` are `declare enum x_e as` with lines `:atom = C_CONSTANT`, so eclang code passes atoms. In struct fields and `declare var`/`val` they aren't converted, so there use `declare type x_e as Int`; for a parameter `x_e*`, use `@Any`.
+- C that neither C nor APR has, such as an open-source library, can't be linked (see `KNOWN_ISSUES.md`), so it is bundled: put a prepared copy in `src/main/resources/vendor/x.c`, its `declare fn`s in `vendor/x.ec` with `use "core:vendor/x.c"`, and `use "core:vendor/x.ec"` in the module. [vendor/README.md](../src/main/resources/vendor/README.md) has the rules the copy must follow.
 - Check the bindings against the headers: `tools/check-bindings.py OUT_DIR core:<lib>.ec` (`tests/run.sh` runs it on every bundled file). It compiles a wrapper for every non-variadic `declare fn` with `-Werror -Wconversion`, ignoring only `const`/`volatile`. While iterating, compile with the resources from `src` instead of the jar: `java -cp src/main/resources:target/eclang-0.1.0.jar github.mrh0.eclang.MainKt -c file.ec`.
 
 ## Debug a miscompile

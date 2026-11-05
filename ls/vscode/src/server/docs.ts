@@ -95,6 +95,7 @@ export class DocExtractor {
         for (const child of program.children ?? []) {
             if (child instanceof P.FuncContext) items.push(this.function(child, child.start, false));
             else if (child instanceof P.PrivateFunctionContext) items.push(this.function(child.func(), child.start, true));
+            else if (child instanceof P.ExportDeclarationContext) items.push(this.function(child.func(), child.start, false, true));
             else if (child instanceof P.PrivateGlobalContext) add(this.global(child.global(), child.start, true));
             else if (child instanceof P.GlobalNamespaceContext) {
                 module = content(child._name.text);
@@ -137,7 +138,7 @@ export class DocExtractor {
         return doc;
     }
 
-    private function(f: P.FuncContext, start: Token, isPrivate: boolean): DocItem {
+    private function(f: P.FuncContext, start: Token, isPrivate: boolean, exported = false): DocItem {
         const form = f as P.FunctionDeclareContext | P.FunctionBlockContext | P.FunctionInlineContext;
         const { _name: name, _params: params } = form;
         // `fn f(): T throws E` parses either way: as `throws` after the type or as a type `T throws E`.
@@ -148,7 +149,7 @@ export class DocExtractor {
             returns = returns._left;
         }
         const thrown = throws === null ? [] : this.source(throws).split("|").map(t => t.trim().replace(/^\(/, "").replace(/\)$/, "").trim());
-        const signature = (f.getChild(0).getText() === "inline" ? "inline " : "") + `fn ${name.text}(${params.map(p => this.source(p)).join(", ")})` +
+        const signature = (exported ? "export " : "") + (f.getChild(0).getText() === "inline" ? "inline " : "") + `fn ${name.text}(${params.map(p => this.source(p)).join(", ")})` +
             (returns !== null ? `: ${this.source(returns)}` : "") + (throws !== null ? ` throws ${this.source(throws)}` : "");
 
         const token = this.docs.get(start.start);
@@ -230,6 +231,11 @@ export class DocExtractor {
         if (g instanceof P.GlobalRecordDefineContext)
             return item("RECORD", g._name, "a record", this.header(g), g._fields.map(f =>
                 member("FIELD", f._name, this.source(f), f.start, "a record field")));
+        if (g instanceof P.GlobalUnionDefineContext)
+            return item("RECORD", g._name, "a record", this.header(g), g._fields.map(f =>
+                member("FIELD", f._name, this.source(f), f.start, "a record field")));
+        if (g instanceof P.GlobalUnionDeclareDefineContext) return item("C_STRUCT", g._name, "a record", this.header(g), fields(g._names, g._types));
+        if (g instanceof P.GlobalUnionDeclareContext) return item("C_STRUCT", g._name, "a record", this.header(g));
         if (g instanceof P.GlobalRecordDeclareDefineContext) return item("C_RECORD", g._name, "a record", this.header(g), fields(g._names, g._types));
         if (g instanceof P.GlobalRecordDeclareContext) return item("C_RECORD", g._name, "a record", this.header(g));
         if (g instanceof P.GlobalStructDeclareDefineContext) return item("C_STRUCT", g._name, "a record", this.header(g), fields(g._names, g._types));

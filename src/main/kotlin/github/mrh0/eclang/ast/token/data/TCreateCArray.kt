@@ -12,7 +12,8 @@ import github.mrh0.ect2.Type
 class TCreateCArray(location: Loc, val values: List<ITok>) : Tok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val (element, irs) = arrayElements(cd, location, values, hint, true)
-        return cd.types.cArray(element) to IRCreateCArray(location, IRType(location, element), irs)
+        val storage = if (irs.isEmpty()) null else cd.literalStorage(location, element, irs.size)
+        return cd.types.cArray(element) to IRCreateCArray(location, IRType(location, element), irs, storage)
     }
 
     override fun toString(): String {
