@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { createConnection, Diagnostic, DiagnosticSeverity, ProposedFeatures, TextDocuments, TextDocumentSyncKind } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { Checker, CheckProblem, sameFile } from "./checker";
+import { complete, placeAt, resolve } from "./completion";
 import { diagnose, rangeAt } from "./diagnostics";
 import { definition, hover } from "./hover";
 import { lines } from "./kotlin";
@@ -34,7 +35,8 @@ connection.onInitialize(params => {
             connection.console.error(reason);
             for (const document of documents.all()) check(document); // what the server can tell without the compiler
         });
-    return { capabilities: { textDocumentSync: TextDocumentSyncKind.Incremental, hoverProvider: true, definitionProvider: true } };
+    return { capabilities: { textDocumentSync: TextDocumentSyncKind.Incremental, hoverProvider: true, definitionProvider: true,
+        completionProvider: { triggerCharacters: ["."], resolveProvider: true } } };
 });
 
 const pending = new Map<string, NodeJS.Timeout>();
@@ -76,8 +78,7 @@ async function compileNext(): Promise<void> {
             const document = documents.get(uri);
             if (document === undefined || checker === null) continue;
             const { version } = document;
-            const unsaved = documents.all().filter(d => d.uri.startsWith("file:")).map(d => ({ path: project.compilerName(fileOf(d.uri)), text: d.getText() }));
-            const result = await checker.check(project.compilerName(fileOf(uri)), unsaved);
+            const result = await checker.check(project.compilerName(fileOf(uri)), unsaved());
             const now = documents.get(uri);
             if (now === undefined || now.version !== version) continue; // it changed, so it's on its way back here
             if (result === null) publishParsed(now);
@@ -87,6 +88,9 @@ async function compileNext(): Promise<void> {
         compiling = false;
     }
 }
+
+/** The open files, which the compiler reads instead of what's on disk. */
+const unsaved = () => documents.all().filter(d => d.uri.startsWith("file:")).map(d => ({ path: project.compilerName(fileOf(d.uri)), text: d.getText() }));
 
 /** What the compiler said, for [document]. An error in a file it uses goes on the `use`: it may be why nothing else is reported. */
 function compilerDiagnostics(document: TextDocument, errors: CheckProblem[], warnings: CheckProblem[]): Diagnostic[] {
@@ -148,6 +152,21 @@ connection.onDefinition(params => {
         return { uri: project.uriOf(d.file), range: { start, end: { ...start, character: start.character + d.length } } };
     });
 });
+
+connection.onCompletion(async params => {
+    const document = documents.get(params.textDocument.uri);
+    if (document === undefined) return null;
+    const text = document.getText();
+    const { line, character } = params.position;
+    const place = placeAt(text, line, character);
+    if (place === null) return null;
+    const file = fileOf(document.uri);
+    // The compiler knows the types; it compiles the file with the word at the cursor replaced (see Completion.kt).
+    const result = canCompile(document.uri) && checker !== null ? await checker.complete(project.compilerName(file), unsaved(), line + 1, character) : null;
+    return { isIncomplete: false, items: complete(project, file, text, place, result) };
+});
+
+connection.onCompletionResolve(item => resolve(project, item));
 
 connection.onShutdown(() => checker?.stop());
 

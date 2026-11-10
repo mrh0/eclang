@@ -1,5 +1,6 @@
 use "core:string.ec"
 use "core:io.ec"
+use "core:path.ec"
 
 // core:io.ec: the console, files, directories and paths.
 fn main(): Int throws Error do
@@ -9,19 +10,19 @@ fn main(): Int throws Error do
     io.println("println")
     io.flush()
 
-    val dir = io.joinPath(try io.tempDir(), "eclang-std-io-test")
-    try io.makeDir(io.joinPath(dir, "sub"))
-    val path = io.joinPath(dir, "file9.txt")
-    try io.writeFile(path, "first\r\nsecond\n")
-    try io.appendFile(path, "third")
-    io.log(io.exists(path))
-    io.log(io.isFile(path))
+    val dir = path.join(try io.tempDir(), "eclang-std-io-test")
+    try io.makeDir(path.join(dir, "sub"))
+    val file = path.join(dir, "file9.txt")
+    try io.writeFile(file, "first\r\nsecond\n")
+    try io.appendFile(file, "third")
+    io.log(io.exists(file))
+    io.log(io.isFile(file))
     io.log(io.isDir(dir))
-    io.log(try io.fileSize(path))
-    for line in try io.readLines(path) do
+    io.log(try io.fileSize(file))
+    for line in try io.readLines(file) do
         io.log(line)
 
-    val f = try io.open(path)
+    val f = try io.open(file)
     io.log(try io.read(f, 5))
     io.log(try io.readLine(f) ?? "end")
     io.log(try io.readLine(f) ?? "end")
@@ -29,37 +30,37 @@ fn main(): Int throws Error do
     io.log(try io.readLine(f) ?? "end")
     io.close(f)
 
-    val g = try io.open(path, :update)
+    val g = try io.open(file, :update)
     try io.seek(g, 1)
     try io.write(g, "IRST")
     io.close(g)
-    io.log(before(try io.readFile(path), "\r"))
+    io.log(before(try io.readFile(file), "\r"))
 
-    try io.copy(path, io.joinPath(dir, "file10.txt"))
+    try io.copy(file, path.join(dir, "file10.txt"))
     for name in io.sorted(try io.listDir(dir)) do
         io.log(name)
-    try io.rename(io.joinPath(dir, "file10.txt"), io.joinPath(dir, "renamed.txt"))
-    io.log(io.exists(io.joinPath(dir, "file10.txt")))
-    io.log(time.isAfter(try io.modified(path), time.fromUnix(0)))
+    try io.rename(path.join(dir, "file10.txt"), path.join(dir, "renamed.txt"))
+    io.log(io.exists(path.join(dir, "file10.txt")))
+    io.log(time.isAfter(try io.modified(file), time.fromUnix(0)))
 
-    try io.readFile(io.joinPath(dir, "missing.txt")) catch e do
+    try io.readFile(path.join(dir, "missing.txt")) catch e do
         io.log(e.code == ERR_NOT_FOUND)
-        io.log(io.baseName(e.path))
+        io.log(path.base(e.path))
 
-    try io.remove(path)
-    try io.remove(io.joinPath(dir, "renamed.txt"))
-    try io.removeDir(io.joinPath(dir, "sub"))
+    try io.remove(file)
+    try io.remove(path.join(dir, "renamed.txt"))
+    try io.removeDir(path.join(dir, "sub"))
     try io.removeDir(dir)
     io.log(io.exists(dir))
 
-    io.log(io.baseName("a/b/c.txt"))
-    io.log(io.dirName("a/b/c.txt"))
-    io.log(io.dirName("c.txt"))
-    io.log(io.dirName("/c.txt"))
-    io.log(io.extension("a/photo.jpg"))
-    io.log(io.extension(".bashrc"))
-    io.log(io.joinPath("logs/", "today.txt"))
-    io.log(io.joinPath("logs", "/abs"))
+    io.log(path.base("a/b/c.txt"))
+    io.log(path.dir("a/b/c.txt"))
+    io.log(path.dir("c.txt"))
+    io.log(path.dir("/c.txt"))
+    io.log(path.extension("a/photo.jpg"))
+    io.log(path.extension(".bashrc"))
+    io.log(path.join("logs/", "today.txt"))
+    io.log(path.join("logs", "/abs"))
     io.log(io.env("ECLANG_SURELY_UNSET") ?? "unset")
     io.log(io.env("PATH") != null)
     ret 0

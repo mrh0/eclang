@@ -158,6 +158,30 @@ fun main() {
         val reply = java.io.ByteArrayOutputStream()
         Checker.serve(request.inputStream(), java.io.PrintStream(reply))
         check("`eclang check` answers with the errors", reply.toString().contains("\"line\":1"), true)
+
+        // Completion: the word at the cursor is replaced by a probe, and the compiler lists what fits there (Completion.kt).
+        val completing = program("completing", """
+            rec Point as
+                x: Int
+                label: String
+
+            fn norm(p: Point): Int = p.x
+
+            fn main(): Int do
+                val p = Point { x = 1, label = "a" }
+                val n: Int = p.
+                ret n
+        """)
+        fun completion(line: Int, column: Int, text: String = completing.readText()) =
+            Completion.answer(completing, mapOf(Util.sourceName(completing) to text), line, column)
+        val members = completion(9, 19)
+        check("`x.` lists the fields and the functions that take x", listOf("\"label\":\"x\"", "\"label\":\"norm\"", "\"receiver\":\"Point\"").all { it in members }, true)
+        check("What has the expected type comes first", members.indexOf("\"label\":\"x\"") < members.indexOf("\"label\":\"label\""), true)
+        val request2 = "complete 0 9:19 ${completing.path}\n".toByteArray()
+        val reply2 = java.io.ByteArrayOutputStream()
+        Checker.serve(request2.inputStream(), java.io.PrintStream(reply2))
+        check("`eclang check` answers a `complete` request", reply2.toString().contains("\"context\":\"member\""), true)
+        check("A place the compiler never reaches finds nothing", completion(40, 0), "{\"found\":false}")
     } finally {
         dir.deleteRecursively()
     }

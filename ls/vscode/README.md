@@ -6,6 +6,11 @@ Language support for eclang (`.ec` files):
 - **Compiler errors as you type**: mismatched types, null safety, dangling pointers and everything else the compiler reports, unsaved changes included.
 - **Syntax errors** instantly, with the compiler's wording and fix suggestions.
 - **Ecdoc tooltips**: hover a name for its signature and `/** ... */` documentation, across `use`d files and the `core:` library.
+- **Completion** from the type checker: after `x.`, the fields of x's type and the functions that take it (`x.f()`); after
+  `io.`, that module's functions, values and types; in a type, the types; after `:`, the atoms the expected type allows; and
+  elsewhere the locals (with their narrowed types), globals, functions, types and keywords. What has the type expected at the
+  cursor comes first (the argument's type, the declared type of a `val`, the return type after `ret`), then what converts to it.
+  Items show their signature, and their ecdoc when selected.
 - **Go to definition**: Ctrl+click (or F12) a function, type, field, variable, parameter, module or `use` path to open where it's declared.
 - **Ecdoc warnings** (`@param` naming no parameter, an ecdoc that documents nothing, ...), and `use`s of files that don't exist.
 
@@ -42,6 +47,10 @@ For everything that must be instant the server has a TypeScript port of the comp
 | `project.ts` | `use` resolution in `Util.kt` |
 
 `dist/core` is a copy of `src/main/resources`, made by the build.
+
+Completion asks the compiler: `complete` requests of `eclang check` (`Completion.kt`) compile the file with the word at the
+cursor replaced by a probe name and list what the type checker sees where it meets it. When it can't tell (no Java, a file that
+doesn't parse, code it never compiles), `completion.ts` offers the names the server knows from declarations, without types.
 
 Hovers and go to definition have no type information: `x.name` matches every field and function called `name`, and a call matches all
 overloads (VS Code lists them to pick from). `core:` files open from the extension's own copy.

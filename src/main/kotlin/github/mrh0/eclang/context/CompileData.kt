@@ -95,6 +95,12 @@ class CompileData(val types: TypeContext = TypeContext()) {
     /** How many `const assert`s only C can check (`_Static_assert`, see TConstAssert), for the message when the C compiler fails. */
     var staticAsserts = 0
 
+    /** Where `eclang check` asks for completions, or null (see [github.mrh0.eclang.Completion]). */
+    var completion: github.mrh0.eclang.Completion? = null
+
+    /** Every module but the top level. */
+    fun allModules(): List<Module> = modules.values.filter { !it.isTopLevel }
+
     fun moduleNamed(name: String): Module = modules.getOrPut(name) { Module(name) }
     fun findModule(name: String): Module? = modules[name]?.takeIf { !it.isTopLevel }
 
@@ -186,6 +192,14 @@ class CompileData(val types: TypeContext = TypeContext()) {
      * or as the receiver of a method), with where: like `addrof x`, a check of them before a call proves nothing after it.
      */
     var changedByClosures: MutableMap<String, Loc> = HashMap()
+
+    /** The locals code here sees, by name, with their narrowed types: those of the lambdas around it too. For completion. */
+    fun visibleLocals(): Map<String, IVar> {
+        val found = LinkedHashMap<String, IVar>()
+        for (name in ctx().stack.scopeStack.last().vars.keys) ctx().getRaw(name)?.let { found[name] = it }
+        closure?.let { c -> outside(c) { visibleLocals() }.forEach { (name, v) -> found.putIfAbsent(name, v) } }
+        return found
+    }
 
     /** `other.name`: the global [name] of module [m]. */
     fun getVarIn(location: Loc, m: Module, name: String): IVar = m.globals.getRaw(name)?.also {

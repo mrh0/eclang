@@ -181,7 +181,7 @@ use "geo.ec"
 ```
 
 Bundled libraries:
-- The standard library (see [Standard Library](#standard-library)): `core:string.ec`, `core:errors.ec` (`Error` and the error types that extend it), `core:array.ec`, `core:structures.ec`, and the modules `core:io.ec` (`io.log`, ...), `core:math.ec`, `core:time.ec`, `core:thread.ec`, `core:os.ec`, `core:term.ec`, `core:encoding.ec`, `core:net.ec`, `core:fs.ec`, `core:json.ec`, `core:hash.ec` and `core:args.ec`.
+- The standard library (see [Standard Library](#standard-library)): `core:string.ec`, `core:errors.ec` (`Error` and the error types that extend it), `core:array.ec`, `core:structures.ec`, and the modules `core:io.ec` (`io.log`, ...), `core:math.ec`, `core:time.ec`, `core:thread.ec`, `core:os.ec`, `core:term.ec`, `core:encoding.ec`, `core:net.ec`, `core:tls.ec`, `core:path.ec`, `core:fs.ec`, `core:json.ec`, `core:hash.ec`, `core:args.ec`, `core:uuid.ec`, `core:big.ec`, `core:parallel.ec`, `core:test.ec` and `core:bench.ec`.
 - [c/](src/main/resources/c): declarations for C's standard headers, one file per header (`core:c/stdio.ec`, `core:c/stdlib.ec`, `core:c/string.ec`, `core:c/ctype.ec`, `core:c/time.ec`, `core:c/unistd.ec`, `core:c/termios.ec`, `core:c/ioctl.ec`, ...).
 - [apr/](src/main/resources/apr): declarations for the Apache Portable Runtime, one file per APR header (`core:apr/pools.ec`, `core:apr/strings.ec`, `core:apr/tables.ec`, `core:apr/hash.ec`, ...).
 
@@ -2067,15 +2067,18 @@ The standard library is bundled with the compiler. Each part is loaded with `use
 | `core:string.ec` | top level | String functions, callable on a String (`s.trim().toUpper()`) |
 | `core:errors.ec` | top level | common error types and APR status errors |
 | `core:math.ec` | `math.` | C's math.h, constants, number helpers, checked arithmetic, random numbers |
-| `core:io.ec` | `io.` | `log`, console, command-line arguments, files, directories, paths, environment variables |
+| `core:io.ec` | `io.` | `log`, console, command-line arguments, files, directories, environment variables |
+| `core:path.ec` | `path.` | paths as text: joining, taking apart, normalising, absolute and relative paths |
 | `core:time.ec` | `time.` | `Time`, `Duration`, a steady clock, calendar dates, ISO 8601 |
-| `core:thread.ec` | `thread.` | threads, `Mutex`, `RwLock`, `Cond`, `WaitGroup`, `Atomic`, `Queue`, `Channel` |
+| `core:thread.ec` | `thread.` | threads, `Mutex`, `RwLock`, `Cond`, `WaitGroup`, `Atomic`, `Queue`, `Channel`, `WorkerPool` |
+| `core:parallel.ec` | `parallel.` | `map`, `each` and `times` on several threads, waiting until they are done |
 | `core:os.ec` | `os.` | system information, environment variables, users, running programs, signals |
 | `core:array.ec` | top level | algorithms on arrays of any type: `sort`, `map`, `filter`, `reduce`, `zip`, `chunked`, `binarySearch`, ... |
-| `core:structures.ec` | top level | data structures: `List`, `Map`, `Set`, `Deque`, `Heap`, `SlotPool`, and `groupBy`/`associate` of an array |
+| `core:structures.ec` | top level | data structures: `List`, `Map`, `Set`, `Deque`, `Heap`, `SlotPool`, `SortedMap`, `SortedSet`, `BitSet`, `LruCache`, and `groupBy`/`associate` of an array |
 | `core:encoding.ec` | `encoding.` | hexadecimal, Base64 and URL escapes |
-| `core:net.ec` | `net.` | TCP clients and servers, UDP, DNS lookups, timeouts |
-| `core:fs.ec` | `fs.` | walking directory trees, glob patterns, temporary files, normalising paths, memory-mapped reads |
+| `core:net.ec` | `net.` | TCP clients and servers, UDP, DNS lookups, timeouts, waiting for many sockets at once |
+| `core:tls.ec` | `tls.` | TLS through OpenSSL (links `-lssl -lcrypto`): `net.secure`, HTTPS |
+| `core:fs.ec` | `fs.` | walking directory trees, glob patterns, temporary files, memory-mapped reads |
 | `core:json.ec` | `json.` | parsing JSON with error positions, building values, writing them |
 | `core:hash.ec` | `hash.` | CRC32, FNV-1a, MD5, SHA-1, SHA-256, HMAC |
 | `core:args.ec` | `args.` | flags, options, subcommands, a generated `--help` |
@@ -2085,8 +2088,11 @@ The standard library is bundled with the compiler. Each part is loaded with `use
 | `core:env.ec` | `env.` | loading environment variables from a `.env` file |
 | `core:log.ec` | `log.` | levels, timestamps, output to stderr or a file, from any thread |
 | `core:regex.ec` | `regex.` | matching, capturing, replacing and splitting, in linear time |
-| `core:http.ec` | `http.` | URLs, an HTTP/1.1 client and a small server |
+| `core:http.ec` | `http.` | URLs, an HTTP/1.1 client and a small server, HTTPS with `core:tls.ec` |
 | `core:test.ec` | `test.` | assertions with readable diffs and a small test runner |
+| `core:bench.ec` | `bench.` | benchmarks: warm-up, min, median and spread of a function's time |
+| `core:uuid.ec` | `uuid.` | UUIDs: random (v4) and time-ordered (v7), parsing and printing |
+| `core:big.ec` | `big.` | whole numbers of any size and exact decimals, for money |
 
 Every file starts with an ecdoc that shows how to use it, and every declaration has one, so `eclang doc core:string.ec` writes its reference.
 
@@ -2193,6 +2199,22 @@ for (key, node) in nodes do
     io.log(node.name)
 ```
 
+`SortedMap<K, V>` and `SortedSet<T>` keep their keys sorted (a balanced tree, so adding, finding and removing take about log2(n) steps): `for` goes through them from the smallest, `first`, `last`, `floor`, `ceiling`, `lower` and `higher` find the keys at the ends and near a key, `popFirst` and `popLast` take one off an end, and `range(from, until)`, `rangeFrom` and `rangeUntil` loop over the keys between two. Numbers are compared with `<` and Strings by their bytes; `sortedMap(less)` takes any other order. `BitSet` is a set of small numbers, one bit each, and `LruCache<K, V>` a map of a fixed size that drops the key used least recently, which `put` returns.
+
+```plaintext
+val events: SortedMap<Int, String> = sortedMap()
+events.put(1700, "start")
+events.put(1730, "lunch")
+for time, what in events.range(1600, 1715) do      // keys from 1600 up to, not including, 1715
+    io.log("${time} ${what}")
+val next = events.ceiling(1710)                   // (1730, "lunch"), or null when there is none
+val byX: SortedSet<Point> = sortedSet(fn (a: Point, b: Point) = a.x < b.x)
+
+val pages: LruCache<String, Page> = lruCache(100)
+if val dropped = pages.put(url, page) do          // the page used least recently, when it was full
+    io.log("dropped ${dropped.first}")
+```
+
 A structure's memory is in the pool that was current when it was made (`list(p, 16)` and `map(p)` take a pool), and it grows there. It doesn't copy what is put in it, so Strings and pointers in it must live at least as long as it does; the compiler doesn't check that through these functions.
 
 Map and Set find keys with `hash(key)` and `==`, so anything `==` can compare works as a key, with a [generated hash](#printing-and-hashing) unless a `hash` function takes it. For a hash of your own, define `fn hash(p: Point): ULong` at the top level.
@@ -2256,6 +2278,19 @@ val next = thread.receive(q)                          // a Sample?, null once cl
 try thread.send(names, "${i}")                        // error: a String points to its text, which isn't copied
 ```
 
+A `thread.WorkerPool` is a fixed number of threads that run the jobs given to it, so a program with many small jobs doesn't start a thread for each. Its jobs are lambdas as `thread.spawn` takes them (`escaping` and `flat`), and each runs in a `pool do` block of its own. `core:parallel.ec` is for work on the elements of an array: `parallel.map`, `parallel.each` and `parallel.times` cut it into one part per processor, run the parts on threads of their own and return once all are done, so the function can read what it captures, Strings and arrays included (the compiler doesn't check what it changes: share that through a `sync` record). What `parallel.map` returns is copied into the current pool.
+
+```plaintext
+val workers = try thread.workerPool(4)              // 0 or nothing: one thread per processor
+for i in 0..<100 do
+    try thread.submit(workers, fn () = work(tally, i))
+thread.wait(workers)                                // until every job given so far is done
+try thread.stop(workers)                            // always stop it, before its pool is freed
+
+val lengths = parallel.map(words, fn (w) = w.len)    // in the order of words
+parallel.times(height, fn (y) = render(image, y))
+```
+
 ### Terminals
 
 [core:term.ec](src/main/resources/term.ec) is for programs that talk to a person in a terminal: colours, prompts, key and mouse input, and full-screen programs. It needs a POSIX system; [examples/tui.ec](examples/tui.ec) is a small full-screen program.
@@ -2315,7 +2350,7 @@ val exit = try os.wait(p)                             // or os.poll(p), os.kill(
 
 ### Networking
 
-`core:net.ec` has TCP, UDP and DNS, built on APR's sockets and poll. There is no TLS.
+`core:net.ec` has TCP, UDP and DNS, built on APR's sockets and poll. TLS is in `core:tls.ec` (below).
 
 ```plaintext
 use "core:net.ec"
@@ -2340,11 +2375,56 @@ val d = try net.receiveFrom(u)                                 // d.data, d.sour
 val ips = try net.lookup("example.com")
 ```
 
-A timeout is an error with the code `ERR_TIMEOUT`, and the connection can still be used. `net.waitReadable(c, timeout)` waits without reading. To serve many clients at once, give each its own thread. Opening a connection makes the program ignore SIGPIPE, so writing to a peer that has gone is an error and doesn't end the program.
+A timeout is an error with the code `ERR_TIMEOUT`, and the connection can still be used. `net.waitReadable(c, timeout)` waits without reading. Opening a connection makes the program ignore SIGPIPE, so writing to a peer that has gone is an error and doesn't end the program.
+
+To serve many clients at once, give each its own thread, or wait for all of them in one with a `net.Poller` (epoll on Linux). Each socket is added with a token of your own, which `wait` gives back for the sockets that are ready; `net.readMore(c)` then takes what has arrived without waiting, and `net.buffered(c)` shows it (`readLine` and the others read it first):
+
+```plaintext
+val p = try net.poller()
+try p.add(server, 0)
+val clients: Map<Long, net.Connection> = map()
+var next: Long = 1
+while true do
+    for e in try p.wait() do
+        if e.token == 0 do
+            val c = try net.accept(server, time.micros(0), new Pool)   // a pool per connection, destroyed when it closes
+            try p.add(c, next)
+            clients.put(next, c)
+            next += 1
+        else if val c = clients.get(e.token) do
+            if try net.readMore(c) == null do                         // null: the other end closed it
+                p.remove(c)
+                net.close(c)
+            else if net.buffered(c).contains("\n") do
+                ...                                                    // a whole line has arrived
+```
+
+Remove a socket from the poller before closing it. `p.wake()` makes a `wait` in another thread return. `core:http.ec`'s server works this way.
+
+### TLS
+
+`core:tls.ec` makes connections secure with OpenSSL, so a program that uses it links `-lssl -lcrypto` and needs OpenSSL 3's headers to compile (the package libssl-dev, openssl-devel, or Homebrew's openssl with `C_INCLUDE_PATH` and `LIBRARY_PATH`). Using it is enough for `net.secure` and `https:` URLs; programs that don't use it need no OpenSSL.
+
+```plaintext
+use "core:net.ec"
+use "core:tls.ec"
+
+val c = try net.connect("example.com", 443, time.seconds(5))
+net.setTimeout(c, time.seconds(10))
+try net.secure(c, "example.com")                 // the handshake, checking the certificate and the name
+try net.send(c, "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n")
+io.log(tls.protocol(c) ?? "")                    // TLSv1.3
+
+val mine = net.TlsOptions { caFile = "test-ca.pem" }   // trust a certificate of your own; `verify = false` only to test
+val creds = try tls.server("fullchain.pem", "key.pem") // a server's certificate chain and private key
+try net.secure(accepted, creds)
+```
+
+A client trusts the system's certificates and checks that the server's is valid and for the name given (or the IP address); a failure says why (`the certificate isn't valid: certificate has expired`). It speaks TLS 1.2 and 1.3. Reads and writes keep the connection's timeout. A session belongs to the pool of its connection. Without `use "core:tls.ec"`, `net.secure` fails with an error that says what to add.
 
 ### Files and Directories
 
-`core:fs.ec` adds to [core:io.ec](src/main/resources/io.ec) what works on trees and paths, built on APR.
+`core:fs.ec` adds to [core:io.ec](src/main/resources/io.ec) what works on trees, built on APR. Paths as text are in `core:path.ec` (below).
 
 ```plaintext
 use "core:fs.ec"
@@ -2361,16 +2441,31 @@ io.close(t.file)
 val dir = try fs.tempDir()                       // stays until it is removed
 try fs.removeAll(dir)
 
-io.log(fs.normalize("a/./b/../c"))               // a/c, as text
-io.log(try fs.absolute("notes.txt"))             // /home/ada/notes.txt
-io.log(try fs.relative("/a/b", "/a/c/d"))        // ../c/d
-
 val m = try fs.map("big.log")                    // m.text isn't a copy: the system reads what is used
 io.log(m.text.count('\n'))
 fs.unmap(m)
 ```
 
 `walk` and `**` don't follow symbolic links, so a link can't make them loop. As in a shell, a name starting with a dot only fits a pattern that says so.
+
+### Paths
+
+`core:path.ec` works on paths as text: nothing has to exist, and only `absolute` and `relative` ask for the current directory.
+
+```plaintext
+use "core:path.ec"
+
+val file = path.join("logs", "2026", "today.txt")   // logs/2026/today.txt; an absolute part starts again
+io.log(path.base(file))                          // today.txt
+io.log(path.dir(file))                           // logs/2026
+io.log(path.extension(file))                     // txt (also path.stem: today)
+io.log(path.withExtension(file, "md"))           // logs/2026/today.md
+io.log(path.normalize("a/./b/../c/"))            // a/c
+io.log(try path.absolute("notes.txt"))           // /home/ada/notes.txt
+io.log(try path.relative("/a/b", "/a/c/d"))      // ../c/d
+```
+
+A variable named `path` hides the module where it is visible, as any variable hides a module of its name, so `fn f(path: String)` can't call `path.join`: name the variable `file` or `p`.
 
 ### JSON
 
@@ -2529,7 +2624,7 @@ The syntax is that of Perl and Python, with the leftmost match and greedy repeat
 
 ### HTTP
 
-`core:http.ec` parses URLs and has an HTTP/1.1 client and a small server, on top of `core:net.ec`. There is no HTTPS: that needs a TLS library, which a program can't link yet, so an `https:` URL is an error that says so.
+`core:http.ec` parses URLs and has an HTTP/1.1 client and a small server, on top of `core:net.ec`. HTTPS needs `use "core:tls.ec"` too (see [TLS](#tls)); without it, an `https:` URL is an error that says so.
 
 ```plaintext
 use "core:http.ec"
@@ -2547,7 +2642,7 @@ io.log(http.param(u, "x") ?? "?")                // 1
 io.log(http.text(try http.resolve(u, "../c")))   // http://example.com:8080/c
 ```
 
-A server is a function from a request to a response. It runs on a fixed number of threads, so handlers run at the same time; each request has its own pool. A handler can be a lambda that uses the values around it (`http.run(server, fn (req) = http.text(200, greeting))`); what several handlers change needs a lock (`core:thread.ec`). `req.context`, from `ServerOptions`, also reaches the program's data.
+A server is a function from a request to a response. One thread waits for all the connections (with a `net.Poller`) until a request's head has arrived, and hands it to one of a fixed number of worker threads, so an idle or slow client holds no worker, and handlers run at the same time; each request has its own pool. A handler can be a lambda that uses the values around it (`http.run(server, fn (req) = http.text(200, greeting))`); what several handlers change needs a lock (`core:thread.ec`). `req.context`, from `ServerOptions`, also reaches the program's data.
 
 ```plaintext
 fn hello(req: http.Request): http.Response do
@@ -2561,7 +2656,7 @@ fn main(): Int throws Error do
     ret 0
 ```
 
-`http.start` serves on other threads and goes on, and a handler that `throws Error` gives the client a 500 and writes to `core:log.ec`. The server refuses what isn't valid HTTP/1.1, including what could smuggle a request past a proxy, and limits the size of a request. It is small, though: in front of the open Internet, put it behind a reverse proxy.
+With `http.ServerOptions { tls = try tls.server("fullchain.pem", "key.pem") }` it serves HTTPS, and `http.Options { tls = net.TlsOptions { caFile = ... } }` lets the client trust a server's own certificate. `http.start` serves on other threads and goes on, and a handler that `throws Error` gives the client a 500 and writes to `core:log.ec`. The server refuses what isn't valid HTTP/1.1, including what could smuggle a request past a proxy, and limits the size of a request. It is small, though: in front of the open Internet, put it behind a reverse proxy.
 
 ### Tests
 
@@ -2593,6 +2688,62 @@ FAIL addition
     - line two
     + line 2
 ```
+
+### Benchmarks
+
+`core:bench.ec` times a function: it runs it for a warm-up, then takes samples of many runs each, and reports the fastest and the median time of a run, how much the samples spread around the median, and the processor time.
+
+```plaintext
+use "core:bench.ec"
+
+fn main(): Int do
+    val b = bench.suite()                        // `./bench sort` only runs benchmarks with "sort" in their name
+    bench.run(b, "sort 1000", fn sortThousand)
+    bench.run(b, "parse", fn () = bench.keep(parseInt("12345") ?? 0))
+    ret bench.finish(b)                          // and each median as a multiple of the fastest
+```
+```plaintext
+sort 1000                 median   72.4 us   min     71 us   spread  1.6%   cpu   73.4 us   (30 x 90)
+parse                     median   19.9 ns   min   19.5 ns   spread  0.4%   cpu   19.9 ns   (30 x 334007)
+```
+
+`bench.Options` sets the warm-up, the time to measure and the samples; `bench.measure` gives the numbers (a `bench.Result`, in nanoseconds per run) without printing. Each sample runs in a pool of its own. Pass what a run computes to `bench.keep`, or `gcc -O2` may leave the work out.
+
+### UUIDs
+
+`core:uuid.ec` makes UUIDs (RFC 9562) from the system's secure random source: `uuid.v4()` is random, `uuid.v7()` starts with the time in milliseconds, so later ones sort after earlier ones (a good database key).
+
+```plaintext
+use "core:uuid.ec"
+
+val id = try uuid.v4()
+io.log("${id}")                                  // 0b5c9a3e-6f1d-4c8a-9d2e-7a41b3c5e6f8
+val same = try uuid.parse(uuid.text(id))         // either case, with or without hyphens, {braces} or urn:uuid:
+io.log(same == id)                               // a Uuid is two ULongs: ==, hash and Sets work
+io.log(uuid.version(try uuid.v7()))              // 7; uuid.timeOf gives a v7's time
+```
+
+### Big Numbers
+
+`core:big.ec` has whole numbers of any size (`big.Integer`) and exact decimals (`big.Decimal`), for what a Long would overflow or a Double would round. There are no operators for them: call the functions, as methods if you like.
+
+```plaintext
+use "core:big.ec"
+
+var n = big.integer(1)
+for i in 1..=30 do
+    n = n.mul(big.integer(i))
+io.log("${n}")                                   // 265252859812191058636308480000000
+val x = try big.parse("ff_ff", 16)               // also text(x, 16), divRem, mod, pow, powMod, gcd, shl, shr, toLong
+
+val price = try big.parseDecimal("19.99")
+val total = price.mul(big.decimal(3)).add(try big.parseDecimal("0.05"))
+io.log("${total}")                               // 60.02
+io.log("${total.div(big.decimal(7), 2)}")        // 8.57: to 2 places, half to even
+io.log("${big.decimal(25, 1).round(0, :halfUp)}")   // 3
+```
+
+A Decimal keeps its scale (`1.50` stays `1.50`): `add` and `sub` take the larger of the two, `mul` their sum, and `div` and `round` the one they are given, rounding as a `big.Rounding` says (`:halfEven` by default, `:halfUp`, `:halfDown`, `:down`, `:up`, `:floor`, `:ceiling`). They hold arrays, so `==` doesn't compare them: use `equals` or `compare`, which find `1.5` and `1.50` equal. Dividing by zero stops the program, as `/` does.
 
 ### Hashes
 

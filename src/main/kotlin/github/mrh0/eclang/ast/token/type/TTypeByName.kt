@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.type
 
+import github.mrh0.eclang.Completion
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.NonValueTok
@@ -14,6 +15,7 @@ import github.mrh0.ect2.*
 /** `Int`, `Point`, ...: a type by name. */
 class TTypeByName(location: Loc, val type: String) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        if (cd.completion != null && (type == Completion.PROBE || type.endsWith(".${Completion.PROBE}"))) Completion.type(cd, type.substringBefore('.', "").ifEmpty { null })
         // `T` inside `rec List<T>` is its type parameter.
         val found: Type = cd.genericContext?.get(type) ?: cd.lookupType(location, type)
         if (found is GenericRecord) throw EcError(location, "${cd.types.storageProblem(found)}.")

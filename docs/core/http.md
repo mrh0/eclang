@@ -24,16 +24,21 @@ HTTP/1.1: parsing URLs, a client, and a small server. Built on core:net.ec.
     val server = try http.server(8080)
     try http.run(server, fn hello)                      // serves until http.stop(server)
 
-There is no HTTPS: that needs a TLS library, which a program can't link yet, so an `https:` URL is an error that says
-so. For the same reason of size, there are no cookies, no compression, and the client opens a new connection for each
-request. A redirect is followed for GET and HEAD, and for the others as browsers do. Both sides read `chunked` bodies.
-Everything is read into memory; the limits on it are `maxBody` in [`Options`](#http.Options) and [`ServerOptions`](#http.ServerOptions).
+HTTPS needs OpenSSL, so it needs `use "core:tls.ec"` too: then `https:` URLs work, checking the server's certificate
+([`Options`](#http.Options)'s `tls` can trust others), and a server serves HTTPS with `ServerOptions { tls = try tls.server(cert,
+key) }`. Without it, an `https:` URL is an error that says so. There are no cookies and no compression, and the client
+opens a new connection for each request. A redirect is followed for GET and HEAD, and for the others as browsers do.
+Both sides read `chunked` bodies. Everything is read into memory; the limits on it are `maxBody` in [`Options`](#http.Options)
+and [`ServerOptions`](#http.ServerOptions).
 
-The server keeps a fixed number of threads, each serving one connection at a time, so handlers run at the same time
-and whatever they share needs a lock (core:thread.ec). Each request has its own pool, freed after its response is
-sent. A handler can be a lambda that uses the variables around it (or reach the program's data through `req.context`). A panic in a
-handler ends the program. The server is strict about what it reads, and limits the size of a request, but it is small:
-in front of the open Internet, put it behind a reverse proxy.
+The server waits for all its connections at once, in one thread (with a net.Poller), until a request's head has
+arrived, and then hands the connection to one of a fixed number of worker threads, which runs the handler and sends the
+response. So a connection that is idle between requests, or sends its request slowly, holds no worker: only reading a
+body and handling take one. Handlers run at the same time, so whatever they share needs a lock (core:thread.ec). Each
+request has its own pool, freed after its response is sent, and each connection one, freed when it closes. A handler
+can be a lambda that uses the variables around it (or reach the program's data through `req.context`). A panic in a
+handler ends the program. The server is strict about what it reads, limits the size of a request and the time it may
+take, but it is small: in front of the open Internet, put it behind a reverse proxy.
 
 Failures of the network are OsErrors, and answers that aren't valid HTTP are ParseErrors; both are Errors. A status
 such as 404 isn't a failure: it is in [`Response`](#http.Response). What is returned is allocated in the current pool.
@@ -132,6 +137,7 @@ How a client makes a request: `http.Options { timeout = time.seconds(5) }`.
 - <a id="http.Options.redirects"></a>`redirects: Int = 5` — How many redirects to follow; 0 gives the redirect itself as the response.
 - <a id="http.Options.headers"></a>`headers: Headers? = null` — Headers to send, next to those that are always sent. They take precedence over those.
 - <a id="http.Options.maxBody"></a>`maxBody: Size = 1073741824` — The largest body to read.
+- <a id="http.Options.tls"></a>`tls: net.TlsOptions = net.TlsOptions {}` — Which certificates an https server may have: the system's by default. https needs `use "core:tls.ec"`.
 
 ### <a id="http.ServerOptions"></a>`ServerOptions`
 
@@ -143,10 +149,12 @@ How a server works.
 
 **Fields**
 
-- <a id="http.ServerOptions.workers"></a>`workers: Int = 16` — How many connections are served at the same time; more of them wait.
-- <a id="http.ServerOptions.timeout"></a>`timeout: time.Duration = time.seconds(30)` — How long a read or write of a request may take, once it has started.
+- <a id="http.ServerOptions.workers"></a>`workers: Int = 16` — How many requests are handled at the same time; more of them wait. Connections between requests don't count.
+- <a id="http.ServerOptions.timeout"></a>`timeout: time.Duration = time.seconds(30)` — How long a request may take to arrive once it has started, and each later read or write of it.
 - <a id="http.ServerOptions.idleTimeout"></a>`idleTimeout: time.Duration = time.seconds(5)` — How long a connection may stay open waiting for the next request.
 - <a id="http.ServerOptions.maxBody"></a>`maxBody: Size = 16777216` — The largest body of a request; a larger one gets the status 413.
+- <a id="http.ServerOptions.maxConnections"></a>`maxConnections: Int = 1024` — How many connections can be open at once; more wait to be accepted.
+- <a id="http.ServerOptions.tls"></a>`tls: net.TlsServer? = null` — The certificate and key to serve HTTPS with, from `tls.server` (core:tls.ec); null for HTTP.
 - <a id="http.ServerOptions.context"></a>`context: @Any? = null` — What handlers get as `req.context`.
 
 ### <a id="http.Handler"></a>`Handler`
@@ -177,9 +185,11 @@ A server: [`server`](#http.server).
 
 - <a id="http.Server.listener"></a>`listener: net.Listener` — Where it listens. `listener.address.port` is the port, also when the system chose it.
 - <a id="http.Server.options"></a>`options: ServerOptions` — How it works.
-- <a id="http.Server.running"></a>`running: @thread.Atomic` — Whether workers should go on: 1 or 0.
-- <a id="http.Server.accepting"></a>`accepting: thread.Mutex` — Held by the worker that is waiting for a connection.
-- <a id="http.Server.workers"></a>`workers: List<thread.Thread>` — The workers, once it has started.
+- <a id="http.Server.running"></a>`running: @thread.Atomic` — Whether the server should go on: 1 or 0.
+- <a id="http.Server.ready"></a>`ready: thread.Channel` — Connections whose request has arrived, which the workers take.
+- <a id="http.Server.done"></a>`done: thread.Channel` — Connections the workers are done with, which the dispatcher takes back.
+- <a id="http.Server.poller"></a>`poller: net.Poller` — What the dispatcher waits on: the listener, and the connections between requests.
+- <a id="http.Server.workers"></a>`workers: List<thread.Thread>` — The dispatcher and the workers, once it has started.
 - <a id="http.Server.handler"></a>`handler: Handler = fn unserved` — What serves requests, when `canFail` is false.
 - <a id="http.Server.failing"></a>`failing: FailingHandler = fn unservedFailing` — What serves requests, when `canFail` is true.
 - <a id="http.Server.canFail"></a>`canFail: Bool = false` — Which of the two is in use.
@@ -388,7 +398,7 @@ Makes a request, following redirects.
 
 **Throws**
 
-- `Error` — when the URL isn't http, the server can't be reached, a timeout passes, the answer isn't valid or is larger
+- `Error` — when the URL isn't http or https (which needs core:tls.ec), the server can't be reached, its certificate isn't valid, a timeout passes, the answer isn't valid or is larger
   than `maxBody`, or there are too many redirects
 
 ### `get`

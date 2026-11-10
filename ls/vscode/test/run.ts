@@ -13,6 +13,7 @@ import { CharStream, Token } from "antlr4";
 import * as oniguruma from "vscode-oniguruma";
 import { INITIAL, Registry } from "vscode-textmate";
 import { Checker } from "../src/server/checker";
+import { complete, placeAt } from "../src/server/completion";
 import { rangeAt } from "../src/server/diagnostics";
 import { definition, hover } from "../src/server/hover";
 import { lines } from "../src/server/kotlin";
@@ -381,6 +382,12 @@ async function testServer(): Promise<void> {
         const shown = await request("textDocument/hover", { textDocument: { uri }, position: { line: 3, character: 13 } });
         if (!shown?.contents?.value?.includes("Doubles it.")) problems.push(`hover across files: ${JSON.stringify(shown)}`);
 
+        const offered = await request("textDocument/completion", { textDocument: { uri }, position: { line: 3, character: 12 } });
+        if (!offered?.items?.some((i: any) => i.label === "twice")) problems.push(`completion across files: ${JSON.stringify(offered).slice(0, 300)}`);
+        const twice = offered?.items?.find((i: any) => i.label === "twice");
+        const resolved = twice && await request("completionItem/resolve", twice);
+        if (!resolved?.documentation?.value?.includes("Doubles it.")) problems.push(`completion documentation: ${JSON.stringify(resolved)}`);
+
         const target = await request("textDocument/definition", { textDocument: { uri }, position: { line: 3, character: 13 } });
         const wanted = { uri: pathToFileURL(lib).toString(), range: { start: { line: 3, character: 3 }, end: { line: 3, character: 8 } } };
         if (JSON.stringify(target) !== JSON.stringify([wanted])) problems.push(`definition across files: ${JSON.stringify(target)}`);
@@ -482,9 +489,85 @@ async function testChecker(): Promise<void> {
     report("no Java", answer === null && gone.length === 1 && missing.available === false && gone[0].includes("eclang.java.path") ? [] : [`${answer} ${gone}`]);
 }
 
+/** Completion through the compiler: what fits, from the types it knows at the cursor, and without it from declarations. */
+async function testCompletion(): Promise<void> {
+    const problems: string[] = [];
+    const dir = mkdtempSync(join(tmpdir(), "eclang-complete-"));
+    const checker = new Checker("java", jar, reason => problems.push(`unavailable: ${reason}`));
+    try {
+        const file = join(dir, "main.ec");
+        const base = `use "core:io.ec"
+
+rec Point as
+    x: Int
+    y: Int
+
+fn norm(p: Point): Int = p.x + p.y
+fn label(p: Point): String = "point"
+fn pick(mode: :fast | :slow): Int = 1
+
+fn main(): Int do
+    val p = Point { x = 1, y = 2 }
+    val count = 3
+    var name = "x"
+LINE
+    ret 0
+`;
+        let current = base;
+        const project = new Project(join(root, "dist/core"), () => [dir], f => f === file ? current : undefined);
+        /** The items at the `|` of [line], put in place of LINE, best first, with the compiler or without. */
+        const at = async (line: string, compiler = true) => {
+            const index = line.indexOf("|");
+            const text = current = base.replace("LINE", line.replace("|", ""));
+            const row = lines(text).findIndex(l => l === line.replace("|", ""));
+            const place = placeAt(text, row, index);
+            if (place === null) return null;
+            const result = compiler ? await checker.complete(file, [{ path: file, text }], row + 1, index) : null;
+            return { result, items: complete(project, file, text, place, result).sort((a, b) => a.sortText!.localeCompare(b.sortText!)) };
+        };
+        const labels = (found: Awaited<ReturnType<typeof at>>) => found?.items.map(i => i.label) ?? [];
+        const first = (what: string, found: Awaited<ReturnType<typeof at>>, ...wanted: string[]) => {
+            const got = labels(found).slice(0, wanted.length);
+            if (JSON.stringify([...got].sort()) !== JSON.stringify([...wanted].sort())) problems.push(`${what}: expected ${wanted} first, got ${labels(found).slice(0, 8)}`);
+        };
+        const has = (what: string, found: Awaited<ReturnType<typeof at>>, ...wanted: string[]) => {
+            for (const w of wanted) if (!labels(found).includes(w)) problems.push(`${what}: no '${w}' in ${labels(found).slice(0, 12)}`);
+        };
+
+        first("fields of the receiver's type first", await at("    val n: Int = p.|"), "x", "y");
+        const methods = await at("    val n: Int = p.|");
+        has("functions that take the receiver", methods, "norm", "label");
+        const norm = methods?.items.find(i => i.label === "norm");
+        if (norm?.insertText !== "norm()") problems.push(`a method without other arguments: ${JSON.stringify(norm)}`);
+        if (labels(methods).indexOf("norm") > labels(methods).indexOf("label")) problems.push(`the result that fits first: ${labels(methods)}`);
+        has("functions of String", await at("    val n = name.|"), "len", "startsWith", "contains");
+        first("what has the expected type first", await at("    val n: Int = c|"), "count");
+        first("the atoms the parameter takes", await at("    val n = pick(:|)"), ":fast", ":slow");
+        has("a module's functions", await at("    io.|"), "log", "readFile");
+        has("types", await at("    var q: Po|"), "Point", "Int", "String");
+        has("locals, with the line unfinished", await at("    val n = norm(|"), "p");
+        first("a local of the expected type", await at("    val n = norm(|"), "p");
+        has("keywords at the start of a statement", await at("    re|"), "ret");
+        if (await at("    val na|") !== null) problems.push("a name being declared gets completions");
+        if (await at('    io.log("p.|")') !== null) problems.push("text in a string gets completions");
+        if (await at("    // p.|") !== null) problems.push("a comment gets completions");
+
+        // Without the compiler: names from declarations, from the last time the file parsed (here, before the line was typed).
+        current = base.replace("LINE", "    pass");
+        project.docs(file);
+        has("without the compiler, locals and functions", await at("    val n = |", false), "count", "norm", "Point", "io");
+        has("without the compiler, a module's functions", await at("    io.|", false), "log");
+    } finally {
+        checker.stop();
+        rmSync(dir, { recursive: true, force: true });
+    }
+    report("completion", problems);
+}
+
 async function main() {
     compareWithCompiler();
     await testChecker();
+    await testCompletion();
     testHover();
     testDefinition();
     testRanges();

@@ -1,0 +1,14 @@
+HTTP/1.1 200 OK hello /first
+200 hello /fast0
+200 hello /fast1
+200 hello /fast2
+200 hello /fast3
+200 hello /fast4
+true
+HTTP/1.1 200 OK hello /second
+HTTP/1.1 200 OK hello /third
+closed
+HTTP/1.1 200 OK hello /slow
+HTTP/1.1 408 Request Timeout 
+closed
+closed

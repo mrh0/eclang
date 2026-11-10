@@ -1,6 +1,6 @@
 # Module `io`
 
-Input and output: the console, files, directories and paths. Files use APR (apr_file_io.h); the console uses
+Input and output: the console, files and directories. Paths are in core:path.ec. Files use APR (apr_file_io.h); the console uses
 C's stdio, so the two can be mixed.
 
     use "core:io.ec"
@@ -630,38 +630,3 @@ fn env(name: String): String?
 ```
 
 The value of the environment variable `name` (`io.env("HOME")`), or null when it isn't set.
-
-### <a id="io.joinPath"></a>`joinPath`
-
-```ec
-fn joinPath(a: String, b: String): String
-```
-
-`a` and `b` with one "/" between them: `joinPath("logs/", "today.txt")` is "logs/today.txt". An absolute `b` wins.
-
-### <a id="io.baseName"></a>`baseName`
-
-```ec
-fn baseName(path: String): String
-```
-
-The last part of a path: `baseName("a/b/c.txt")` is "c.txt". A "/" at the end is left out.
-
-### <a id="io.dirName"></a>`dirName`
-
-```ec
-fn dirName(path: String): String
-```
-
-The path without its last part: `dirName("a/b/c.txt")` is "a/b", `dirName("c.txt")` is ".".
-
-### <a id="io.extension"></a>`extension`
-
-```ec
-fn extension(path: String): String
-```
-
-The extension of the last part, without the dot: `extension("a/photo.jpg")` is "jpg". A name that starts
-with a dot (".bashrc") has none.
-
-**Returns** the extension, "" when there is none

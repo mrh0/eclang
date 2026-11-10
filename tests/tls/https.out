@@ -1,0 +1,7 @@
+200 secure hello /n0
+200 secure hello /n1
+200 secure hello /n2
+secure hello /form x=1
+TLS handshake with localhost: the certificate isn't valid: self-signed certificate
+plain http refused
+secure hello /again

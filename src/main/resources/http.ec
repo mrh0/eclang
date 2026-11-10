@@ -23,16 +23,21 @@
  *     val server = try http.server(8080)
  *     try http.run(server, fn hello)                      // serves until http.stop(server)
  *
- * There is no HTTPS: that needs a TLS library, which a program can't link yet, so an `https:` URL is an error that says
- * so. For the same reason of size, there are no cookies, no compression, and the client opens a new connection for each
- * request. A redirect is followed for GET and HEAD, and for the others as browsers do. Both sides read `chunked` bodies.
- * Everything is read into memory; the limits on it are `maxBody` in {@link Options} and {@link ServerOptions}.
+ * HTTPS needs OpenSSL, so it needs `use "core:tls.ec"` too: then `https:` URLs work, checking the server's certificate
+ * ({@link Options}'s `tls` can trust others), and a server serves HTTPS with `ServerOptions { tls = try tls.server(cert,
+ * key) }`. Without it, an `https:` URL is an error that says so. There are no cookies and no compression, and the client
+ * opens a new connection for each request. A redirect is followed for GET and HEAD, and for the others as browsers do.
+ * Both sides read `chunked` bodies. Everything is read into memory; the limits on it are `maxBody` in {@link Options}
+ * and {@link ServerOptions}.
  *
- * The server keeps a fixed number of threads, each serving one connection at a time, so handlers run at the same time
- * and whatever they share needs a lock (core:thread.ec). Each request has its own pool, freed after its response is
- * sent. A handler can be a lambda that uses the variables around it (or reach the program's data through `req.context`). A panic in a
- * handler ends the program. The server is strict about what it reads, and limits the size of a request, but it is small:
- * in front of the open Internet, put it behind a reverse proxy.
+ * The server waits for all its connections at once, in one thread (with a net.Poller), until a request's head has
+ * arrived, and then hands the connection to one of a fixed number of worker threads, which runs the handler and sends the
+ * response. So a connection that is idle between requests, or sends its request slowly, holds no worker: only reading a
+ * body and handling take one. Handlers run at the same time, so whatever they share needs a lock (core:thread.ec). Each
+ * request has its own pool, freed after its response is sent, and each connection one, freed when it closes. A handler
+ * can be a lambda that uses the variables around it (or reach the program's data through `req.context`). A panic in a
+ * handler ends the program. The server is strict about what it reads, limits the size of a request and the time it may
+ * take, but it is small: in front of the open Internet, put it behind a reverse proxy.
  *
  * Failures of the network are OsErrors, and answers that aren't valid HTTP are ParseErrors; both are Errors. A status
  * such as 404 isn't a failure: it is in {@link Response}. What is returned is allocated in the current pool.
@@ -559,6 +564,8 @@ rec Options as
     headers: Headers? = null
     /** The largest body to read. */
     maxBody: Size = 1073741824
+    /** Which certificates an https server may have: the system's by default. https needs `use "core:tls.ec"`. */
+    tls: net.TlsOptions = net.TlsOptions {}
 
 /** The {@link Options} that are used when none are given. */
 fn defaults(): Options = Options { redirects = 5 }
@@ -622,16 +629,18 @@ priv fn readResponse(r: @Reading, method: String, url: String): Response throws 
  * @throws when it can't be made, or the answer isn't valid
  */
 priv fn exchange(method: String, u: Url, body: String, options: Options): Response throws Error do
-    throw argumentError("url", "https isn't supported: it needs a TLS library, which a program can't link yet") if u.scheme == "https"
-    throw argumentError("url", "this URL should start with http://, and it is: ${text(u)}") if u.scheme != "http" or u.host.len == 0
+    val secure = u.scheme == "https"
+    throw argumentError("url", "this URL should start with http:// or https://, and it is: ${text(u)}") if (u.scheme != "http" and not secure) or u.host.len == 0
     throw argumentError("method", "this isn't a method: ${quote(method)}") if not isToken(method)
     throw argumentError("url", "a URL can't have white space or control characters in it") if not isHeaderValue(target(u)) or target(u).contains(' ')
+    try net.requireTls() if secure
     val head = stringBuilder(256)
     head.append("${method} ${target(u)} HTTP/1.1\r\n")
     try addHeaders(head, requestHeaders(u, method, body, options))
-    val c = try net.connect(u.host, if u.port != 0 do u.port else 80, options.timeout)
+    val c = try net.connect(u.host, if u.port != 0 do u.port else if secure do 443 else 80, options.timeout)
     defer net.close(c)
     net.setTimeout(c, options.timeout)
+    try net.secure(c, u.host, options.tls) if secure
     try net.send(c, head.build())
     try net.send(c, body) if body.len > 0
     val r = new Reading { c, options.maxBody }
@@ -647,7 +656,7 @@ priv fn sameOrigin(a: Url, b: Url): Bool = a.scheme == b.scheme and a.host == b.
  * @param body what it sends; "" for nothing
  * @param options how to do it
  * @return the response, whatever its status
- * @throws when the URL isn't http, the server can't be reached, a timeout passes, the answer isn't valid or is larger
+ * @throws when the URL isn't http or https (which needs core:tls.ec), the server can't be reached, its certificate isn't valid, a timeout passes, the answer isn't valid or is larger
  *     than `maxBody`, or there are too many redirects
  */
 fn request(method: String, url: String, body: String = "", options: Options = defaults()): Response throws Error do
@@ -753,19 +762,23 @@ fn delete(url: String, options: Options = defaults()): Response throws Error = t
 // ---------------------------------------------------------------------------------------------------
 // The server
 
-/** How often a waiting worker looks whether it should stop. */
+/** How long the dispatcher waits at most, before it looks whether it should stop and for connections that waited too long. */
 priv const POLL_MILLIS: Long = 50
 
 /** How a server works. */
 mut rec ServerOptions as
-    /** How many connections are served at the same time; more of them wait. */
+    /** How many requests are handled at the same time; more of them wait. Connections between requests don't count. */
     workers: Int = 16
-    /** How long a read or write of a request may take, once it has started. */
+    /** How long a request may take to arrive once it has started, and each later read or write of it. */
     timeout: time.Duration = time.seconds(30)
     /** How long a connection may stay open waiting for the next request. */
     idleTimeout: time.Duration = time.seconds(5)
     /** The largest body of a request; a larger one gets the status 413. */
     maxBody: Size = 16777216
+    /** How many connections can be open at once; more wait to be accepted. */
+    maxConnections: Int = 1024
+    /** The certificate and key to serve HTTPS with, from `tls.server` (core:tls.ec); null for HTTP. */
+    tls: net.TlsServer? = null
     /** What handlers get as `req.context`. */
     context: @Any? = null
 
@@ -784,17 +797,40 @@ priv fn unserved(req: Request): Response = text(503, "Service Unavailable\n")
 /** The failing handler of a server that hasn't started. */
 priv fn unservedFailing(req: Request): Response throws Error = text(503, "Service Unavailable\n")
 
+/** A connection the server holds, from when it is accepted until it closes. */
+priv mut ref rec Client as
+    /** Its own pool, freed when it closes. */
+    mem: Pool
+    /** The connection. */
+    c: net.Connection
+    /** Its token in the poller. */
+    token: Long
+    /** When the dispatcher gives up on it, in nanoseconds of the steady clock. */
+    deadline: Long
+    /** Whether its TLS handshake is done, or it has none. */
+    secured: Bool
+    /** Whether a request has started to arrive, which then has `timeout` to arrive whole. */
+    started: Bool = false
+    /** Whether a worker has it. */
+    handed: Bool = false
+    /** Set by the worker: whether it stays open for another request. */
+    keep: Bool = false
+
 /** A server: {@link server}. */
 mut ref rec Server as
     /** Where it listens. {@code listener.address.port} is the port, also when the system chose it. */
     listener: net.Listener
     /** How it works. */
     options: ServerOptions
-    /** Whether workers should go on: 1 or 0. */
+    /** Whether the server should go on: 1 or 0. */
     running: @thread.Atomic
-    /** Held by the worker that is waiting for a connection. */
-    accepting: thread.Mutex
-    /** The workers, once it has started. */
+    /** Connections whose request has arrived, which the workers take. */
+    ready: thread.Channel
+    /** Connections the workers are done with, which the dispatcher takes back. */
+    done: thread.Channel
+    /** What the dispatcher waits on: the listener, and the connections between requests. */
+    poller: net.Poller
+    /** The dispatcher and the workers, once it has started. */
     workers: List<thread.Thread>
     /** What serves requests, when {@code canFail} is false. */
     handler: Handler = fn unserved
@@ -815,9 +851,14 @@ fn server(port: Int, host: String = "0.0.0.0", options: ServerOptions = serverDe
     val l = try net.listen(port, host)
     val running = new thread.Atomic { 0 }
     val workers: List<thread.Thread> = list()
-    ret new Server { l, options, running, try thread.mutex(), workers }
+    val most = if options.maxConnections < 1 do 1 as Size else options.maxConnections as Size
+    val ready = try thread.channel(most)
+    val done = try thread.channel(most)
+    // One more place for the listener.
+    val poller = try net.poller(most + 1)
+    ret new Server { l, options, running, ready, done, poller, workers }
 
-/** Whether the workers should go on. */
+/** Whether the server should go on. */
 priv fn isRunning(s: Server): Bool = thread.load(mut @s.running) != 0
 
 /** Runs the handler, in a way that can't fail: a failure becomes the status 500. */
@@ -887,15 +928,6 @@ priv fn sendResponse(c: net.Connection, method: String, res: Response, keepOpen:
     b.append(res.body) if method != "HEAD" and not noBody
     try net.send(c, b.build())
 
-/** Whether the next request has come; false when it didn't in time, or the server is stopping. */
-priv fn awaitRequest(s: Server, c: net.Connection): Bool do
-    val started = time.instant()
-    while isRunning(s) do
-        val came = net.waitReadable(c, time.millis(POLL_MILLIS)) ?? ret false
-        ret true if came
-        ret false if time.elapsed(started).micros > s.options.idleTimeout.micros
-    ret false
-
 /** Serves one request, in the current pool, and says whether the connection stays open. */
 priv fn serveOne(s: Server, c: net.Connection): Bool do
     val r = new Reading { c, s.options.maxBody }
@@ -918,47 +950,185 @@ priv fn serveOne(s: Server, c: net.Connection): Bool do
         ret false
     ret keepOpen
 
-/** Serves a connection until it closes, with a pool for each request. */
-priv fn serveConnection(s: Server, c: net.Connection) do
-    net.setTimeout(c, s.options.timeout)
-    var open = true
-    while open and awaitRequest(s, c) do
-        pool do
-            open = serveOne(s, c)
-
-/** Waits for a connection for a moment, taking its turn with the other workers; null when none came. */
-priv fn acceptNext(s: Server): net.Connection? do
-    thread.lock(s.accepting)
-    defer thread.unlock(s.accepting)
-    ret null if not isRunning(s)
-    val c = try net.accept(s.listener, time.millis(POLL_MILLIS)) catch e do
-        if e.code != ERR_TIMEOUT do
-            // Out of file descriptors, say. There is nothing to do but to try again soon.
-            log.warn("http: can't accept a connection: ${e.message}")
-            time.sleep(time.millis(POLL_MILLIS))
-        ret null
-    ret c
-
-/** Waits for a connection for a moment, and serves it. */
-priv fn serveNext(s: Server) do
-    if val c = acceptNext(s) do
-        serveConnection(s, c)
-        net.close(c)
-
-/** What each worker runs. Only one at a time waits for a connection, so none of them is stuck when the server stops. */
+/** What each worker runs: it serves the connections the dispatcher hands it, and gives each back. */
 priv fn work(s: Server) do
-    while isRunning(s) do
+    while true do
+        val item = thread.receive(s.ready) ?? ret
+        val client = item !as Client
+        var open = false
         pool do
-            serveNext(s)
+            open = serveOne(s, client.c)
+        client.keep = open and isRunning(s)
+        thread.send(s.done, client !as @Any) ?? ret
+        net.wake(s.poller)
+
+/** The steady clock now, in nanoseconds. */
+priv fn nanosNow(): Long = time.instant().nanos
+
+/** Whether `buffered` holds the whole head of a request: it ends with an empty line. */
+priv fn hasHead(buffered: String): Bool = buffered.contains("\r\n\r\n") or buffered.contains("\n\n")
+
+/** What the dispatcher keeps track of. */
+priv mut ref rec Dispatch as
+    /** The server. */
+    s: Server
+    /** The pool the connections' pools are made in, which outlives them. */
+    base: Pool
+    /** The connections, by token. */
+    clients: Map<Long, Client>
+    /** The next token. */
+    next: Long = 1
+    /** How many connections the workers have. */
+    out: Size = 0
+    /** Whether the listener is in the poller. */
+    listening: Bool = true
+
+/** Closes a connection and frees its pool. */
+priv fn drop(d: Dispatch, client: Client) do
+    net.remove(d.s.poller, client.c)
+    d.clients.remove(client.token)
+    net.close(client.c)
+    unsafe destroy client.mem
+    if not d.listening and isRunning(d.s) do
+        net.add(d.s.poller, d.s.listener, 0) ?? ret
+        d.listening = true
+
+/** Gives a connection whose request has arrived to the workers. */
+priv fn handOff(d: Dispatch, client: Client) do
+    net.remove(d.s.poller, client.c)
+    client.handed = true
+    d.out += 1
+    thread.send(d.s.ready, client !as @Any) ?? drop(d, client)
 
 /**
- * Starts the workers.
+ * Takes what has arrived on a connection: the next step of its handshake, or more of a request. Hands it to the
+ * workers once its request's head is there (or the buffer is full), and closes it when the peer has.
+ */
+priv fn progress(d: Dispatch, client: Client) do
+    val c = client.c
+    if not client.secured do
+        val finished = try net.handshake(c) catch e do
+            log.debug("http: TLS handshake with ${net.text(c.remote)}: ${e.message}")
+            ret drop(d, client)
+        ret if not finished
+        client.secured = true
+    val got = try net.readMore(c) catch e do
+        ret drop(d, client)
+    if got == null do
+        ret drop(d, client)
+    val buffered = net.buffered(c)
+    if not client.started and buffered.len > 0 do
+        client.started = true
+        client.deadline = nanosNow() + d.s.options.timeout.micros * 1000
+    ret handOff(d, client) if hasHead(buffered) or net.isBufferFull(c)
+
+/** Takes back a connection a worker is done with: closes it, or waits for its next request. */
+priv fn takeBack(d: Dispatch, client: Client) do
+    d.out -= 1
+    client.handed = false
+    ret drop(d, client) if not client.keep or not isRunning(d.s)
+    client.started = false
+    client.deadline = nanosNow() + d.s.options.idleTimeout.micros * 1000
+    try net.add(d.s.poller, client.c, client.token) catch e do
+        ret drop(d, client)
+    // What arrived with the last request, or is held by TLS, makes the socket look idle.
+    progress(d, client)
+
+/** Accepts the connections that are waiting, up to the most there can be. */
+priv fn acceptAll(d: Dispatch) do
+    val s = d.s
+    while d.clients.size() < s.options.maxConnections as Size do
+        val mem = new Pool in d.base
+        val c = try net.accept(s.listener, time.micros(0), mem) catch e do
+            if e.code != ERR_TIMEOUT do
+                // Out of file descriptors, say. There is nothing to do but to try again soon.
+                log.warn("http: can't accept a connection: ${e.message}")
+            unsafe destroy mem
+            ret
+        net.setTimeout(c, s.options.timeout)
+        val client = new Client { mem, c, d.next, nanosNow() + s.options.idleTimeout.micros * 1000, s.options.tls == null } in mem
+        d.next += 1
+        unsafe d.clients.put(client.token, client)
+        if val creds = s.options.tls do
+            try net.beginSecure(c, creds) catch e do
+                log.warn("http: can't start TLS: ${e.message}")
+                drop(d, client)
+                continue
+        try net.add(s.poller, c, client.token) catch e do
+            drop(d, client)
+            continue
+    // Full: the rest wait in the listener's backlog until a connection closes.
+    net.remove(s.poller, s.listener)
+    d.listening = false
+
+/** Closes the connections that have waited too long for a request, or for the rest of one. */
+priv fn expire(d: Dispatch) do
+    val now = nanosNow()
+    for client in d.clients.values() do
+        if not client.handed and now > client.deadline do
+            if client.started do
+                // Half a request: say why, if the socket takes it at once.
+                net.setTimeout(client.c, time.micros(0))
+                try net.send(client.c, "HTTP/1.1 408 Request Timeout\r\nConnection: close\r\nContent-Length: 0\r\n\r\n") catch e do
+                    log.debug("http: can't send a 408: ${e.message}")
+            drop(d, client)
+
+/** One round of the dispatcher: takes back what the workers are done with, then waits for the sockets for a moment. */
+priv fn round(d: Dispatch) do
+    // Each Client lives in a pool of its own, made in d.base, which outlives the `pool` block of a round: the compiler
+    // can't follow that through the channels and the Map, so the calls that keep Clients in d are `unsafe`.
+    val s = d.s
+    while true do
+        val item = thread.tryReceive(s.done) ?? break
+        unsafe takeBack(d, item !as Client)
+    val events = try net.wait(s.poller, time.millis(POLL_MILLIS)) catch e do
+        log.warn("http: can't wait for connections: ${e.message}")
+        time.sleep(time.millis(POLL_MILLIS))
+        ret
+    for e in events do
+        if e.token == 0 do
+            unsafe acceptAll(d)
+        else if val client = d.clients.get(e.token) do
+            unsafe progress(d, client) if not client.handed
+    expire(d)
+
+/**
+ * What the dispatcher runs: it accepts connections, waits for all of them between requests in one poller, and hands
+ * each to a worker once its request has arrived. A connection that is idle, or sends its request slowly, holds no
+ * worker.
+ */
+priv fn dispatch(s: Server) do
+    val clients: Map<Long, Client> = map()
+    val d = new Dispatch { s, pool, clients }
+    try net.add(s.poller, s.listener, 0) catch e do
+        log.error("http: can't wait for connections: ${e.message}")
+        ret
+    while isRunning(s) do
+        pool do
+            // See round: the Clients it keeps in d live in pools of their own.
+            unsafe round(d)
+    // Stopping: no more work for the workers, then wait for what they have, which lives in this thread's pool.
+    thread.close(s.ready)
+    while d.out > 0 do
+        val item = thread.receive(s.done) ?? break
+        val client = item !as Client
+        d.out -= 1
+        client.handed = false
+        client.keep = false
+        drop(d, client)
+    for client in d.clients.values() do
+        drop(d, client) if not client.handed
+    net.remove(s.poller, s.listener)
+
+/**
+ * Starts the dispatcher and the workers.
  * @throws when the system can't start a thread
  */
 priv fn startWorkers(s: Server) throws OsError do
     thread.store(mut @s.running, 1)
-    // The workers share the Server, which isn't `flat`: they only read it, except for its atomics and what its own locks guard,
-    // and it lives until stop has joined them all.
+    // The threads share the Server, which isn't `flat`: they only read it, except for its atomics, its channels and
+    // the poller (which can be woken from any thread), and it lives until wait has joined them all.
+    s.workers.push(try unsafe thread.spawn(fn dispatch, s))
     for i in 0..<s.options.workers do
         s.workers.push(try unsafe thread.spawn(fn work, s))
 
@@ -990,6 +1160,7 @@ fn start(s: Server, escaping handler: FailingHandler) throws OsError do
  */
 fn stop(s: Server) do
     thread.store(mut @s.running, 0)
+    net.wake(s.poller)
 
 /**
  * Waits until a server has stopped, and closes its port.

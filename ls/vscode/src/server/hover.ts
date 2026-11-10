@@ -263,3 +263,36 @@ export function definition(project: Project, file: string, text: string, line: n
         default: return [];
     }
 }
+
+/**
+ * The documentation of [name], as its hover shows it, for a completion item in [file]: a member of a type (a field) when
+ * [member], otherwise a declaration of module [module] (null: the top level). Of overloads, the first. Null when there's none.
+ */
+export function documentation(project: Project, file: string, name: string, module: string | null, member: boolean): string | null {
+    const files = project.closure(file);
+    const found = member ? membersNamed(files, name) : itemsNamed(files, name, module, project.docs(file)?.module ?? null);
+    return found.length === 0 ? null : render(found[0]);
+}
+
+/** The declarations of [file] and the files it uses that code in [file] sees, for completion without the compiler. */
+export function visibleDeclarations(project: Project, file: string): { item: DocItem; module: string | null }[] {
+    const here = project.docs(file)?.module ?? null;
+    return project.closure(file).filter(f => f.docs.module === here || f.docs.module === null)
+        .flatMap(f => f.docs.items.filter(i => !i.isPrivate || f.docs.module === here).map(item => ({ item, module: f.docs.module })));
+}
+
+/** The declarations of module [module] that code in [file] sees, for completion without the compiler. */
+export function moduleDeclarations(project: Project, file: string, module: string): DocItem[] {
+    const here = project.docs(file)?.module ?? null;
+    return project.closure(file).filter(f => f.docs.module === module).flatMap(f => f.docs.items.filter(i => !i.isPrivate || module === here));
+}
+
+/** The fields of every record [file] sees, for `x.` without the compiler, which knows x's type. */
+export function allMembers(project: Project, file: string): DocItem[] {
+    return project.closure(file).flatMap(f => typesOf(f.docs).flatMap(t => t.kind === "ENUM" ? [] : t.members));
+}
+
+/** The modules [file] sees. */
+export function moduleNames(project: Project, file: string): string[] {
+    return [...new Set(project.closure(file).map(f => f.docs.module).filter((m): m is string => m !== null))];
+}

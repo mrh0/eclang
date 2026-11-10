@@ -688,7 +688,7 @@ object Lifetimes {
         val step = { run(); LoopPools.imagine(cd, loops, run) }
         step()
         val stack = cd.ctx().stack
-        if (stack.rounds.isNotEmpty()) stack.replays += Replay(stack.scopeStack.toList(), cd.poolBlocks.toList(), cd.pipedTokens.toList(), step)
+        if (stack.rounds.isNotEmpty()) stack.replays += Replay(stack.scopeStack.toList(), cd.poolBlocks.toList(), cd.pipedTokens.toList(), cd.unsafeDepth, step)
     }
 
     /**
@@ -705,11 +705,13 @@ object Lifetimes {
     private fun replay(cd: CompileData) {
         val stack = cd.ctx().stack
         val (blocks, pipes) = cd.poolBlocks.toList() to cd.pipedTokens.toList()
+        val unsafe = cd.unsafeDepth
         do {
             val before = stack.followed()
             for (step in stack.replays.toList()) {
                 cd.poolBlocks.clear(); cd.poolBlocks += step.poolBlocks
                 cd.pipedTokens.clear(); cd.pipedTokens += step.pipes
+                cd.unsafeDepth = step.unsafeDepth
                 try {
                     stack.inScopes(step.scopes, step.run)
                 } catch (e: EcError) {
@@ -718,6 +720,7 @@ object Lifetimes {
                 } finally {
                     cd.poolBlocks.clear(); cd.poolBlocks += blocks
                     cd.pipedTokens.clear(); cd.pipedTokens += pipes
+                    cd.unsafeDepth = unsafe
                 }
             }
         } while (stack.followed() != before)

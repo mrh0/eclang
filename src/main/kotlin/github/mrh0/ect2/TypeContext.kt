@@ -189,6 +189,10 @@ class TypeContext {
     /** The namespaces that define a type called [name], for "it's in module x" hints. */
     fun namespacesOf(name: String): List<String> = names.keys.filter { it.substringAfter(':') == name }.map { it.substringBefore(':') }
 
+    /** The types named in [namespace] itself, by name (for completion). */
+    fun namedIn(namespace: String): Map<String, Type> =
+        names.entries.filter { it.key.substringBefore(':') == namespace }.associate { it.key.substringAfter(':') to it.value }
+
     /** Every type name, for "did you mean" suggestions. */
     fun typeNames(): Set<String> = names.keys.map { it.substringAfter(':') }.toSet()
 

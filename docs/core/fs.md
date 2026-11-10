@@ -1,8 +1,8 @@
 # Module `fs`
 
-The file system beyond single files: walking a directory tree, glob patterns, temporary files, normalising paths
-and memory-mapped reads. Built on APR (apr_file_info.h, apr_fnmatch.h, apr_mmap.h). See core:io.ec for reading and
-writing files.
+The file system beyond single files: walking a directory tree, glob patterns, temporary files and memory-mapped
+reads. Built on APR (apr_file_info.h, apr_fnmatch.h, apr_mmap.h). See core:io.ec for reading and writing files,
+and core:path.ec for joining, normalising and relating paths.
 
     use "core:fs.ec"
     for e in try fs.walk("src") do                        // everything below src, parents first
@@ -17,9 +17,6 @@ writing files.
     io.close(t.file)
     val dir = try fs.tempDir()
     try fs.removeAll(dir)
-
-    io.log(fs.normalize("a/./b/../c"))                    // a/c
-    io.log(try fs.absolute("notes.txt"))                  // /home/ada/notes.txt
 
     val m = try fs.map("big.log")                         // no copy: the system reads it as it is used
     defer fs.unmap(m)
@@ -184,53 +181,6 @@ when nothing is there.
 **Throws**
 
 - `IoError` — when something can't be deleted, or `path` is the root, "." or ".."
-
-### <a id="fs.isAbsolute"></a>`isAbsolute`
-
-```ec
-fn isAbsolute(path: String): Bool
-```
-
-Whether `path` starts at the root of the file system.
-
-### <a id="fs.normalize"></a>`normalize`
-
-```ec
-fn normalize(path: String): String
-```
-
-The shortest way to write `path`, as text: "." parts and doubled "/"s go, and ".." takes the part before it away.
-`normalize("a/./b/../c/")` is "a/c". A relative path can keep ".." at its start; above the root there is only the
-root. The file system isn't asked, so where `b` is a link to elsewhere, "a/b/.." may not be the same place as "a".
-
-**Returns** the path, "." when nothing is left
-
-### <a id="fs.absolute"></a>`absolute`
-
-```ec
-fn absolute(path: String): String throws IoError
-```
-
-`path` as a normalised absolute path, from the current directory. Nothing has to exist there.
-
-**Throws**
-
-- `IoError` — when the current directory can't be found
-
-### <a id="fs.relative"></a>`relative`
-
-```ec
-fn relative(base: String, path: String): String throws IoError
-```
-
-The way from the directory `base` to `path`: `relative("/a/b", "/a/c/d")` is "../c/d". Relative paths start at the
-current directory.
-
-**Returns** the way, "." when they are the same place
-
-**Throws**
-
-- `IoError` — when the current directory can't be found
 
 ### <a id="fs.map"></a>`map`
 

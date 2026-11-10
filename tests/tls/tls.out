@@ -1,0 +1,16 @@
+true
+TLSv1.3
+HELLO OVER TLS
+ended
+true
+TLSv1.3
+HELLO OVER TLS
+ended
+refused: TLS handshake with localhost: the certificate isn't valid: self-signed certificate
+refused: TLS handshake with example.com: the certificate isn't valid: hostname mismatch
+true
+TLSv1.3
+HELLO OVER TLS
+ended
+true
+true

@@ -10,6 +10,7 @@
 #   tests/link/greet.ec must build and run against a C library given with `use "lib:greet"`
 #   tests/panic/NAME.ec must compile and build, then stop at runtime with a message containing its first line's `// panic:` text
 #   tests/memory/freed.ec built with `run --check-memory` (AddressSanitizer) must be reported for using freed memory
+#   tests/tls/NAME.ec   `eclang run` must print exactly tests/tls/NAME.out (core:tls.ec, OpenSSL), when OpenSSL's headers are found, skipped otherwise
 #   bindings/raylib     checked against raylib.h when it is installed or on C_INCLUDE_PATH, skipped otherwise
 #   bindings/ffmpeg     checked against FFmpeg's headers, and its examples run, when they are installed or on C_INCLUDE_PATH, skipped otherwise
 #   bindings/sqlite     checked against sqlite3.h, and its examples run, when it is installed or on C_INCLUDE_PATH, skipped otherwise
@@ -72,10 +73,16 @@ if [ -z "$1" ] || [[ link == *"$1"* ]]; then
     else fail "link lib" "$(head -5 "$OUT/link.err")"; fi
 fi
 
+# OpenSSL's headers, for core:tls.ec (libssl-dev), on the usual path or C_INCLUDE_PATH.
+openssl=""
+if echo '#include <openssl/ssl.h>' | gcc -E -x c - > /dev/null 2>&1; then openssl=yes; fi
+
 # The bundled C bindings must match their C headers (see tools/check-bindings.py).
 if [ -z "$1" ] || [[ bindings == *"$1"* ]]; then
     bindings=()
-    for f in src/main/resources/*.ec src/main/resources/c/*.ec src/main/resources/apr/*.ec src/main/resources/vendor/*.ec; do
+    for f in src/main/resources/*.ec src/main/resources/c/*.ec src/main/resources/apr/*.ec src/main/resources/vendor/*.ec src/main/resources/openssl/*.ec; do
+        # core:tls.ec and its OpenSSL bindings need OpenSSL's headers.
+        [[ "$f" == */tls.ec || "$f" == */openssl/* ]] && [ -z "$openssl" ] && continue
         bindings+=("core:${f#src/main/resources/}")
     done
     if tools/check-bindings.py "$OUT/bindings" "${bindings[@]}" > "$OUT/bindings.out" 2>&1; then echo "pass bindings (${#bindings[@]} files)"; passed=$((passed + 1))
@@ -220,6 +227,19 @@ if [ -z "$1" ] || [[ cimgui == *"$1"* ]]; then
         fi
         if [ -z "$problem" ]; then echo "pass cimgui bindings (Dear ImGui $version$notes)"; passed=$((passed + 1))
         else fail "cimgui" "$problem"; fi
+    fi
+fi
+
+# core:tls.ec (OpenSSL): TLS connections and HTTPS against a server with the certificate in tests/tls, when OpenSSL's
+# headers are installed or on C_INCLUDE_PATH (and its libraries on LIBRARY_PATH), skipped otherwise.
+if [ -z "$1" ] || [[ tls == *"$1"* ]]; then
+    if [ -z "$openssl" ]; then echo "skip tls (no openssl/ssl.h: install libssl-dev)"
+    else
+        for src in tests/tls/*.ec; do
+            name=$(basename "$src" .ec)
+            if java -jar "$JAR" run "$src" > "$OUT/tls-$name.out" 2> "$OUT/tls-$name.err" && diff -u "tests/tls/$name.out" "$OUT/tls-$name.out" > "$OUT/tls-$name.diff"; then echo "pass tls $name"; passed=$((passed + 1))
+            else fail "tls $name" "$(head -5 "$OUT/tls-$name.err")$(head -20 "$OUT/tls-$name.diff")"; fi
+        done
     fi
 fi
 

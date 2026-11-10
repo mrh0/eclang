@@ -213,6 +213,27 @@ class Functions(private val cd: CompileData) {
         return CompileData.closest(name, qualified.keys)?.let { " Did you mean '${qualified[it]}'?" } ?: ""
     }
 
+    /** Every overload code here can call by name: of module [qualifier], or of the modules visible here. For completion. */
+    fun visibleOverloads(qualifier: Module? = null): List<Overload> = visibleNames(qualifier).distinct().flatMap { visible(it, qualifier) }
+
+    /**
+     * The overloads `receiver.name(...)` can call, for completion: those visible here and those of the modules that declare the
+     * receiver's type, whose first parameter takes a [receiver] (by address too, for a `mut` one), with the cost of passing it.
+     */
+    fun methodsFor(receiver: Type): List<Pair<Overload, Int>> {
+        val candidates = (visibleOverloads() + owners(receiver).flatMap { visibleOverloads(it) }).distinct()
+            .filter { !it.namedOnly && (it.params.isNotEmpty() || it.varArg?.isCVarArg == false) }
+        return candidates.mapNotNull { o ->
+            val cost = try {
+                score(o, listOf(receiver), HashMap(), receiver = true) ?: score(o, listOf(types.pointer(receiver)), HashMap(), listOf(true), receiver = true)
+            } catch (_: EcError) { null }
+            cost?.let { o to it }
+        }
+    }
+
+    /** What a call of [o] gives: its return type, as a Result when it can fail. */
+    fun resultType(o: Overload): Type = resultOf(o)
+
     /** Whether a function called [name] can be called from here. */
     fun exists(name: String, qualifier: Module? = null) = visible(name, qualifier).isNotEmpty()
 

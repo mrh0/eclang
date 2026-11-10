@@ -77,10 +77,10 @@ Basic YWRhQHg6cA==
 the header X-Bad has a line break or control character in its value
 this isn't the name of a header: "Bad Name"
 this isn't a method: "BAD METHOD"
-https isn't supported: it needs a TLS library, which a program can't link yet
+TLS needs OpenSSL: add `use "core:tls.ec"` to the program (it links -lssl and -lcrypto, from a package such as libssl-dev)
 true
-this URL should start with http://, and it is: ftp://example.com/
-this URL should start with http://, and it is: /relative
+this URL should start with http:// or https://, and it is: ftp://example.com/
+this URL should start with http:// or https://, and it is: /relative
 a URL can't have white space or control characters in it: write them as %XX
 200
 true

@@ -9,26 +9,32 @@ Each page is the output of `eclang doc core:<file>.ec`; edit the sources, not th
 | File | `use` | Contents |
 |---|---|---|
 | [args](args.md) | `core:args.ec` | Command-line arguments: flags, options, positional arguments and subcommands, with a generated --help. |
+| [bench](bench.md) | `core:bench.ec` | Benchmarks: run a function many times, after a warm-up, and report how long one run takes: the fastest, the median, and how much the runs spread. |
+| [big](big.md) | `core:big.ec` | Numbers of any size: whole numbers (Integer) and exact decimals (Decimal), for money and anything else that a Long would overflow or a Double would round. |
 | [bytes](bytes.md) | `core:bytes.ec` | Binary data: reading and writing numbers and strings in a given byte order, for network protocols and file formats. |
 | [csv](csv.md) | `core:csv.ec` | CSV (RFC 4180): reading and writing tables of text, with error positions. |
 | [errors](errors.md) | `core:errors.ec` | Common error types, for `throws`. |
-| [fs](fs.md) | `core:fs.ec` | The file system beyond single files: walking a directory tree, glob patterns, temporary files, normalising paths and memory-mapped reads. |
+| [fs](fs.md) | `core:fs.ec` | The file system beyond single files: walking a directory tree, glob patterns, temporary files and memory-mapped reads. |
 | [hash](hash.md) | `core:hash.ec` | Checksums and hashes: CRC32, FNV-1a, MD5, SHA-1, SHA-256 and HMAC. |
 | [http](http.md) | `core:http.ec` | HTTP/1.1: parsing URLs, a client, and a small server. |
-| [io](io.md) | `core:io.ec` | Input and output: the console, files, directories and paths. |
+| [io](io.md) | `core:io.ec` | Input and output: the console, files and directories. Paths are in core:path.ec. |
 | [json](json.md) | `core:json.ec` | JSON (RFC 8259): parsing with error positions, building values, and writing them, compact or pretty. |
 | [log](log.md) | `core:log.ec` | Logging: levels, timestamps, and output to stderr or a file, from any thread. |
 | [math](math.md) | `core:math.ec` | Maths: constants, C's math.h, whole-number helpers, checked arithmetic, and random numbers. |
 | [net](net.md) | `core:net.ec` | Networking: TCP clients and servers, UDP, DNS lookups and timeouts. |
 | [os](os.md) | `core:os.ec` | The operating system: what system this is, the environment, users, and running other programs. |
+| [parallel](parallel.md) | `core:parallel.ec` | Runs a function on the elements of an array on several threads at once, and waits until it is done: `parallel.map`. |
+| [path](path.md) | `core:path.ec` | Paths of files and directories, as text: joining, taking apart, normalising, and making absolute or relative. |
 | [regex](regex.md) | `core:regex.ec` | Regular expressions: matching, capturing, replacing and splitting, in linear time. |
 | [stdarg](stdarg.md) | `core:stdarg.ec` | stdarg.h: C's va_list, for the v* variants of formatting functions (vprintf, apr_pvsprintf, ...). |
 | [string](string.md) | `core:string.ec` | Strings: searching, changing case, splitting and joining, padding, parsing numbers, and a StringBuilder. |
 | [term](term.md) | `core:term.ec` | Terminal tools: colours and styles, the cursor, key and mouse input, a screen buffer to draw on, and prompts. |
 | [test](test.md) | `core:test.ec` | Tests: assertions that say what differs, and a small runner. |
-| [thread](thread.md) | `core:thread.ec` | Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic and Channel. |
+| [thread](thread.md) | `core:thread.ec` | Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic, Queue, Channel and WorkerPool. |
 | [time](time.md) | `core:time.ec` | Time: moments (Time), lengths of time (Duration), a steady clock for measuring (Instant), and calendar dates (Date) in UTC, local time or a fixed offset. |
+| [tls](tls.md) | `core:tls.ec` | TLS (the "S" of HTTPS) through OpenSSL: encrypted connections that check who is at the other end. |
 | [unicode](unicode.md) | `core:unicode.ec` | Unicode text in UTF-8: going through code points, encoding and decoding them, validating, and repairing broken text. |
+| [uuid](uuid.md) | `core:uuid.ec` | UUIDs (RFC 9562): random ones (version 4), ones that sort by when they were made (version 7), and their text. |
 
 ## C bindings
 
@@ -47,6 +53,7 @@ One file per C header, with the C names unchanged. Undocumented declarations are
 | [time](c/time.md) | `core:c/time.ec` | `time.h` | 19 |
 | [unistd](c/unistd.md) | `core:c/unistd.ec` | `unistd.h` | 16 |
 | [utsname](c/utsname.md) | `core:c/utsname.ec` | `sys/utsname.h` | 2 |
+| [openssl/ssl](openssl/ssl.md) | `core:openssl/ssl.ec` | `openssl/ssl.h`, `err.h`, `x509v3.h` | 70 |
 
 ## APR bindings
 

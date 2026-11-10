@@ -1,7 +1,7 @@
 /**
- * The file system beyond single files: walking a directory tree, glob patterns, temporary files, normalising paths
- * and memory-mapped reads. Built on APR (apr_file_info.h, apr_fnmatch.h, apr_mmap.h). See core:io.ec for reading and
- * writing files.
+ * The file system beyond single files: walking a directory tree, glob patterns, temporary files and memory-mapped
+ * reads. Built on APR (apr_file_info.h, apr_fnmatch.h, apr_mmap.h). See core:io.ec for reading and writing files,
+ * and core:path.ec for joining, normalising and relating paths.
  *
  *     use "core:fs.ec"
  *     for e in try fs.walk("src") do                        // everything below src, parents first
@@ -17,9 +17,6 @@
  *     val dir = try fs.tempDir()
  *     try fs.removeAll(dir)
  *
- *     io.log(fs.normalize("a/./b/../c"))                    // a/c
- *     io.log(try fs.absolute("notes.txt"))                  // /home/ada/notes.txt
- *
  *     val m = try fs.map("big.log")                         // no copy: the system reads it as it is used
  *     defer fs.unmap(m)
  *     io.log(m.text.count('\n'))
@@ -33,6 +30,7 @@ use "core:array.ec"
 use "core:structures.ec"
 use "core:time.ec"
 use "core:io.ec"
+use "core:path.ec"
 use "core:c/stdlib.ec"
 use "core:apr/errno.ec"
 use "core:apr/file_info.ec"
@@ -87,12 +85,18 @@ priv fn entryAt(path: String, name: String, depth: Int): Entry? throws IoError d
     throw ioError(status, path) if status != APR_SUCCESS and status != APR_INCOMPLETE
     ret Entry { path, name, kindOf(info.filetype), info.size, time.Time { info.mtime }, depth }
 
+/** `name` in `dir`. (A parameter named `path` hides the module core:path.ec, so its functions are reached here.) */
+priv fn child(dir: String, name: String): String = path.join(dir, name)
+
+/** {@code path.normalize}, for functions with a parameter named `path`. */
+priv fn normalized(p: String): String = path.normalize(p)
+
 /** Adds what is below `dir` to `found`. */
 priv fn walkInto(dir: String, depth: Int, maxDepth: Int, found: List<Entry>) throws IoError do
     val names = try io.listDir(dir)
     names.sort()
     for name in names do
-        val path = io.joinPath(dir, name)
+        val path = child(dir, name)
         if val e = try entryAt(path, name, depth) do
             found.push(e)
             if e.kind == :dir and (maxDepth < 0 or depth < maxDepth) do
@@ -148,15 +152,15 @@ priv fn expand(base: String, segments: List<String>, at: Size, found: List<Strin
             if not last do
                 expand(base, segments, at + 1, found)
             for name in namesIn(base) where not startsWith(name, '.') do
-                val path = io.joinPath(base, name)
+                val path = child(base, name)
                 found.push(path) if last
                 expand(path, segments, at, found) if isRealDir(path)
         else if apr_fnmatch_test(cstr(segment)) == 0 do
-            val path = io.joinPath(base, segment)
+            val path = child(base, segment)
             expand(path, segments, at + 1, found) if io.exists(path)
         else do
             for name in namesIn(base) where fits(segment, name) do
-                val path = io.joinPath(base, name)
+                val path = child(base, name)
                 expand(path, segments, at + 1, found) if last or io.isDir(path)
 
 /**
@@ -214,7 +218,7 @@ rec TempFile as
     path: String
 
 /** A path for a template of mkstemp, in the temporary directory. */
-priv fn template(prefix: String): String throws IoError = io.joinPath(try io.tempDir(), concat(prefix, "XXXXXX"))
+priv fn template(prefix: String): String throws IoError = child(try io.tempDir(), concat(prefix, "XXXXXX"))
 
 /**
  * Makes a new, empty file in the temporary directory, with a name nothing else has, that only this user can read. It
@@ -249,71 +253,15 @@ fn tempDir(prefix: String = "tmp"): String throws IoError do
  * @throws when something can't be deleted, or `path` is the root, "." or ".."
  */
 fn removeAll(path: String) throws IoError do
-    val clean = normalize(path)
+    val clean = normalized(path)
     throw IoError { ERR_ARGUMENT, "refusing to delete '${path}': name the directory itself, not the root, '.' or '..'", APR_EINVAL, path } if clean == "/" or clean == "." or clean == ".." or endsWith(clean, "/..")
     if val e = try entryAt(path, "", 0) do
         if e.kind == :dir do
             for name in try io.listDir(path) do
-                try removeAll(io.joinPath(path, name))
+                try removeAll(child(path, name))
             try io.removeDir(path)
         else do
             try io.remove(path)
-
-// ---------------------------------------------------------------------------------------------------
-// Paths
-
-/** Whether `path` starts at the root of the file system. */
-fn isAbsolute(path: String): Bool = startsWith(path, '/')
-
-/**
- * The shortest way to write `path`, as text: "." parts and doubled "/"s go, and ".." takes the part before it away.
- * `normalize("a/./b/../c/")` is "a/c". A relative path can keep ".." at its start; above the root there is only the
- * root. The file system isn't asked, so where `b` is a link to elsewhere, "a/b/.." may not be the same place as "a".
- * @return the path, "." when nothing is left
- */
-fn normalize(path: String): String do
-    val parts: List<String> = list()
-    val rooted = isAbsolute(path)
-    for part in path.split('/') do
-        if part == ".." do
-            if parts.len > 0 and parts.buffer[parts.len - 1] != ".." do
-                parts.pop()
-            else if not rooted do
-                parts.push(part)
-        else if part.len > 0 and part != "." do
-            parts.push(part)
-    val joined = join(parts.items(), "/")
-    ret concat("/", joined) if rooted
-    ret if joined.len == 0 do "." else joined
-
-/**
- * `path` as a normalised absolute path, from the current directory. Nothing has to exist there.
- * @throws when the current directory can't be found
- */
-fn absolute(path: String): String throws IoError do
-    var merged: CString = ""c
-    val status = apr_filepath_merge(mut merged, cstr(try io.currentDir()), cstr(path), 0, pool)
-    throw ioError(status, path) if status != APR_SUCCESS
-    ret fromC(merged)
-
-/**
- * The way from the directory `base` to `path`: `relative("/a/b", "/a/c/d")` is "../c/d". Relative paths start at the
- * current directory.
- * @return the way, "." when they are the same place
- * @throws when the current directory can't be found
- */
-fn relative(base: String, path: String): String throws IoError do
-    val start = (try absolute(base)).split('/')
-    val target = (try absolute(path)).split('/')
-    var same: Size = 0
-    while same < start.len and same < target.len and start[same] == target[same] do
-        same += 1
-    val parts: List<String> = list()
-    for i in same..<start.len where start[i].len > 0 do
-        parts.push("..")
-    for i in same..<target.len where target[i].len > 0 do
-        parts.push(target[i])
-    ret if parts.len == 0 do "." else join(parts.items(), "/")
 
 // ---------------------------------------------------------------------------------------------------
 // Memory-mapped files

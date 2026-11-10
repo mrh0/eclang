@@ -1,5 +1,6 @@
 /**
- * Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic, Queue and Channel.
+ * Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic, Queue and Channel, and a
+ * WorkerPool of threads that run jobs. core:parallel.ec builds `parallel.map` on them.
  * Built on pthread.h, APR's apr_thread_*.h and apr_atomic.h.
  *
  *     use "core:thread.ec"
@@ -655,3 +656,103 @@ fn size(q: Queue<T>): Size do
     val n = q.count
     unlock(q.lock)
     ret n
+
+// ---------------------------------------------------------------------------------------------------
+// WorkerPool
+
+/** A job waiting in a {@link WorkerPool}. */
+priv rec PoolJob as
+    /** What to run. */
+    run: () => None
+
+/**
+ * A fixed number of threads that run the jobs {@link submit} gives them, in the order they were given, as soon as one of the
+ * threads is free. Starting a thread for each job costs more than the job when jobs are small; a WorkerPool starts its threads
+ * once.
+ *
+ *     val workers = try thread.workerPool(4)
+ *     for i in 0..<100 do
+ *         try thread.submit(workers, fn () = work(i))     // a lambda's `val`s are copied, as for spawn
+ *     thread.wait(workers)                                // until every job is done
+ *     try thread.stop(workers)                            // the threads end: always stop a WorkerPool
+ *
+ * A job is a function value as {@link spawn} takes one: `escaping` and `flat`. Each job runs in a `pool do` block of its own, so
+ * what it allocates is freed when it ends: it gives results through `sync` records (an {@link Atomic}, a {@link Queue}, a
+ * `sync rec` of your own guarded by a {@link Mutex}). The pool is allocated in the current pool, which must outlive it:
+ * {@link stop} it before that pool is freed. For work on the elements of an array, core:parallel.ec's `parallel.map` is simpler.
+ */
+mut sync ref rec WorkerPool as
+    /** The jobs not started yet. */
+    jobs: Queue<PoolJob>
+    /** The threads, all set once {@link workerPool} returns. */
+    threads: (Thread?)[]
+    /** The jobs given and not finished yet. */
+    pending: WaitGroup
+    /** Whether {@link stop} was called. Only the thread that made the pool reads or writes it. */
+    stopped: Bool
+
+/** What each thread of a {@link WorkerPool} runs: the jobs, one at a time, until the pool stops. */
+priv fn serve(p: WorkerPool) do
+    while true do
+        val job = receive(p.jobs) ?? ret
+        pool do
+            job.run()
+        done(p.pending)
+
+/**
+ * A {@link WorkerPool} with `threads` threads, in the current pool. {@link stop} it before that pool is freed.
+ * @param threads how many: 0 for one per processor ({@link cpuCount})
+ * @param backlog how many jobs can wait before {@link submit} waits for room (0 counts as 1)
+ * @throws when the system can't start the threads, or make the locks; the threads started are stopped
+ */
+fn workerPool(threads: Int = 0, backlog: Size = 1024): WorkerPool throws OsError do
+    val n = if threads > 0 do threads as Size else cpuCount() as Size
+    val p = new WorkerPool { try queue(backlog), new (Thread?)[n], try waitGroup(), false }
+    var started: Size = 0
+    while started < n do
+        // The pool is a `sync` record that outlives its threads (stop joins them), which the compiler can't see.
+        val t = try unsafe spawn(fn serve, p) catch e do
+            close(p.jobs)
+            for i in 0..<started do
+                join(p.threads[i]!) ?? panic("thread.workerPool: can't join a thread it started")
+            throw e
+        p.threads[started] = t
+        started += 1
+    ret p
+
+/**
+ * Gives `job` to the threads of `p`: one runs it when it is free. It waits while `p` has its whole backlog waiting.
+ * @param job the function to run, which the pool keeps (`escaping`) and runs on another thread (`flat`), as {@link spawn} does
+ * @throws when `p` was stopped
+ */
+fn submit(p: WorkerPool, escaping flat job: () => None) throws StateError do
+    if p.stopped do
+        throw stateError("can't submit a job to a WorkerPool that was stopped")
+    add(p.pending, 1)
+    // `job` is `flat`, checked where submit is called.
+    try unsafe send(p.jobs, PoolJob { job }) catch e do
+        done(p.pending)
+        throw e
+
+/** Waits until every job given to `p` so far has finished. Jobs can be given again afterwards. */
+fn wait(p: WorkerPool) do
+    wait(p.pending)
+
+/** How many jobs given to `p` haven't finished: those waiting and those running. */
+fn pending(p: WorkerPool): Long do
+    lock(p.pending.lock)
+    val n = p.pending.count
+    unlock(p.pending.lock)
+    ret n
+
+/**
+ * Lets the threads of `p` finish the jobs given so far, then ends them, and waits for that. {@link submit} fails afterwards; a
+ * second stop does nothing.
+ * @throws when a thread can't be joined
+ */
+fn stop(p: WorkerPool) throws OsError do
+    ret if p.stopped
+    p.stopped = true
+    close(p.jobs)
+    for t in p.threads do
+        try join(t!)

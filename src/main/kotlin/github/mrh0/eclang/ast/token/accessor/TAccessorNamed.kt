@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.accessor
 
+import github.mrh0.eclang.Completion
 import github.mrh0.eclang.ir.mayBeNullInC
 import github.mrh0.eclang.ir.IRCCast
 import github.mrh0.eclang.ir.IRCNotNull
@@ -113,6 +114,7 @@ class TAccessorNamed(location: Loc, val expr: ITok, val name: String, private va
     }
 
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        if (name == Completion.PROBE && cd.completion != null) complete(cd, hint)
         val fixedName = Util.testIdentifier(location, name)
         moduleGlobal(cd)?.let { v -> return v.getType() to v.toIR(location, cd, hint) }
         val op = if (safe) "?." else "."
@@ -140,6 +142,7 @@ class TAccessorNamed(location: Loc, val expr: ITok, val name: String, private va
     }
 
     override fun place(cd: CompileData): Place {
+        if (name == Completion.PROBE && cd.completion != null) complete(cd, Types.None)
         val fixedName = Util.testIdentifier(location, name)
         moduleGlobal(cd)?.let { v ->
             val readOnly = if (v.canAssign()) null else "'${(expr as TNamed).name}.$name' is ${v.kind()}, so it can't be assigned a new value."
@@ -241,6 +244,13 @@ class TAccessorNamed(location: Loc, val expr: ITok, val name: String, private va
         }
         pointerOfUnion = (target as? Record)?.takeIf { it.isUnion && (Lifetimes.holdsPointer(fieldType) || fieldType is FunctionType) }
         return fieldType to throughPointer
+    }
+
+    /** `x.name` being completed (see [Completion]): what x has, or module x. */
+    private fun complete(cd: CompileData, hint: Type): Nothing {
+        if (!safe && expr is TNamed && cd.findVar(expr.name) == null) cd.findModule(expr.name)?.let { Completion.module(cd, it, hint) }
+        val t = expr.process(cd, Types.None).first
+        Completion.member(cd, if (safe) cd.types.nonNull(t) else t, hint)
     }
 
     override fun toString(): String {

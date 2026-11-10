@@ -1,7 +1,7 @@
 {
   "name": "eclang",
   "displayName": "eclang",
-  "description": "eclang (Easy C Lang) language support: syntax highlighting, compiler errors, ecdoc tooltips and go to definition.",
+  "description": "eclang (Easy C Lang) language support: syntax highlighting, compiler errors, type-aware completion, ecdoc tooltips and go to definition.",
   "version": "0.1.0",
   "publisher": "mrh0",
   "license": "MIT",

@@ -1,0 +1,57 @@
+265252859812191058636308480000000
+0 123456789012345678901234567890
+18ee90ff6c373e0ee4e3f0ad2
+11111111
+-73
+-1000
+7
+0
+0
+123
+65535
+-9223372036854775808
+true
+-9223372036854775808
+false
+-9223372036854775809 doesn't fit in a Long
+18446744073709551615
+5.15378e+47
+170141183460469231731687303715884105727
+445
+6
+2 -1 -2
+-3 1267650600228229401496703205376
+-1
+true
+true
+-1
+'': expected digits at 0
+'-': expected digits at 1
+'12a': 'a' is not a digit in base 10 at 2
+'1__2': '_' is not a digit in base 10 at 1
+'1_': '_' is not a digit in base 10 at 1
+60.02
+8.57
+8.6
+1.50 -0.005 42
+0.3333333333
+1500
+0.25
+-0.5
+7
+0.000
+1000.25
+100
+2 4 -3 -3
+true
+1.5 2
+-19
+-19.99
+'': expected digits at 0
+'.': expected digits at 1
+'1.2.3': '.' can't be in a decimal number at 3
+'1e': expected a whole number after 'e' at 2
+'1ex': expected a whole number after 'e' at 2
+'--1': expected digits at 1
+'1__0': '_' can't be in a decimal number at 1
+'2_': '_' can't be in a decimal number at 1

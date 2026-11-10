@@ -51,8 +51,11 @@ class LoopRound(val head: Int) {
     val breaks = mutableListOf<RoundEnd>()
 }
 
-/** A step of [Lifetimes] made in a loop, run again when the loop has been compiled, in the scopes it was made in. */
-class Replay(val scopes: List<ContextStack.Scope>, val poolBlocks: List<Local>, val pipes: List<ITok>, val run: () -> Unit)
+/**
+ * A step of [Lifetimes] made in a loop, run again when the loop has been compiled, in the scopes it was made in, and as
+ * deep in `unsafe` as it was ([unsafeDepth]: a call inside `unsafe` isn't checked in later rounds either).
+ */
+class Replay(val scopes: List<ContextStack.Scope>, val poolBlocks: List<Local>, val pipes: List<ITok>, val unsafeDepth: Int, val run: () -> Unit)
 
 open class ContextStack {
     /**

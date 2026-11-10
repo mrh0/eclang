@@ -1,0 +1,72 @@
+true
+true
+true
+apple 5
+banana 6
+cherry 6
+fig 3
+pear 4
+3
+-1
+range banana
+range cherry
+from fig
+from pear
+until apple
+until banana
+lower apple
+higher cherry
+true
+popped apple
+4
+19
+0
+3,0 b
+1,5 c
+1,2 d
+5
+1
+9
+5
+7
+true
+true
+false
+true
+set 3
+set 4
+set 5
+1
+19
+4
+true
+false
+true
+false
+false
+3
+bit 3
+bit 64
+bit 1000
+true
+false
+1000
+4
+3
+1000
+true
+true
+true
+1
+dropped b=2
+false
+1
+false
+cache d=4
+cache c=3
+true
+2
+cache f=6
+cache c=30
+true
+7

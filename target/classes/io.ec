@@ -1,5 +1,5 @@
 /**
- * Input and output: the console, files, directories and paths. Files use APR (apr_file_io.h); the console uses
+ * Input and output: the console, files and directories. Paths are in core:path.ec. Files use APR (apr_file_io.h); the console uses
  * C's stdio, so the two can be mixed.
  *
  *     use "core:io.ec"
@@ -515,37 +515,3 @@ fn env(name: String): String? do
     if val value = getenv(cstr(name)) do
         ret fromC(value)
     ret null
-
-// ---------------------------------------------------------------------------------------------------
-// Paths (as text; the file system isn't asked)
-
-/** `a` and `b` with one "/" between them: `joinPath("logs/", "today.txt")` is "logs/today.txt". An absolute `b` wins. */
-fn joinPath(a: String, b: String): String do
-    ret b if a.len == 0 or startsWith(b, '/')
-    ret concat(a, b) if endsWith(a, '/')
-    ret concat(a, "/", b)
-
-/** The last part of a path: `baseName("a/b/c.txt")` is "c.txt". A "/" at the end is left out. */
-fn baseName(path: String): String do
-    val p = if path.len > 1 do removeSuffix(path, "/") else path
-    if val i = lastIndexOf(p, '/') do
-        ret if p.len == 1 do p else p[i + 1..<p.len]
-    ret p
-
-/** The path without its last part: `dirName("a/b/c.txt")` is "a/b", `dirName("c.txt")` is ".". */
-fn dirName(path: String): String do
-    val p = if path.len > 1 do removeSuffix(path, "/") else path
-    if val i = lastIndexOf(p, '/') do
-        ret if i == 0 do "/" else p[0..<i]
-    ret "."
-
-/**
- * The extension of the last part, without the dot: `extension("a/photo.jpg")` is "jpg". A name that starts
- * with a dot (".bashrc") has none.
- * @return the extension, "" when there is none
- */
-fn extension(path: String): String do
-    val name = baseName(path)
-    if val i = lastIndexOf(name, '.') do
-        ret if i == 0 do "" else name[i + 1..<name.len]
-    ret ""

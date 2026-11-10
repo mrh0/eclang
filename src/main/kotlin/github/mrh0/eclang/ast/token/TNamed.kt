@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token
 
+import github.mrh0.eclang.Completion
 import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.IAssignable
 import github.mrh0.eclang.ast.Loc
@@ -23,6 +24,7 @@ class TNamed (location: Loc, val name: String) : Tok(location), IAssignable {
     override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // Lifetimes follows variables itself
 
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+        if (name == Completion.PROBE && cd.completion != null) Completion.name(cd, hint)
         if (isCurrentPool(cd, name)) return cd.types.pool to IRRaw(location, CURRENT_POOL)
         if (isHere(cd, name)) return THere(location).process(cd, hint)
         val fixedName = testIdentifier(location, name)
@@ -34,6 +36,7 @@ class TNamed (location: Loc, val name: String) : Tok(location), IAssignable {
 
     /** The variable as the start of a longer target (`p.x = 1`), so with its narrowed type. */
     override fun place(cd: CompileData): Place {
+        if (name == Completion.PROBE && cd.completion != null) Completion.name(cd, Types.None)
         if (isCurrentPool(cd, name))
             return Place(cd.types.pool, IRRaw(location, CURRENT_POOL), "`pool` is the current pool and can't be assigned. To allocate in another pool for a while, use a `pool do` block; to allocate one value elsewhere, write `new x in p`.")
         if (isHere(cd, name)) {

@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.function.call
 
+import github.mrh0.eclang.Completion
 import github.mrh0.eclang.ast.token.op.OUT_PARAMETER_ONLY
 import github.mrh0.eclang.ast.token.op.TAddressOf
 import github.mrh0.eclang.ast.token.op.TReadPointer
@@ -82,6 +83,12 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
         storedInto = listOf()
         aliasedParams = listOf()
         calleeKey = null
+        if (name == Completion.PROBE && cd.completion != null) {
+            if (!isMethod) Completion.name(cd, hint)
+            val receiver = args[0]
+            if (receiver is TNamed && cd.findVar(receiver.name) == null) cd.findModule(receiver.name)?.let { Completion.module(cd, it, hint) }
+            Completion.member(cd, receiver.process(cd, Types.None).first, hint)
+        }
         val fixedName = testIdentifier(location, name)
         val order = ArgumentOrder(cd)
 

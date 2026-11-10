@@ -1,4 +1,5 @@
 use "core:io.ec"
+use "core:path.ec"
 use "core:string.ec"
 use "core:structures.ec"
 use "core:thread.ec"
@@ -28,13 +29,13 @@ fn isStamp(s: String): Bool do
 
 fn main(): Int throws Error do
     val dir = try io.tempDir()
-    val path = io.joinPath(dir, "eclang-std-log.log")
-    if io.exists(path) do
-        try io.remove(path)
+    val file = path.join(dir, "eclang-std-log.log")
+    if io.exists(file) do
+        try io.remove(file)
 
     // Levels, and what a line looks like.
     val l = log.logger("app")
-    try log.toFile(l, path)
+    try log.toFile(l, file)
     log.setTimestamps(l, :none)
     log.debug(l, "hidden")
     log.info(l, "shown")
@@ -68,53 +69,53 @@ fn main(): Int throws Error do
     val unnamed = log.logger()
     log.setTimestamps(unnamed, :none)
     val named = log.child(unnamed, "first")
-    try log.toFile(named, path)
+    try log.toFile(named, file)
     log.info(named, "no dot before the name")
     log.info(unnamed, "no name")
     log.toStderr(unnamed)
 
     log.toStderr(l)
-    io.log(try io.readFile(path))
-    try io.remove(path)
+    io.log(try io.readFile(file))
+    try io.remove(file)
 
     // Timestamps.
     val stamped = log.logger()
-    try log.toFile(stamped, path)
+    try log.toFile(stamped, file)
     log.info(stamped, "stamped")
     log.toStderr(stamped)
-    val line = try io.readFile(path)
+    val line = try io.readFile(file)
     io.log(isStamp(line[0..<25]))
     io.log(line[25..<line.len])
-    try io.remove(path)
+    try io.remove(file)
     log.setTimestamps(stamped, :local)
-    try log.toFile(stamped, path)
+    try log.toFile(stamped, file)
     log.info(stamped, "stamped")
     log.toStderr(stamped)
-    val local = try io.readFile(path)
+    val local = try io.readFile(file)
     io.log(local.contains("T") and local.contains(" INFO  stamped\n"))
-    try io.remove(path)
+    try io.remove(file)
 
     // A file that can't be opened changes nothing.
     val kept = log.logger()
     log.setTimestamps(kept, :none)
-    try log.toFile(kept, path)
+    try log.toFile(kept, file)
     try log.toFile(kept, "/nonexistent/dir/x.log") catch e do
         io.log(e.code == ERR_NOT_FOUND)
         io.log(e.path)
     log.info(kept, "still the first file")
     // Another file takes its place, as often as needed, and the old one is closed.
-    val other = concat(path, ".2")
+    val other = concat(file, ".2")
     for i in 0..<3000 do
         try log.toFile(kept, other)
-        try log.toFile(kept, path)
+        try log.toFile(kept, file)
     log.toStderr(kept)
-    io.log(try io.readFile(path))
-    try io.remove(path)
+    io.log(try io.readFile(file))
+    try io.remove(file)
     try io.remove(other)
 
     // Lines of several threads stay whole.
     val shared = log.logger("t")
-    try log.toFile(shared, path)
+    try log.toFile(shared, file)
     log.setTimestamps(shared, :none)
     val threads: List<thread.Thread> = list()
     for i in 0..<THREADS do
@@ -122,7 +123,7 @@ fn main(): Int throws Error do
     for t in threads do
         try thread.join(t)
     log.toStderr(shared)
-    val lines = try io.readLines(path)
+    val lines = try io.readLines(file)
     io.log(lines.len)
     val seen = new Int[THREADS]
     for text in lines do
@@ -135,7 +136,7 @@ fn main(): Int throws Error do
         seen[id] += 1
     for count in seen do
         io.log(count)
-    try io.remove(path)
+    try io.remove(file)
 
     // Messages to stderr, from the logger of the whole program.
     io.flush()
@@ -150,11 +151,11 @@ fn main(): Int throws Error do
     io.log(log.enabled(:warn))
     log.setLevel(:debug)
     log.debug("visible")
-    try log.toFile(path)
+    try log.toFile(file)
     log.info("in the file")
     log.toStderr()
-    io.log(try io.readFile(path))
-    try io.remove(path)
+    io.log(try io.readFile(file))
+    try io.remove(file)
 
     // Reading a level.
     io.log((try log.parseLevel("WARNING")) as Atom)

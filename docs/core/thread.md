@@ -1,6 +1,7 @@
 # Module `thread`
 
-Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic, Queue and Channel.
+Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic, Queue and Channel, and a
+WorkerPool of threads that run jobs. core:parallel.ec builds `parallel.map` on them.
 Built on pthread.h, APR's apr_thread_*.h and apr_atomic.h.
 
     use "core:thread.ec"
@@ -188,6 +189,34 @@ records of them, and pointers to `sync` records (another Queue, a [`Mutex`](#thr
 - <a id="thread.Queue.lock"></a>`lock: Mutex` — Protects the other fields.
 - <a id="thread.Queue.notEmpty"></a>`notEmpty: Cond` — Signalled when an item arrives.
 - <a id="thread.Queue.notFull"></a>`notFull: Cond` — Signalled when there is room for an item.
+
+### <a id="thread.WorkerPool"></a>`WorkerPool`
+
+```ec
+mut sync ref rec WorkerPool
+```
+
+A fixed number of threads that run the jobs [`submit`](#thread.submit) gives them, in the order they were given, as soon as one of the
+threads is free. Starting a thread for each job costs more than the job when jobs are small; a WorkerPool starts its threads
+once.
+
+    val workers = try thread.workerPool(4)
+    for i in 0..<100 do
+        try thread.submit(workers, fn () = work(i))     // a lambda's `val`s are copied, as for spawn
+    thread.wait(workers)                                // until every job is done
+    try thread.stop(workers)                            // the threads end: always stop a WorkerPool
+
+A job is a function value as [`spawn`](#thread.spawn) takes one: `escaping` and `flat`. Each job runs in a `pool do` block of its own, so
+what it allocates is freed when it ends: it gives results through `sync` records (an [`Atomic`](#thread.Atomic), a [`Queue`](#thread.Queue), a
+`sync rec` of your own guarded by a [`Mutex`](#thread.Mutex)). The pool is allocated in the current pool, which must outlive it:
+[`stop`](#thread.stop) it before that pool is freed. For work on the elements of an array, core:parallel.ec's `parallel.map` is simpler.
+
+**Fields**
+
+- <a id="thread.WorkerPool.jobs"></a>`jobs: Queue<PoolJob>` — The jobs not started yet.
+- <a id="thread.WorkerPool.threads"></a>`threads: (Thread?)[]` — The threads, all set once [`workerPool`](#thread.workerPool) returns.
+- <a id="thread.WorkerPool.pending"></a>`pending: WaitGroup` — The jobs given and not finished yet.
+- <a id="thread.WorkerPool.stopped"></a>`stopped: Bool` — Whether [`stop`](#thread.stop) was called. Only the thread that made the pool reads or writes it.
 
 ## Functions
 
@@ -682,3 +711,65 @@ fn size(q: Queue<T>): Size
 ```
 
 The number of items waiting in the queue.
+
+### <a id="thread.workerPool"></a>`workerPool`
+
+```ec
+fn workerPool(threads: Int = 0, backlog: Size = 1024): WorkerPool throws OsError
+```
+
+A [`WorkerPool`](#thread.WorkerPool) with `threads` threads, in the current pool. [`stop`](#thread.stop) it before that pool is freed.
+
+**Parameters**
+
+- `threads` — how many: 0 for one per processor ([`cpuCount`](#thread.cpuCount))
+- `backlog` — how many jobs can wait before [`submit`](#thread.submit) waits for room (0 counts as 1)
+
+**Throws**
+
+- `OsError` — when the system can't start the threads, or make the locks; the threads started are stopped
+
+### <a id="thread.submit"></a>`submit`
+
+```ec
+fn submit(p: WorkerPool, escaping flat job: () => None) throws StateError
+```
+
+Gives `job` to the threads of `p`: one runs it when it is free. It waits while `p` has its whole backlog waiting.
+
+**Parameters**
+
+- `job` — the function to run, which the pool keeps (`escaping`) and runs on another thread (`flat`), as [`spawn`](#thread.spawn) does
+
+**Throws**
+
+- `StateError` — when `p` was stopped
+
+### `wait`
+
+```ec
+fn wait(p: WorkerPool)
+```
+
+Waits until every job given to `p` so far has finished. Jobs can be given again afterwards.
+
+### <a id="thread.pending"></a>`pending`
+
+```ec
+fn pending(p: WorkerPool): Long
+```
+
+How many jobs given to `p` haven't finished: those waiting and those running.
+
+### <a id="thread.stop"></a>`stop`
+
+```ec
+fn stop(p: WorkerPool) throws OsError
+```
+
+Lets the threads of `p` finish the jobs given so far, then ends them, and waits for that. [`submit`](#thread.submit) fails afterwards; a
+second stop does nothing.
+
+**Throws**
+
+- `OsError` — when a thread can't be joined

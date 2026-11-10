@@ -1,0 +1,13 @@
+1
+0
+3
+token 2 readable true
+21
+hello from b
+and more
+hello from b
+and more
+token 2 closed
+2
+0
+TLS needs OpenSSL: add `use "core:tls.ec"` to the program (it links -lssl and -lcrypto, from a package such as libssl-dev)

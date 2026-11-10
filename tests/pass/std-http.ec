@@ -1,4 +1,5 @@
 use "core:io.ec"
+use "core:path.ec"
 use "core:string.ec"
 use "core:structures.ec"
 use "core:time.ec"
@@ -299,7 +300,7 @@ fn requests(root: String, port: Int) throws Error do
         io.log(e4.message)
     try http.get("https://example.com/") catch e5 do
         io.log(e5.message)
-        io.log(e5.code == ERR_ARGUMENT)
+        io.log(e5.code == ERR_UNSUPPORTED)
     try http.get("ftp://example.com/") catch e6 do
         io.log(e6.message)
     try http.get("/relative") catch e7 do
@@ -537,10 +538,10 @@ fn main(): Int throws Error do
         io.log(e.message.contains("refused"))
 
     // A handler that can fail.
-    val path = io.joinPath(try io.tempDir(), "eclang-std-http.log")
+    val file = path.join(try io.tempDir(), "eclang-std-http.log")
     log.setLevel(:error)
     log.setTimestamps(:none)
-    try log.toFile(path)
+    try log.toFile(file)
     val s2 = try http.server(0, "127.0.0.1")
     try http.start(s2, fn fails)
     val root2 = "http://127.0.0.1:${s2.listener.address.port}"
@@ -551,8 +552,8 @@ fn main(): Int throws Error do
     http.stop(s2)
     try http.wait(s2)
     log.toStderr()
-    io.log(try io.readFile(path))
-    try io.remove(path)
+    io.log(try io.readFile(file))
+    try io.remove(file)
     log.setLevel(:off)
 
     // A handler that stops the server, which runs on a thread of its own.

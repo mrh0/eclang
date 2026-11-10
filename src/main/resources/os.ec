@@ -28,6 +28,7 @@ module "os"
 use "core:errors.ec"
 use "core:string.ec"
 use "core:io.ec"
+use "core:path.ec"
 use "core:c/signal.ec"
 use "core:c/stdio.ec"
 use "core:c/stdlib.ec"
@@ -338,7 +339,7 @@ fn findProgram(program: String): String? do
     if program.contains("/") do
         ret if access(cstr(program), X_OK) == 0 do program else null
     for dir in (env("PATH") ?? "").split(':') do
-        val path = io.joinPath(if dir.len == 0 do "." else dir, program)
+        val path = path.join(if dir.len == 0 do "." else dir, program)
         ret path if io.isFile(path) and access(cstr(path), X_OK) == 0
     ret null
 

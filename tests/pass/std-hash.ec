@@ -1,4 +1,5 @@
 use "core:io.ec"
+use "core:path.ec"
 use "core:hash.ec"
 use "core:encoding.ec"
 use "core:string.ec"
@@ -43,11 +44,11 @@ fn main(): Int throws Error do
     io.log(hash.equal("abc", "abd"))
     io.log(hash.equal("abc", "ab"))
 
-    val path = io.joinPath(try io.tempDir(), "eclang-std-hash.txt")
-    try io.writeFile(path, repeat("x", 200000))
-    io.log(try hash.file(path))
-    io.log(try hash.file(path, :md5))
-    try io.remove(path)
-    try hash.file(path) catch problem do
+    val file = path.join(try io.tempDir(), "eclang-std-hash.txt")
+    try io.writeFile(file, repeat("x", 200000))
+    io.log(try hash.file(file))
+    io.log(try hash.file(file, :md5))
+    try io.remove(file)
+    try hash.file(file) catch problem do
         io.log(problem.code == ERR_NOT_FOUND)
     ret 0

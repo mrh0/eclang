@@ -10,6 +10,18 @@ const MAX_RESTARTS = 3;
 export interface CheckProblem { file: string; line: number; column: number; message: string; }
 export interface CheckResult { errors: CheckProblem[]; warnings: CheckProblem[]; }
 
+/**
+ * Something that fits where completion was asked for, as the compiler sees it (see Completion.kt). [rank]: smaller is
+ * better; under 10 it has the type expected there. [params]: for a function, how many arguments it takes at most.
+ */
+export interface CompilerItem { label: string; kind: string; detail: string; rank: number; module?: string; params?: number; }
+
+/**
+ * What the compiler found at the place: [context] is "name", "member" (`x.`), "module" (`io.`), "type" or "atom" (`:`).
+ * [found] is false when its compilation never got there (a generic function nobody calls, errors in declarations, ...).
+ */
+export interface CompleteResult { found: boolean; context?: string; expected?: string; receiver?: string; items?: CompilerItem[]; }
+
 /** The two names stand for the same file. The compiler answers with canonical paths. */
 export function sameFile(a: string, b: string): boolean {
     if (a === b) return true;
@@ -27,6 +39,8 @@ export class Checker {
     private errorOutput = "";
     private answer: ((line: string | null) => void) | null = null;
     private restarts = 0;
+    /** The request being answered, which the next one waits for: the process takes one at a time. */
+    private queue: Promise<unknown> = Promise.resolve();
 
     constructor(private readonly java: string, private readonly jar: string, private readonly onUnavailable: (reason: string) => void) {}
 
@@ -70,9 +84,24 @@ export class Checker {
 
     /** What the compiler says of [file], with [unsaved] instead of what's on disk; null if it can't tell. */
     async check(file: string, unsaved: { path: string; text: string }[]): Promise<CheckResult | null> {
+        return this.enqueue(`check ${unsaved.length} ${file}`, file, unsaved);
+    }
+
+    /** What fits at [line] (1-based) and [column] (0-based) of [file], with [unsaved] instead of what's on disk; null if it can't tell. */
+    async complete(file: string, unsaved: { path: string; text: string }[], line: number, column: number): Promise<CompleteResult | null> {
+        return this.enqueue(`complete ${unsaved.length} ${line}:${column} ${file}`, file, unsaved);
+    }
+
+    private enqueue<T>(header: string, file: string, unsaved: { path: string; text: string }[]): Promise<T | null> {
+        const answer = this.queue.then(() => this.ask<T>(header, file, unsaved));
+        this.queue = answer.catch(() => {});
+        return answer;
+    }
+
+    private async ask<T>(header: string, file: string, unsaved: { path: string; text: string }[]): Promise<T | null> {
         if (!this.available) return null;
         const child = this.process ??= this.start();
-        const parts = [Buffer.from(`check ${unsaved.length} ${file}\n`)];
+        const parts = [Buffer.from(`${header}\n`)];
         for (const { path, text } of unsaved) {
             const bytes = Buffer.from(text);
             parts.push(Buffer.from(`${bytes.length} ${path}\n`), bytes);

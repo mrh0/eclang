@@ -1,4 +1,5 @@
 use "core:io.ec"
+use "core:path.ec"
 use "core:string.ec"
 use "core:csv.ec"
 
@@ -94,10 +95,10 @@ fn main(): Int throws Error do
     show(try csv.parse(csv.stringify(odd, tabbed), tabbed))
 
     // Files.
-    val path = io.joinPath(try io.tempDir(), "eclang-std-csv.csv")
-    try csv.writeFile(path, [["a,b", "c"], ["1", "2"]])
-    show(try csv.readFile(path))
-    try io.remove(path)
+    val file = path.join(try io.tempDir(), "eclang-std-csv.csv")
+    try csv.writeFile(file, [["a,b", "c"], ["1", "2"]])
+    show(try csv.readFile(file))
+    try io.remove(file)
     try csv.readFile("/nonexistent/x.csv") catch e4 do
         io.log(e4.code == ERR_NOT_FOUND)
     ret 0

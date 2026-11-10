@@ -17,6 +17,9 @@ import java.io.PrintStream
  * with `"internal":"..."` instead when the compiler itself failed. Lines are 1-based and columns 0-based; files are
  * canonical paths, or `core:name.ec`. A bundled file being edited is named `core:name.ec` in the request, with its text as
  * an unsaved file: by its path on disk it would be loaded twice when the files it uses `use` it.
+ *
+ * `complete <count> <line>:<column> <path>`, with the unsaved files after it the same way, asks what fits at that place of
+ * the file instead (line 1-based, column 0-based in UTF-16 units); the answer is described at [Completion.answer].
  */
 object Checker {
     fun serve(input: InputStream, output: PrintStream): Int {
@@ -24,16 +27,24 @@ object Checker {
         val stream = input.buffered()
         while (true) {
             val request = line(stream) ?: return 0
-            val (command, count, path) = request.split(" ", limit = 3).takeIf { it.size == 3 } ?: listOf("", "", "")
-            if (command != "check") {
+            val command = request.substringBefore(' ')
+            val parts = request.split(" ", limit = if (command == "complete") 4 else 3)
+            val position = if (command == "complete") parts.getOrNull(2)?.split(':')?.mapNotNull { it.toIntOrNull() }?.takeIf { it.size == 2 } else null
+            if (command != "check" && position == null || parts.size != (if (position != null) 4 else 3) || parts[1].toIntOrNull() == null) {
                 System.err.println("error: not a request: $request")
                 return 2
             }
-            val sources = (0 until count.toInt()).associate {
+            val path = parts.last()
+            val sources = (0 until parts[1].toInt()).associate {
                 val (size, file) = (line(stream) ?: return 2).split(" ", limit = 2)
                 Util.sourceName(File(file)) to String(stream.readNBytes(size.toInt()), Charsets.UTF_8)
             }
-            output.print(answer(File(path), sources) + "\n")
+            val reply = if (position == null) answer(File(path), sources) else try {
+                Completion.answer(File(path), sources, position[0], position[1])
+            } catch (e: Throwable) {
+                "{\"internal\":${json(e.toString())}}"
+            }
+            output.print(reply + "\n")
             output.flush()
         }
     }
@@ -51,7 +62,7 @@ object Checker {
         return "{\"file\":${json(Util.sourceName(file))},\"line\":$line,\"column\":$column,\"message\":${json(message)}}"
     }
 
-    private fun json(s: String): String = buildString {
+    fun json(s: String): String = buildString {
         append('"')
         for (c in s) when {
             c == '"' || c == '\\' -> append('\\').append(c)

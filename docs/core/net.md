@@ -23,12 +23,23 @@ Networking: TCP clients and servers, UDP, DNS lookups and timeouts. Built on APR
     for ip in try net.lookup("example.com") do
         io.log(ip)
 
+    val p = try net.poller()                                       // waits for many sockets at once
+    try p.add(server, 0)                                           // a token of your own for each socket
+    for e in try p.wait(time.seconds(1)) do
+        io.log("${e.token} is ready")                              // accept, or read what has arrived
+
+    use "core:tls.ec"                                              // TLS through OpenSSL: links -lssl -lcrypto
+    val s = try net.connect("example.com", 443, time.seconds(5))
+    try net.secure(s, "example.com")                               // checks the certificate; then read and send as usual
+
 A socket belongs to the pool that was current when it was made: it is closed when the pool is freed, if `close`
 didn't close it before. What is read is allocated in the current pool. Failures are OsErrors with the reason; a
-timeout has the code ERR_TIMEOUT. To serve many clients at once, give each its own thread (core:thread.ec).
+timeout has the code ERR_TIMEOUT. To serve many clients at once, give each its own thread (core:thread.ec), or wait
+for all of them with a [`Poller`](#net.Poller) and read what has arrived with [`readMore`](#net.readMore), which never waits.
 
 Opening a connection makes the program ignore SIGPIPE, for good: writing to a peer that has gone is then an error,
-and doesn't end the program. Everything is plain TCP and UDP; there is no TLS.
+and doesn't end the program. TLS needs OpenSSL, so it is in core:tls.ec, which a program that wants it uses: then
+[`secure`](#net.secure) works, and so do `https:` URLs in core:http.ec. Without it, `secure` fails with an error that says so.
 
 ## Types
 
@@ -61,6 +72,62 @@ An open TCP connection, from [`connect`](#net.connect) or [`accept`](#net.accept
 - <a id="net.Connection.ahead"></a>`ahead: Char[]` — What was read ahead: the bytes from `start` to `end` are still to be read.
 - <a id="net.Connection.start"></a>`start: Size` — Where in `ahead` the next byte is.
 - <a id="net.Connection.end"></a>`end: Size` — Where in `ahead` the bytes end.
+- <a id="net.Connection.mem"></a>`mem: Pool` — The pool it belongs to, which closes it when it is freed.
+- <a id="net.Connection.transport"></a>`transport: Transport? = null` — What reads and writes go through when it isn't plain TCP: TLS, from [`secure`](#net.secure).
+
+### <a id="net.Transport"></a>`Transport`
+
+```ec
+rec Transport
+```
+
+How a [`Connection`](#net.Connection) reads and writes when it isn't plain TCP: a TLS session, which core:tls.ec makes. Each
+function is given `state`, and returns an APR status as apr_socket_recv and apr_socket_send do.
+
+**Fields**
+
+- <a id="net.Transport.state"></a>`state: @Any` — The layer's own state (an OpenSSL SSL).
+- <a id="net.Transport.recv"></a>`recv: (@Any, CString, @Size) => apr_status_t` — Reads up to `@length` bytes into the buffer and sets `@length` to how many; APR_EOF at the end.
+- <a id="net.Transport.send"></a>`send: (@Any, CString, @Size) => apr_status_t` — Sends up to `@length` bytes of the buffer and sets `@length` to how many.
+- <a id="net.Transport.pending"></a>`pending: (@Any) => Size` — How many bytes it holds ready to read, which the socket's readiness doesn't show.
+- <a id="net.Transport.handshake"></a>`handshake: (@Any) => apr_status_t` — Takes the handshake a step further: APR_SUCCESS when it is done, an EAGAIN status while it waits for the peer.
+- <a id="net.Transport.close"></a>`close: (@Any) => None` — Ends the session, telling the peer when that needn't wait.
+- <a id="net.Transport.problem"></a>`problem: (@Any) => String` — What went wrong last, in words; "" when nothing did.
+
+### <a id="net.TlsOptions"></a>`TlsOptions`
+
+```ec
+rec TlsOptions
+```
+
+How [`secure`](#net.secure) checks the server it connects to.
+
+**Fields**
+
+- <a id="net.TlsOptions.caFile"></a>`caFile: String? = null` — A file of PEM certificates to trust instead of the system's: for a server with a certificate of your own.
+- <a id="net.TlsOptions.verify"></a>`verify: Bool = true` — Whether to check the server's certificate and that it is for the host. Leave it on: without it, anyone between
+  the two can read and change everything. Turn it off only to test against a server of your own.
+
+### <a id="net.TlsClient"></a>`TlsClient`
+
+```ec
+type TlsClient = (Connection, String, TlsOptions) => None throws OsError
+```
+
+What makes a client connection secure: `net.tlsClient`.
+
+### <a id="net.TlsServer"></a>`TlsServer`
+
+```ec
+rec TlsServer
+```
+
+What makes accepted connections secure, from `tls.server` in core:tls.ec.
+
+**Fields**
+
+- <a id="net.TlsServer.context"></a>`context: @Any` — The OpenSSL context, with the certificate and key.
+- <a id="net.TlsServer.begin"></a>`begin: (@Any, Connection) => None throws OsError` — Gives an accepted connection its [`Transport`](#net.Transport), before the handshake.
 
 ### <a id="net.Listener"></a>`Listener`
 
@@ -100,6 +167,60 @@ A message from [`receiveFrom`](#net.receiveFrom).
 
 - <a id="net.Datagram.data"></a>`data: String` — What it holds.
 - <a id="net.Datagram.source"></a>`source: Address` — Who sent it, for an answer.
+
+### <a id="net.Event"></a>`Event`
+
+```ec
+rec Event
+```
+
+A socket that a [`Poller`](#net.Poller) found ready.
+
+**Fields**
+
+- <a id="net.Event.token"></a>`token: Long` — The token it was added with.
+- <a id="net.Event.readable"></a>`readable: Bool` — Whether it has something to read (a connection to accept, for a listener), or the other end closed it.
+- <a id="net.Event.writable"></a>`writable: Bool` — Whether it can be written to without waiting.
+- <a id="net.Event.closed"></a>`closed: Bool` — Whether the other end hung up, or the socket failed: reading tells which.
+
+### <a id="net.Poller"></a>`Poller`
+
+```ec
+mut ref rec Poller
+```
+
+Waits for many sockets at once (epoll on Linux): for a server with more clients than it has threads. Each socket is
+added with a token, a number of your own (an index, a key of a Map) that [`wait`](#net.wait) gives back for it.
+
+    val p = try net.poller()
+    try p.add(listener, 0)
+    while true do
+        for e in try p.wait() do
+            if e.token == 0 do
+                val c = try net.accept(listener, time.micros(0), new Pool)
+                try p.add(c, nextToken)                  // and keep c under nextToken
+            else do
+                ...                                      // net.readMore of the connection, never waiting
+
+A connection's [`buffered`](#net.buffered) bytes don't make it ready: read them before waiting again. Remove a socket before
+closing it. [`wake`](#net.wake) makes a wait in another thread return; on Linux, adding and removing can be done from other
+threads too. A Poller belongs to the current pool, and is destroyed with it.
+
+**Fields**
+
+- <a id="net.Poller.set"></a>`set: @apr_pollset_t` — The APR pollset, for calling apr_pollset_* functions directly.
+- <a id="net.Poller.capacity"></a>`capacity: Size` — The most sockets it can hold.
+- <a id="net.Poller.count"></a>`count: Size` — How many sockets it holds.
+
+## Values
+
+### <a id="net.tlsClient"></a>`tlsClient`
+
+```ec
+var tlsClient: TlsClient? = null
+```
+
+Set by core:tls.ec when a program uses it: gives a client connection its [`Transport`](#net.Transport).
 
 ## Functions
 
@@ -266,6 +387,40 @@ Waits until [`read`](#net.read) has something to give, or the other end has clos
 
 - `OsError` — when waiting fails
 
+### <a id="net.readMore"></a>`readMore`
+
+```ec
+fn readMore(c: Connection): Size? throws OsError
+```
+
+Reads what has already arrived into the connection's buffer, without waiting: for a loop that serves many
+connections with a [`Poller`](#net.Poller). What it read is what [`read`](#net.read) and [`readLine`](#net.readLine) give next, and
+[`buffered`](#net.buffered) shows it. The buffer holds 8 KB.
+
+**Returns** how many bytes it added: 0 when nothing had arrived, or the buffer is full; null when the other end has closed
+the connection
+
+**Throws**
+
+- `OsError` — when reading fails
+
+### <a id="net.isBufferFull"></a>`isBufferFull`
+
+```ec
+fn isBufferFull(c: Connection): Bool
+```
+
+Whether the connection's buffer is full, so that [`readMore`](#net.readMore) can't add to it before something is taken.
+
+### <a id="net.buffered"></a>`buffered`
+
+```ec
+fn buffered(c: Connection): String
+```
+
+What has been read ahead and not taken yet: what [`read`](#net.read) gives next. It is a view of the connection's buffer, which
+the next read changes: clone it to keep it.
+
 ### <a id="net.finishSending"></a>`finishSending`
 
 ```ec
@@ -284,7 +439,93 @@ Tells the other end that nothing more will be sent, which ends its reads, and go
 fn close(c: Connection)
 ```
 
-Closes the connection. Don't use `c` after this.
+Closes the connection, ending its TLS session first if it has one. Don't use `c` after this.
+
+### <a id="net.requireTls"></a>`requireTls`
+
+```ec
+fn requireTls() throws OsError
+```
+
+Checks that the program can make TLS connections: that it uses core:tls.ec.
+
+**Throws**
+
+- `OsError` — when it doesn't, with the code ERR_UNSUPPORTED and what to do
+
+### <a id="net.secure"></a>`secure`
+
+```ec
+fn secure(c: Connection, host: String, options: TlsOptions = TlsOptions {}) throws OsError
+```
+
+Makes `c` a TLS connection, as a client of `host`: the handshake, and a check that the server's certificate is
+valid and for `host` (unless `options` say otherwise). Then reads and writes of `c` are encrypted. It waits as long
+as the connection's timeout ([`setTimeout`](#net.setTimeout)) allows. Needs `use "core:tls.ec"`.
+
+**Parameters**
+
+- `c` — a connection that has sent and read nothing yet
+- `host` — the name the server's certificate must be for, also sent to the server (SNI)
+- `options` — which certificates to trust
+
+**Throws**
+
+- `OsError` — when the program doesn't use core:tls.ec, or the handshake or the check fails
+
+### `secure`
+
+```ec
+fn secure(c: Connection, server: TlsServer) throws OsError
+```
+
+Makes an accepted connection a TLS connection, as the server: the handshake, waiting as long as the connection's
+timeout allows.
+
+**Parameters**
+
+- `c` — a connection from [`accept`](#net.accept) that has sent and read nothing yet
+- `server` — the certificate and key, from `tls.server`
+
+**Throws**
+
+- `OsError` — when the handshake fails
+
+### <a id="net.beginSecure"></a>`beginSecure`
+
+```ec
+fn beginSecure(c: Connection, server: TlsServer) throws OsError
+```
+
+Starts making an accepted connection secure, for a loop with a [`Poller`](#net.Poller): [`handshake`](#net.handshake) goes on with it as the
+client's messages arrive.
+
+**Throws**
+
+- `OsError` — when TLS can't be set up for it
+
+### <a id="net.handshake"></a>`handshake`
+
+```ec
+fn handshake(c: Connection): Bool throws OsError
+```
+
+Takes the handshake of `c` as far as what has arrived allows, without waiting: for a loop with a [`Poller`](#net.Poller).
+
+**Returns** true when it is done (also for a connection without TLS), false when it waits for the peer: wait until `c`
+is readable and call it again
+
+**Throws**
+
+- `OsError` — when it fails
+
+### <a id="net.isSecure"></a>`isSecure`
+
+```ec
+fn isSecure(c: Connection): Bool
+```
+
+Whether reads and writes of `c` go through TLS.
 
 ### <a id="net.listen"></a>`listen`
 
@@ -317,6 +558,25 @@ server can run forever.
 
 - `l` — the listener
 - `timeout` — how long to wait; null for as long as it takes
+
+**Throws**
+
+- `OsError` — when accepting fails, or the time passes, with the code ERR_TIMEOUT
+
+### `accept`
+
+```ec
+fn accept(l: Listener, timeout: time.Duration?, mem: Pool): Connection throws OsError
+```
+
+Waits for the next connection, which belongs to the pool `mem`: a pool of its own (`new Pool`) lets a loop that
+serves many connections free each when it ends.
+
+**Parameters**
+
+- `l` — the listener
+- `timeout` — how long to wait; null for as long as it takes, `time.micros(0)` not at all
+- `mem` — the pool of the connection
 
 **Throws**
 
@@ -442,3 +702,122 @@ fn close(u: UdpSocket)
 ```
 
 Closes the socket. Don't use `u` after this.
+
+### <a id="net.poller"></a>`poller`
+
+```ec
+fn poller(capacity: Size = 1024): Poller throws OsError
+```
+
+A new Poller, in the current pool.
+
+**Parameters**
+
+- `capacity` — the most sockets it can hold
+
+**Throws**
+
+- `OsError` — when the system can't make one
+
+### <a id="net.add"></a>`add`
+
+```ec
+fn add(p: Poller, c: Connection, token: Long, readable: Bool = true, writable: Bool = false) throws OsError
+```
+
+Watches a connection.
+
+**Parameters**
+
+- `p` — the poller
+- `c` — the connection
+- `token` — what [`wait`](#net.wait) gives back for it
+- `readable` — whether to wait for something to read
+- `writable` — whether to wait for room to write, for a program that writes a little at a time
+
+**Throws**
+
+- `OsError` — when the poller is full, or `c` is in it already
+
+### `add`
+
+```ec
+fn add(p: Poller, l: Listener, token: Long) throws OsError
+```
+
+Watches a listener: it is readable when there is a connection to [`accept`](#net.accept).
+
+**Throws**
+
+- `OsError` — when the poller is full, or `l` is in it already
+
+### `add`
+
+```ec
+fn add(p: Poller, u: UdpSocket, token: Long) throws OsError
+```
+
+Watches a UDP socket: it is readable when there is a message to [`receiveFrom`](#net.receiveFrom).
+
+**Throws**
+
+- `OsError` — when the poller is full, or `u` is in it already
+
+### <a id="net.remove"></a>`remove`
+
+```ec
+fn remove(p: Poller, c: Connection)
+```
+
+Stops watching a connection. Nothing happens when it isn't watched.
+
+### `remove`
+
+```ec
+fn remove(p: Poller, l: Listener)
+```
+
+Stops watching a listener. Nothing happens when it isn't watched.
+
+### `remove`
+
+```ec
+fn remove(p: Poller, u: UdpSocket)
+```
+
+Stops watching a UDP socket. Nothing happens when it isn't watched.
+
+### <a id="net.wait"></a>`wait`
+
+```ec
+fn wait(p: Poller, timeout: time.Duration? = null): Event[] throws OsError
+```
+
+Waits until some of the sockets are ready, the time passes, or [`wake`](#net.wake) is called.
+
+**Parameters**
+
+- `p` — the poller
+- `timeout` — how long to wait; null for as long as it takes
+
+**Returns** the sockets that are ready, in the current pool; none when the time passed or `wake` was called
+
+**Throws**
+
+- `OsError` — when waiting fails
+
+### <a id="net.wake"></a>`wake`
+
+```ec
+fn wake(p: Poller)
+```
+
+Makes a [`wait`](#net.wait) of `p` return now, from another thread.
+
+### `close`
+
+```ec
+fn close(p: Poller)
+```
+
+Destroys the poller; the sockets in it stay open. Don't use `p` after this.
