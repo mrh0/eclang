@@ -18,7 +18,7 @@ String's memory. Functions building a new String allocate it in the current pool
 ### <a id="StringBuilder"></a>`StringBuilder`
 
 ```ec
-rec StringBuilder
+mut ref rec StringBuilder
 ```
 
 Builds a String piece by piece, growing as needed. Its memory is in the pool that was current when it was
@@ -650,7 +650,7 @@ Whether `s` is valid UTF-8: no broken sequences, overlong forms or surrogates.
 ### <a id="stringBuilder"></a>`stringBuilder`
 
 ```ec
-fn stringBuilder(capacity: Size = 16): @StringBuilder
+fn stringBuilder(capacity: Size = 16): StringBuilder
 ```
 
 A new [`StringBuilder`](#StringBuilder), in the current pool.
@@ -662,7 +662,7 @@ A new [`StringBuilder`](#StringBuilder), in the current pool.
 ### `stringBuilder`
 
 ```ec
-fn stringBuilder(mem: Pool, capacity: Size): @StringBuilder
+fn stringBuilder(mem: Pool, capacity: Size): StringBuilder
 ```
 
 A new [`StringBuilder`](#StringBuilder), in the pool `mem`.
@@ -675,7 +675,7 @@ A new [`StringBuilder`](#StringBuilder), in the pool `mem`.
 ### <a id="reserve"></a>`reserve`
 
 ```ec
-fn reserve(b: @StringBuilder, n: Size)
+fn reserve(b: StringBuilder, n: Size)
 ```
 
 Makes room for `n` more bytes, so that appending them doesn't grow the buffer again.
@@ -683,7 +683,7 @@ Makes room for `n` more bytes, so that appending them doesn't grow the buffer ag
 ### <a id="append"></a>`append`
 
 ```ec
-fn append(b: @StringBuilder, s: String)
+fn append(b: StringBuilder, s: String)
 ```
 
 Appends `s`.
@@ -691,7 +691,7 @@ Appends `s`.
 ### `append`
 
 ```ec
-fn append(b: @StringBuilder, c: Char)
+fn append(b: StringBuilder, c: Char)
 ```
 
 Appends the character `c`.
@@ -699,7 +699,7 @@ Appends the character `c`.
 ### `append`
 
 ```ec
-fn append(b: @StringBuilder, s: CString)
+fn append(b: StringBuilder, s: CString)
 ```
 
 Appends the C string `s`.
@@ -707,7 +707,7 @@ Appends the C string `s`.
 ### `append`
 
 ```ec
-fn append(b: @StringBuilder, n: Long)
+fn append(b: StringBuilder, n: Long)
 ```
 
 Appends `n` in decimal.
@@ -715,7 +715,7 @@ Appends `n` in decimal.
 ### `append`
 
 ```ec
-fn append(b: @StringBuilder, x: Double)
+fn append(b: StringBuilder, x: Double)
 ```
 
 Appends `x`, written as `"${x}"` writes it.
@@ -723,7 +723,7 @@ Appends `x`, written as `"${x}"` writes it.
 ### <a id="appendLine"></a>`appendLine`
 
 ```ec
-fn appendLine(b: @StringBuilder, s: String)
+fn appendLine(b: StringBuilder, s: String)
 ```
 
 Appends `s` and a line break.
@@ -731,7 +731,7 @@ Appends `s` and a line break.
 ### <a id="clear"></a>`clear`
 
 ```ec
-fn clear(b: @StringBuilder)
+fn clear(b: StringBuilder)
 ```
 
 Starts again from an empty String. Strings that [`build`](#build) gave before stay as they were.
@@ -739,7 +739,7 @@ Starts again from an empty String. Strings that [`build`](#build) gave before st
 ### <a id="build"></a>`build`
 
 ```ec
-fn build(b: @StringBuilder): String
+fn build(b: StringBuilder): String
 ```
 
 The String built so far, without copying it: appending more later doesn't change it.

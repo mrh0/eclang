@@ -1,0 +1,13 @@
+INFO  caller-location.ec:29: located
+INFO  plain
+ true at caller-location.ec:15 5 main
+x false at caller-location.ec:16 5 main
+y false at caller-location.ec:17 23 main
+named true at caller-location.ec:18 5 main
+19
+caller-location.ec:20
+1 2 caller-location.ec:21
+a b caller-location.ec:22
+23
+caller-location.ec:23 main
+relayed true at caller-location.ec:26 5 main

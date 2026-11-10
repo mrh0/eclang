@@ -1,0 +1,11 @@
+clicks: 3 true
+Counter { name: "clicks", count: 3 }
+sum 10
+Tom the cat, 9 lives
+Rex
+43
+other clicks
+4 3 false
+Counter { name: "reset", count: 0 }
+0
+true true

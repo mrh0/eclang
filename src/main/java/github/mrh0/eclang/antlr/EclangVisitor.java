@@ -122,13 +122,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprFunctionCallWithArgs(EclangParser.ExprFunctionCallWithArgsContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code exprHere}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprHere(EclangParser.ExprHereContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code exprCreateRecord}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -206,6 +199,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprFunctionCallNoArgs(EclangParser.ExprFunctionCallNoArgsContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code exprUnsafe}
+	 * labeled alternative in {@link EclangParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprUnsafe(EclangParser.ExprUnsafeContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code exprAccessName}
 	 * labeled alternative in {@link EclangParser#expr}.
 	 * @param ctx the parse tree
@@ -240,13 +240,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprInlineIf(EclangParser.ExprInlineIfContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code exprIt}
-	 * labeled alternative in {@link EclangParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprIt(EclangParser.ExprItContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code exprNullishJump}
 	 * labeled alternative in {@link EclangParser#expr}.
@@ -393,6 +386,12 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTail(EclangParser.TailContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link EclangParser#tryCatch}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTryCatch(EclangParser.TryCatchContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link EclangParser#lambdaParameter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -497,13 +496,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeByName(EclangParser.TypeByNameContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code typeUnionAnon}
-	 * labeled alternative in {@link EclangParser#type}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTypeUnionAnon(EclangParser.TypeUnionAnonContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code typeNest}
 	 * labeled alternative in {@link EclangParser#type}.
 	 * @param ctx the parse tree
@@ -552,6 +544,20 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitParameterVarArgC(EclangParser.ParameterVarArgCContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code parameterMut}
+	 * labeled alternative in {@link EclangParser#parameter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterMut(EclangParser.ParameterMutContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code parameterKeyword}
+	 * labeled alternative in {@link EclangParser#parameter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterKeyword(EclangParser.ParameterKeywordContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code parameterVariable}
 	 * labeled alternative in {@link EclangParser#parameter}.
 	 * @param ctx the parse tree
@@ -566,13 +572,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitParameterConst(EclangParser.ParameterConstContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code parameterVolatile}
-	 * labeled alternative in {@link EclangParser#parameter}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitParameterVolatile(EclangParser.ParameterVolatileContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code statementDefineVar}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
@@ -586,13 +585,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStatementDefineVal(EclangParser.StatementDefineValContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code statementDefineVol}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStatementDefineVol(EclangParser.StatementDefineVolContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementDefineConst}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -614,13 +606,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStatementDefineValTyped(EclangParser.StatementDefineValTypedContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code statementDefineVolTyped}
-	 * labeled alternative in {@link EclangParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStatementDefineVolTyped(EclangParser.StatementDefineVolTypedContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementDefineConstTyped}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -691,6 +676,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStatementAssert(EclangParser.StatementAssertContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code statementConstAssert}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementConstAssert(EclangParser.StatementConstAssertContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code statementReturn}
 	 * labeled alternative in {@link EclangParser#statement}.
@@ -832,12 +824,67 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatementSafeCall(EclangParser.StatementSafeCallContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code statementUnsafe}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementUnsafe(EclangParser.StatementUnsafeContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code statementUnsafeLine}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementUnsafeLine(EclangParser.StatementUnsafeLineContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code statementDestroy}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementDestroy(EclangParser.StatementDestroyContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code statementPool}
 	 * labeled alternative in {@link EclangParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitStatementPool(EclangParser.StatementPoolContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code statementPrefixed}
+	 * labeled alternative in {@link EclangParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementPrefixed(EclangParser.StatementPrefixedContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code constAssertRelation}
+	 * labeled alternative in {@link EclangParser#constAssert}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConstAssertRelation(EclangParser.ConstAssertRelationContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code constAssertIn}
+	 * labeled alternative in {@link EclangParser#constAssert}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConstAssertIn(EclangParser.ConstAssertInContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code constAssertCondition}
+	 * labeled alternative in {@link EclangParser#constAssert}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConstAssertCondition(EclangParser.ConstAssertConditionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EclangParser#contract}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitContract(EclangParser.ContractContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#destructure}.
 	 * @param ctx the parse tree
@@ -953,13 +1000,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitGlobalDefineConst(EclangParser.GlobalDefineConstContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code globalDefineVolatile}
-	 * labeled alternative in {@link EclangParser#global}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitGlobalDefineVolatile(EclangParser.GlobalDefineVolatileContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code globalDefineTyped}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
@@ -973,13 +1013,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitGlobalDefineConstTyped(EclangParser.GlobalDefineConstTypedContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code globalDefineVolatileTyped}
-	 * labeled alternative in {@link EclangParser#global}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitGlobalDefineVolatileTyped(EclangParser.GlobalDefineVolatileTypedContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code globalConstant}
 	 * labeled alternative in {@link EclangParser#global}.
@@ -1023,13 +1056,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitGlobalEnumDeclare(EclangParser.GlobalEnumDeclareContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code globalUnitDeclare}
-	 * labeled alternative in {@link EclangParser#global}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitGlobalUnitDeclare(EclangParser.GlobalUnitDeclareContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code globalRecordDefine}
 	 * labeled alternative in {@link EclangParser#global}.
 	 * @param ctx the parse tree
@@ -1057,20 +1083,6 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitGlobalRecordDeclare(EclangParser.GlobalRecordDeclareContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code globalStructDeclareDefine}
-	 * labeled alternative in {@link EclangParser#global}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitGlobalStructDeclareDefine(EclangParser.GlobalStructDeclareDefineContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code globalStructDeclare}
-	 * labeled alternative in {@link EclangParser#global}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitGlobalStructDeclare(EclangParser.GlobalStructDeclareContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code globalUnionDeclareDefine}
 	 * labeled alternative in {@link EclangParser#global}.
@@ -1100,6 +1112,13 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitGlobalNamespace(EclangParser.GlobalNamespaceContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code globalConstAssert}
+	 * labeled alternative in {@link EclangParser#global}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGlobalConstAssert(EclangParser.GlobalConstAssertContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code interfaceField}
 	 * labeled alternative in {@link EclangParser#interfaceMember}.
 	 * @param ctx the parse tree
@@ -1126,11 +1145,23 @@ public interface EclangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFieldWidth(EclangParser.FieldWidthContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link EclangParser#fieldExtern}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFieldExtern(EclangParser.FieldExternContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link EclangParser#recordModifier}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitRecordModifier(EclangParser.RecordModifierContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EclangParser#typeParameter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeParameter(EclangParser.TypeParameterContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EclangParser#use}.
 	 * @param ctx the parse tree

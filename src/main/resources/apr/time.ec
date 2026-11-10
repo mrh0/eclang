@@ -39,14 +39,14 @@ declare rec apr_time_exp_t as
     tm_gmtoff: apr_int32_t
 
 declare fn apr_time_now as (): apr_time_t
-declare fn apr_time_ansi_put as (result: @apr_time_t, input: time_t): apr_status_t
-declare fn apr_time_exp_tz as (result: @apr_time_exp_t, input: apr_time_t, offs: apr_int32_t): apr_status_t
-declare fn apr_time_exp_gmt as (result: @apr_time_exp_t, input: apr_time_t): apr_status_t
-declare fn apr_time_exp_lt as (result: @apr_time_exp_t, input: apr_time_t): apr_status_t
-declare fn apr_time_exp_get as (result: @apr_time_t, input: @apr_time_exp_t): apr_status_t
-declare fn apr_time_exp_gmt_get as (result: @apr_time_t, input: @apr_time_exp_t): apr_status_t
+declare fn apr_time_ansi_put as (out result: apr_time_t, input: time_t): apr_status_t
+declare fn apr_time_exp_tz as (out result: apr_time_exp_t, input: apr_time_t, offs: apr_int32_t): apr_status_t
+declare fn apr_time_exp_gmt as (out result: apr_time_exp_t, input: apr_time_t): apr_status_t
+declare fn apr_time_exp_lt as (out result: apr_time_exp_t, input: apr_time_t): apr_status_t
+declare fn apr_time_exp_get as (out result: apr_time_t, input: @apr_time_exp_t): apr_status_t
+declare fn apr_time_exp_gmt_get as (out result: apr_time_t, input: @apr_time_exp_t): apr_status_t
 declare fn apr_sleep as (t: apr_interval_time_t)
 declare fn apr_rfc822_date as (date_str: CString, t: apr_time_t): apr_status_t
 declare fn apr_ctime as (date_str: CString, t: apr_time_t): apr_status_t
-declare fn apr_strftime as (s: CString, retsize: @apr_size_t, max: apr_size_t, format: CString, tm: @apr_time_exp_t): apr_status_t
+declare fn apr_strftime as (s: CString, out retsize: apr_size_t, max: apr_size_t, format: CString, tm: @apr_time_exp_t): apr_status_t
 declare fn apr_time_clock_hires as (p: @apr_pool_t)

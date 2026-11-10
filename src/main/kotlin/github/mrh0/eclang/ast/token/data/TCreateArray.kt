@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.data
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -16,6 +17,8 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Union
 
 class TCreateArray(location: Loc, val values: List<ITok>) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(values)
+
     /** Whether the last compiled literal was a `T[N]`, whose elements are in the value and not on the stack (see Lifetimes). */
     var isFixed = false
         private set

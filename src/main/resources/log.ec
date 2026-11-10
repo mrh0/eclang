@@ -10,6 +10,7 @@
  *     try log.toFile("app.log")                           // adds to the end of the file, and makes it if needed
  *     log.toStderr()                                      // back to where it started
  *     log.setTimestamps(:local)                           // :utc (the first setting), :local or :none
+ *     log.setLocations(true)                              // ... INFO  main.ec:12: started
  *
  *     val db = log.logger("db")                           // named, with its own settings
  *     log.info(db, "connected")                           // ... INFO  db: connected
@@ -43,7 +44,7 @@ declare type Level as :debug | :info | :warn | :error | :off
 declare type Timestamps as :utc | :local | :none
 
 /** Where lines go. Loggers can share one. */
-priv rec Sink as
+priv mut rec Sink as
     /** Held while anything here, or a setting of a {@link Logger} writing here, is used. */
     lock: thread.Mutex
     /** The open file, or null for stderr. */
@@ -55,8 +56,8 @@ priv rec Sink as
     /** The pool the open file is in, which is freed when another file takes its place. */
     filePool: Pool?
 
-/** Writes messages somewhere: {@link logger}. */
-rec Logger as
+/** Writes messages somewhere: {@link logger}. Threads can share one (it is `sync`): its {@link Sink}'s lock guards what it writes and its settings. */
+mut sync ref rec Logger as
     /** What is before each message, or "" for nothing. */
     name: String
     /** The lowest level it writes. Change it with {@link setLevel}. */
@@ -65,17 +66,19 @@ rec Logger as
     timestamps: Timestamps
     /** Where its lines go. */
     sink: @Sink
+    /** Whether it writes where each message comes from ("main.ec:12"). Change it with {@link setLocations}. */
+    locations: Bool = false
 
 /** A new {@link Sink} for stderr, in the current pool. */
 priv fn newSink(): @Sink do
     val lock = thread.mutex() ?? panic("log: the system can't make a mutex")
-    ret new Sink { lock, null, "", newPool(), null }
+    ret new Sink { lock, null, "", new Pool, null }
 
 /**
  * A new logger writing to stderr, with the level `:info`, which belongs to the current pool.
  * @param name what is before each message; "" for nothing
  */
-fn logger(name: String = ""): @Logger = new Logger { name, :info, :utc, newSink() }
+fn logger(name: String = ""): Logger = new Logger { name, :info, :utc, newSink() }
 
 /**
  * A logger that writes where `parent` does, with the same settings at first. Those are its own after that, except for the
@@ -83,11 +86,11 @@ fn logger(name: String = ""): @Logger = new Logger { name, :info, :utc, newSink(
  * @param parent the logger
  * @param name its name, which comes after the name of `parent`, with a dot
  */
-fn child(parent: @Logger, name: String): @Logger do
+fn child(parent: Logger, name: String): Logger do
     thread.lock(parent.sink.lock)
     defer thread.unlock(parent.sink.lock)
     val full = if parent.name.len == 0 do name else concat(parent.name, ".", name)
-    ret new Logger { full, parent.level, parent.timestamps, parent.sink }
+    ret new Logger { full, parent.level, parent.timestamps, parent.sink, parent.locations }
 
 /** The logger of the functions that aren't given one. */
 priv val DEFAULT = logger()
@@ -127,7 +130,7 @@ fn parseLevel(s: String): Level throws ParseError do
     throw parseError("'${s}' is not a log level: the levels are debug, info, warn, error and off", s, 0)
 
 /** Sets the lowest level `l` writes. */
-fn setLevel(l: @Logger, level: Level) do
+fn setLevel(l: Logger, level: Level) do
     thread.lock(l.sink.lock)
     defer thread.unlock(l.sink.lock)
     l.level = level
@@ -137,7 +140,7 @@ fn setLevel(level: Level) do
     setLevel(DEFAULT, level)
 
 /** Whether `l` would write a message of `level`, to skip making one that takes work. */
-fn enabled(l: @Logger, level: Level): Bool do
+fn enabled(l: Logger, level: Level): Bool do
     thread.lock(l.sink.lock)
     defer thread.unlock(l.sink.lock)
     ret level != :off and rank(level) >= rank(l.level)
@@ -146,7 +149,7 @@ fn enabled(l: @Logger, level: Level): Bool do
 fn enabled(level: Level): Bool = enabled(DEFAULT, level)
 
 /** Sets what `l` writes at the start of each line. */
-fn setTimestamps(l: @Logger, timestamps: Timestamps) do
+fn setTimestamps(l: Logger, timestamps: Timestamps) do
     thread.lock(l.sink.lock)
     defer thread.unlock(l.sink.lock)
     l.timestamps = timestamps
@@ -155,15 +158,25 @@ fn setTimestamps(l: @Logger, timestamps: Timestamps) do
 fn setTimestamps(timestamps: Timestamps) do
     setTimestamps(DEFAULT, timestamps)
 
+/** Sets whether `l` writes where each message comes from: the file and line of the call that logs it, after the level. */
+fn setLocations(l: Logger, on: Bool) do
+    thread.lock(l.sink.lock)
+    defer thread.unlock(l.sink.lock)
+    l.locations = on
+
+/** Sets whether each line says where its message comes from: the file and line of the call that logs it, after the level. */
+fn setLocations(on: Bool) do
+    setLocations(DEFAULT, on)
+
 // ---------------------------------------------------------------------------------------------------
 // Output
 
 /** Closes the file of `s`, if it has one, so that lines go to stderr. The lock of `s` is held. */
 priv fn closeFile(s: @Sink) do
-    if val old = s.filePool do
-        freePool(old)
-    s.filePool = null
+    // The pool belongs to the Sink, whose lock is held, and only the file and its path are in it: both are reset here.
+    unsafe destroy s.filePool
     s.file = null
+    s.path = ""
 
 /**
  * Makes `l`, and the loggers sharing its output ({@link child}), add their lines to the end of a file, which is made if it
@@ -172,15 +185,15 @@ priv fn closeFile(s: @Sink) do
  * @param path where the file is
  * @throws when it can't be opened; lines then go where they went before
  */
-fn toFile(l: @Logger, path: String) throws IoError do
+fn toFile(l: Logger, path: String) throws IoError do
     val s = l.sink
     thread.lock(s.lock)
     defer thread.unlock(s.lock)
-    val memory = newPool(s.memory)
+    val memory = new Pool in s.memory
     var handle: @apr_file_t? = null
-    val status = apr_file_open(addrof(handle!), cstr(path), APR_FOPEN_WRITE | APR_FOPEN_CREATE | APR_FOPEN_APPEND, APR_FPROT_OS_DEFAULT, memory)
+    val status = apr_file_open(mut handle, cstr(path), APR_FOPEN_WRITE | APR_FOPEN_CREATE | APR_FOPEN_APPEND, APR_FPROT_OS_DEFAULT, memory)
     if status != APR_SUCCESS do
-        freePool(memory)
+        destroy memory
         throw ioError(status, path)
     closeFile(s)
     s.filePool = memory
@@ -196,7 +209,7 @@ fn toFile(path: String) throws IoError do
     try toFile(DEFAULT, path)
 
 /** Makes `l`, and the loggers sharing its output, write to stderr. A file it wrote to is closed. */
-fn toStderr(l: @Logger) do
+fn toStderr(l: Logger) do
     thread.lock(l.sink.lock)
     defer thread.unlock(l.sink.lock)
     closeFile(l.sink)
@@ -219,7 +232,7 @@ priv fn deliver(s: @Sink, line: String) do
     if val file = s.file do
         // One write, so that it stays whole next to other writers: the file isn't buffered.
         var written: Size = 0
-        val status = apr_file_write_full(file, line.data, line.len, addrof(written))
+        val status = apr_file_write_full(file, line.data, line.len, mut written)
         if status != APR_SUCCESS do
             val problem = ioError(status, s.path)
             io.eprintln("log: can't write to the file: ${problem.message}")
@@ -232,51 +245,53 @@ priv fn deliver(s: @Sink, line: String) do
  * @param l the logger
  * @param level how much it matters
  * @param message what to say
+ * @param at where it comes from, written with {@link setLocations}: the call, unless it is given
  */
-fn write(l: @Logger, level: Level, message: String) do
+fn write(l: Logger, level: Level, message: String, at: Location = caller) do
     thread.lock(l.sink.lock)
     defer thread.unlock(l.sink.lock)
     if level != :off and rank(level) >= rank(l.level) do
         pool do
+            val place = if l.locations do format("${at}: ") else ""
             val name = if l.name.len == 0 do "" else concat(l.name, ": ")
-            deliver(l.sink, concat(stamp(l.timestamps), label(level), " ", name, message, "\n"))
+            deliver(l.sink, concat(stamp(l.timestamps), label(level), " ", place, name, message, "\n"))
 
 /** Writes a message of the level `:debug`: details that are only of use when looking for a problem. */
-fn debug(message: String) do
-    write(DEFAULT, :debug, message)
+fn debug(message: String, at: Location = caller) do
+    write(DEFAULT, :debug, message, at)
 
 /** Writes a message of the level `:info`: what the program is doing. */
-fn info(message: String) do
-    write(DEFAULT, :info, message)
+fn info(message: String, at: Location = caller) do
+    write(DEFAULT, :info, message, at)
 
 /** Writes a message of the level `:warn`: something is wrong, but the program can go on. */
-fn warn(message: String) do
-    write(DEFAULT, :warn, message)
+fn warn(message: String, at: Location = caller) do
+    write(DEFAULT, :warn, message, at)
 
 /** Writes a message of the level `:error`: something has failed. */
-fn error(message: String) do
-    write(DEFAULT, :error, message)
+fn error(message: String, at: Location = caller) do
+    write(DEFAULT, :error, message, at)
 
 /** Writes an Error, of any kind, as a message of the level `:error`. */
-fn error(e: Error) do
-    write(DEFAULT, :error, describe(e))
+fn error(e: Error, at: Location = caller) do
+    write(DEFAULT, :error, describe(e), at)
 
 /** Writes a message of the level `:debug` to `l`. */
-fn debug(l: @Logger, message: String) do
-    write(l, :debug, message)
+fn debug(l: Logger, message: String, at: Location = caller) do
+    write(l, :debug, message, at)
 
 /** Writes a message of the level `:info` to `l`. */
-fn info(l: @Logger, message: String) do
-    write(l, :info, message)
+fn info(l: Logger, message: String, at: Location = caller) do
+    write(l, :info, message, at)
 
 /** Writes a message of the level `:warn` to `l`. */
-fn warn(l: @Logger, message: String) do
-    write(l, :warn, message)
+fn warn(l: Logger, message: String, at: Location = caller) do
+    write(l, :warn, message, at)
 
 /** Writes a message of the level `:error` to `l`. */
-fn error(l: @Logger, message: String) do
-    write(l, :error, message)
+fn error(l: Logger, message: String, at: Location = caller) do
+    write(l, :error, message, at)
 
 /** Writes an Error, of any kind, as a message of the level `:error` to `l`. */
-fn error(l: @Logger, e: Error) do
-    write(l, :error, describe(e))
+fn error(l: Logger, e: Error, at: Location = caller) do
+    write(l, :error, describe(e), at)

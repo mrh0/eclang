@@ -7,7 +7,7 @@ rec Task as
     name: String
     done: Bool = false
 
-fn draw(s: @term.Screen, tasks: Task[], current: Size) do
+fn draw(s: term.Screen, tasks: Task[], current: Size) do
     term.clear(s)
     term.box(s, 0, 0, s.cols, s.rows, :rounded, "Tasks", term.Style { fg = term.CYAN })
     for i in 0..<tasks.len do

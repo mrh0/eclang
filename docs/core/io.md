@@ -45,6 +45,24 @@ How to [`open`](#io.open) a file:
 - `:append`: write at the end of a file, making it if it doesn't exist
 - `:update`: read and write an existing file, from its start
 
+## Values
+
+### <a id="io.commandLineLength"></a>`commandLineLength`
+
+```ec
+declare val commandLineLength extern "__ec_argc" as Int
+```
+
+How many words the command line has, the program's name included; the generated C `main` sets it. Use [`args`](#io.args).
+
+### <a id="io.commandLine"></a>`commandLine`
+
+```ec
+declare val commandLine extern "__ec_argv" as CString[]c
+```
+
+The words of the command line, as C's `main` gets them. Use [`args`](#io.args).
+
 ## Functions
 
 ### <a id="io.log"></a>`log`
@@ -252,6 +270,23 @@ fn readAll(): String
 ```
 
 Reads everything left on stdin, up to the end of the input.
+
+### <a id="io.args"></a>`args`
+
+```ec
+fn args(): String[]
+```
+
+The arguments the program was started with, without its own name: `./app -v in.txt` gives ["-v", "in.txt"].
+With `eclang run`, they are what follows `--`: `eclang run app.ec -- -v in.txt`.
+
+### <a id="io.programName"></a>`programName`
+
+```ec
+fn programName(): String
+```
+
+How the program was started, the first word of the command line: "./app".
 
 ### <a id="io.open"></a>`open`
 

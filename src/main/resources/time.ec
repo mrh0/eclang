@@ -49,7 +49,7 @@ rec Instant as
     nanos: Long
 
 /** A date and time of day, as a calendar shows it in some time zone. */
-rec Date as
+mut rec Date as
     /** The year, such as 2024. */
     year: Int
     /** 1 (January) to 12. */
@@ -251,7 +251,7 @@ fn parseDuration(s: String): Duration throws ParseError do
 /** The steady clock now (see {@link Instant}). */
 fn instant(): Instant do
     var ts: timespec
-    clock_gettime(CLOCK_MONOTONIC, addrof(ts))
+    clock_gettime(CLOCK_MONOTONIC, mut ts)
     ret Instant { ts.tv_sec * 1000000000 + ts.tv_nsec }
 
 /** How long ago `start` was read. */
@@ -267,7 +267,7 @@ fn sleep(d: Duration) do
 /** The processor time this program has used (all its threads), for profiling. */
 fn cpuTime(): Duration do
     var ts: timespec
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, addrof(ts))
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, mut ts)
     ret Duration { ts.tv_sec * MICROS_PER_SECOND + ts.tv_nsec / 1000 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -306,13 +306,13 @@ priv fn toExp(d: Date): apr_time_exp_t = apr_time_exp_t {
 /** The date and time of `t` in UTC. */
 fn utc(t: Time): Date do
     var e: apr_time_exp_t
-    apr_time_exp_gmt(addrof(e), t.micros)
+    apr_time_exp_gmt(mut e, t.micros)
     ret fromExp(e)
 
 /** The date and time of `t` in the system's time zone (the TZ environment variable, or /etc/localtime). */
 fn local(t: Time): Date do
     var e: apr_time_exp_t
-    apr_time_exp_lt(addrof(e), t.micros)
+    apr_time_exp_lt(mut e, t.micros)
     ret fromExp(e)
 
 /**
@@ -321,7 +321,7 @@ fn local(t: Time): Date do
  */
 fn zoned(t: Time, offset: Int): Date do
     var e: apr_time_exp_t
-    apr_time_exp_tz(addrof(e), t.micros, offset)
+    apr_time_exp_tz(mut e, t.micros, offset)
     ret fromExp(e)
 
 /** Whether `year` has a February 29th (in the Gregorian calendar). */
@@ -450,7 +450,7 @@ fn strftime(d: Date, pattern: CString): String do
     var e = toExp(d)
     val buffer = new Char[256]
     var written: Size = 0
-    apr_strftime(buffer.data !as CString, addrof(written), buffer.len, pattern, addrof(e))
+    apr_strftime(buffer.data !as CString, mut written, buffer.len, pattern, addrof(e))
     ret format("${buffer.data !as CString}")[0..<written]
 
 /** `n` with zeros before it, at least `width` digits long (at most 6 zeros are added). */

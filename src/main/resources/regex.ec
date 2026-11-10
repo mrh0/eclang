@@ -97,7 +97,7 @@ priv const AT_WORD_EDGE: Size = 4
 priv const AT_NOT_WORD_EDGE: Size = 5
 
 /** One step of a compiled pattern. */
-priv rec Inst as
+priv mut rec Inst as
     /** What it does: one of the `OP_*` constants. */
     op: Int
     /** The character it takes. */
@@ -115,7 +115,7 @@ priv rec CharSet as
     ascii: Bool[]
 
 /** A compiled pattern: {@link compile}. */
-rec Regex as
+ref rec Regex as
     /** The pattern, as it was written. */
     pattern: String
     /** How many groups capture, not counting the whole match. */
@@ -164,7 +164,7 @@ priv rec Node as
     /** See the `NODE_*` constants. */
     value: Size = 0
     /** See the `NODE_*` constants. */
-    kids: @List<@Node>? = null
+    kids: List<@Node>? = null
     /** See the `NODE_*` constants. */
     min: Int = 0
     /** See the `NODE_*` constants. */
@@ -173,14 +173,14 @@ priv rec Node as
     greedy: Bool = true
 
 /** A range of characters, while a set is put together. */
-priv rec Range as
+priv mut rec Range as
     /** The first character. */
     first: UInt
     /** The last character. */
     last: UInt
 
 /** Where parsing is. */
-priv rec Parser as
+priv mut rec Parser as
     /** The pattern. */
     text: String
     /** The next byte. */
@@ -192,9 +192,9 @@ priv rec Parser as
     /** Whether `.` takes "\n" too from here on. */
     dotAll: Bool
     /** The name of each group so far, "" for none. */
-    names: @List<String>
+    names: List<String>
     /** The sets of characters so far. */
-    sets: @List<CharSet>
+    sets: List<CharSet>
 
 /** The error for what is at byte `at` of the pattern. */
 priv fn problem(p: @Parser, message: String, at: Size): ParseError = parseError("in the pattern at byte ${at}: ${message}", p.text, at)
@@ -224,19 +224,19 @@ priv fn takeChar(p: @Parser): UInt do
 priv fn emptyNode(): @Node = new Node { kind = NODE_EMPTY }
 
 /** A list of the one node `n`. */
-priv fn only(n: @Node): @List<@Node> do
-    val kids: @List<@Node> = list(1)
+priv fn only(n: @Node): List<@Node> do
+    val kids: List<@Node> = list(1)
     kids.push(n)
     ret kids
 
 /** Adds the ranges of the other case of what is between `first` and `last`, which are in `from` to `until`. */
-priv fn addOtherCase(ranges: @List<Range>, first: UInt, last: UInt, from: UInt, until: UInt, target: UInt) do
+priv fn addOtherCase(ranges: List<Range>, first: UInt, last: UInt, from: UInt, until: UInt, target: UInt) do
     val low = if first < from do from else first
     val high = if last > until do until else last
     ranges.push(Range { low - from + target, high - from + target }) if low <= high
 
 /** Adds the characters from `first` to `last`, and when letters match in either case, those in the other case. */
-priv fn addRange(p: @Parser, ranges: @List<Range>, first: UInt, last: UInt) do
+priv fn addRange(p: @Parser, ranges: List<Range>, first: UInt, last: UInt) do
     ranges.push(Range { first, last })
     if p.ignoreCase do
         addOtherCase(ranges, first, last, 'A' as UInt, 'Z' as UInt, 'a' as UInt)
@@ -246,9 +246,9 @@ priv fn addRange(p: @Parser, ranges: @List<Range>, first: UInt, last: UInt) do
 priv fn rangeBefore(a: Range, b: Range): Bool = a.first < b.first
 
 /** The ranges, sorted and joined where they touch. */
-priv fn normalised(ranges: @List<Range>): @List<Range> do
+priv fn normalised(ranges: List<Range>): List<Range> do
     sortBy(ranges.items(), fn rangeBefore)
-    val out: @List<Range> = list(ranges.len + 1)
+    val out: List<Range> = list(ranges.len + 1)
     for r in ranges do
         if out.len > 0 and r.first <= out.buffer[out.len - 1].last + 1 do
             if r.last > out.buffer[out.len - 1].last do
@@ -258,8 +258,8 @@ priv fn normalised(ranges: @List<Range>): @List<Range> do
     ret out
 
 /** What isn't in the ranges, which are normalised. */
-priv fn inverted(ranges: @List<Range>): @List<Range> do
-    val out: @List<Range> = list(ranges.len + 2)
+priv fn inverted(ranges: List<Range>): List<Range> do
+    val out: List<Range> = list(ranges.len + 2)
     var from: UInt = 0
     for r in ranges do
         out.push(Range { from, r.first - 1 }) if r.first > from
@@ -268,7 +268,7 @@ priv fn inverted(ranges: @List<Range>): @List<Range> do
     ret out
 
 /** Adds a set of `ranges` to the pattern. */
-priv fn makeSet(p: @Parser, ranges: @List<Range>, negated: Bool): @Node do
+priv fn makeSet(p: @Parser, ranges: List<Range>, negated: Bool): @Node do
     val sorted = normalised(ranges)
     val final = if negated do inverted(sorted) else sorted
     val flat = new UInt[final.len * 2]
@@ -284,7 +284,7 @@ priv fn makeSet(p: @Parser, ranges: @List<Range>, negated: Bool): @Node do
     ret new Node { kind = NODE_SET, value = p.sets.len - 1 }
 
 /** Adds the characters of `\d`, `\w` or `\s`, with `c` the letter in lower case. */
-priv fn addShorthand(ranges: @List<Range>, c: Char) do
+priv fn addShorthand(ranges: List<Range>, c: Char) do
     when c do
         'd' do
             ranges.push(Range { '0' as UInt, '9' as UInt })
@@ -301,11 +301,11 @@ priv fn addShorthand(ranges: @List<Range>, c: Char) do
 priv fn isShorthand(c: Char): Bool = c == 'd' or c == 'w' or c == 's' or c == 'D' or c == 'W' or c == 'S'
 
 /** Adds what a shorthand stands for to a set. */
-priv fn addShorthandTo(ranges: @List<Range>, c: Char) do
+priv fn addShorthandTo(ranges: List<Range>, c: Char) do
     if isLower(c) do
         addShorthand(ranges, c)
     else do
-        val opposite: @List<Range> = list()
+        val opposite: List<Range> = list()
         addShorthand(opposite, toLower(c))
         ranges.pushAll(inverted(normalised(opposite)).items())
 
@@ -366,7 +366,7 @@ priv fn escapedChar(p: @Parser): UInt throws ParseError do
  * Reads a `[:name:]` inside a set, at the current byte, its "[:".
  * @throws when there is no such class
  */
-priv fn posixClass(p: @Parser, ranges: @List<Range>) throws ParseError do
+priv fn posixClass(p: @Parser, ranges: List<Range>) throws ParseError do
     val start = p.at
     p.at += 2
     val negated = takes(p, "^")
@@ -375,7 +375,7 @@ priv fn posixClass(p: @Parser, ranges: @List<Range>) throws ParseError do
         p.at += 1
     val name = p.text[at..<p.at]
     throw problem(p, "a [: class ends with :]", start) if not takes(p, ":]")
-    val found: @List<Range> = list()
+    val found: List<Range> = list()
     when name do
         "alpha" do
             addRange(p, found, 'A' as UInt, 'Z' as UInt)
@@ -415,7 +415,7 @@ priv fn posixClass(p: @Parser, ranges: @List<Range>) throws ParseError do
  * @return the character, or null when a `\d`-style escape was added to `ranges` instead
  * @throws when it isn't valid
  */
-priv fn setChar(p: @Parser, ranges: @List<Range>): UInt? throws ParseError do
+priv fn setChar(p: @Parser, ranges: List<Range>): UInt? throws ParseError do
     ret takeChar(p) if not looksAt(p, '\\')
     p.at += 1
     throw problem(p, "a backslash at the end of the pattern has nothing to escape", p.at - 1) if atEnd(p)
@@ -436,7 +436,7 @@ priv fn setChar(p: @Parser, ranges: @List<Range>): UInt? throws ParseError do
 priv fn parseSet(p: @Parser): @Node throws ParseError do
     val start = p.at - 1
     val negated = takes(p, "^")
-    val ranges: @List<Range> = list()
+    val ranges: List<Range> = list()
     var first = true
     while first or not looksAt(p, ']') do
         throw problem(p, "this [ has no closing ]", start) if atEnd(p)
@@ -460,7 +460,7 @@ priv fn parseSet(p: @Parser): @Node throws ParseError do
 /** The node for the character `cp`. Letters that match in either case are a set of both. */
 priv fn charNode(p: @Parser, cp: UInt): @Node do
     if p.ignoreCase and cp < 128 and isAlpha(cp as Char) do
-        val ranges: @List<Range> = list(2)
+        val ranges: List<Range> = list(2)
         addRange(p, ranges, cp, cp)
         ret makeSet(p, ranges, false)
     ret new Node { kind = NODE_CHAR, c = cp }
@@ -477,7 +477,7 @@ priv fn parseEscape(p: @Parser): @Node throws ParseError do
     val c = p.text[p.at]
     if isShorthand(c) do
         p.at += 1
-        val ranges: @List<Range> = list()
+        val ranges: List<Range> = list()
         addShorthandTo(ranges, c)
         ret makeSet(p, ranges, false)
     when c do
@@ -674,7 +674,7 @@ priv fn parseRepeat(p: @Parser, depth: Int): @Node throws ParseError do
  * @throws when it isn't valid
  */
 priv fn parseSequence(p: @Parser, depth: Int): @Node throws ParseError do
-    val kids: @List<@Node> = list()
+    val kids: List<@Node> = list()
     while not atEnd(p) and not looksAt(p, '|') and not looksAt(p, ')') do
         kids.push(try parseRepeat(p, depth))
     ret emptyNode() if kids.len == 0
@@ -697,11 +697,11 @@ priv fn parseChoice(p: @Parser, depth: Int): @Node throws ParseError do
 // Compiling
 
 /** The instructions so far. */
-priv rec Builder as
+priv mut rec Builder as
     /** The pattern, for error messages. */
     pattern: String
     /** The instructions. */
-    code: @List<Inst>
+    code: List<Inst>
     /** How many nodes have been compiled. Empty ones add no instructions, but repeats of them still take time. */
     work: Size = 0
 
@@ -777,7 +777,7 @@ priv fn emitRepeat(b: @Builder, n: @Node) throws ParseError do
         for i in 0..<n.min do
             try emit(b, body)
         // x{0,2} is (x(x)?)?: each split can go past all the rest.
-        val splits: @List<Size> = list()
+        val splits: List<Size> = list()
         for i in n.min..<n.max do
             splits.push(try add(b, Inst { op = OP_SPLIT }))
             try emit(b, body)
@@ -789,7 +789,7 @@ priv fn emitRepeat(b: @Builder, n: @Node) throws ParseError do
  * @throws when the pattern has become too large
  */
 priv fn emitChoice(b: @Builder, n: @Node) throws ParseError do
-    val jumps: @List<Size> = list()
+    val jumps: List<Size> = list()
     val kids = n.kids!
     for i, kid in kids.items() do
         if i + 1 < kids.len do
@@ -862,15 +862,15 @@ priv fn isAnchored(n: @Node): Bool do
  * @return the compiled pattern, in the current pool
  * @throws when the pattern isn't valid, isn't UTF-8, or is too large, with the position of the problem
  */
-fn compile(pattern: String, ignoreCase: Bool = false, multiline: Bool = false, dotAll: Bool = false): @Regex throws ParseError do
+fn compile(pattern: String, ignoreCase: Bool = false, multiline: Bool = false, dotAll: Bool = false): Regex throws ParseError do
     try unicode.validate(pattern)
-    val names: @List<String> = list()
+    val names: List<String> = list()
     names.push("")
-    val sets: @List<CharSet> = list()
+    val sets: List<CharSet> = list()
     val p = new Parser { pattern, 0, ignoreCase, multiline, dotAll, names, sets }
     val root = try parseChoice(p, 0)
     throw problem(p, "this ) has no ( before it. Write \\) for the character itself", p.at) if not atEnd(p)
-    val code: @List<Inst> = list(64)
+    val code: List<Inst> = list(64)
     val b = new Builder { pattern = pattern, code = code }
     try add(b, Inst { op = OP_SAVE, x = 0 })
     try emit(b, root)
@@ -883,7 +883,7 @@ fn compile(pattern: String, ignoreCase: Bool = false, multiline: Bool = false, d
 // Matching
 
 /** A set of threads, each at an instruction, in the order of preference. */
-priv rec Queue as
+priv mut rec Queue as
     /** The instruction of each thread. */
     dense: Size[]
     /** Where each instruction is in {@code dense}, if it is there: see {@link isQueued}. */
@@ -894,9 +894,9 @@ priv rec Queue as
     len: Size
 
 /** A run of a pattern over a text, with all the memory it needs. */
-priv rec Machine as
+priv mut rec Machine as
     /** The pattern. */
-    re: @Regex
+    re: Regex
     /** The text. */
     input: String
     /** How many capture slots are followed: 0 when only whether it matches is of interest. */
@@ -923,7 +923,7 @@ priv const RESTORE: Size = 0x7FFFFFFFFFFFFFFF
 priv fn newQueue(size: Size, slots: Size, mem: Pool): @Queue = new Queue { new Size[size] in mem, new Size[size] in mem, new Size[size * slots] in mem, 0 } in mem
 
 /** A new {@link Machine}, in pool `mem`. */
-priv fn newMachine(re: @Regex, input: String, slots: Size, mem: Pool): @Machine do
+priv fn newMachine(re: Regex, input: String, slots: Size, mem: Pool): @Machine do
     val size = re.program.len
     val depth = size * 2 + 2
     ret new Machine { re, input, slots, newQueue(size, slots, mem), newQueue(size, slots, mem), new Size[slots] in mem, new Size[depth] in mem, new Size[depth] in mem, new Size[depth] in mem, new Size[slots] in mem } in mem
@@ -1007,7 +1007,7 @@ priv fn inSet(set: CharSet, cp: UInt): Bool do
     ret false
 
 /** Whether the instruction `inst` takes the character `cp`. */
-priv fn takesChar(re: @Regex, inst: Inst, cp: UInt): Bool do
+priv fn takesChar(re: Regex, inst: Inst, cp: UInt): Bool do
     when inst.op do
         OP_CHAR do ret cp == inst.c
         OP_ANY do ret true
@@ -1016,7 +1016,7 @@ priv fn takesChar(re: @Regex, inst: Inst, cp: UInt): Bool do
         else do ret false
 
 /** Goes from `s` to the next place where a match can start, when no thread is running: `start`, or the end of the text. */
-priv fn skipAhead(re: @Regex, s: String, start: Size): Size do
+priv fn skipAhead(re: Regex, s: String, start: Size): Size do
     ret start if re.firstByte < 0
     val wanted = re.firstByte as UChar
     var at = start
@@ -1079,31 +1079,35 @@ priv fn run(m: @Machine, from: Size, whole: Bool): Bool do
     ret matched
 
 /** Where a match is and what it captured: {@link find}. */
-rec Match as
+ref rec Match as
     /** The text it is in. */
     input: String
     /** The pattern. */
-    re: @Regex
+    re: Regex
     /** Where each group starts and ends, in turn, from group 0, the whole match. */
     spans: Size[]
 
-/** The {@link Match} that `m` has found, in the current pool. */
-priv fn matchOf(m: @Machine): @Match do
+/**
+ * The {@link Match} that `m` has found for `re` in `s`, in the current pool. It takes `re` and `s` themselves, not through `m`,
+ * so that its result doesn't point into `m`, which is in a scratch pool the caller frees (the compiler follows what a result
+ * points into by parameter, not by field).
+ */
+priv fn matchOf(m: @Machine, re: Regex, s: String): Match do
     val spans = new Size[m.slots]
     for i, value in m.found do
         spans[i] = value
-    ret new Match { m.input, m.re, spans }
+    ret new Match { s, re, spans }
 
 /** Whether all of `s` matches: `regex.matches(digits, "123")`. */
-fn matches(re: @Regex, s: String): Bool do
-    val scratch = newPool()
-    defer freePool(scratch)
+fn matches(re: Regex, s: String): Bool do
+    val scratch = new Pool
+    defer destroy scratch
     ret run(newMachine(re, s, 0, scratch), 0, true)
 
 /** Whether a part of `s` matches, which takes less work than {@link find}. */
-fn contains(re: @Regex, s: String): Bool do
-    val scratch = newPool()
-    defer freePool(scratch)
+fn contains(re: Regex, s: String): Bool do
+    val scratch = new Pool
+    defer destroy scratch
     ret run(newMachine(re, s, 0, scratch), 0, false)
 
 /**
@@ -1113,15 +1117,15 @@ fn contains(re: @Regex, s: String): Bool do
  * @param from the byte to start looking at. What comes before it still counts for `^` and `\b`
  * @return the match, or null when there is none
  */
-fn find(re: @Regex, s: String, from: Size = 0): @Match? do
-    val scratch = newPool()
-    defer freePool(scratch)
+fn find(re: Regex, s: String, from: Size = 0): Match? do
+    val scratch = new Pool
+    defer destroy scratch
     val m = newMachine(re, s, (re.groups + 1) * 2, scratch)
-    ret matchOf(m) if run(m, from, false)
+    ret matchOf(m, re, s) if run(m, from, false)
     ret null
 
 /** Goes through the matches of `re` in `s`: {@link findAll} and all that is built on it. */
-priv rec Scan as
+priv mut rec Scan as
     /** The machine. */
     m: @Machine
     /** Where to look next. */
@@ -1156,32 +1160,32 @@ priv fn advance(c: @Scan): Bool do
  * @param s the text
  * @return the matches, in order
  */
-fn findAll(re: @Regex, s: String): (@Match)[] do
-    val scratch = newPool()
-    defer freePool(scratch)
+fn findAll(re: Regex, s: String): (Match)[] do
+    val scratch = new Pool
+    defer destroy scratch
     val c = new Scan { newMachine(re, s, (re.groups + 1) * 2, scratch), 0, UNSET } in scratch
-    val all: @List<@Match> = list()
+    val all: List<Match> = list()
     while advance(c) do
-        all.push(matchOf(c.m))
+        all.push(matchOf(c.m, re, s))
     ret all.items()
 
 // ---------------------------------------------------------------------------------------------------
 // Reading a match
 
 /** Where the whole match starts. */
-fn start(m: @Match): Size = m.spans[0]
+fn start(m: Match): Size = m.spans[0]
 
 /** Where the whole match ends: the byte after it. */
-fn end(m: @Match): Size = m.spans[1]
+fn end(m: Match): Size = m.spans[1]
 
 /** What the whole match took. It shares the memory of the text. */
-fn text(m: @Match): String = m.input[m.spans[0]..<m.spans[1]]
+fn text(m: Match): String = m.input[m.spans[0]..<m.spans[1]]
 
 /**
  * Where group `i` is.
  * @return the byte where it starts and the byte after it; null when it took no part in the match, or there is no such group
  */
-fn span(m: @Match, i: Size): (Size, Size)? do
+fn span(m: Match, i: Size): (Size, Size)? do
     ret null if i > m.re.groups or m.spans[i * 2] == UNSET or m.spans[i * 2 + 1] == UNSET
     ret (m.spans[i * 2], m.spans[i * 2 + 1])
 
@@ -1189,12 +1193,12 @@ fn span(m: @Match, i: Size): (Size, Size)? do
  * What group `i` took. Groups count their `(` from 1, and group 0 is the whole match.
  * @return what it took, sharing the memory of the text; null when it took no part in the match, or there is no such group
  */
-fn group(m: @Match, i: Size): String? do
+fn group(m: Match, i: Size): String? do
     val (from, until) = span(m, i) ?? ret null
     ret m.input[from..<until]
 
 /** The number of the group called `name`, or null when there is none. */
-fn groupIndex(re: @Regex, name: String): Size? do
+fn groupIndex(re: Regex, name: String): Size? do
     ret null if name.len == 0
     ret re.names.indexOf(name)
 
@@ -1202,7 +1206,7 @@ fn groupIndex(re: @Regex, name: String): Size? do
  * What the group called `name` took.
  * @return what it took, sharing the memory of the text; null when it took no part in the match, or there is no such group
  */
-fn group(m: @Match, name: String): String? do
+fn group(m: Match, name: String): String? do
     val i = groupIndex(m.re, name) ?? ret null
     ret group(m, i)
 
@@ -1221,7 +1225,7 @@ priv rec Piece as
  * @return the group and where the template goes on
  * @throws when there is no such group
  */
-priv fn templateGroup(re: @Regex, template: String, i: Size): (Size, Size) throws ArgumentError do
+priv fn templateGroup(re: Regex, template: String, i: Size): (Size, Size) throws ArgumentError do
     var at = i + 1
     val braced = at < template.len and template[at] == '{'
     at += if braced do 1 else 0
@@ -1244,8 +1248,8 @@ priv fn templateGroup(re: @Regex, template: String, i: Size): (Size, Size) throw
  * The parts of a replacement.
  * @throws when it refers to a group that isn't there
  */
-priv fn parseTemplate(re: @Regex, template: String): @List<Piece> throws ArgumentError do
-    val pieces: @List<Piece> = list()
+priv fn parseTemplate(re: Regex, template: String): List<Piece> throws ArgumentError do
+    val pieces: List<Piece> = list()
     var i: Size = 0
     var start: Size = 0
     while i < template.len do
@@ -1265,7 +1269,7 @@ priv fn parseTemplate(re: @Regex, template: String): @List<Piece> throws Argumen
     ret pieces
 
 /** Adds the replacement of a match found by `m`. */
-priv fn addReplacement(out: @StringBuilder, m: @Machine, pieces: @List<Piece>) do
+priv fn addReplacement(out: StringBuilder, m: @Machine, pieces: List<Piece>) do
     for piece in pieces do
         if piece.group == UNSET do
             out.append(piece.text)
@@ -1275,9 +1279,9 @@ priv fn addReplacement(out: @StringBuilder, m: @Machine, pieces: @List<Piece>) d
             out.append(m.input[from..<until]) if from != UNSET and until != UNSET
 
 /** `s` with up to `limit` matches replaced. */
-priv fn replaced(re: @Regex, s: String, pieces: @List<Piece>, limit: Size): String do
-    val scratch = newPool()
-    defer freePool(scratch)
+priv fn replaced(re: Regex, s: String, pieces: List<Piece>, limit: Size): String do
+    val scratch = new Pool
+    defer destroy scratch
     val c = new Scan { newMachine(re, s, (re.groups + 1) * 2, scratch), 0, UNSET } in scratch
     val out = stringBuilder(s.len + 16)
     var done: Size = 0
@@ -1298,7 +1302,7 @@ priv fn replaced(re: @Regex, s: String, pieces: @List<Piece>, limit: Size): Stri
  *     group, and `$$` for a `$`. A group that took no part gives nothing. In an eclang string, `${` is written `\${`
  * @throws when the template has a `$` that doesn't fit, or refers to a group the pattern doesn't have
  */
-fn replaceAll(re: @Regex, s: String, template: String): String throws ArgumentError do
+fn replaceAll(re: Regex, s: String, template: String): String throws ArgumentError do
     val pieces = try parseTemplate(re, template)
     ret replaced(re, s, pieces, UNSET)
 
@@ -1309,7 +1313,7 @@ fn replaceAll(re: @Regex, s: String, template: String): String throws ArgumentEr
  * @param template the replacement, as in {@link replaceAll}
  * @throws when the template has a `$` that doesn't fit, or refers to a group the pattern doesn't have
  */
-fn replaceFirst(re: @Regex, s: String, template: String): String throws ArgumentError do
+fn replaceFirst(re: Regex, s: String, template: String): String throws ArgumentError do
     val pieces = try parseTemplate(re, template)
     ret replaced(re, s, pieces, 1)
 
@@ -1319,7 +1323,7 @@ fn replaceFirst(re: @Regex, s: String, template: String): String throws Argument
  * @param s the text
  * @param f what makes the replacement of a match
  */
-fn replaceWith(re: @Regex, s: String, f: (@Match) => String): String do
+fn replaceWith(re: Regex, s: String, f: (Match) => String): String do
     val out = stringBuilder(s.len + 16)
     var copied: Size = 0
     for m in findAll(re, s) do
@@ -1333,8 +1337,8 @@ fn replaceWith(re: @Regex, s: String, f: (@Match) => String): String do
  * The parts of `s` between the matches: `regex.split(commas, "a, b,c")` is ["a", "b", "c"]. They share the memory of `s`.
  * A pattern that matches the empty text splits between characters.
  */
-fn split(re: @Regex, s: String): String[] do
-    val parts: @List<String> = list()
+fn split(re: Regex, s: String): String[] do
+    val parts: List<String> = list()
     var from: Size = 0
     var until: Size = 0
     for m in findAll(re, s) do

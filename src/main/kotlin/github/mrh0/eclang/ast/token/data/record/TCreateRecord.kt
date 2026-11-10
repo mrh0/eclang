@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.data.record
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -12,6 +13,8 @@ import github.mrh0.ect2.Union
 
 /** `{ 1, 2 }` or `{ a = 1, b = 2 }`: a record whose type comes from where it is used. */
 class TCreateRecord(location: Loc, val values: List<ITok>, private val names: List<String>? = null) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(values)
+
     /** What the last compiled literal gave and left to defaults (see Lifetimes). */
     var defaults = RecordDefaults()
         private set

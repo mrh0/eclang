@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token.statement
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.token.data.TNull
@@ -27,7 +28,7 @@ import github.mrh0.ect2.Union
  * value, so unlike `val x = a ?? b` it also works on a call that returns nothing. After an [action] that leaves, a variable
  * a is known not to be null.
  */
-class TStatementNullish(location: Loc, private val left: ITok, private val action: ITok) : Tok(location) {
+class TStatementNullish(location: Loc, private val left: ITok, private val action: ITok) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val (lt, lir) = left.process(cd, Types.None)
         if (lt is Result) return Types.None to IRTryCatch(location, cd.temp(), lt, lir, cd.temp(), action(cd))

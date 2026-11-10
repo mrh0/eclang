@@ -461,7 +461,7 @@ declare val APR_UNKFILE as Int
 ### <a id="apr_stat"></a>`apr_stat`
 
 ```ec
-fn apr_stat(finfo: @apr_finfo_t, fname: CString, wanted: apr_int32_t, pool: @apr_pool_t): apr_status_t
+fn apr_stat(out finfo: apr_finfo_t, fname: CString, wanted: apr_int32_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_stat`.*
@@ -469,7 +469,7 @@ fn apr_stat(finfo: @apr_finfo_t, fname: CString, wanted: apr_int32_t, pool: @apr
 ### <a id="apr_dir_open"></a>`apr_dir_open`
 
 ```ec
-fn apr_dir_open(new_dir: @@apr_dir_t, dirname: CString, pool: @apr_pool_t): apr_status_t
+fn apr_dir_open(out new_dir: @apr_dir_t, dirname: CString, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_dir_open`.*
@@ -485,7 +485,7 @@ fn apr_dir_close(thedir: @apr_dir_t): apr_status_t
 ### <a id="apr_dir_read"></a>`apr_dir_read`
 
 ```ec
-fn apr_dir_read(finfo: @apr_finfo_t, wanted: apr_int32_t, thedir: @apr_dir_t): apr_status_t
+fn apr_dir_read(out finfo: apr_finfo_t, wanted: apr_int32_t, thedir: @apr_dir_t): apr_status_t
 ```
 
 *Binds the C function `apr_dir_read`.*
@@ -501,7 +501,7 @@ fn apr_dir_rewind(thedir: @apr_dir_t): apr_status_t
 ### <a id="apr_filepath_root"></a>`apr_filepath_root`
 
 ```ec
-fn apr_filepath_root(rootpath: @CString, filepath: @CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
+fn apr_filepath_root(out rootpath: CString, mut filepath: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_filepath_root`.*
@@ -509,7 +509,7 @@ fn apr_filepath_root(rootpath: @CString, filepath: @CString, flags: apr_int32_t,
 ### <a id="apr_filepath_merge"></a>`apr_filepath_merge`
 
 ```ec
-fn apr_filepath_merge(newpath: @CString, rootpath: CString, addpath: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
+fn apr_filepath_merge(out newpath: CString, rootpath: CString, addpath: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_filepath_merge`.*
@@ -517,7 +517,7 @@ fn apr_filepath_merge(newpath: @CString, rootpath: CString, addpath: CString, fl
 ### <a id="apr_filepath_list_split"></a>`apr_filepath_list_split`
 
 ```ec
-fn apr_filepath_list_split(pathelts: @@apr_array_header_t, liststr: CString, p: @apr_pool_t): apr_status_t
+fn apr_filepath_list_split(out pathelts: @apr_array_header_t, liststr: CString, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_filepath_list_split`.*
@@ -525,7 +525,7 @@ fn apr_filepath_list_split(pathelts: @@apr_array_header_t, liststr: CString, p: 
 ### <a id="apr_filepath_list_merge"></a>`apr_filepath_list_merge`
 
 ```ec
-fn apr_filepath_list_merge(liststr: @CString, pathelts: @apr_array_header_t, p: @apr_pool_t): apr_status_t
+fn apr_filepath_list_merge(out liststr: CString, pathelts: @apr_array_header_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_filepath_list_merge`.*
@@ -533,7 +533,7 @@ fn apr_filepath_list_merge(liststr: @CString, pathelts: @apr_array_header_t, p: 
 ### <a id="apr_filepath_get"></a>`apr_filepath_get`
 
 ```ec
-fn apr_filepath_get(path: @CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
+fn apr_filepath_get(out path: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_filepath_get`.*

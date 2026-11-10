@@ -1,5 +1,5 @@
 // error: would run the calls in this target twice
-rec R as
+mut rec R as
     a: UInt : 3
 
 var r = R { 1 }

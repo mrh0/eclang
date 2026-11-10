@@ -47,7 +47,7 @@ rec Box<T> as
 fn str(b: Box<T>): String = "[box ${b.value}]"
 
 // Printing through pointers, and a pointer that comes back.
-rec Node as
+mut rec Node as
     value: Int
     next: @Node?
 

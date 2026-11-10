@@ -8,7 +8,7 @@ use "core:log.ec"
 use "core:http.ec"
 
 /** What the handlers share. */
-rec Shared as
+mut rec Shared as
     hits: thread.Atomic
 
 fn showUrl(text: String) throws Error do
@@ -21,11 +21,11 @@ fn check(base: http.Url, reference: String, wanted: String) throws Error do
     io.log("${reference} -> ${got}, and it should be ${wanted}") if got != wanted
 
 /** A header of a response, or "?". */
-fn header(r: @http.Response, name: String): String = http.get(r.headers, name) ?? "?"
+fn header(r: http.Response, name: String): String = http.get(r.headers, name) ?? "?"
 
-fn handle(req: @http.Request): @http.Response do
+fn handle(req: http.Request): http.Response do
     val shared = req.context! !as @Shared
-    thread.increment(addrof(shared.hits))
+    thread.increment(mut shared.hits)
     when req.path do
         "/" do ret http.text(200, "hello ${req.remote.host}\n")
         "/echo" do
@@ -61,7 +61,7 @@ fn handle(req: @http.Request): @http.Response do
         else do ret http.text(404, "no ${req.path}\n")
 
 /** A connection to the server. */
-fn dial(port: Int): @net.Connection throws Error do
+fn dial(port: Int): net.Connection throws Error do
     val c = try net.connect("127.0.0.1", port, time.seconds(2))
     net.setTimeout(c, time.seconds(3))
     ret c
@@ -102,7 +102,8 @@ fn show(method: String, url: String) throws Error do
 /** Makes a request to a server that answers `reply`, and shows what comes back. */
 fn canned(reply: String, method: String = "GET") do
     val l = net.listen(0, "127.0.0.1") ?? panic("can't listen")
-    val t = thread.spawn(fn serveCanned, new Canned { l, reply, false }) ?? panic("can't start a thread")
+    // A Canned isn't `flat` (a listener, a String): `unsafe` says this function keeps them alive until it joins the thread.
+    val t = unsafe thread.spawn(fn serveCanned, new Canned { l, reply, false }) ?? panic("can't start a thread")
     val url = "http://127.0.0.1:${l.address.port}/"
     try show(method, url) catch e do
         io.log(e.message)
@@ -113,7 +114,7 @@ fn canned(reply: String, method: String = "GET") do
 /** Makes a request to a server that answers `reply`, and shows why it fails. */
 fn cannedError(reply: String) do
     val l = net.listen(0, "127.0.0.1") ?? panic("can't listen")
-    val t = thread.spawn(fn serveCanned, new Canned { l, reply, false }) ?? panic("can't start a thread")
+    val t = unsafe thread.spawn(fn serveCanned, new Canned { l, reply, false }) ?? panic("can't start a thread")
     val place = net.text(l.address)
     try http.get("http://${place}/") catch e do
         io.log(e.message.replace(place, "<here>"))
@@ -132,18 +133,18 @@ fn hammer(c: @Client) do
             val body = "message ${i}"
             val r = http.post("http://127.0.0.1:${c.port}/echo", body, "text/plain") ?? panic("a request failed")
             assert r.body == body, "a body came back wrong"
-            thread.increment(c.done)
+            thread.increment(mut @c.done)
 
-fn fails(req: @http.Request): @http.Response throws Error do
+fn fails(req: http.Request): http.Response throws Error do
     val n = try parseInt(http.param(req.url, "n") ?? "x")
     ret http.text(200, "${n}")
 
-fn stops(req: @http.Request): @http.Response do
-    http.stop(req.context! !as @http.Server)
+fn stops(req: http.Request): http.Response do
+    http.stop(req.context! !as http.Server)
     ret http.text(200, "stopping")
 
 /** Runs a server until a request stops it. */
-fn runServer(s: @http.Server) do
+fn runServer(s: http.Server) do
     try http.run(s, fn stops) catch e do
         panic(e.message)
 
@@ -479,17 +480,17 @@ fn oddServers() throws Error do
 
     // A limit on the body.
     val l = try net.listen(0, "127.0.0.1")
-    val t = try thread.spawn(fn serveCanned, new Canned { l, "HTTP/1.1 200 OK\r\n\r\nmore than ten bytes", false })
+    val t = try unsafe thread.spawn(fn serveCanned, new Canned { l, "HTTP/1.1 200 OK\r\n\r\nmore than ten bytes", false })
     try http.get("http://127.0.0.1:${l.address.port}/", http.Options { maxBody = 10 }) catch e do
         io.log(e.message)
     try thread.join(t)
-    val t2 = try thread.spawn(fn serveCanned, new Canned { l, "HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nmore than 10", false })
+    val t2 = try unsafe thread.spawn(fn serveCanned, new Canned { l, "HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nmore than 10", false })
     try http.get("http://127.0.0.1:${l.address.port}/", http.Options { maxBody = 10 }) catch e2 do
         io.log(e2.message)
     try thread.join(t2)
 
     // A server that doesn't answer.
-    val t3 = try thread.spawn(fn serveCanned, new Canned { l, "", true })
+    val t3 = try unsafe thread.spawn(fn serveCanned, new Canned { l, "", true })
     try http.get("http://127.0.0.1:${l.address.port}/", http.Options { timeout = time.millis(50) }) catch e3 do
         io.log(e3.code == ERR_TIMEOUT)
     try thread.join(t3)
@@ -514,13 +515,13 @@ fn main(): Int throws Error do
 
     // Many clients at once.
     val done = new thread.Atomic { 0 }
-    val clients: @List<thread.Thread> = list()
+    val clients: List<thread.Thread> = list()
     for i in 0..<8 do
         clients.push(try thread.spawn(fn hammer, new Client { port, done }))
     for t in clients do
         try thread.join(t)
-    io.log(thread.load(done))
-    io.log(thread.load(addrof(shared.hits)) > 200)
+    io.log(thread.load(mut @done))
+    io.log(thread.load(mut shared.hits) > 200)
 
     // Stopping waits for the request being served.
     val slow = try dial(port)
@@ -557,7 +558,8 @@ fn main(): Int throws Error do
     // A handler that stops the server, which runs on a thread of its own.
     val s3 = try http.server(0, "127.0.0.1")
     s3.options.context = s3
-    val runner = try thread.spawn(fn runServer, s3)
+    // A Server isn't `flat`; it outlives the thread, which this function joins.
+    val runner = try unsafe thread.spawn(fn runServer, s3)
     val root3 = "http://127.0.0.1:${s3.listener.address.port}"
     time.sleep(time.millis(50))
     io.log((try http.get("${root3}/")).body)

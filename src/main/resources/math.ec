@@ -333,25 +333,25 @@ fn floorMod(a: Long, b: Long): Long do
 // (as C's unsigned arithmetic does), even when the program is compiled with --overflow-check.
 
 /** GCC's __builtin_add_overflow for Long: stores `a + b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn addOverflow extern "__builtin_add_overflow" as (a: Long, b: Long, result: @Long): Bool
+declare fn addOverflow extern "__builtin_add_overflow" as (a: Long, b: Long, out result: Long): Bool
 /** GCC's __builtin_sub_overflow for Long: stores `a - b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn subOverflow extern "__builtin_sub_overflow" as (a: Long, b: Long, result: @Long): Bool
+declare fn subOverflow extern "__builtin_sub_overflow" as (a: Long, b: Long, out result: Long): Bool
 /** GCC's __builtin_mul_overflow for Long: stores `a * b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn mulOverflow extern "__builtin_mul_overflow" as (a: Long, b: Long, result: @Long): Bool
+declare fn mulOverflow extern "__builtin_mul_overflow" as (a: Long, b: Long, out result: Long): Bool
 /** GCC's __builtin_add_overflow for Int: stores `a + b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn addOverflow extern "__builtin_add_overflow" as (a: Int, b: Int, result: @Int): Bool
+declare fn addOverflow extern "__builtin_add_overflow" as (a: Int, b: Int, out result: Int): Bool
 /** GCC's __builtin_sub_overflow for Int: stores `a - b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn subOverflow extern "__builtin_sub_overflow" as (a: Int, b: Int, result: @Int): Bool
+declare fn subOverflow extern "__builtin_sub_overflow" as (a: Int, b: Int, out result: Int): Bool
 /** GCC's __builtin_mul_overflow for Int: stores `a * b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn mulOverflow extern "__builtin_mul_overflow" as (a: Int, b: Int, result: @Int): Bool
+declare fn mulOverflow extern "__builtin_mul_overflow" as (a: Int, b: Int, out result: Int): Bool
 /** GCC's __builtin_add_overflow for ULong: stores `a + b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn addOverflow extern "__builtin_add_overflow" as (a: ULong, b: ULong, result: @ULong): Bool
+declare fn addOverflow extern "__builtin_add_overflow" as (a: ULong, b: ULong, out result: ULong): Bool
 /** GCC's __builtin_mul_overflow for ULong: stores `a * b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn mulOverflow extern "__builtin_mul_overflow" as (a: ULong, b: ULong, result: @ULong): Bool
+declare fn mulOverflow extern "__builtin_mul_overflow" as (a: ULong, b: ULong, out result: ULong): Bool
 /** GCC's __builtin_add_overflow for UInt: stores `a + b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn addOverflow extern "__builtin_add_overflow" as (a: UInt, b: UInt, result: @UInt): Bool
+declare fn addOverflow extern "__builtin_add_overflow" as (a: UInt, b: UInt, out result: UInt): Bool
 /** GCC's __builtin_mul_overflow for UInt: stores `a * b` (wrapped) in `result`, and returns whether it overflowed. */
-declare fn mulOverflow extern "__builtin_mul_overflow" as (a: UInt, b: UInt, result: @UInt): Bool
+declare fn mulOverflow extern "__builtin_mul_overflow" as (a: UInt, b: UInt, out result: UInt): Bool
 
 /**
  * `a + b`.
@@ -359,7 +359,7 @@ declare fn mulOverflow extern "__builtin_mul_overflow" as (a: UInt, b: UInt, res
  */
 fn checkedAdd(a: Long, b: Long): Long throws RangeError do
     var r: Long = 0
-    throw rangeError("${a} + ${b} is too big for a Long") if addOverflow(a, b, addrof(r))
+    throw rangeError("${a} + ${b} is too big for a Long") if addOverflow(a, b, mut r)
     ret r
 
 /**
@@ -368,7 +368,7 @@ fn checkedAdd(a: Long, b: Long): Long throws RangeError do
  */
 fn checkedSub(a: Long, b: Long): Long throws RangeError do
     var r: Long = 0
-    throw rangeError("${a} - ${b} is too big for a Long") if subOverflow(a, b, addrof(r))
+    throw rangeError("${a} - ${b} is too big for a Long") if subOverflow(a, b, mut r)
     ret r
 
 /**
@@ -377,7 +377,7 @@ fn checkedSub(a: Long, b: Long): Long throws RangeError do
  */
 fn checkedMul(a: Long, b: Long): Long throws RangeError do
     var r: Long = 0
-    throw rangeError("${a} * ${b} is too big for a Long") if mulOverflow(a, b, addrof(r))
+    throw rangeError("${a} * ${b} is too big for a Long") if mulOverflow(a, b, mut r)
     ret r
 
 /**
@@ -386,7 +386,7 @@ fn checkedMul(a: Long, b: Long): Long throws RangeError do
  */
 fn checkedAdd(a: Int, b: Int): Int throws RangeError do
     var r = 0
-    throw rangeError("${a} + ${b} is too big for an Int") if addOverflow(a, b, addrof(r))
+    throw rangeError("${a} + ${b} is too big for an Int") if addOverflow(a, b, mut r)
     ret r
 
 /**
@@ -395,7 +395,7 @@ fn checkedAdd(a: Int, b: Int): Int throws RangeError do
  */
 fn checkedSub(a: Int, b: Int): Int throws RangeError do
     var r = 0
-    throw rangeError("${a} - ${b} is too big for an Int") if subOverflow(a, b, addrof(r))
+    throw rangeError("${a} - ${b} is too big for an Int") if subOverflow(a, b, mut r)
     ret r
 
 /**
@@ -404,7 +404,7 @@ fn checkedSub(a: Int, b: Int): Int throws RangeError do
  */
 fn checkedMul(a: Int, b: Int): Int throws RangeError do
     var r = 0
-    throw rangeError("${a} * ${b} is too big for an Int") if mulOverflow(a, b, addrof(r))
+    throw rangeError("${a} * ${b} is too big for an Int") if mulOverflow(a, b, mut r)
     ret r
 
 /**
@@ -427,25 +427,25 @@ fn toLong(x: Double): Long throws RangeError do
 /** `a + b`, wrapping around past the largest ULong. */
 fn wrappingAdd(a: ULong, b: ULong): ULong do
     var r: ULong = 0
-    addOverflow(a, b, addrof(r))
+    addOverflow(a, b, mut r)
     ret r
 
 /** `a * b`, wrapping around past the largest ULong. */
 fn wrappingMul(a: ULong, b: ULong): ULong do
     var r: ULong = 0
-    mulOverflow(a, b, addrof(r))
+    mulOverflow(a, b, mut r)
     ret r
 
 /** `a + b`, wrapping around past the largest UInt. */
 fn wrappingAdd(a: UInt, b: UInt): UInt do
     var r: UInt = 0
-    addOverflow(a, b, addrof(r))
+    addOverflow(a, b, mut r)
     ret r
 
 /** `a * b`, wrapping around past the largest UInt. */
 fn wrappingMul(a: UInt, b: UInt): UInt do
     var r: UInt = 0
-    mulOverflow(a, b, addrof(r))
+    mulOverflow(a, b, mut r)
     ret r
 
 // ---------------------------------------------------------------------------------------------------
@@ -454,12 +454,12 @@ fn wrappingMul(a: UInt, b: UInt): UInt do
 
 /**
  * A PCG32 random number generator: fast and of good quality, but predictable, so use {@link secureRandom} for keys
- * and tokens. Make one with {@link random}, and pass its address to the next* functions:
+ * and tokens. Make one with {@link random}, and keep it in a `var`: the next* functions change it (`mut`).
  *
  *     var r = math.random(42)
- *     val die = math.nextInt(addrof(r), 1, 7)
+ *     val die = r.nextInt(1, 7)                   // or math.nextInt(mut r, 1, 7)
  */
-rec Random as
+mut rec Random as
     /** Where the generator is in its sequence. */
     state: ULong
     /** Which stream it is: odd, from the stream number. */
@@ -478,9 +478,9 @@ fn random(seed: ULong): Random = random(seed, seed)
  */
 fn random(seed: ULong, stream: ULong): Random do
     var r = Random { 0, (stream << 1) | 1 }
-    nextUInt(addrof(r))
+    nextUInt(mut r)
     r.state = wrappingAdd(r.state, seed)
-    nextUInt(addrof(r))
+    nextUInt(mut r)
     ret r
 
 /** A generator seeded from the system's random source (different numbers on every run). */
@@ -491,7 +491,7 @@ fn random(): Random do
     ret random(seed)
 
 /** The next 32 random bits. */
-fn nextUInt(r: @Random): UInt do
+fn nextUInt(mut r: Random): UInt do
     val old = r.state
     r.state = wrappingAdd(wrappingMul(old, PCG_MULTIPLIER), r.increment)
     val shifted = (((old >> 18) ^ old) >> 27) as UInt
@@ -499,55 +499,55 @@ fn nextUInt(r: @Random): UInt do
     ret (shifted >> rotation) | (shifted << ((32 - rotation) & 31))
 
 /** The next 64 random bits. */
-fn nextULong(r: @Random): ULong = ((nextUInt(r) as ULong) << 32) | (nextUInt(r) as ULong)
+fn nextULong(mut r: Random): ULong = ((nextUInt(mut r) as ULong) << 32) | (nextUInt(mut r) as ULong)
 
 /**
  * A whole number from `low` up to, but not including, `high`, with every value equally likely.
  * @param low the smallest result
  * @param high one more than the largest result; more than `low`
  */
-fn nextInt(r: @Random, low: Int, high: Int): Int do
+fn nextInt(mut r: Random, low: Int, high: Int): Int do
     assert low < high, "math.nextInt needs low < high"
     val range = ((high as Long) - (low as Long)) as ULong
     // Values below `threshold` would make some results more likely than others, so they are drawn again.
     val threshold = (4294967296 - range) % range
-    var value = nextUInt(r) as ULong
+    var value = nextUInt(mut r) as ULong
     while value < threshold do
-        value = nextUInt(r) as ULong
+        value = nextUInt(mut r) as ULong
     ret ((low as Long) + ((value % range) as Long)) as Int
 
 /** A Double from 0.0 up to, but not including, 1.0. */
-fn nextDouble(r: @Random): Double = ((nextULong(r) >> 11) as Double) * (1.0 / 9007199254740992.0)
+fn nextDouble(mut r: Random): Double = ((nextULong(mut r) >> 11) as Double) * (1.0 / 9007199254740992.0)
 
 /** A random Bool, true or false equally likely. */
-fn nextBool(r: @Random): Bool = nextUInt(r) & 1 == 1
+fn nextBool(mut r: Random): Bool = nextUInt(mut r) & 1 == 1
 
 /** A Double from the standard normal distribution: mean 0.0, standard deviation 1.0 (Box-Muller). */
-fn nextGaussian(r: @Random): Double do
-    var u = nextDouble(r)
+fn nextGaussian(mut r: Random): Double do
+    var u = nextDouble(mut r)
     while u == 0.0 do
-        u = nextDouble(r)
-    ret sqrt(-2.0 * log(u)) * cos(TAU * nextDouble(r))
+        u = nextDouble(mut r)
+    ret sqrt(-2.0 * log(u)) * cos(TAU * nextDouble(mut r))
 
 /**
  * A Double from a normal distribution.
  * @param mean the average of the numbers
  * @param deviation their standard deviation
  */
-fn nextGaussian(r: @Random, mean: Double, deviation: Double): Double = mean + deviation * nextGaussian(r)
+fn nextGaussian(mut r: Random, mean: Double, deviation: Double): Double = mean + deviation * nextGaussian(mut r)
 
 /** Puts the elements of `values` in a random order, in place (Fisher-Yates). */
-fn shuffle(r: @Random, values: <T>[]) do
+fn shuffle(mut r: Random, values: <T>[]) do
     var i = values.len
     while i > 1 do
-        val j = nextInt(r, 0, i as Int) as Size
+        val j = nextInt(mut r, 0, i as Int) as Size
         i -= 1
         val t = values[i]
         values[i] = values[j]
         values[j] = t
 
 /** A random element of `values`, which must not be empty. */
-fn pick(r: @Random, values: <T>[]): <T> = values[nextInt(r, 0, values.len as Int) as Size]
+fn pick(mut r: Random, values: <T>[]): <T> = values[nextInt(mut r, 0, values.len as Int) as Size]
 
 /** The seed {@link random} uses when the system's random source fails. */
 const defaultSeed: ULong = 853146490016488653
@@ -560,12 +560,11 @@ priv var shared = Random { 0, 0 }
 /** Whether {@code shared} was seeded yet. */
 priv var sharedReady = false
 
-/** The shared generator, seeded on first use. */
-priv fn sharedRandom(): @Random do
+/** Seeds the shared generator on first use. */
+priv fn ensureShared() do
     if not sharedReady do
         shared = random()
         sharedReady = true
-    ret addrof(shared)
 
 /**
  * Seeds the shared generator, so that {@link randomInt}, {@link randomDouble} and {@link randomBool} repeat the same numbers.
@@ -577,13 +576,19 @@ fn seed(value: ULong) do
 /**
  * A whole number from `low` up to, but not including, `high`, from the shared generator: `randomInt(1, 7)` rolls a die.
  */
-fn randomInt(low: Int, high: Int): Int = nextInt(sharedRandom(), low, high)
+fn randomInt(low: Int, high: Int): Int do
+    ensureShared()
+    ret nextInt(mut shared, low, high)
 
 /** A Double from 0.0 up to, but not including, 1.0, from the shared generator. */
-fn randomDouble(): Double = nextDouble(sharedRandom())
+fn randomDouble(): Double do
+    ensureShared()
+    ret nextDouble(mut shared)
 
 /** A random Bool from the shared generator. */
-fn randomBool(): Bool = nextBool(sharedRandom())
+fn randomBool(): Bool do
+    ensureShared()
+    ret nextBool(mut shared)
 
 /**
  * Fills `bytes` from the system's cryptographically secure random source: for keys and tokens.

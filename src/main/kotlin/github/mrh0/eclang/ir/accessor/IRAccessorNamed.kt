@@ -10,6 +10,12 @@ import github.mrh0.eclang.output.c.CSourceBuilder
 /** `expr.name`, or `expr->name` when [throughPointer]. */
 class IRAccessorNamed(location: Loc, val expr: IIR, val name: String, val throughPointer: Boolean = false) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
+        // `(*p).x` is `p->x`, which is how C code reads a field through a pointer (a `mut` parameter p).
+        if (expr is IRReadPointer && expr.parenthesized && !throughPointer) {
+            expr.expr.toC(sb, c)
+            sb.put("->$name")
+            return
+        }
         // `*q->x` would read the field of q first.
         val nested = expr is IRReadPointer
         if (nested) sb.put("(")

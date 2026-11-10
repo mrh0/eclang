@@ -279,7 +279,7 @@ declare val APR_FLOCK_NONBLOCK as Int
 ### <a id="apr_file_open"></a>`apr_file_open`
 
 ```ec
-fn apr_file_open(newf: @@apr_file_t, fname: CString, flag: apr_int32_t, perm: apr_fileperms_t, pool: @apr_pool_t): apr_status_t
+fn apr_file_open(out newf: @apr_file_t, fname: CString, flag: apr_int32_t, perm: apr_fileperms_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_open`.*
@@ -343,7 +343,7 @@ fn apr_file_eof(fptr: @apr_file_t): apr_status_t
 ### <a id="apr_file_open_stderr"></a>`apr_file_open_stderr`
 
 ```ec
-fn apr_file_open_stderr(thefile: @@apr_file_t, pool: @apr_pool_t): apr_status_t
+fn apr_file_open_stderr(out thefile: @apr_file_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_open_stderr`.*
@@ -351,7 +351,7 @@ fn apr_file_open_stderr(thefile: @@apr_file_t, pool: @apr_pool_t): apr_status_t
 ### <a id="apr_file_open_stdout"></a>`apr_file_open_stdout`
 
 ```ec
-fn apr_file_open_stdout(thefile: @@apr_file_t, pool: @apr_pool_t): apr_status_t
+fn apr_file_open_stdout(out thefile: @apr_file_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_open_stdout`.*
@@ -359,7 +359,7 @@ fn apr_file_open_stdout(thefile: @@apr_file_t, pool: @apr_pool_t): apr_status_t
 ### <a id="apr_file_open_stdin"></a>`apr_file_open_stdin`
 
 ```ec
-fn apr_file_open_stdin(thefile: @@apr_file_t, pool: @apr_pool_t): apr_status_t
+fn apr_file_open_stdin(out thefile: @apr_file_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_open_stdin`.*
@@ -367,7 +367,7 @@ fn apr_file_open_stdin(thefile: @@apr_file_t, pool: @apr_pool_t): apr_status_t
 ### <a id="apr_file_open_flags_stderr"></a>`apr_file_open_flags_stderr`
 
 ```ec
-fn apr_file_open_flags_stderr(thefile: @@apr_file_t, flags: apr_int32_t, pool: @apr_pool_t): apr_status_t
+fn apr_file_open_flags_stderr(out thefile: @apr_file_t, flags: apr_int32_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_open_flags_stderr`.*
@@ -375,7 +375,7 @@ fn apr_file_open_flags_stderr(thefile: @@apr_file_t, flags: apr_int32_t, pool: @
 ### <a id="apr_file_open_flags_stdout"></a>`apr_file_open_flags_stdout`
 
 ```ec
-fn apr_file_open_flags_stdout(thefile: @@apr_file_t, flags: apr_int32_t, pool: @apr_pool_t): apr_status_t
+fn apr_file_open_flags_stdout(out thefile: @apr_file_t, flags: apr_int32_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_open_flags_stdout`.*
@@ -383,7 +383,7 @@ fn apr_file_open_flags_stdout(thefile: @@apr_file_t, flags: apr_int32_t, pool: @
 ### <a id="apr_file_open_flags_stdin"></a>`apr_file_open_flags_stdin`
 
 ```ec
-fn apr_file_open_flags_stdin(thefile: @@apr_file_t, flags: apr_int32_t, pool: @apr_pool_t): apr_status_t
+fn apr_file_open_flags_stdin(out thefile: @apr_file_t, flags: apr_int32_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_open_flags_stdin`.*
@@ -391,7 +391,7 @@ fn apr_file_open_flags_stdin(thefile: @@apr_file_t, flags: apr_int32_t, pool: @a
 ### <a id="apr_file_read"></a>`apr_file_read`
 
 ```ec
-fn apr_file_read(thefile: @apr_file_t, buf: @Any, nbytes: @apr_size_t): apr_status_t
+fn apr_file_read(thefile: @apr_file_t, buf: @Any, mut nbytes: apr_size_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_read`.*
@@ -399,7 +399,7 @@ fn apr_file_read(thefile: @apr_file_t, buf: @Any, nbytes: @apr_size_t): apr_stat
 ### <a id="apr_file_write"></a>`apr_file_write`
 
 ```ec
-fn apr_file_write(thefile: @apr_file_t, buf: @Any, nbytes: @apr_size_t): apr_status_t
+fn apr_file_write(thefile: @apr_file_t, buf: @Any, mut nbytes: apr_size_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_write`.*
@@ -415,7 +415,7 @@ fn apr_file_writev(thefile: @apr_file_t, vec: @iovec, nvec: apr_size_t, nbytes: 
 ### <a id="apr_file_read_full"></a>`apr_file_read_full`
 
 ```ec
-fn apr_file_read_full(thefile: @apr_file_t, buf: @Any, nbytes: apr_size_t, bytes_read: @apr_size_t): apr_status_t
+fn apr_file_read_full(thefile: @apr_file_t, buf: @Any, nbytes: apr_size_t, out bytes_read: apr_size_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_read_full`.*
@@ -423,7 +423,7 @@ fn apr_file_read_full(thefile: @apr_file_t, buf: @Any, nbytes: apr_size_t, bytes
 ### <a id="apr_file_write_full"></a>`apr_file_write_full`
 
 ```ec
-fn apr_file_write_full(thefile: @apr_file_t, buf: @Any, nbytes: apr_size_t, bytes_written: @apr_size_t): apr_status_t
+fn apr_file_write_full(thefile: @apr_file_t, buf: @Any, nbytes: apr_size_t, out bytes_written: apr_size_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_write_full`.*
@@ -503,7 +503,7 @@ fn apr_file_datasync(thefile: @apr_file_t): apr_status_t
 ### <a id="apr_file_dup"></a>`apr_file_dup`
 
 ```ec
-fn apr_file_dup(new_file: @@apr_file_t, old_file: @apr_file_t, p: @apr_pool_t): apr_status_t
+fn apr_file_dup(out new_file: @apr_file_t, old_file: @apr_file_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_dup`.*
@@ -519,7 +519,7 @@ fn apr_file_dup2(new_file: @apr_file_t, old_file: @apr_file_t, p: @apr_pool_t): 
 ### <a id="apr_file_setaside"></a>`apr_file_setaside`
 
 ```ec
-fn apr_file_setaside(new_file: @@apr_file_t, old_file: @apr_file_t, p: @apr_pool_t): apr_status_t
+fn apr_file_setaside(out new_file: @apr_file_t, old_file: @apr_file_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_setaside`.*
@@ -543,7 +543,7 @@ fn apr_file_buffer_size_get(thefile: @apr_file_t): apr_size_t
 ### <a id="apr_file_seek"></a>`apr_file_seek`
 
 ```ec
-fn apr_file_seek(thefile: @apr_file_t, whence: apr_seek_where_t, offset: @apr_off_t): apr_status_t
+fn apr_file_seek(thefile: @apr_file_t, whence: apr_seek_where_t, mut offset: apr_off_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_seek`.*
@@ -551,7 +551,7 @@ fn apr_file_seek(thefile: @apr_file_t, whence: apr_seek_where_t, offset: @apr_of
 ### <a id="apr_file_pipe_create"></a>`apr_file_pipe_create`
 
 ```ec
-fn apr_file_pipe_create(input: @@apr_file_t, output: @@apr_file_t, pool: @apr_pool_t): apr_status_t
+fn apr_file_pipe_create(out input: @apr_file_t, out output: @apr_file_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_pipe_create`.*
@@ -559,7 +559,7 @@ fn apr_file_pipe_create(input: @@apr_file_t, output: @@apr_file_t, pool: @apr_po
 ### <a id="apr_file_pipe_create_ex"></a>`apr_file_pipe_create_ex`
 
 ```ec
-fn apr_file_pipe_create_ex(input: @@apr_file_t, output: @@apr_file_t, blocking: apr_int32_t, pool: @apr_pool_t): apr_status_t
+fn apr_file_pipe_create_ex(out input: @apr_file_t, out output: @apr_file_t, blocking: apr_int32_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_pipe_create_ex`.*
@@ -607,7 +607,7 @@ fn apr_file_unlock(thefile: @apr_file_t): apr_status_t
 ### <a id="apr_file_name_get"></a>`apr_file_name_get`
 
 ```ec
-fn apr_file_name_get(new_path: @CString, thefile: @apr_file_t): apr_status_t
+fn apr_file_name_get(out new_path: CString, thefile: @apr_file_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_name_get`.*
@@ -615,7 +615,7 @@ fn apr_file_name_get(new_path: @CString, thefile: @apr_file_t): apr_status_t
 ### <a id="apr_file_data_get"></a>`apr_file_data_get`
 
 ```ec
-fn apr_file_data_get(data: @@Any, key: CString, file: @apr_file_t): apr_status_t
+fn apr_file_data_get(out data: @Any, key: CString, file: @apr_file_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_data_get`.*
@@ -687,7 +687,7 @@ fn apr_dir_remove(path: CString, pool: @apr_pool_t): apr_status_t
 ### <a id="apr_file_info_get"></a>`apr_file_info_get`
 
 ```ec
-fn apr_file_info_get(finfo: @apr_finfo_t, wanted: apr_int32_t, thefile: @apr_file_t): apr_status_t
+fn apr_file_info_get(out finfo: apr_finfo_t, wanted: apr_int32_t, thefile: @apr_file_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_info_get`.*
@@ -735,7 +735,7 @@ fn apr_file_inherit_unset(thefile: @apr_file_t): apr_status_t
 ### <a id="apr_file_mktemp"></a>`apr_file_mktemp`
 
 ```ec
-fn apr_file_mktemp(fp: @@apr_file_t, templ: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
+fn apr_file_mktemp(out fp: @apr_file_t, templ: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_file_mktemp`.*
@@ -743,7 +743,7 @@ fn apr_file_mktemp(fp: @@apr_file_t, templ: CString, flags: apr_int32_t, p: @apr
 ### <a id="apr_temp_dir_get"></a>`apr_temp_dir_get`
 
 ```ec
-fn apr_temp_dir_get(temp_dir: @CString, p: @apr_pool_t): apr_status_t
+fn apr_temp_dir_get(out temp_dir: CString, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_temp_dir_get`.*

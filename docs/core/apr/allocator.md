@@ -33,7 +33,7 @@ declare val APR_ALLOCATOR_MAX_FREE_UNLIMITED as Int
 ### <a id="apr_allocator_create"></a>`apr_allocator_create`
 
 ```ec
-fn apr_allocator_create(allocator: @@apr_allocator_t): apr_status_t
+fn apr_allocator_create(out allocator: @apr_allocator_t): apr_status_t
 ```
 
 *Binds the C function `apr_allocator_create`.*

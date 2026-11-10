@@ -2,6 +2,8 @@ package github.mrh0.eclang.ast.token.branch
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TBlock
 import github.mrh0.eclang.ast.token.TExprNest
@@ -56,7 +58,7 @@ class WhenArm(val location: Loc, val type: ITok?, val values: List<ITok>, val bo
 class TStatementWhen(
     location: Loc, private val binding: String?, private val mutable: Boolean, private val subject: ITok, private val arms: List<WhenArm>,
     private val exhaustive: Boolean = false,
-) : Tok(location) {
+) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val elseArms = arms.filter { it.isElse }
         if (elseArms.size > 1 || (elseArms.size == 1 && arms.last() !== elseArms[0]))
@@ -73,7 +75,7 @@ class TStatementWhen(
         val type = cd.storable(location, value.first, "the value of `when`")
         val temp = cd.temp()
         val define = IRTempDefine(location, temp, type, cd.expect(location, value, type, "the value of `when`"))
-        val (_, chain) = WhenOn(location, TFixed(location, type, IRRaw(location, temp)), arms, exhaustive, subject).process(cd, hint)
+        val (_, chain) = WhenOn(location, TFixed(location, type, IRRaw(location, temp), subject), arms, exhaustive, subject).process(cd, hint)
         return Types.None to IRBlock(location, listOf(define, chain), listOf(), cd.ctx().hasReturned())
     }
 
@@ -82,6 +84,8 @@ class TStatementWhen(
 
 /** [inner] compiled with [name] standing for [subject], for the condition and the body of an arm `n if c do`. [written]: the value as written, for Lifetimes. */
 private class Bound(location: Loc, private val name: String, private val subject: ITok, private val written: ITok, private val inner: ITok) : Tok(location) {
+    override fun pointerFlow() = PointerFlow.From(inner)
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         cd.ctx().push()
         try {
@@ -97,7 +101,7 @@ private class Bound(location: Loc, private val name: String, private val subject
 }
 
 /** The arms of a `when` on [subject] (a name, or a [TFixed] value of the expression [written]), as an `if` chain. */
-private class WhenOn(location: Loc, private val subject: ITok, private val arms: List<WhenArm>, private val exhaustive: Boolean, private val written: ITok = subject) : Tok(location) {
+private class WhenOn(location: Loc, private val subject: ITok, private val arms: List<WhenArm>, private val exhaustive: Boolean, private val written: ITok = subject) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val type = subjectType(cd)
         var elseArm = arms.lastOrNull()?.takeIf { it.isElse }

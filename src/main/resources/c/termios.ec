@@ -23,7 +23,7 @@ declare val TCSADRAIN as Int
 declare val TCSAFLUSH as Int
 
 // 0 on success, -1 on failure (such as when fd isn't a terminal).
-declare fn tcgetattr as (fd: Int, settings: @termios): Int
+declare fn tcgetattr as (fd: Int, out settings: termios): Int
 declare fn tcsetattr as (fd: Int, when_: Int, settings: @termios): Int
 // Turns off everything that processes input and output (a GNU and BSD extension).
-declare fn cfmakeraw as (settings: @termios)
+declare fn cfmakeraw as (mut settings: termios)

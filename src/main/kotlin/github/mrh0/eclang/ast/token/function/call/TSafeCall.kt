@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.function.call
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -30,6 +31,8 @@ class TSafeCall(
     location: Loc, val receiver: ITok, private val name: String, private val rest: List<ITok>, private val argNames: List<String?>?,
     private val statement: Boolean = false,
 ) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(receiver, call)
+
     /** The call on the receiver, once compiled (see Lifetimes). */
     var call: TExprCall? = null
         private set
@@ -43,7 +46,7 @@ class TSafeCall(
             val temp = cd.declareTemp(location) { t }
             IRTempSet(location, temp, ir) to IRRaw(location, temp)
         }
-        val value = TFixed(location, nonNull, IRConvert(location, read, t, nonNull, IRConvert.Mode.NARROW))
+        val value = TFixed(location, nonNull, IRConvert(location, read, t, nonNull, IRConvert.Mode.NARROW), receiver)
         val tok = TExprCall(location, name, listOf<ITok>(value) + rest, isMethod = true, argNames).also { call = it }
         val (callType, callIR) = cd.noHoist("`try` can't be used in the arguments of `?.`, because they only run when the value isn't null. Assign it to a variable first.") {
             tok.process(cd, if (hint === Types.None) hint else cd.types.nonNull(hint))

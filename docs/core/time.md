@@ -57,7 +57,7 @@ moves forward, also when the system time is set, so it is what to measure durati
 ### <a id="time.Date"></a>`Date`
 
 ```ec
-rec Date
+mut rec Date
 ```
 
 A date and time of day, as a calendar shows it in some time zone.

@@ -16,14 +16,14 @@ The C functions take and return Doubles; most also have a Float overload. Progra
 ### <a id="math.Random"></a>`Random`
 
 ```ec
-rec Random
+mut rec Random
 ```
 
 A PCG32 random number generator: fast and of good quality, but predictable, so use [`secureRandom`](#math.secureRandom) for keys
-and tokens. Make one with [`random`](#math.random), and pass its address to the next* functions:
+and tokens. Make one with [`random`](#math.random), and keep it in a `var`: the next* functions change it (`mut`).
 
     var r = math.random(42)
-    val die = math.nextInt(addrof(r), 1, 7)
+    val die = r.nextInt(1, 7)                   // or math.nextInt(mut r, 1, 7)
 
 **Fields**
 
@@ -811,6 +811,22 @@ fn mean(values: Int[]): Double
 
 The average; NaN for an empty array.
 
+### <a id="math.variance"></a>`variance`
+
+```ec
+fn variance(values: Double[]): Double
+```
+
+How far the values are from their mean, on average, squared (the population variance); NaN for an empty array.
+
+### <a id="math.stdDev"></a>`stdDev`
+
+```ec
+fn stdDev(values: Double[]): Double
+```
+
+The population standard deviation: the square root of [`variance`](#math.variance).
+
 ### <a id="math.radians"></a>`radians`
 
 ```ec
@@ -889,7 +905,7 @@ Whether `n` is 1, 2, 4, 8, ...
 fn nextPowerOfTwo(n: Long): Long
 ```
 
-The smallest power of two that is n or more (1 for n <= 1).
+The smallest power of two that is n or more (1 for n <= 1). The program stops when that doesn't fit in a Long.
 
 ### <a id="math.isPrime"></a>`isPrime`
 
@@ -918,7 +934,7 @@ The remainder with the sign of `b`: `floorMod(-7, 3)` is 2, where `-7 % 3` is -1
 ### <a id="math.addOverflow"></a>`addOverflow`
 
 ```ec
-fn addOverflow(a: Long, b: Long, result: @Long): Bool
+fn addOverflow(a: Long, b: Long, out result: Long): Bool
 ```
 
 GCC's __builtin_add_overflow for Long: stores `a + b` (wrapped) in `result`, and returns whether it overflowed.
@@ -928,7 +944,7 @@ GCC's __builtin_add_overflow for Long: stores `a + b` (wrapped) in `result`, and
 ### <a id="math.subOverflow"></a>`subOverflow`
 
 ```ec
-fn subOverflow(a: Long, b: Long, result: @Long): Bool
+fn subOverflow(a: Long, b: Long, out result: Long): Bool
 ```
 
 GCC's __builtin_sub_overflow for Long: stores `a - b` (wrapped) in `result`, and returns whether it overflowed.
@@ -938,7 +954,7 @@ GCC's __builtin_sub_overflow for Long: stores `a - b` (wrapped) in `result`, and
 ### <a id="math.mulOverflow"></a>`mulOverflow`
 
 ```ec
-fn mulOverflow(a: Long, b: Long, result: @Long): Bool
+fn mulOverflow(a: Long, b: Long, out result: Long): Bool
 ```
 
 GCC's __builtin_mul_overflow for Long: stores `a * b` (wrapped) in `result`, and returns whether it overflowed.
@@ -948,7 +964,7 @@ GCC's __builtin_mul_overflow for Long: stores `a * b` (wrapped) in `result`, and
 ### `addOverflow`
 
 ```ec
-fn addOverflow(a: Int, b: Int, result: @Int): Bool
+fn addOverflow(a: Int, b: Int, out result: Int): Bool
 ```
 
 GCC's __builtin_add_overflow for Int: stores `a + b` (wrapped) in `result`, and returns whether it overflowed.
@@ -958,7 +974,7 @@ GCC's __builtin_add_overflow for Int: stores `a + b` (wrapped) in `result`, and 
 ### `subOverflow`
 
 ```ec
-fn subOverflow(a: Int, b: Int, result: @Int): Bool
+fn subOverflow(a: Int, b: Int, out result: Int): Bool
 ```
 
 GCC's __builtin_sub_overflow for Int: stores `a - b` (wrapped) in `result`, and returns whether it overflowed.
@@ -968,7 +984,7 @@ GCC's __builtin_sub_overflow for Int: stores `a - b` (wrapped) in `result`, and 
 ### `mulOverflow`
 
 ```ec
-fn mulOverflow(a: Int, b: Int, result: @Int): Bool
+fn mulOverflow(a: Int, b: Int, out result: Int): Bool
 ```
 
 GCC's __builtin_mul_overflow for Int: stores `a * b` (wrapped) in `result`, and returns whether it overflowed.
@@ -978,7 +994,7 @@ GCC's __builtin_mul_overflow for Int: stores `a * b` (wrapped) in `result`, and 
 ### `addOverflow`
 
 ```ec
-fn addOverflow(a: ULong, b: ULong, result: @ULong): Bool
+fn addOverflow(a: ULong, b: ULong, out result: ULong): Bool
 ```
 
 GCC's __builtin_add_overflow for ULong: stores `a + b` (wrapped) in `result`, and returns whether it overflowed.
@@ -988,7 +1004,7 @@ GCC's __builtin_add_overflow for ULong: stores `a + b` (wrapped) in `result`, an
 ### `mulOverflow`
 
 ```ec
-fn mulOverflow(a: ULong, b: ULong, result: @ULong): Bool
+fn mulOverflow(a: ULong, b: ULong, out result: ULong): Bool
 ```
 
 GCC's __builtin_mul_overflow for ULong: stores `a * b` (wrapped) in `result`, and returns whether it overflowed.
@@ -998,7 +1014,7 @@ GCC's __builtin_mul_overflow for ULong: stores `a * b` (wrapped) in `result`, an
 ### `addOverflow`
 
 ```ec
-fn addOverflow(a: UInt, b: UInt, result: @UInt): Bool
+fn addOverflow(a: UInt, b: UInt, out result: UInt): Bool
 ```
 
 GCC's __builtin_add_overflow for UInt: stores `a + b` (wrapped) in `result`, and returns whether it overflowed.
@@ -1008,7 +1024,7 @@ GCC's __builtin_add_overflow for UInt: stores `a + b` (wrapped) in `result`, and
 ### `mulOverflow`
 
 ```ec
-fn mulOverflow(a: UInt, b: UInt, result: @UInt): Bool
+fn mulOverflow(a: UInt, b: UInt, out result: UInt): Bool
 ```
 
 GCC's __builtin_mul_overflow for UInt: stores `a * b` (wrapped) in `result`, and returns whether it overflowed.
@@ -1175,7 +1191,7 @@ A generator seeded from the system's random source (different numbers on every r
 ### <a id="math.nextUInt"></a>`nextUInt`
 
 ```ec
-fn nextUInt(r: @Random): UInt
+fn nextUInt(mut r: Random): UInt
 ```
 
 The next 32 random bits.
@@ -1183,7 +1199,7 @@ The next 32 random bits.
 ### <a id="math.nextULong"></a>`nextULong`
 
 ```ec
-fn nextULong(r: @Random): ULong
+fn nextULong(mut r: Random): ULong
 ```
 
 The next 64 random bits.
@@ -1191,7 +1207,7 @@ The next 64 random bits.
 ### <a id="math.nextInt"></a>`nextInt`
 
 ```ec
-fn nextInt(r: @Random, low: Int, high: Int): Int
+fn nextInt(mut r: Random, low: Int, high: Int): Int
 ```
 
 A whole number from `low` up to, but not including, `high`, with every value equally likely.
@@ -1204,7 +1220,7 @@ A whole number from `low` up to, but not including, `high`, with every value equ
 ### <a id="math.nextDouble"></a>`nextDouble`
 
 ```ec
-fn nextDouble(r: @Random): Double
+fn nextDouble(mut r: Random): Double
 ```
 
 A Double from 0.0 up to, but not including, 1.0.
@@ -1212,7 +1228,7 @@ A Double from 0.0 up to, but not including, 1.0.
 ### <a id="math.nextBool"></a>`nextBool`
 
 ```ec
-fn nextBool(r: @Random): Bool
+fn nextBool(mut r: Random): Bool
 ```
 
 A random Bool, true or false equally likely.
@@ -1220,7 +1236,7 @@ A random Bool, true or false equally likely.
 ### <a id="math.nextGaussian"></a>`nextGaussian`
 
 ```ec
-fn nextGaussian(r: @Random): Double
+fn nextGaussian(mut r: Random): Double
 ```
 
 A Double from the standard normal distribution: mean 0.0, standard deviation 1.0 (Box-Muller).
@@ -1228,7 +1244,7 @@ A Double from the standard normal distribution: mean 0.0, standard deviation 1.0
 ### `nextGaussian`
 
 ```ec
-fn nextGaussian(r: @Random, mean: Double, deviation: Double): Double
+fn nextGaussian(mut r: Random, mean: Double, deviation: Double): Double
 ```
 
 A Double from a normal distribution.
@@ -1241,7 +1257,7 @@ A Double from a normal distribution.
 ### <a id="math.shuffle"></a>`shuffle`
 
 ```ec
-fn shuffle(r: @Random, values: <T>[])
+fn shuffle(mut r: Random, values: <T>[])
 ```
 
 Puts the elements of `values` in a random order, in place (Fisher-Yates).
@@ -1249,7 +1265,7 @@ Puts the elements of `values` in a random order, in place (Fisher-Yates).
 ### <a id="math.pick"></a>`pick`
 
 ```ec
-fn pick(r: @Random, values: <T>[]): <T>
+fn pick(mut r: Random, values: <T>[]): <T>
 ```
 
 A random element of `values`, which must not be empty.

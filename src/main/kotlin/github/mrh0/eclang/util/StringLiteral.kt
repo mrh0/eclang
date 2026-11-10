@@ -10,6 +10,9 @@ import github.mrh0.eclang.error.EcError
 class StringLiteral private constructor(private val bytes: ByteArray, private val fromEscape: BooleanArray) {
     val size get() = bytes.size
 
+    /** Byte [i], from 0 to 255. */
+    fun byteAt(i: Int): Int = bytes[i].toInt() and 0xFF
+
     /**
      * The C spelling, without the quotes. Characters written as themselves stay readable (including non-ASCII
      * ones, as UTF-8); other bytes become C escapes. `?` after `?` is escaped so it can't form a trigraph.
@@ -61,6 +64,28 @@ class StringLiteral private constructor(private val bytes: ByteArray, private va
          * Splits [content] (the source text between the quotes) at each `${expr}`: the result alternates between
          * literal source text and expression source text, starting and ending with literal text (maybe empty).
          */
+        /** Where the first `${` of [content] (the source text between the quotes) that has no closing `}` starts, or null. */
+        fun unclosedInterpolation(content: String): Int? {
+            var i = 0
+            while (i < content.length) {
+                when {
+                    content[i] == '\\' -> i += 2
+                    content.startsWith("\${", i) -> {
+                        var depth = 1
+                        var j = i + 2
+                        while (j < content.length && depth > 0) {
+                            if (content[j] == '{') depth++ else if (content[j] == '}') depth--
+                            j++
+                        }
+                        if (depth > 0) return i
+                        i = j
+                    }
+                    else -> i++
+                }
+            }
+            return null
+        }
+
         fun splitInterpolation(location: Loc, content: String): List<String> {
             val parts = mutableListOf<String>()
             val literal = StringBuilder()
@@ -90,6 +115,9 @@ class StringLiteral private constructor(private val bytes: ByteArray, private va
         }
 
         /** Decodes [content], the source text between the quotes of a literal at [location]. */
+        /** [text] as it is, with no escapes. */
+        fun of(text: String): StringLiteral = text.toByteArray(Charsets.UTF_8).let { StringLiteral(it, BooleanArray(it.size)) }
+
         fun parse(location: Loc, content: String): StringLiteral {
             val bytes = java.io.ByteArrayOutputStream()
             val fromEscape = ArrayList<Boolean>()

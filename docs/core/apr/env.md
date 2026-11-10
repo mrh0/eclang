@@ -5,7 +5,7 @@
 ### <a id="apr_env_get"></a>`apr_env_get`
 
 ```ec
-fn apr_env_get(value: @CString, envvar: CString, pool: @apr_pool_t): apr_status_t
+fn apr_env_get(out value: CString, envvar: CString, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_env_get`.*

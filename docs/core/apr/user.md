@@ -19,7 +19,7 @@ declare type apr_gid_t as UInt
 ### <a id="apr_uid_current"></a>`apr_uid_current`
 
 ```ec
-fn apr_uid_current(userid: @apr_uid_t, groupid: @apr_gid_t, p: @apr_pool_t): apr_status_t
+fn apr_uid_current(out userid: apr_uid_t, out groupid: apr_gid_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_uid_current`.*
@@ -27,7 +27,7 @@ fn apr_uid_current(userid: @apr_uid_t, groupid: @apr_gid_t, p: @apr_pool_t): apr
 ### <a id="apr_uid_name_get"></a>`apr_uid_name_get`
 
 ```ec
-fn apr_uid_name_get(username: @CString, userid: apr_uid_t, p: @apr_pool_t): apr_status_t
+fn apr_uid_name_get(out username: CString, userid: apr_uid_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_uid_name_get`.*
@@ -35,7 +35,7 @@ fn apr_uid_name_get(username: @CString, userid: apr_uid_t, p: @apr_pool_t): apr_
 ### <a id="apr_uid_get"></a>`apr_uid_get`
 
 ```ec
-fn apr_uid_get(userid: @apr_uid_t, groupid: @apr_gid_t, username: CString, p: @apr_pool_t): apr_status_t
+fn apr_uid_get(out userid: apr_uid_t, out groupid: apr_gid_t, username: CString, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_uid_get`.*
@@ -43,7 +43,7 @@ fn apr_uid_get(userid: @apr_uid_t, groupid: @apr_gid_t, username: CString, p: @a
 ### <a id="apr_uid_homepath_get"></a>`apr_uid_homepath_get`
 
 ```ec
-fn apr_uid_homepath_get(dirname: @CString, username: CString, p: @apr_pool_t): apr_status_t
+fn apr_uid_homepath_get(out dirname: CString, username: CString, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_uid_homepath_get`.*
@@ -51,7 +51,7 @@ fn apr_uid_homepath_get(dirname: @CString, username: CString, p: @apr_pool_t): a
 ### <a id="apr_gid_name_get"></a>`apr_gid_name_get`
 
 ```ec
-fn apr_gid_name_get(groupname: @CString, groupid: apr_gid_t, p: @apr_pool_t): apr_status_t
+fn apr_gid_name_get(out groupname: CString, groupid: apr_gid_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_gid_name_get`.*
@@ -59,7 +59,7 @@ fn apr_gid_name_get(groupname: @CString, groupid: apr_gid_t, p: @apr_pool_t): ap
 ### <a id="apr_gid_get"></a>`apr_gid_get`
 
 ```ec
-fn apr_gid_get(groupid: @apr_gid_t, groupname: CString, p: @apr_pool_t): apr_status_t
+fn apr_gid_get(out groupid: apr_gid_t, groupname: CString, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_gid_get`.*

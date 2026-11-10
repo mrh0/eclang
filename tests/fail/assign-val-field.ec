@@ -1,5 +1,5 @@
 // error: 'p' is a `val`, so its fields can't change either. Declare it with `var` to change them.
-rec Point as
+mut rec Point as
     x: Int
     y: Int
 

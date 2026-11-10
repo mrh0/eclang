@@ -23,10 +23,20 @@ class IRAccessorArray(location: Loc, val expr: IIR, val exprIndex: IIR, private 
             sb.put(']')
             return
         }
-        sb.put("(*${sb.types.elementAt(arrayType)}(")
+        sb.put("(*")
+        pointerC(sb, c)
+        sb.put(")")
+    }
+
+    /** The checked element's address, `__ec_at_AInt(a, i, "where")`: what `&` of it is. */
+    fun pointerC(sb: CSourceBuilder, c: Context) {
+        sb.put("${sb.types.elementAt(arrayType)}(")
         expr.toC(sb, c)
         sb.put(", ")
         exprIndex.toC(sb, c)
-        sb.put(", ${IRConvert.where(location)}))")
+        sb.put(", ${IRConvert.where(location)})")
     }
+
+    /** Whether the element is read through the bounds check, a call that gives its address (see [pointerC]). */
+    val isChecked get() = checked
 }

@@ -52,10 +52,17 @@ def wrappers(lines):
         name, params, returns = m.group(1), split_params(m.group(2)), m.group(3)
         if "..." in params:
             continue  # A C variadic function can't be forwarded to (gcc checks its format/sentinel arguments).
-        names = [p.split(":", 1)[0].strip() for p in params]
+        # `out x: T` (C only writes it) and `mut x: T` are passed on as `mut x`; `escaping x: T` and `kept x: T` as x.
+        words = [p.split()[0] if p.split()[0] in ("out", "mut", "escaping", "kept") else "" for p in params]
+        plain = [p.split(None, 1)[1] if w else p for p, w in zip(params, words)]
+        names = [p.split(":", 1)[0].strip() for p in plain]
         wrapper = f"check_{name}_{i}"  # numbered: overloads of one name each get a wrapper
-        signature = f"fn {wrapper}({', '.join(params)})" + (f": {returns}" if returns else "")
-        call = f"{name}({', '.join(names)})"
+        forwarded = [f"mut {p}" if w in ("out", "mut") else p for p, w in zip(plain, words)]
+        # A function type is a C function pointer only in a `declare` or `export fn`: elsewhere it is an eclang function value.
+        written = m.group(2) + " " + (returns or "")
+        exported = "export " if "=>" in written or "fn (" in written else ""
+        signature = f"{exported}fn {wrapper}({', '.join(forwarded)})" + (f": {returns}" if returns else "")
+        call = f"{name}({', '.join(f'mut {n}' if w in ('out', 'mut') else n for n, w in zip(names, words))})"
         yield wrapper, f"{signature} = {call}\n" if returns else f"{signature} do\n    {call}\n"
 
 

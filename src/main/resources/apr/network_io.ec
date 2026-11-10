@@ -61,38 +61,38 @@ declare rec apr_sockaddr_t as
     family: apr_int32_t
     next: @apr_sockaddr_t?
 
-declare fn apr_socket_create as (new_sock: @@apr_socket_t, family: Int, sock_type: Int, protocol: Int, cont: @apr_pool_t): apr_status_t
+declare fn apr_socket_create as (out new_sock: @apr_socket_t, family: Int, sock_type: Int, protocol: Int, cont: @apr_pool_t): apr_status_t
 declare fn apr_socket_shutdown as (thesocket: @apr_socket_t, how: apr_shutdown_how_e): apr_status_t
 declare fn apr_socket_close as (thesocket: @apr_socket_t): apr_status_t
 declare fn apr_socket_bind as (sock: @apr_socket_t, sa: @apr_sockaddr_t): apr_status_t
 declare fn apr_socket_listen as (sock: @apr_socket_t, backlog: apr_int32_t): apr_status_t
-declare fn apr_socket_accept as (new_sock: @@apr_socket_t, sock: @apr_socket_t, connection_pool: @apr_pool_t): apr_status_t
+declare fn apr_socket_accept as (out new_sock: @apr_socket_t, sock: @apr_socket_t, connection_pool: @apr_pool_t): apr_status_t
 declare fn apr_socket_connect as (sock: @apr_socket_t, sa: @apr_sockaddr_t): apr_status_t
 declare fn apr_socket_atreadeof as (sock: @apr_socket_t, atreadeof: @Int): apr_status_t
-declare fn apr_sockaddr_info_get as (sa: @@apr_sockaddr_t, hostname: CString, family: apr_int32_t, port: apr_port_t, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
-declare fn apr_getnameinfo as (hostname: @CString, sa: @apr_sockaddr_t, flags: apr_int32_t): apr_status_t
-declare fn apr_parse_addr_port as (addr: @CString, scope_id: @CString, port: @apr_port_t, str: CString, p: @apr_pool_t): apr_status_t
+declare fn apr_sockaddr_info_get as (out sa: @apr_sockaddr_t, hostname: CString, family: apr_int32_t, port: apr_port_t, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
+declare fn apr_getnameinfo as (out hostname: CString, sa: @apr_sockaddr_t, flags: apr_int32_t): apr_status_t
+declare fn apr_parse_addr_port as (out addr: CString, out scope_id: CString, out port: apr_port_t, str: CString, p: @apr_pool_t): apr_status_t
 declare fn apr_gethostname as (buf: CString, len: Int, cont: @apr_pool_t): apr_status_t
-declare fn apr_socket_data_get as (data: @@Any, key: CString, sock: @apr_socket_t): apr_status_t
+declare fn apr_socket_data_get as (out data: @Any, key: CString, sock: @apr_socket_t): apr_status_t
 declare fn apr_socket_data_set as (sock: @apr_socket_t, data: @Any, key: CString, cleanup: fn (@Any): apr_status_t): apr_status_t
-declare fn apr_socket_send as (sock: @apr_socket_t, buf: CString, len: @apr_size_t): apr_status_t
+declare fn apr_socket_send as (sock: @apr_socket_t, buf: CString, mut len: apr_size_t): apr_status_t
 declare fn apr_socket_sendv as (sock: @apr_socket_t, vec: @iovec, nvec: apr_int32_t, len: @apr_size_t): apr_status_t
-declare fn apr_socket_sendto as (sock: @apr_socket_t, target: @apr_sockaddr_t, flags: apr_int32_t, buf: CString, len: @apr_size_t): apr_status_t
-declare fn apr_socket_recvfrom as (from: @apr_sockaddr_t, sock: @apr_socket_t, flags: apr_int32_t, buf: CString, len: @apr_size_t): apr_status_t
+declare fn apr_socket_sendto as (sock: @apr_socket_t, target: @apr_sockaddr_t, flags: apr_int32_t, buf: CString, mut len: apr_size_t): apr_status_t
+declare fn apr_socket_recvfrom as (from: @apr_sockaddr_t, sock: @apr_socket_t, flags: apr_int32_t, buf: CString, mut len: apr_size_t): apr_status_t
 declare fn apr_socket_sendfile as (sock: @apr_socket_t, file: @apr_file_t, hdtr: @apr_hdtr_t, offset: @apr_off_t, len: @apr_size_t, flags: apr_int32_t): apr_status_t
-declare fn apr_socket_recv as (sock: @apr_socket_t, buf: CString, len: @apr_size_t): apr_status_t
+declare fn apr_socket_recv as (sock: @apr_socket_t, buf: CString, mut len: apr_size_t): apr_status_t
 declare fn apr_socket_opt_set as (sock: @apr_socket_t, opt: apr_int32_t, on: apr_int32_t): apr_status_t
 declare fn apr_socket_timeout_set as (sock: @apr_socket_t, t: apr_interval_time_t): apr_status_t
-declare fn apr_socket_opt_get as (sock: @apr_socket_t, opt: apr_int32_t, on: @apr_int32_t): apr_status_t
-declare fn apr_socket_timeout_get as (sock: @apr_socket_t, t: @apr_interval_time_t): apr_status_t
-declare fn apr_socket_atmark as (sock: @apr_socket_t, atmark: @Int): apr_status_t
-declare fn apr_socket_addr_get as (sa: @@apr_sockaddr_t, which: apr_interface_e, sock: @apr_socket_t): apr_status_t
-declare fn apr_sockaddr_ip_get as (addr: @CString, sockaddr: @apr_sockaddr_t): apr_status_t
+declare fn apr_socket_opt_get as (sock: @apr_socket_t, opt: apr_int32_t, out on: apr_int32_t): apr_status_t
+declare fn apr_socket_timeout_get as (sock: @apr_socket_t, out t: apr_interval_time_t): apr_status_t
+declare fn apr_socket_atmark as (sock: @apr_socket_t, out atmark: Int): apr_status_t
+declare fn apr_socket_addr_get as (out sa: @apr_sockaddr_t, which: apr_interface_e, sock: @apr_socket_t): apr_status_t
+declare fn apr_sockaddr_ip_get as (out addr: CString, sockaddr: @apr_sockaddr_t): apr_status_t
 declare fn apr_sockaddr_ip_getbuf as (buf: CString, buflen: apr_size_t, sockaddr: @apr_sockaddr_t): apr_status_t
 declare fn apr_sockaddr_equal as (addr1: @apr_sockaddr_t, addr2: @apr_sockaddr_t): Int
 declare fn apr_socket_type_get as (sock: @apr_socket_t, sock_type: @Int): apr_status_t
 declare fn apr_getservbyname as (sockaddr: @apr_sockaddr_t, servname: CString): apr_status_t
-declare fn apr_ipsubnet_create as (ipsub: @@apr_ipsubnet_t, ipstr: CString, mask_or_numbits: CString, p: @apr_pool_t): apr_status_t
+declare fn apr_ipsubnet_create as (out ipsub: @apr_ipsubnet_t, ipstr: CString, mask_or_numbits: CString, p: @apr_pool_t): apr_status_t
 declare fn apr_ipsubnet_test as (ipsub: @apr_ipsubnet_t, sa: @apr_sockaddr_t): Int
 declare fn apr_socket_protocol_get as (sock: @apr_socket_t, protocol: @Int): apr_status_t
 declare fn apr_socket_pool_get as (thesocket: @apr_socket_t): @apr_pool_t

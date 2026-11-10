@@ -48,26 +48,26 @@ fn tag(): String do
 
 // `try` leaves through the deferred statements without freeing anything for the code after it.
 fn deferredFree(): Int throws String do
-    val p = newPool()
-    defer freePool(p)
+    val p = new Pool
+    defer destroy p
     val s = format(p, "x${1}")
     val v = try works()
     io.log(s)
     ret v + s.len as Int
 
-// The error of a call given p is copied before the deferred `freePool` frees p.
+// The error of a call given p is copied before the deferred `destroy` frees p.
 fn make(p: Pool): Int throws String do
     throw format(p, "made in ${1}")
 
 fn deferredCopy(): Int throws String do
-    val p = newPool()
-    defer freePool(p)
+    val p = new Pool
+    defer destroy p
     val v = try make(p)
     ret v
 
 fn copied(): String do
-    val p = newPool()
-    defer freePool(p)
+    val p = new Pool
+    defer destroy p
     val s = format(p, "copy ${1}")
     ret clone(s)
 
@@ -93,7 +93,7 @@ fn carried(): Int do
     ret @p
 
 fn poolLoop(): Int do
-    val p = newPool()
+    val p = new Pool
     var s = ""
     var total = 0
     for i in 0..<3 do
@@ -102,22 +102,22 @@ fn poolLoop(): Int do
         s = "fresh"
         val t = format(p, "x${i}")
         total += t.len as Int
-    freePool(p)
+    destroy p
     ret total
 
 // Each round makes the pool it frees.
 fn poolPerRound(): Int do
     var total = 0
     for i in 0..<3 do
-        val p = newPool()
+        val p = new Pool
         total += format(p, "${i}").len as Int
-        freePool(p)
-    var q = newPool()
+        destroy p
+    var q = new Pool
     for i in 0..<3 do
         total += format(q, "${i}").len as Int
-        freePool(q)
-        q = newPool()
-    freePool(q)
+        destroy q
+        q = new Pool
+    destroy q
     ret total
 
 fn blockClear(): Int do
@@ -131,36 +131,36 @@ fn blockClear(): Int do
     ret total
 
 fn poolFields(): Int do
-    val h = H { p = newPool() }
+    val h = H { p = new Pool }
     val s = format(h.p, "ab${1}")
     val n = s.len as Int
-    freePool(h.p)
+    destroy h.p
     ret n
 
 fn parentAndChild(): Int do
-    val p = newPool()
-    val c = newPool(p)
+    val p = new Pool
+    val c = new Pool in p
     val s = format(c, "abc")
     val n = s.len as Int
     clearPool(c)
     val t = format(p, "z${1}")
-    freePool(p)
+    destroy p
     ret n
 
 fn globalReset(): Int do
-    val p = newPool()
+    val p = new Pool
     kept = format(p, "x${1}")
     val n = kept.len as Int
     kept = "none"
-    freePool(p)
+    destroy p
     ret n
 
 fn throughPointer(): Int do
-    val p = newPool()
+    val p = new Pool
     var s = format(p, "a${1}")
     val ps = addrof s
     val n = (@ps).len as Int
-    freePool(p)
+    destroy p
     ret n
 
 fn catchMessage(): String do

@@ -33,7 +33,7 @@ declare val APR_THREAD_MUTEX_UNNESTED as Int
 ### <a id="apr_thread_mutex_create"></a>`apr_thread_mutex_create`
 
 ```ec
-fn apr_thread_mutex_create(mutex: @@apr_thread_mutex_t, flags: UInt, pool: @apr_pool_t): apr_status_t
+fn apr_thread_mutex_create(out mutex: @apr_thread_mutex_t, flags: UInt, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_thread_mutex_create`.*

@@ -262,7 +262,7 @@ fn apr_inet_addr(cp: CString): UInt
 ### <a id="apr_socket_create"></a>`apr_socket_create`
 
 ```ec
-fn apr_socket_create(new_sock: @@apr_socket_t, family: Int, sock_type: Int, protocol: Int, cont: @apr_pool_t): apr_status_t
+fn apr_socket_create(out new_sock: @apr_socket_t, family: Int, sock_type: Int, protocol: Int, cont: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_create`.*
@@ -302,7 +302,7 @@ fn apr_socket_listen(sock: @apr_socket_t, backlog: apr_int32_t): apr_status_t
 ### <a id="apr_socket_accept"></a>`apr_socket_accept`
 
 ```ec
-fn apr_socket_accept(new_sock: @@apr_socket_t, sock: @apr_socket_t, connection_pool: @apr_pool_t): apr_status_t
+fn apr_socket_accept(out new_sock: @apr_socket_t, sock: @apr_socket_t, connection_pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_accept`.*
@@ -326,7 +326,7 @@ fn apr_socket_atreadeof(sock: @apr_socket_t, atreadeof: @Int): apr_status_t
 ### <a id="apr_sockaddr_info_get"></a>`apr_sockaddr_info_get`
 
 ```ec
-fn apr_sockaddr_info_get(sa: @@apr_sockaddr_t, hostname: CString, family: apr_int32_t, port: apr_port_t, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
+fn apr_sockaddr_info_get(out sa: @apr_sockaddr_t, hostname: CString, family: apr_int32_t, port: apr_port_t, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_sockaddr_info_get`.*
@@ -334,7 +334,7 @@ fn apr_sockaddr_info_get(sa: @@apr_sockaddr_t, hostname: CString, family: apr_in
 ### <a id="apr_getnameinfo"></a>`apr_getnameinfo`
 
 ```ec
-fn apr_getnameinfo(hostname: @CString, sa: @apr_sockaddr_t, flags: apr_int32_t): apr_status_t
+fn apr_getnameinfo(out hostname: CString, sa: @apr_sockaddr_t, flags: apr_int32_t): apr_status_t
 ```
 
 *Binds the C function `apr_getnameinfo`.*
@@ -342,7 +342,7 @@ fn apr_getnameinfo(hostname: @CString, sa: @apr_sockaddr_t, flags: apr_int32_t):
 ### <a id="apr_parse_addr_port"></a>`apr_parse_addr_port`
 
 ```ec
-fn apr_parse_addr_port(addr: @CString, scope_id: @CString, port: @apr_port_t, str: CString, p: @apr_pool_t): apr_status_t
+fn apr_parse_addr_port(out addr: CString, out scope_id: CString, out port: apr_port_t, str: CString, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_parse_addr_port`.*
@@ -358,7 +358,7 @@ fn apr_gethostname(buf: CString, len: Int, cont: @apr_pool_t): apr_status_t
 ### <a id="apr_socket_data_get"></a>`apr_socket_data_get`
 
 ```ec
-fn apr_socket_data_get(data: @@Any, key: CString, sock: @apr_socket_t): apr_status_t
+fn apr_socket_data_get(out data: @Any, key: CString, sock: @apr_socket_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_data_get`.*
@@ -374,7 +374,7 @@ fn apr_socket_data_set(sock: @apr_socket_t, data: @Any, key: CString, cleanup: f
 ### <a id="apr_socket_send"></a>`apr_socket_send`
 
 ```ec
-fn apr_socket_send(sock: @apr_socket_t, buf: CString, len: @apr_size_t): apr_status_t
+fn apr_socket_send(sock: @apr_socket_t, buf: CString, mut len: apr_size_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_send`.*
@@ -390,7 +390,7 @@ fn apr_socket_sendv(sock: @apr_socket_t, vec: @iovec, nvec: apr_int32_t, len: @a
 ### <a id="apr_socket_sendto"></a>`apr_socket_sendto`
 
 ```ec
-fn apr_socket_sendto(sock: @apr_socket_t, target: @apr_sockaddr_t, flags: apr_int32_t, buf: CString, len: @apr_size_t): apr_status_t
+fn apr_socket_sendto(sock: @apr_socket_t, target: @apr_sockaddr_t, flags: apr_int32_t, buf: CString, mut len: apr_size_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_sendto`.*
@@ -398,7 +398,7 @@ fn apr_socket_sendto(sock: @apr_socket_t, target: @apr_sockaddr_t, flags: apr_in
 ### <a id="apr_socket_recvfrom"></a>`apr_socket_recvfrom`
 
 ```ec
-fn apr_socket_recvfrom(from: @apr_sockaddr_t, sock: @apr_socket_t, flags: apr_int32_t, buf: CString, len: @apr_size_t): apr_status_t
+fn apr_socket_recvfrom(from: @apr_sockaddr_t, sock: @apr_socket_t, flags: apr_int32_t, buf: CString, mut len: apr_size_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_recvfrom`.*
@@ -414,7 +414,7 @@ fn apr_socket_sendfile(sock: @apr_socket_t, file: @apr_file_t, hdtr: @apr_hdtr_t
 ### <a id="apr_socket_recv"></a>`apr_socket_recv`
 
 ```ec
-fn apr_socket_recv(sock: @apr_socket_t, buf: CString, len: @apr_size_t): apr_status_t
+fn apr_socket_recv(sock: @apr_socket_t, buf: CString, mut len: apr_size_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_recv`.*
@@ -438,7 +438,7 @@ fn apr_socket_timeout_set(sock: @apr_socket_t, t: apr_interval_time_t): apr_stat
 ### <a id="apr_socket_opt_get"></a>`apr_socket_opt_get`
 
 ```ec
-fn apr_socket_opt_get(sock: @apr_socket_t, opt: apr_int32_t, on: @apr_int32_t): apr_status_t
+fn apr_socket_opt_get(sock: @apr_socket_t, opt: apr_int32_t, out on: apr_int32_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_opt_get`.*
@@ -446,7 +446,7 @@ fn apr_socket_opt_get(sock: @apr_socket_t, opt: apr_int32_t, on: @apr_int32_t): 
 ### <a id="apr_socket_timeout_get"></a>`apr_socket_timeout_get`
 
 ```ec
-fn apr_socket_timeout_get(sock: @apr_socket_t, t: @apr_interval_time_t): apr_status_t
+fn apr_socket_timeout_get(sock: @apr_socket_t, out t: apr_interval_time_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_timeout_get`.*
@@ -454,7 +454,7 @@ fn apr_socket_timeout_get(sock: @apr_socket_t, t: @apr_interval_time_t): apr_sta
 ### <a id="apr_socket_atmark"></a>`apr_socket_atmark`
 
 ```ec
-fn apr_socket_atmark(sock: @apr_socket_t, atmark: @Int): apr_status_t
+fn apr_socket_atmark(sock: @apr_socket_t, out atmark: Int): apr_status_t
 ```
 
 *Binds the C function `apr_socket_atmark`.*
@@ -462,7 +462,7 @@ fn apr_socket_atmark(sock: @apr_socket_t, atmark: @Int): apr_status_t
 ### <a id="apr_socket_addr_get"></a>`apr_socket_addr_get`
 
 ```ec
-fn apr_socket_addr_get(sa: @@apr_sockaddr_t, which: apr_interface_e, sock: @apr_socket_t): apr_status_t
+fn apr_socket_addr_get(out sa: @apr_sockaddr_t, which: apr_interface_e, sock: @apr_socket_t): apr_status_t
 ```
 
 *Binds the C function `apr_socket_addr_get`.*
@@ -470,7 +470,7 @@ fn apr_socket_addr_get(sa: @@apr_sockaddr_t, which: apr_interface_e, sock: @apr_
 ### <a id="apr_sockaddr_ip_get"></a>`apr_sockaddr_ip_get`
 
 ```ec
-fn apr_sockaddr_ip_get(addr: @CString, sockaddr: @apr_sockaddr_t): apr_status_t
+fn apr_sockaddr_ip_get(out addr: CString, sockaddr: @apr_sockaddr_t): apr_status_t
 ```
 
 *Binds the C function `apr_sockaddr_ip_get`.*
@@ -510,7 +510,7 @@ fn apr_getservbyname(sockaddr: @apr_sockaddr_t, servname: CString): apr_status_t
 ### <a id="apr_ipsubnet_create"></a>`apr_ipsubnet_create`
 
 ```ec
-fn apr_ipsubnet_create(ipsub: @@apr_ipsubnet_t, ipstr: CString, mask_or_numbits: CString, p: @apr_pool_t): apr_status_t
+fn apr_ipsubnet_create(out ipsub: @apr_ipsubnet_t, ipstr: CString, mask_or_numbits: CString, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_ipsubnet_create`.*

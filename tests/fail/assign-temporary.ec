@@ -1,5 +1,5 @@
 // error: This is a temporary value, so changing its field `.x` would have no effect.
-rec Point as
+mut rec Point as
     x: Int
     y: Int
 

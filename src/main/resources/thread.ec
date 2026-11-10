@@ -1,5 +1,5 @@
 /**
- * Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic and Channel.
+ * Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic, Queue and Channel.
  * Built on pthread.h, APR's apr_thread_*.h and apr_atomic.h.
  *
  *     use "core:thread.ec"
@@ -13,15 +13,21 @@
  *             job.total += i
  *
  *     fn main(): Int throws Error do
- *         var a = Job { id = 1, total = 0 }
- *         val t = try thread.spawn(fn work, addrof(a))
+ *         val a = new Job { id = 1, total = 0 }
+ *         val t = try thread.spawn(fn work, a)
  *         try thread.join(t)
  *         io.log(a.total)
  *         ret 0
  *
  * A thread runs a function given a pointer to its data. Lambdas don't capture variables, so put what the thread
- * needs in a record and pass its address. That data must live until the thread is done with it: join the
- * thread before the data's block ends (or allocate the data with `new`).
+ * needs in a record and pass a pointer to it. The compiler checks that the data outlives the function starting the
+ * thread: it can't be a local variable (`addrof x`), nor be in a `pool do` block or a pool that function made, so
+ * allocate it with `new` in the current pool. The data is also `flat`: it holds numbers, records of them, and pointers to
+ * `sync` records, which their own functions make safe to share (a {@link Mutex}, an {@link Atomic}, a {@link Queue}), but no
+ * Strings, arrays, Lists or pointers to other records, which this thread might free or change while the other reads them.
+ * Share mutable state through a `sync rec` of your own that guards its fields with a Mutex, and hand work over in a
+ * {@link Queue}, which copies its items. Each {@link Thread} must be joined or detached: dropping one, or never
+ * using a variable that holds one, is an error.
  *
  * Each thread starts with its own current pool, freed when its function returns, so its code can allocate as
  * usual. Locks, conditions and channels are allocated in the pool that is current when they are made, and are
@@ -42,12 +48,12 @@ use "core:c/unistd.ec"
 // Threads
 
 /** What {@link join} and {@link detach} know about a thread. Only the code holding the {@link Thread} uses it, never the thread itself. */
-priv rec Ending as
+priv mut rec Ending as
     /** The thread was joined or detached, so its handle can't be used any more. */
     done: Bool
 
-/** A running thread, from {@link spawn}. {@link join} or {@link detach} it. */
-rec Thread as
+/** A running thread, from {@link spawn}. {@link join} or {@link detach} it: it is a `resource`, so it can't be dropped. */
+resource rec Thread as
     /** The system's thread. */
     handle: pthread_t
     /** Whether it was joined or detached. */
@@ -81,7 +87,7 @@ priv fn launch(task: Task): Thread throws OsError do
     val copy = (malloc(sizeof Task)! !as @Task)
     @copy = task
     var handle: pthread_t = 0
-    val status = pthread_create(addrof(handle), null, fn start, copy)
+    val status = pthread_create(mut handle, null, fn start, copy)
     if status != 0 do
         free(copy)
     try checkStatus(status as apr_status_t, "start a thread"c)
@@ -89,20 +95,26 @@ priv fn launch(task: Task): Thread throws OsError do
 
 /**
  * Starts a thread that runs `body(data)`. The thread must be joined (or detached).
- * @param body the function to run
- * @param data what it is given; it must live until the thread is done with it
+ * @param body the function to run, which the thread keeps (`escaping`): a lambda that uses a `var` of the caller can't be given,
+ * and what a lambda captures must be `flat`
+ * @param data what it is given, which the thread keeps (`escaping`): not a local variable, nor in a pool the caller frees. It is
+ * `flat`: what it points to holds numbers, records of them, and pointers to `sync` records (a {@link Mutex}, a {@link Queue}, a
+ * `sync rec` of your own), but no Strings, arrays, Lists or other pointers, which could reach memory this thread frees or changes
  * @return the new thread
  * @throws when the system can't start a thread
  */
-fn spawn(body: (@<T>) => None, data: @<T>): Thread throws OsError do
+fn spawn(escaping flat body: (@<T>) => None, escaping flat data: @<T>): Thread throws OsError do
     ret try launch(Task { body = body !as (@Any) => None, plain = null, data = data })
 
 /**
  * Starts a thread that runs `body()`. The thread must be joined (or detached).
+ * @param body the function to run, which the thread keeps (`escaping`). A lambda can use the caller's `val`s (it copies them, in the
+ * current pool) when they are `flat` (numbers, records of them, pointers to `sync` records), but not its `var`s, which it would
+ * share with a function that may return before the thread ends
  * @return the new thread
  * @throws when the system can't start a thread
  */
-fn spawn(body: () => None): Thread throws OsError do
+fn spawn(escaping flat body: () => None): Thread throws OsError do
     ret try launch(Task { body = null, plain = body, data = null })
 
 /** Marks the thread as joined or detached: EINVAL if it already is, as its handle may be gone. */
@@ -155,7 +167,7 @@ priv fn must(status: apr_status_t, what: String) do
  *     thread.lock(m)
  *     defer thread.unlock(m)
  */
-rec Mutex as
+sync rec Mutex as
     /** The APR mutex. */
     handle: @apr_thread_mutex_t
 
@@ -167,7 +179,7 @@ rec Mutex as
 fn mutex(nested: Bool = false): Mutex throws OsError do
     var handle: @apr_thread_mutex_t? = null
     val flags = if nested do APR_THREAD_MUTEX_NESTED else APR_THREAD_MUTEX_DEFAULT
-    try checkStatus(apr_thread_mutex_create(addrof(handle!), flags as UInt, pool), "make a mutex"c)
+    try checkStatus(apr_thread_mutex_create(mut handle, flags as UInt, pool), "make a mutex"c)
     ret Mutex { handle! }
 
 /** Waits until no other thread holds `m`, then holds it. */
@@ -193,7 +205,7 @@ fn unlock(m: Mutex) do
 // RwLock
 
 /** A lock for many readers at a time, or one writer. */
-rec RwLock as
+sync rec RwLock as
     /** The APR lock. */
     handle: @apr_thread_rwlock_t
 
@@ -203,7 +215,7 @@ rec RwLock as
  */
 fn rwLock(): RwLock throws OsError do
     var handle: @apr_thread_rwlock_t? = null
-    try checkStatus(apr_thread_rwlock_create(addrof(handle!), pool), "make a read-write lock"c)
+    try checkStatus(apr_thread_rwlock_create(mut handle, pool), "make a read-write lock"c)
     ret RwLock { handle! }
 
 /** Waits until no thread writes, then holds `l` for reading. */
@@ -253,7 +265,7 @@ fn unlock(l: RwLock) do
  *     ...
  *     thread.unlock(m)
  */
-rec Cond as
+sync rec Cond as
     /** The APR condition variable. */
     handle: @apr_thread_cond_t
 
@@ -263,7 +275,7 @@ rec Cond as
  */
 fn cond(): Cond throws OsError do
     var handle: @apr_thread_cond_t? = null
-    try checkStatus(apr_thread_cond_create(addrof(handle!), pool), "make a condition variable"c)
+    try checkStatus(apr_thread_cond_create(mut handle, pool), "make a condition variable"c)
     ret Cond { handle! }
 
 /** Lets go of `m`, waits for a signal, and holds `m` again. It may also wake without a signal. */
@@ -301,7 +313,7 @@ fn broadcast(c: Cond) do
  *     ... each of the 3 workers calls thread.done(g) when it is finished ...
  *     thread.wait(g)
  */
-rec WaitGroup as
+mut sync ref rec WaitGroup as
     /** How many tasks aren't done yet. */
     count: Long
     /** Protects {@code count}. */
@@ -313,10 +325,10 @@ rec WaitGroup as
  * A WaitGroup with no tasks, in the current pool.
  * @throws when the system can't make its lock
  */
-fn waitGroup(): @WaitGroup throws OsError = new WaitGroup { 0, try mutex(), try cond() }
+fn waitGroup(): WaitGroup throws OsError = new WaitGroup { 0, try mutex(), try cond() }
 
 /** Adds `n` tasks to wait for. The program panics when the count goes below 0. */
-fn add(g: @WaitGroup, n: Long) do
+fn add(g: WaitGroup, n: Long) do
     lock(g.lock)
     g.count += n
     if g.count < 0 do
@@ -327,11 +339,11 @@ fn add(g: @WaitGroup, n: Long) do
     unlock(g.lock)
 
 /** One task is finished. The program panics when that is more than were added. */
-fn done(g: @WaitGroup) do
+fn done(g: WaitGroup) do
     add(g, -1)
 
 /** Waits until every task added is done. */
-fn wait(g: @WaitGroup) do
+fn wait(g: WaitGroup) do
     lock(g.lock)
     while g.count > 0 do
         wait(g.zero, g.lock)
@@ -344,10 +356,10 @@ fn wait(g: @WaitGroup) do
  * A UInt that threads can change at the same time without a lock.
  *
  *     var hits = thread.Atomic { 0 }
- *     thread.increment(addrof(hits))               // from any thread
- *     io.log(thread.load(addrof(hits)))
+ *     thread.increment(mut hits)               // from any thread
+ *     io.log(thread.load(mut hits))
  */
-rec Atomic as
+sync rec Atomic as
     /** The number. Use the functions below, not this field, once threads share it. */
     value: UInt
 
@@ -355,45 +367,45 @@ rec Atomic as
 priv val atomicsReady = apr_atomic_init(pool)
 
 /** The value now. */
-fn load(a: @Atomic): UInt = apr_atomic_read32(addrof(a.value))
+fn load(mut a: Atomic): UInt = apr_atomic_read32(addrof(a.value))
 
 /** Sets the value. */
-fn store(a: @Atomic, value: UInt) do
+fn store(mut a: Atomic, value: UInt) do
     apr_atomic_set32(addrof(a.value), value)
 
 /**
  * Adds `n`.
  * @return the value before
  */
-fn add(a: @Atomic, n: UInt): UInt = apr_atomic_add32(addrof(a.value), n)
+fn add(mut a: Atomic, n: UInt): UInt = apr_atomic_add32(addrof(a.value), n)
 
 /** Subtracts `n`. */
-fn sub(a: @Atomic, n: UInt) do
+fn sub(mut a: Atomic, n: UInt) do
     apr_atomic_sub32(addrof(a.value), n)
 
 /**
  * Adds 1.
  * @return the value before
  */
-fn increment(a: @Atomic): UInt = apr_atomic_inc32(addrof(a.value))
+fn increment(mut a: Atomic): UInt = apr_atomic_inc32(addrof(a.value))
 
 /**
  * Subtracts 1.
  * @return whether the value is now something other than 0
  */
-fn decrement(a: @Atomic): Bool = apr_atomic_dec32(addrof(a.value)) != 0
+fn decrement(mut a: Atomic): Bool = apr_atomic_dec32(addrof(a.value)) != 0
 
 /**
  * Sets the value to `with`.
  * @return the value before
  */
-fn exchange(a: @Atomic, with: UInt): UInt = apr_atomic_xchg32(addrof(a.value), with)
+fn exchange(mut a: Atomic, with: UInt): UInt = apr_atomic_xchg32(addrof(a.value), with)
 
 /**
  * Sets the value to `with` if it is `expected`.
  * @return whether it was `expected`
  */
-fn compareAndSwap(a: @Atomic, expected: UInt, with: UInt): Bool = apr_atomic_cas32(addrof(a.value), with, expected) == expected
+fn compareAndSwap(mut a: Atomic, expected: UInt, with: UInt): Bool = apr_atomic_cas32(addrof(a.value), with, expected) == expected
 
 // ---------------------------------------------------------------------------------------------------
 // Channel
@@ -408,7 +420,7 @@ fn compareAndSwap(a: @Atomic, expected: UInt, with: UInt): Bool = apr_atomic_cas
  *     if next != null do
  *         val job = next !as @Job
  */
-rec Channel as
+mut sync ref rec Channel as
     /** The ring of items. */
     items: (@Any?)[]
     /** The index in {@code items} of the first item. */
@@ -429,7 +441,7 @@ rec Channel as
  * @param capacity how many items it holds (0 counts as 1)
  * @throws when the system can't make its lock
  */
-fn channel(capacity: Size): @Channel throws OsError do
+fn channel(capacity: Size): Channel throws OsError do
     val items = new (@Any?)[if capacity == 0 do 1 else capacity]
     ret new Channel { items, 0, 0, false, try mutex(), try cond(), try cond() }
 
@@ -437,7 +449,7 @@ fn channel(capacity: Size): @Channel throws OsError do
  * Puts `item` at the end, waiting while the channel is full.
  * @throws when the channel is closed
  */
-fn send(c: @Channel, item: @Any) throws StateError do
+fn send(c: Channel, item: @Any) throws StateError do
     lock(c.lock)
     while c.count == c.items.len and not c.closed do
         wait(c.notFull, c.lock)
@@ -453,7 +465,7 @@ fn send(c: @Channel, item: @Any) throws StateError do
  * Puts `item` at the end if there is room, without waiting.
  * @return whether it did: false when the channel is full or closed
  */
-fn trySend(c: @Channel, item: @Any): Bool do
+fn trySend(c: Channel, item: @Any): Bool do
     lock(c.lock)
     val ok = c.count < c.items.len and not c.closed
     if ok do
@@ -467,7 +479,7 @@ fn trySend(c: @Channel, item: @Any): Bool do
  * Takes the first item, waiting while the channel is empty.
  * @return the item; null when the channel is closed and empty
  */
-fn receive(c: @Channel): @Any? do
+fn receive(c: Channel): @Any? do
     lock(c.lock)
     while c.count == 0 and not c.closed do
         wait(c.notEmpty, c.lock)
@@ -485,7 +497,7 @@ fn receive(c: @Channel): @Any? do
  * Takes the first item if there is one, without waiting.
  * @return the item, or null when the channel is empty
  */
-fn tryReceive(c: @Channel): @Any? do
+fn tryReceive(c: Channel): @Any? do
     lock(c.lock)
     var item: @Any? = null
     if c.count > 0 do
@@ -500,7 +512,7 @@ fn tryReceive(c: @Channel): @Any? do
 /**
  * No more items can be sent. Threads waiting in {@link receive} get what is left, then null; threads waiting in {@link send} get a StateError.
  */
-fn close(c: @Channel) do
+fn close(c: Channel) do
     lock(c.lock)
     c.closed = true
     broadcast(c.notEmpty)
@@ -508,8 +520,138 @@ fn close(c: @Channel) do
     unlock(c.lock)
 
 /** The number of items waiting in the channel. */
-fn size(c: @Channel): Size do
+fn size(c: Channel): Size do
     lock(c.lock)
     val n = c.count
     unlock(c.lock)
+    ret n
+
+// ---------------------------------------------------------------------------------------------------
+// Queue
+
+/**
+ * A queue of values, to hand work from one thread to another. Unlike a {@link Channel}, it holds copies: {@link send} copies the
+ * item in, {@link receive} copies it out, so no thread is left with a pointer into another's memory. Its items are `flat`: numbers,
+ * records of them, and pointers to `sync` records (another Queue, a {@link Mutex}), which the compiler checks at each `send`.
+ * {@link send} waits while it is full, {@link receive} while it is empty. After {@link close}, `receive` gives what is left, then null.
+ *
+ *     rec Job as
+ *         id: Int
+ *         size: Long
+ *
+ *     val jobs: thread.Queue<Job> = try thread.queue(16)
+ *     try thread.send(jobs, Job { 1, 100 })        // producer: a copy goes in
+ *     val next = thread.receive(jobs)              // consumer: a Job?, null when closed
+ *
+ * @param <T> the type of the items
+ */
+mut sync ref rec Queue<T> as
+    /** The ring of items. */
+    items: T[]
+    /** The index in {@code items} of the first item. */
+    head: Size
+    /** How many items it holds. */
+    count: Size
+    /** Whether {@link close} was called. */
+    closed: Bool
+    /** Protects the other fields. */
+    lock: Mutex
+    /** Signalled when an item arrives. */
+    notEmpty: Cond
+    /** Signalled when there is room for an item. */
+    notFull: Cond
+
+/**
+ * An empty queue in the current pool: `val q: thread.Queue<Int> = try thread.queue(16)`.
+ * @param capacity how many items it holds (0 counts as 1)
+ * @throws when the system can't make its lock
+ */
+fn queue(capacity: Size): Queue<T> throws OsError do
+    val items = unsafe new (<T>)[if capacity == 0 do 1 else capacity]
+    ret new Queue<T> { items, 0, 0, false, try mutex(), try cond(), try cond() }
+
+/** Puts a copy of `item` at the end; the lock is held. */
+priv fn putLocked(q: Queue<T>, item: <T>) do
+    q.items[(q.head + q.count) % q.items.len] = item
+    q.count += 1
+    signal(q.notEmpty)
+
+/** Takes the first item out; the lock is held and there is one. */
+priv fn takeLocked(q: Queue<T>): <T> do
+    val item = q.items[q.head]
+    q.head = (q.head + 1) % q.items.len
+    q.count -= 1
+    signal(q.notFull)
+    ret item
+
+/**
+ * Puts a copy of `item` at the end, waiting while the queue is full.
+ * @param item what to send: `flat`, so that the thread taking it gets no pointer into this one's memory
+ * @throws when the queue is closed
+ */
+fn send(q: Queue<T>, flat item: <T>) throws StateError do
+    lock(q.lock)
+    while q.count == q.items.len and not q.closed do
+        wait(q.notFull, q.lock)
+    if q.closed do
+        unlock(q.lock)
+        throw stateError("can't send on a closed queue")
+    putLocked(q, item)
+    unlock(q.lock)
+
+/**
+ * Puts a copy of `item` at the end if there is room, without waiting.
+ * @return whether it did: false when the queue is full or closed
+ */
+fn trySend(q: Queue<T>, flat item: <T>): Bool do
+    lock(q.lock)
+    val ok = q.count < q.items.len and not q.closed
+    if ok do
+        putLocked(q, item)
+    unlock(q.lock)
+    ret ok
+
+/**
+ * Takes the first item, waiting while the queue is empty.
+ * @return the item; null when the queue is closed and empty
+ */
+fn receive(q: Queue<T>): <T>? do
+    lock(q.lock)
+    while q.count == 0 and not q.closed do
+        wait(q.notEmpty, q.lock)
+    if q.count == 0 do
+        unlock(q.lock)
+        ret null
+    val item = takeLocked(q)
+    unlock(q.lock)
+    ret item
+
+/**
+ * Takes the first item if there is one, without waiting.
+ * @return the item, or null when the queue is empty
+ */
+fn tryReceive(q: Queue<T>): <T>? do
+    lock(q.lock)
+    if q.count == 0 do
+        unlock(q.lock)
+        ret null
+    val item = takeLocked(q)
+    unlock(q.lock)
+    ret item
+
+/**
+ * No more items can be sent. Threads waiting in {@link receive} get what is left, then null; threads waiting in {@link send} get a StateError.
+ */
+fn close(q: Queue<T>) do
+    lock(q.lock)
+    q.closed = true
+    broadcast(q.notEmpty)
+    broadcast(q.notFull)
+    unlock(q.lock)
+
+/** The number of items waiting in the queue. */
+fn size(q: Queue<T>): Size do
+    lock(q.lock)
+    val n = q.count
+    unlock(q.lock)
     ret n

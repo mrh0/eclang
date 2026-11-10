@@ -35,7 +35,7 @@ fn main(): Int do
     io.log(uname(addrof u))
     io.log("${u.sysname}")
     io.log(u.sysname[0] == 'L')
-    io.log(strlen(u.sysname.data) == 5)
+    io.log(strlen(cstr(u.sysname)) == 5)
 
     var s = sockaddr { 2, [0 as Char, 1 as Char, 2 as Char, 3 as Char, 4 as Char, 5 as Char, 6 as Char, 7 as Char, 8 as Char, 9 as Char, 10 as Char, 11 as Char, 12 as Char, 13 as Char] }
     s.sa_data[13] = 99 as Char

@@ -48,8 +48,21 @@ class TypeContext {
     fun tuple(elements: List<Type>): Tuple = intern(listOf<Any>("()") + elements) { Tuple(it, elements.toList()) }
     fun atom(name: String): AtomLiteral = intern(listOf(":", name)) { AtomLiteral(it, name) }
     fun typeParam(name: String): TypeParam = intern(listOf("<>", name)) { TypeParam(it, name) }
-    fun function(params: List<Type>, returns: Type, throws: Type? = null): FunctionType =
-        intern(listOf("=>", returns, throws ?: Types.None) + params) { FunctionType(it, params.toList(), returns, throws) }
+    fun function(params: List<Type>, returns: Type, throws: Type? = null, isC: Boolean = false): FunctionType =
+        intern(listOf(if (isC) "=>c" else "=>", returns, throws ?: Types.None) + params) { FunctionType(it, params.toList(), returns, throws, isC) }
+
+    /**
+     * [t] as C sees it, for what a `declare` says: its function types (also inside pointers, unions, arrays and other
+     * function types) are C function pointers rather than eclang function values.
+     */
+    fun inC(t: Type): Type = when (t) {
+        is FunctionType -> function(t.params.map { inC(it) }, inC(t.returns), t.throws?.let { inC(it) }, isC = true)
+        is Pointer -> pointer(inC(t.target))
+        is ArrayType -> inC(t.element).let { if (t.isC) cArray(it) else array(it) }
+        is FixedArray -> fixedArray(inC(t.element), t.size)
+        is Union -> union(t.members.map { inC(it) })
+        else -> t
+    }
     fun result(value: Type, error: Type): Result = intern(listOf("throws", value, error)) { Result(it, value, error) }
     fun intLiteral(value: Long): IntLiteral = intern(listOf("int", value)) { IntLiteral(it, value) }
     fun floatLiteral(value: Double): FloatLiteral = intern(listOf("float", value)) { FloatLiteral(it, value) }
@@ -110,8 +123,21 @@ class TypeContext {
         .also { created += it; define(namespace, name, it) }
 
     /** Declares a generic record; [instantiate] makes each instance with [recordInstance] and gives it its fields. */
-    fun genericRecord(namespace: String, name: String, params: List<String>, instantiate: (List<Type>) -> Record): GenericRecord =
-        GenericRecord(nextId(), namespace, name, params, instantiate).also { created += it; define(namespace, name, it) }
+    fun genericRecord(namespace: String, name: String, params: List<String>, isRef: Boolean = false, mutParams: Set<String> = setOf(), instantiate: (List<Type>) -> Record): GenericRecord =
+        GenericRecord(nextId(), namespace, name, params, instantiate, isRef, mutParams).also { created += it; define(namespace, name, it) }
+
+    /**
+     * The record whose fields can't change that a value of type [t] is or points to (through `distinct`, `?` and one `@`),
+     * or null when [t] is no such record: a `mut rec`, a `declare mut rec` or `declare struct`, an opaque C type (no fields to change), or not a
+     * record. `<mut T>` takes only types where this is null.
+     */
+    fun fixedRecord(t: Type): Record? = when (t) {
+        is Record -> t.takeIf { !it.isMutable && !(it.isExternal && (!it.isDefined || it.fields.isEmpty())) }
+        is Distinct -> fixedRecord(t.base)
+        is Pointer -> (t.target as? Record)?.let { fixedRecord(it) }
+        is Union -> if (t.isNullable) fixedRecord(nonNull(t)) else null
+        else -> null
+    }
 
     /** Makes the instance of [generic] for [args], with the C name [cBase], and remembers it, so a field can refer to it. */
     fun recordInstance(generic: GenericRecord, args: List<Type>, cBase: String, layout: Layout = Layout()): Record =
@@ -209,6 +235,8 @@ class TypeContext {
         // `@Any` is C's `void*`: other data pointers (CString is `char*`, `T[]c` is `T*`) convert to it too.
         (from === Types.CString || (from is ArrayType && from.isC)) && to is Pointer && to.target === Types.Any -> 1
         from === Types.String && to is ArrayType && !to.isC && to.element === Types.Char -> 1
+        // Copies the bytes, checked to fit when the program runs (a literal is checked when it compiles, see TString).
+        from === Types.String && to is FixedArray && to.element === Types.Char -> 1
         from is Prim && to is Prim -> numberCost(from, to)
         // Arrays, tuples and function types must match exactly: their memory layout depends on the exact
         // element types, so `Int[]` is not a `Long[]` even though an Int fits in a Long.
@@ -294,11 +322,19 @@ class TypeContext {
             }
             from is Tuple && to is Tuple -> if (from.elements.size != to.elements.size) "they have a different number of parts (${from.elements.size} and ${to.elements.size})"
                 else "tuple part types must match exactly, because the parts are stored differently"
+            from is FunctionType && to is FunctionType && from.isC != to.isC -> if (to.isC)
+                "C calls a plain function pointer, which can't carry the variables a lambda uses. Pass `fn name` or a lambda here directly (one that uses no local variables); " +
+                    "for data the callback needs, use the `@Any` argument such C functions take"
+                else "a C function pointer isn't an eclang function value. Wrap the call in a lambda: `fn (x) = f(x)`"
+            from is FunctionType && to is FunctionType -> "function types must match exactly: the same parameter types, return type and `throws`"
             from is ArrayType && to is ArrayType -> "array element types must match exactly, because the elements are stored differently"
             from is FixedArray && to is FixedArray -> if (from.element === to.element) "they have a different length (${from.size} and ${to.size})"
                 else "array element types must match exactly, because the elements are stored differently"
             from is FixedArray && to is ArrayType && !to.isC && from.element === to.element -> "a fixed-size array holds its elements itself. To use it as a $to, slice it: `a[..]`"
+            from is FixedArray && from.element === Types.Char && to === Types.CString -> "a fixed-size array holds its Chars itself, and need not end with a 0. `cstr(a)` is a copy of its text (up to its first 0) that does"
             from is FixedArray && (to === Types.CString || to is ArrayType || to is Pointer) -> "a fixed-size array holds its elements itself. `a.data` is a pointer to them"
+            from is ArrayType && from.isC && from.element === Types.Char && to === Types.CString ->
+                "a CString must end with a 0, and `.data` of a String or Char[N] need not (a slice doesn't). Use `cstr(s)` for a copy that does, or `x.data !as CString` when you know it ends with a 0"
             to is FixedArray && from is ArrayType -> "the length of a $from is only known when the program runs. Copy the elements one by one, or give an array literal"
             from is Pointer && to is Pointer && to.target is Interface ->
                 if (from.target is Declared) explain(from.target, to.target) else "only a pointer to a record with the fields of ${to.target} fits $to"
@@ -394,7 +430,7 @@ class TypeContext {
         is FixedArray -> arg is FixedArray && arg.size == param.size && bind(param.element, arg.element, bindings)
         is Tuple -> arg is Tuple && arg.elements.size == param.elements.size &&
             param.elements.indices.all { bind(param.elements[it], arg.elements[it], bindings) }
-        is FunctionType -> arg is FunctionType && arg.params.size == param.params.size &&
+        is FunctionType -> arg is FunctionType && arg.isC == param.isC && arg.params.size == param.params.size &&
             param.params.indices.all { bind(param.params[it], arg.params[it], bindings) } &&
             bind(param.returns, arg.returns, bindings)
         is Applied -> arg is Record && arg.generic === param.generic && param.args.indices.all { bind(param.args[it], arg.typeArgs[it], bindings) }
@@ -416,7 +452,7 @@ class TypeContext {
         is Applied -> apply(type.generic, type.args.map { substitute(it, bindings) })
         is Union -> union(type.members.map { substitute(it, bindings) })
         is FunctionType -> function(type.params.map { substitute(it, bindings) }, substitute(type.returns, bindings),
-            type.throws?.let { substitute(it, bindings) })
+            type.throws?.let { substitute(it, bindings) }, type.isC)
         else -> type
     }
 

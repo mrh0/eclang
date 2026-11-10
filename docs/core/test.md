@@ -4,12 +4,12 @@ Tests: assertions that say what differs, and a small runner.
 
     use "core:test.ec"
 
-    fn addition(t: @test.Test) do
+    fn addition(t: test.Test) do
         test.equal(t, 1 + 1, 2)
         test.isTrue(t, 2 > 1, "2 is more than 1")
         test.equal(t, render(), "line one\nline two\n", "the rendered text")
 
-    fn parsing(t: @test.Test) throws Error do           // an error that gets out fails the test
+    fn parsing(t: test.Test) throws Error do           // an error that gets out fails the test
         val n = try parseInt("12")
         test.equal(t, n, 12)
 
@@ -24,15 +24,15 @@ the rest of the test can't do without. Strings that differ are shown as a line b
 the first difference when they are one line:
 
     FAIL addition
-      check 3, the rendered text: the strings differ (- expected, + actual)
+      check 3 (tests.ec:4), the rendered text: the strings differ (- expected, + actual)
           line one
         - line two
         + line 2
 
 A program run with an argument only runs the tests whose name has it in it: `./tests parsing`.
 
-Tests are listed by hand, and a failure names the check by its number and the `what` given to it, not by its line,
-since a function can't see where it was called from. A panic ends the whole run, with the results so far printed.
+Tests are listed by hand. A failure names the check by its number, its place (each assertion takes `at: Location = caller`,
+so a helper that makes checks can pass on its own caller's place) and the `what` given to it. A panic ends the whole run, with the results so far printed.
 Each test runs in its own pool. Everything is written to stdout.
 
 ## Types
@@ -40,7 +40,7 @@ Each test runs in its own pool. Everything is written to stdout.
 ### <a id="test.Suite"></a>`Suite`
 
 ```ec
-rec Suite
+mut ref rec Suite
 ```
 
 A group of tests that are run and counted together: [`suite`](#test.suite).
@@ -49,13 +49,13 @@ A group of tests that are run and counted together: [`suite`](#test.suite).
 
 - <a id="test.Suite.filter"></a>`filter: String` — Only tests with this in their name run, unless it is empty.
 - <a id="test.Suite.passed"></a>`passed: Size` — How many tests passed.
-- <a id="test.Suite.failed"></a>`failed: @List<String>` — The names of the tests that failed.
+- <a id="test.Suite.failed"></a>`failed: List<String>` — The names of the tests that failed.
 - <a id="test.Suite.skipped"></a>`skipped: Size` — How many tests the filter left out.
 
 ### <a id="test.Test"></a>`Test`
 
 ```ec
-rec Test
+mut ref rec Test
 ```
 
 The test that is running, which its function is given.
@@ -65,7 +65,7 @@ The test that is running, which its function is given.
 - <a id="test.Test.name"></a>`name: String` — Its name.
 - <a id="test.Test.checks"></a>`checks: Size` — How many checks it has made.
 - <a id="test.Test.failures"></a>`failures: Size` — How many of them failed.
-- <a id="test.Test.report"></a>`report: @StringBuilder` — What to print about them.
+- <a id="test.Test.report"></a>`report: StringBuilder` — What to print about them.
 - <a id="test.Test.stopped"></a>`stopped: Bool = false` — Whether [`require`](#test.require) ended it.
 
 ## Functions
@@ -73,7 +73,7 @@ The test that is running, which its function is given.
 ### <a id="test.suite"></a>`suite`
 
 ```ec
-fn suite(): @Suite
+fn suite(): Suite
 ```
 
 A new empty suite, in the current pool. The first command-line argument of the program, if any, is its filter.
@@ -81,7 +81,7 @@ A new empty suite, in the current pool. The first command-line argument of the p
 ### `suite`
 
 ```ec
-fn suite(filter: String): @Suite
+fn suite(filter: String): Suite
 ```
 
 A new suite that only runs the tests with `filter` in their name.
@@ -89,7 +89,7 @@ A new suite that only runs the tests with `filter` in their name.
 ### <a id="test.run"></a>`run`
 
 ```ec
-fn run(s: @Suite, name: String, body: (@Test) => None)
+fn run(s: Suite, name: String, body: (Test) => None)
 ```
 
 Runs a test, in a pool of its own, and prints how it went.
@@ -103,7 +103,7 @@ Runs a test, in a pool of its own, and prints how it went.
 ### `run`
 
 ```ec
-fn run(s: @Suite, name: String, body: (@Test) => None throws Error)
+fn run(s: Suite, name: String, body: (Test) => None throws Error)
 ```
 
 Runs a test that can fail with an error, in a pool of its own, and prints how it went. An error that gets out of it fails the test.
@@ -117,7 +117,7 @@ Runs a test that can fail with an error, in a pool of its own, and prints how it
 ### <a id="test.finish"></a>`finish`
 
 ```ec
-fn finish(s: @Suite): Int
+fn finish(s: Suite): Int
 ```
 
 Prints how many tests passed and failed, naming those that failed.
@@ -139,7 +139,7 @@ shown as a literal: an ending space, a "\r".
 ### <a id="test.isTrue"></a>`isTrue`
 
 ```ec
-fn isTrue(t: @Test, condition: Bool, what: String = "")
+fn isTrue(t: Test, condition: Bool, what: String = "", at: Location = caller)
 ```
 
 Checks a condition.
@@ -149,11 +149,12 @@ Checks a condition.
 - `t` — the test
 - `condition` — what must be true
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### <a id="test.isFalse"></a>`isFalse`
 
 ```ec
-fn isFalse(t: @Test, condition: Bool, what: String = "")
+fn isFalse(t: Test, condition: Bool, what: String = "", at: Location = caller)
 ```
 
 Checks that a condition is false.
@@ -163,11 +164,12 @@ Checks that a condition is false.
 - `t` — the test
 - `condition` — what must be false
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### <a id="test.equal"></a>`equal`
 
 ```ec
-fn equal(t: @Test, actual: <V>, expected: <V>, what: String = "")
+fn equal(t: Test, actual: <V>, expected: <V>, what: String = "", at: Location = caller)
 ```
 
 Checks that two values are equal, with `==`. They can be of any type `==` compares and `${...}` shows.
@@ -178,11 +180,12 @@ Checks that two values are equal, with `==`. They can be of any type `==` compar
 - `actual` — what the code gave
 - `expected` — what it should give
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### `equal`
 
 ```ec
-fn equal(t: @Test, actual: String, expected: String, what: String = "")
+fn equal(t: Test, actual: String, expected: String, what: String = "", at: Location = caller)
 ```
 
 Checks that two Strings are equal. The report shows where they differ: with a diff when they have several lines.
@@ -193,11 +196,12 @@ Checks that two Strings are equal. The report shows where they differ: with a di
 - `actual` — what the code gave
 - `expected` — what it should give
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### `equal`
 
 ```ec
-fn equal(t: @Test, actual: Atom, expected: Atom, what: String = "")
+fn equal(t: Test, actual: Atom, expected: Atom, what: String = "", at: Location = caller)
 ```
 
 Checks that two atoms are the same.
@@ -208,11 +212,12 @@ Checks that two atoms are the same.
 - `actual` — what the code gave
 - `expected` — what it should give
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### <a id="test.equalArrays"></a>`equalArrays`
 
 ```ec
-fn equalArrays(t: @Test, actual: <V>[], expected: <V>[], what: String = "")
+fn equalArrays(t: Test, actual: <V>[], expected: <V>[], what: String = "", at: Location = caller)
 ```
 
 Checks that two arrays have the same elements. The report names the first one that differs.
@@ -223,11 +228,12 @@ Checks that two arrays have the same elements. The report names the first one th
 - `actual` — what the code gave
 - `expected` — what it should give
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### <a id="test.notEqual"></a>`notEqual`
 
 ```ec
-fn notEqual(t: @Test, actual: <V>, other: <V>, what: String = "")
+fn notEqual(t: Test, actual: <V>, other: <V>, what: String = "", at: Location = caller)
 ```
 
 Checks that two values aren't equal.
@@ -238,11 +244,12 @@ Checks that two values aren't equal.
 - `actual` — what the code gave
 - `other` — what it shouldn't give
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### <a id="test.near"></a>`near`
 
 ```ec
-fn near(t: @Test, actual: Double, expected: Double, tolerance: Double = 0.000000001, what: String = "")
+fn near(t: Test, actual: Double, expected: Double, tolerance: Double = 0.000000001, what: String = "", at: Location = caller)
 ```
 
 Checks that two numbers are close, for results of floating point arithmetic.
@@ -254,11 +261,12 @@ Checks that two numbers are close, for results of floating point arithmetic.
 - `expected` — what it should give
 - `tolerance` — how far off it may be
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### <a id="test.isNull"></a>`isNull`
 
 ```ec
-fn isNull(t: @Test, actual: <V>?, what: String = "")
+fn isNull(t: Test, actual: <V>?, what: String = "", at: Location = caller)
 ```
 
 Checks that a value is null.
@@ -268,11 +276,12 @@ Checks that a value is null.
 - `t` — the test
 - `actual` — what the code gave
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### <a id="test.notNull"></a>`notNull`
 
 ```ec
-fn notNull(t: @Test, actual: <V>?, what: String = "")
+fn notNull(t: Test, actual: <V>?, what: String = "", at: Location = caller)
 ```
 
 Checks that a value isn't null.
@@ -282,11 +291,12 @@ Checks that a value isn't null.
 - `t` — the test
 - `actual` — what the code gave
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### <a id="test.hasText"></a>`hasText`
 
 ```ec
-fn hasText(t: @Test, actual: String, part: String, what: String = "")
+fn hasText(t: Test, actual: String, part: String, what: String = "", at: Location = caller)
 ```
 
 Checks that a String has another one in it.
@@ -297,11 +307,12 @@ Checks that a String has another one in it.
 - `actual` — what the code gave
 - `part` — what should be in it
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 ### <a id="test.fail"></a>`fail`
 
 ```ec
-fn fail(t: @Test, message: String)
+fn fail(t: Test, message: String, at: Location = caller)
 ```
 
 Fails the test, for a place the code shouldn't reach, and goes on.
@@ -310,11 +321,12 @@ Fails the test, for a place the code shouldn't reach, and goes on.
 
 - `t` — the test
 - `message` — what went wrong
+- `at` — where, for the report: the call, unless it is given
 
 ### <a id="test.require"></a>`require`
 
 ```ec
-fn require(t: @Test, condition: Bool, what: String = "") throws Error
+fn require(t: Test, condition: Bool, what: String = "", at: Location = caller) throws Error
 ```
 
 Checks something the rest of the test can't do without: `try test.require(t, list.len > 0, "the list")`.
@@ -324,6 +336,7 @@ Checks something the rest of the test can't do without: `try test.require(t, lis
 - `t` — the test
 - `condition` — what must be true
 - `what` — what is being checked, for the report
+- `at` — where the check is, for the report: the call, unless it is given
 
 **Throws**
 

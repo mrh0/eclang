@@ -1,4 +1,4 @@
-// error: it points to memory from the pool of the `pool` block at line 6, which is freed when the function returns, so it would point to freed memory. Code in a `pool` block allocates in its pool
+// error: it points to memory from the pool of the `pool` block at line 6, which is freed when that block ends. Keep a copy instead: wrap the value in `keep(...)`
 use "core:io.ec"
 
 fn name(n: Int): String do

@@ -1,7 +1,7 @@
 module "countdown"
 
 /** Its `next` and `iter` are only in this module, and `for` finds them from anywhere. */
-rec Steps as
+mut rec Steps as
     left: Int
 
 fn from(n: Int): Steps = Steps { n }

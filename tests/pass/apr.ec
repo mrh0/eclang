@@ -9,7 +9,7 @@ use "core:apr/time.ec"
 
 fn main(): Int do
     var pool: @apr_pool_t? = null
-    ret 1 if apr_pool_create_core(addrof(pool!)) != APR_SUCCESS
+    ret 1 if apr_pool_create_core(mut pool) != APR_SUCCESS
     val p = pool!
     defer apr_pool_destroy(p)
 
@@ -23,8 +23,9 @@ fn main(): Int do
     io.log(apr_table_get(table, "other"c) ?? "missing"c)
 
     val hash = apr_hash_make(p)
-    var answer = 42
-    apr_hash_set(hash, "answer"c, APR_HASH_KEY_STRING, addrof(answer))
+    // apr_hash_set keeps the value (`kept`), so it must live as long as the hash: in its pool, not a local variable.
+    val answer = new 42 in p
+    apr_hash_set(hash, "answer"c, APR_HASH_KEY_STRING, answer)
     io.log(apr_hash_count(hash))
     val found = apr_hash_get(hash, "answer"c, APR_HASH_KEY_STRING)
     if found != null do
@@ -33,14 +34,14 @@ fn main(): Int do
 
     var parts = 0
     var last: CString = ""c
-    var token = apr_strtok(apr_pstrdup(p, "a,b,c"c), ","c, addrof(last))
+    var token = apr_strtok(apr_pstrdup(p, "a,b,c"c), ","c, mut last)
     while token != null do
         parts = parts + 1
-        token = apr_strtok(null, ","c, addrof(last))
+        token = apr_strtok(null, ","c, mut last)
     io.log(parts)
 
     var t: apr_time_exp_t = apr_time_exp_t { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
-    ret 1 if apr_time_exp_gmt(addrof(t), 86400 * 1000000) != APR_SUCCESS
+    ret 1 if apr_time_exp_gmt(mut t, 86400 * 1000000) != APR_SUCCESS
     io.log(t.tm_mday)
     io.log(t.tm_year + 1900)
     ret 0

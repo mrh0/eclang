@@ -6,7 +6,7 @@ rec Point as
     x: Int
     name: String
 
-fn passing(t: @test.Test) do
+fn passing(t: test.Test) do
     test.equal(t, 1 + 1, 2)
     test.equal(t, 5l, 5)
     test.equal(t, 1.5, 1.5)
@@ -30,7 +30,7 @@ fn passing(t: @test.Test) do
     test.notNull(t, some)
     test.hasText(t, "hello", "ell")
 
-fn mismatches(t: @test.Test) do
+fn mismatches(t: test.Test) do
     test.equal(t, 1 + 1, 3)
     test.equal(t, 5l, 6, "the count")
     test.equal(t, 1.5, 2.5)
@@ -55,7 +55,7 @@ fn mismatches(t: @test.Test) do
     test.hasText(t, "hello", "z")
     test.fail(t, "this shouldn't happen")
 
-fn strings(t: @test.Test) do
+fn strings(t: test.Test) do
     test.equal(t, "hello world", "hello there")
     test.equal(t, "abc", "abcd")
     test.equal(t, "", "x")
@@ -70,7 +70,7 @@ fn strings(t: @test.Test) do
     test.equal(t, concat("X", long), concat("Y", long))
     test.equal(t, concat(long, "X"), concat(long, "Y"))
 
-fn diffs(t: @test.Test) do
+fn diffs(t: test.Test) do
     test.equal(t, "a\nb\nc\nd\ne\nf\ng\nh\ni\n", "a\nb\nc\nd\nX\nf\ng\nh\ni\n", "one line")
     test.equal(t, "a\nb\nc\n", "a\nc\n", "a line too many")
     test.equal(t, "a\nc\n", "a\nb\nc\n", "a line missing")
@@ -81,7 +81,7 @@ fn diffs(t: @test.Test) do
     test.equal(t, "\n\nx", "\ny", "empty lines")
     test.equal(t, "one", "one\ntwo", "only one has a line break")
 
-fn sized(t: @test.Test) do
+fn sized(t: test.Test) do
     // Too large to compare line by line: it is shown as replaced.
     val b = stringBuilder()
     val c = stringBuilder()
@@ -93,19 +93,19 @@ fn sized(t: @test.Test) do
     test.equal(t, text.lines()[0], "- left 0")
     test.equal(t, text.lines()[2100], "+ right 0")
 
-fn stopping(t: @test.Test) throws Error do
+fn stopping(t: test.Test) throws Error do
     val n = try parseInt("12")
     test.equal(t, n, 12)
     try test.require(t, n == 12, "passes")
     try test.require(t, n == 13, "the number")
     io.log("not reached")
 
-fn failing(t: @test.Test) throws Error do
+fn failing(t: test.Test) throws Error do
     test.equal(t, 1, 1)
     val n = try parseInt("x")
     io.log("not reached")
 
-fn fine(t: @test.Test) throws Error do
+fn fine(t: test.Test) throws Error do
     val n = try parseInt("12")
     test.equal(t, n, 12)
 

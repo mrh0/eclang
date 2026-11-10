@@ -28,7 +28,7 @@ declare rec apr_proc_mutex_t
 ### <a id="apr_proc_mutex_create"></a>`apr_proc_mutex_create`
 
 ```ec
-fn apr_proc_mutex_create(mutex: @@apr_proc_mutex_t, fname: CString, mech: apr_lockmech_e, pool: @apr_pool_t): apr_status_t
+fn apr_proc_mutex_create(out mutex: @apr_proc_mutex_t, fname: CString, mech: apr_lockmech_e, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_proc_mutex_create`.*
@@ -36,7 +36,7 @@ fn apr_proc_mutex_create(mutex: @@apr_proc_mutex_t, fname: CString, mech: apr_lo
 ### <a id="apr_proc_mutex_child_init"></a>`apr_proc_mutex_child_init`
 
 ```ec
-fn apr_proc_mutex_child_init(mutex: @@apr_proc_mutex_t, fname: CString, pool: @apr_pool_t): apr_status_t
+fn apr_proc_mutex_child_init(mut mutex: @apr_proc_mutex_t, fname: CString, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_proc_mutex_child_init`.*

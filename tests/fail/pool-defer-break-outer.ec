@@ -2,7 +2,7 @@
 use "core:io.ec"
 
 fn main() do
-    val p = newPool()
+    val p = new Pool
     var s: String = "a"
     outer: for i in 0..<3 do
         for j in 0..<3 do

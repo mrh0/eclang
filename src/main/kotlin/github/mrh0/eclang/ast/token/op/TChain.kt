@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -15,6 +16,8 @@ import github.mrh0.ect2.Types
  * only when the comparisons before it hold. A middle that is a variable or a literal is simply read twice instead.
  */
 class TChainFirst(location: Loc, private val expr: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(expr)
+
     private lateinit var value: Pair<Type, String>
 
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
@@ -28,6 +31,8 @@ class TChainFirst(location: Loc, private val expr: ITok) : Tok(location) {
 
     /** The second use of the value, compiled after this token. */
     inner class Again(location: Loc) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(expr)
+
         override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> = value.first to IRRaw(location, value.second)
     }
 

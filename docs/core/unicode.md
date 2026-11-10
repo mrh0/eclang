@@ -28,7 +28,7 @@ normalisation or categories; [`width`](#unicode.width) is an estimate from range
 ### <a id="unicode.CodePoints"></a>`CodePoints`
 
 ```ec
-rec CodePoints
+mut rec CodePoints
 ```
 
 Goes through the code points of a String: [`codePoints`](#unicode.codePoints).
@@ -41,7 +41,7 @@ Goes through the code points of a String: [`codePoints`](#unicode.codePoints).
 ### <a id="unicode.CodePointsAt"></a>`CodePointsAt`
 
 ```ec
-rec CodePointsAt
+mut rec CodePointsAt
 ```
 
 What `for at, cp in unicode.codePoints(s)` goes through.
@@ -215,7 +215,7 @@ How many bytes UTF-8 needs for `cp`. What can't be encoded takes the 3 bytes of 
 ### <a id="unicode.appendCodePoint"></a>`appendCodePoint`
 
 ```ec
-fn appendCodePoint(b: @StringBuilder, cp: UInt)
+fn appendCodePoint(b: StringBuilder, cp: UInt)
 ```
 
 Adds `cp` to `b` as UTF-8. What isn't a scalar value ([`isScalar`](#unicode.isScalar)) adds [`REPLACEMENT`](#unicode.REPLACEMENT).

@@ -213,7 +213,7 @@ One cell of a [`Screen`](#term.Screen).
 ### <a id="term.Screen"></a>`Screen`
 
 ```ec
-rec Screen
+mut ref rec Screen
 ```
 
 A grid of cells to draw on, from [`screen`](#term.screen). Nothing shows until [`render`](#term.render), which writes only what
@@ -760,7 +760,7 @@ Waits for the next key, skipping other events. @return the key; null at the end 
 ### <a id="term.screen"></a>`screen`
 
 ```ec
-fn screen(cols: Int, rows: Int): @Screen
+fn screen(cols: Int, rows: Int): Screen
 ```
 
 A screen of a given size, in the current pool.
@@ -768,7 +768,7 @@ A screen of a given size, in the current pool.
 ### `screen`
 
 ```ec
-fn screen(): @Screen
+fn screen(): Screen
 ```
 
 A screen the size of the terminal, in the current pool.
@@ -776,7 +776,7 @@ A screen the size of the terminal, in the current pool.
 ### <a id="term.resize"></a>`resize`
 
 ```ec
-fn resize(s: @Screen, d: Dimensions)
+fn resize(s: Screen, d: Dimensions)
 ```
 
 Changes the size of `s`, after a [`Resize`](#term.Resize) event. What it holds is cleared, and all of it is drawn again.
@@ -784,7 +784,7 @@ Changes the size of `s`, after a [`Resize`](#term.Resize) event. What it holds i
 ### <a id="term.invalidate"></a>`invalidate`
 
 ```ec
-fn invalidate(s: @Screen)
+fn invalidate(s: Screen)
 ```
 
 Makes [`render`](#term.render) draw everything again, after something else wrote to the terminal.
@@ -792,7 +792,7 @@ Makes [`render`](#term.render) draw everything again, after something else wrote
 ### <a id="term.clear"></a>`clear`
 
 ```ec
-fn clear(s: @Screen)
+fn clear(s: Screen)
 ```
 
 Fills `s` with spaces.
@@ -800,7 +800,7 @@ Fills `s` with spaces.
 ### <a id="term.put"></a>`put`
 
 ```ec
-fn put(s: @Screen, col: Int, row: Int, ch: UInt, style: Style = PLAIN)
+fn put(s: Screen, col: Int, row: Int, ch: UInt, style: Style = PLAIN)
 ```
 
 Puts a character in a cell. Outside the screen, nothing happens; a wide character that doesn't fit is a space.
@@ -808,7 +808,7 @@ Puts a character in a cell. Outside the screen, nothing happens; a wide characte
 ### <a id="term.text"></a>`text`
 
 ```ec
-fn text(s: @Screen, col: Int, row: Int, value: String, style: Style = PLAIN): Int
+fn text(s: Screen, col: Int, row: Int, value: String, style: Style = PLAIN): Int
 ```
 
 Writes text from a cell onwards, on one row: what doesn't fit is cut off. Line breaks and escape sequences aren't
@@ -819,7 +819,7 @@ interpreted, so don't pass what [`styled`](#term.styled) made; use `style`.
 ### <a id="term.fill"></a>`fill`
 
 ```ec
-fn fill(s: @Screen, col: Int, row: Int, cols: Int, rows: Int, ch: UInt = 32, style: Style = PLAIN)
+fn fill(s: Screen, col: Int, row: Int, cols: Int, rows: Int, ch: UInt = 32, style: Style = PLAIN)
 ```
 
 Fills a rectangle with a character.
@@ -827,7 +827,7 @@ Fills a rectangle with a character.
 ### <a id="term.horizontalLine"></a>`horizontalLine`
 
 ```ec
-fn horizontalLine(s: @Screen, col: Int, row: Int, count: Int, style: Style = PLAIN)
+fn horizontalLine(s: Screen, col: Int, row: Int, count: Int, style: Style = PLAIN)
 ```
 
 A row of `count` horizontal line characters, as used in [`box`](#term.box).
@@ -835,7 +835,7 @@ A row of `count` horizontal line characters, as used in [`box`](#term.box).
 ### <a id="term.verticalLine"></a>`verticalLine`
 
 ```ec
-fn verticalLine(s: @Screen, col: Int, row: Int, count: Int, style: Style = PLAIN)
+fn verticalLine(s: Screen, col: Int, row: Int, count: Int, style: Style = PLAIN)
 ```
 
 A column of `count` vertical line characters.
@@ -843,7 +843,7 @@ A column of `count` vertical line characters.
 ### <a id="term.box"></a>`box`
 
 ```ec
-fn box(s: @Screen, col: Int, row: Int, cols: Int, rows: Int, kind: BoxKind = :single, title: String = "", style: Style = PLAIN)
+fn box(s: Screen, col: Int, row: Int, cols: Int, rows: Int, kind: BoxKind = :single, title: String = "", style: Style = PLAIN)
 ```
 
 Draws a frame, inside the rectangle's edge.
@@ -857,7 +857,7 @@ Draws a frame, inside the rectangle's edge.
 ### <a id="term.placeCursor"></a>`placeCursor`
 
 ```ec
-fn placeCursor(s: @Screen, col: Int, row: Int)
+fn placeCursor(s: Screen, col: Int, row: Int)
 ```
 
 Shows the cursor at a cell after [`render`](#term.render), as for a text field.
@@ -865,7 +865,7 @@ Shows the cursor at a cell after [`render`](#term.render), as for a text field.
 ### <a id="term.removeCursor"></a>`removeCursor`
 
 ```ec
-fn removeCursor(s: @Screen)
+fn removeCursor(s: Screen)
 ```
 
 Leaves the cursor hidden after [`render`](#term.render).
@@ -873,7 +873,7 @@ Leaves the cursor hidden after [`render`](#term.render).
 ### <a id="term.frame"></a>`frame`
 
 ```ec
-fn frame(s: @Screen): String
+fn frame(s: Screen): String
 ```
 
 The escape sequences that bring the terminal up to date with `s`, and marks them as done. [`render`](#term.render) writes
@@ -882,7 +882,7 @@ them; this is for testing what a program draws.
 ### <a id="term.render"></a>`render`
 
 ```ec
-fn render(s: @Screen)
+fn render(s: Screen)
 ```
 
 Shows what was drawn on `s`, writing only the cells that changed.

@@ -21,7 +21,7 @@ declare struct utsname
 ### <a id="uname"></a>`uname`
 
 ```ec
-fn uname(buf: @utsname): Int
+fn uname(out buf: utsname): Int
 ```
 
 *Binds the C function `uname`.*

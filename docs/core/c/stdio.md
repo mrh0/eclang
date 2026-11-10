@@ -129,7 +129,7 @@ fn fflush(stream: @FILE?): Int
 ### <a id="setvbuf"></a>`setvbuf`
 
 ```ec
-fn setvbuf(stream: @FILE, buffer: CString?, mode: Int, size: Size): Int
+fn setvbuf(stream: @FILE, kept buffer: CString?, mode: Int, size: Size): Int
 ```
 
 *Binds the C function `setvbuf`.*

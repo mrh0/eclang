@@ -50,20 +50,20 @@ fn main(): Int do
 
     // PCG32's reference stream for seed 42, stream 54: a15c02b7 7b47f409 ba1d3330.
     var r = math.random(42, 54)
-    val a = math.nextUInt(addrof(r))
-    val b = math.nextUInt(addrof(r))
-    val c = math.nextUInt(addrof(r))
+    val a = math.nextUInt(mut r)
+    val b = math.nextUInt(mut r)
+    val c = math.nextUInt(mut r)
     printf("%x %x %x\n"c, a, b, c)
     var dice = math.random(7)
     var inRange = true
     for i in 0..<1000 do
-        val v = math.nextInt(addrof(dice), 1, 7)
-        val d = math.nextDouble(addrof(dice))
+        val v = math.nextInt(mut dice, 1, 7)
+        val d = math.nextDouble(mut dice)
         if v < 1 or v > 6 or d < 0.0 or d >= 1.0 do
             inRange = false
     io.log(inRange)
     val xs = [1, 2, 3, 4, 5]
-    math.shuffle(addrof(dice), xs)
+    math.shuffle(mut dice, xs)
     io.log(math.sum(xs))
     math.seed(1)
     val first = math.randomInt(0, 1000000)

@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token.statement
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.state.Variable
@@ -16,9 +17,9 @@ import github.mrh0.ect2.*
 /**
  * `var x: T` without a value: x starts out empty, i.e. zero, false, an empty String or array, null for `T?`, and a
  * record with every field empty. Useful for out-parameters (`stat(path, addrof(st))`). Types that have no empty
- * value (pointers, CStrings, atoms, unions) need a value or a `?`.
+ * value (pointers, CStrings, atoms, unions) need a value or a `?`. [volatile]: declared `Volatile<T>`, a C `volatile` variable.
  */
-class TStatementDeclareVar(location: Loc, private val varName: String, private val typeTok: ITok) : Tok(location) {
+class TStatementDeclareVar(location: Loc, private val varName: String, private val typeTok: ITok, private val volatile: Boolean = false) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val fixedName = testIdentifier(location, varName)
         val type = cd.storable(location, typeTok.process(cd, Types.None).first, "variable '$varName'")
@@ -28,7 +29,7 @@ class TStatementDeclareVar(location: Loc, private val varName: String, private v
         val value = if (type is Union && type.isNullable) cd.expect(location, Types.Null to IRNull(location), type, "variable '$varName'")
             else IRZero(location, type)
         val ivar = cd.ctx().define(location, Variable(fixedName, type, cd.localCName(fixedName)))
-        return Types.None to IRStatementDefineVar(location, ivar, value)
+        return Types.None to IRStatementDefineVar(location, ivar, value, volatile)
     }
 
     override fun toString() = "TStatementDeclareVar($varName: $typeTok)"

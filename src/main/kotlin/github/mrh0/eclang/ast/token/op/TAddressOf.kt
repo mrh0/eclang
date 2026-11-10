@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -20,12 +21,27 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 import github.mrh0.ect2.Union
 
-/** `addrof x`: a pointer to x. `addrof x!` points at a nullable x as if it were set (for C out-parameters). */
+/**
+ * `addrof x`: a pointer to x. `addrof x!` points at a nullable x as if it were set, for a C out-parameter: it may only
+ * be an argument of a `declare fn` (C fills x in, and x is still a `T?` afterwards). Anywhere else, the `@@T` would read
+ * x as never null, although x may be (or later be set to) null.
+ */
 class TAddressOf(location: Loc, val expr: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // Lifetimes follows `addrof` itself (Lifetimes.place)
+
+    /** Set by a call before it compiles its arguments: this is one of them, so `addrof x!` may be an out-parameter. */
+    var isArgument = false
+
+    /** Whether the last compile was `addrof x!` of a nullable x: the call must be of a `declare fn` (see [TExprCall]). */
+    var isOutParameter = false
+        private set
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         var inner = expr
         while (inner is TExprNest) inner = inner.expr
+        isOutParameter = inner is TCastNotNull
         if (inner is TCastNotNull) {
+            if (!isArgument) throw EcError(location, OUT_PARAMETER_ONLY)
             val (t, ir) = inner.expr.process(cd, Types.None)
             if (t is Union && !CTypes.isPlain(t)) throw EcError(location, "`addrof x!` points at a nullable value as if it were set, but a $t holds a tag next to its value, so a pointer to the ${cd.types.nonNull(t)} can't reach it. Use a `var` of type ${cd.types.nonNull(t)} instead, and give it its value after the call.")
             return cd.types.pointer(cd.types.nonNull(t)) to IRAddressOf(location, ir)
@@ -49,3 +65,6 @@ class TAddressOf(location: Loc, val expr: ITok) : Tok(location) {
         return "TAddressOf($expr)"
     }
 }
+
+/** Why `addrof x!` is only allowed as an argument of a `declare fn`. */
+internal const val OUT_PARAMETER_ONLY = "`addrof x!` points at x as if it could never be null, which is only safe for a C function (`declare fn`) that fills x in: pass it straight to one. Elsewhere, use `addrof x`, a pointer to the nullable x, or check x first (`if x != null do`) and take the address of a copy."

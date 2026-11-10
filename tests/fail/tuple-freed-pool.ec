@@ -2,7 +2,7 @@
 use "core:io.ec"
 
 fn main(): Int do
-    val p = newPool()
+    val p = new Pool
     val (a, b) = (new 1 in p, 2)
     clearPool(p)
     io.log(@a)

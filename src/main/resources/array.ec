@@ -1,5 +1,5 @@
 /**
- * Algorithms on arrays of any type: searching, sorting, and map, filter and reduce.
+ * Algorithms on arrays of any type: searching, sorting, map, filter and reduce, zip, chunked and the like.
  *
  *     use "core:array.ec"
  *     val numbers = clone([3, 1, 2])
@@ -10,7 +10,7 @@
  *
  * The functions are top-level, so they can be called on an array. Those that return a new array allocate it in the
  * current pool. An array literal lives on the stack, so `clone` it before sorting it, or to keep it. See
- * core:structures.ec for lists, maps and sets.
+ * core:structures.ec for lists, maps and sets, and for `groupBy` and `associate`, which make a Map of an array.
  */
 use "core:errors.ec"
 use "core:string.ec"
@@ -90,16 +90,26 @@ fn binarySearch(values: <T>[], value: <T>): Size? do
 // ---------------------------------------------------------------------------------------------------
 // New arrays
 
+/**
+ * A new array of `n` copies of `value`: `filled(3, 0)` is [0, 0, 0]. It works for any element type, also a pointer,
+ * which has no empty value for `new T[n]` to fill an array with.
+ */
+fn filled(n: Size, value: <T>): <T>[] do
+    val out = unsafe new (<T>)[n]          // every element is written before anything reads it
+    for i in 0..<n do
+        out[i] = value
+    ret out
+
 /** A new array of `f` of each element: `[1, 2].map(fn (x) = x * 2)` is [2, 4]. */
 fn map(values: <T>[], f: (<T>) => <U>): <U>[] do
-    val out = new (<U>)[values.len]
+    val out = unsafe new (<U>)[values.len]
     for i, v in values do
         out[i] = f(v)
     ret out
 
 /** A new array of the elements `test` is true for, in the same order. */
 fn filter(values: <T>[], test: (<T>) => Bool): <T>[] do
-    val out = new (<T>)[values.len]
+    val out = unsafe new (<T>)[values.len]
     var n: Size = 0
     for v in values where test(v) do
         out[n] = v
@@ -119,14 +129,14 @@ fn reduce(values: <T>[], initial: <U>, f: (<U>, <T>) => <U>): <U> do
 
 /** A new array with the same elements: not a deep copy, as {@code clone} makes. */
 fn copyOf(values: <T>[]): <T>[] do
-    val out = new (<T>)[values.len]
+    val out = unsafe new (<T>)[values.len]
     for i, v in values do
         out[i] = v
     ret out
 
 /** A new array of the elements of `a`, then those of `b`. */
 fn joined(a: <T>[], b: <T>[]): <T>[] do
-    val out = new (<T>)[a.len + b.len]
+    val out = unsafe new (<T>)[a.len + b.len]
     for i, v in a do
         out[i] = v
     for i, v in b do
@@ -135,7 +145,7 @@ fn joined(a: <T>[], b: <T>[]): <T>[] do
 
 /** A new array of the elements, without repeats: the first of each stays. It compares every pair, so it suits short arrays; see {@code Set} for long ones. */
 fn distinct(values: <T>[]): <T>[] do
-    val out = new (<T>)[values.len]
+    val out = unsafe new (<T>)[values.len]
     var n: Size = 0
     for v in values do
         if not contains(out[0..<n], v) do
@@ -148,6 +158,141 @@ fn take(values: <T>[], n: Size): <T>[] = if n >= values.len do values else value
 
 /** The elements after the first `n`: a slice, sharing the elements of `values`. */
 fn drop(values: <T>[], n: Size): <T>[] = if n >= values.len do values[0..<0] else values[n..<values.len]
+
+/** The first elements, as long as `test` is true for them: a slice, sharing the elements of `values`. */
+fn takeWhile(values: <T>[], test: (<T>) => Bool): <T>[] do
+    for i, v in values where not test(v) do
+        ret values[0..<i]
+    ret values
+
+/** The elements from the first one `test` is false for: a slice, sharing the elements of `values`. */
+fn dropWhile(values: <T>[], test: (<T>) => Bool): <T>[] do
+    for i, v in values where not test(v) do
+        ret values[i..<values.len]
+    ret values[0..<0]
+
+/**
+ * Pairs of elements at the same index: `zip([1, 2], ["a", "b"])` is [(1, "a"), (2, "b")]. Read them with `.first`
+ * and `.second`, or `for (n, s) in pairs do`.
+ * @return as many pairs as the shorter array has elements
+ */
+fn zip(a: <T>[], b: <U>[]): (<T>, <U>)[] do
+    val n = if a.len < b.len do a.len else b.len
+    val out = unsafe new ((<T>, <U>))[n]
+    for i in 0..<n do
+        out[i] = (a[i], b[i])
+    ret out
+
+/** Each element with its index: `["a", "b"].enumerate()` is [(0, "a"), (1, "b")]. In a loop, `for i, x in values do` needs no array. */
+fn enumerate(values: <T>[]): (Size, <T>)[] do
+    val out = unsafe new ((Size, <T>))[values.len]
+    for i, v in values do
+        out[i] = (i, v)
+    ret out
+
+/** A new array of the elements of each array in `values`, one after another: `[[1, 2], [3]]` gives [1, 2, 3]. */
+fn flatten(values: <T>[][]): <T>[] do
+    var n: Size = 0
+    for part in values do
+        n += part.len
+    val out = unsafe new (<T>)[n]
+    var at: Size = 0
+    for part in values do
+        for v in part do
+            out[at] = v
+            at += 1
+    ret out
+
+/** A new array of the elements of `f` of each element, one after another: `[1, 2].flatMap(fn (x) = filled(x, x))` is [1, 2, 2]. */
+fn flatMap(values: <T>[], f: (<T>) => <U>[]): <U>[] = flatten(map(values, f))
+
+/** The elements `test` is true for, and those it is false for, each in the same order: `(yes, no)`. */
+fn partition(values: <T>[], test: (<T>) => Bool): (<T>[], <T>[]) do
+    val yes = unsafe new (<T>)[values.len]
+    val no = unsafe new (<T>)[values.len]
+    var y: Size = 0
+    var n: Size = 0
+    for v in values do
+        if test(v) do
+            yes[y] = v
+            y += 1
+        else do
+            no[n] = v
+            n += 1
+    ret (yes[0..<y], no[0..<n])
+
+/**
+ * The elements in groups of `size`: `[1, 2, 3, 4, 5].chunked(2)` is [[1, 2], [3, 4], [5]]. The groups are slices,
+ * sharing the elements of `values`.
+ * @param size at least 1; the program stops otherwise
+ */
+fn chunked(values: <T>[], size: Size): <T>[][] do
+    assert size > 0, "chunked needs a size of at least 1"
+    val out = unsafe new (<T>[])[(values.len + size - 1) / size]
+    for i in 0..<out.len do
+        val start = i * size
+        val end = if values.len - start < size do values.len else start + size
+        out[i] = values[start..<end]
+    ret out
+
+/**
+ * Every run of `size` elements in a row: `[1, 2, 3, 4].windowed(2)` is [[1, 2], [2, 3], [3, 4]]. The runs are
+ * slices, sharing the elements of `values`.
+ * @param size at least 1; the program stops otherwise. No runs when the array is shorter.
+ * @param step how far each run starts after the one before, at least 1
+ */
+fn windowed(values: <T>[], size: Size, step: Size = 1): <T>[][] do
+    assert size > 0 and step > 0, "windowed needs a size and a step of at least 1"
+    val n = if values.len < size do 0 else (values.len - size) / step + 1
+    val out = unsafe new (<T>[])[n]
+    for i in 0..<n do
+        out[i] = values[i * step..<i * step + size]
+    ret out
+
+/**
+ * Each value {@link reduce} goes through, starting with `initial`: `[1, 2, 3].scan(0, fn (sum, x) = sum + x)` is
+ * [0, 1, 3, 6], one longer than `values`.
+ */
+fn scan(values: <T>[], initial: <U>, f: (<U>, <T>) => <U>): <U>[] do
+    val out = unsafe new (<U>)[values.len + 1]
+    out[0] = initial
+    for i, v in values do
+        out[i + 1] = f(out[i], v)
+    ret out
+
+/** The same as {@link reduce}: the name the structures of core:structures.ec use. */
+fn fold(values: <T>[], initial: <U>, f: (<U>, <T>) => <U>): <U> = reduce(values, initial, f)
+
+/** The sum of `f` of each element, 0 for an empty array: `people.sumOf(fn (p) = p.age)`. */
+fn sumOf(values: <T>[], f: (<T>) => <N>): <N> do
+    var total = 0 as <N>
+    for v in values do
+        total += f(v)
+    ret total
+
+/** The first element with the smallest `key`, compared as {@link sort} compares, or null for an empty array. */
+fn minBy(values: <T>[], key: (<T>) => <K>): <T>? do
+    ret null if values.len == 0
+    var best = values[0]
+    var bestKey = key(best)
+    for v in values[1..<values.len] do
+        val k = key(v)
+        if isLess(k, bestKey) do
+            best = v
+            bestKey = k
+    ret best
+
+/** The first element with the largest `key`, compared as {@link sort} compares, or null for an empty array. */
+fn maxBy(values: <T>[], key: (<T>) => <K>): <T>? do
+    ret null if values.len == 0
+    var best = values[0]
+    var bestKey = key(best)
+    for v in values[1..<values.len] do
+        val k = key(v)
+        if isLess(bestKey, k) do
+            best = v
+            bestKey = k
+    ret best
 
 // ---------------------------------------------------------------------------------------------------
 // In place
@@ -188,7 +333,7 @@ fn sort(values: <T>[]) do
  */
 fn sortBy(values: <T>[], less: (<T>, <T>) => Bool) do
     if values.len >= 2 do
-        mergeSort(values, new (<T>)[values.len], less)
+        mergeSort(values, unsafe new (<T>)[values.len], less)
 
 /** Sorts `values`, with `scratch` (as long as it) to merge in. */
 priv fn mergeSort(values: <T>[], scratch: <T>[], less: (<T>, <T>) => Bool) do

@@ -5,7 +5,7 @@ use "lib:pthread"
 declare type pthread_t as ULong
 
 // Starts a thread running start(arg). 0, or an error number.
-declare fn pthread_create as (thread: @pthread_t, attr: @Any?, start: (@Any) => @Any?, arg: @Any): Int
+declare fn pthread_create as (out thread: pthread_t, attr: @Any?, start: (@Any) => @Any?, arg: @Any): Int
 // Waits for the thread to end. 0, or an error number.
 declare fn pthread_join as (thread: pthread_t, result: @@Any?): Int
 // The thread frees what it holds itself when it ends. 0, or an error number.

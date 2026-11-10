@@ -2,5 +2,5 @@
 fn main(): Int do
     pool x do
         val y = x
-        freePool(y)
+        destroy y
     ret 0

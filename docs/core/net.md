@@ -48,7 +48,7 @@ Where a socket is: an IP address and a port.
 ### <a id="net.Connection"></a>`Connection`
 
 ```ec
-rec Connection
+mut ref rec Connection
 ```
 
 An open TCP connection, from [`connect`](#net.connect) or [`accept`](#net.accept). Close it with [`close`](#net.close).
@@ -142,7 +142,7 @@ The name of an IP address, as reverse DNS gives it: `net.reverseLookup("127.0.0.
 ### <a id="net.connect"></a>`connect`
 
 ```ec
-fn connect(host: String, port: Int, timeout: time.Duration? = null): @Connection throws OsError
+fn connect(host: String, port: Int, timeout: time.Duration? = null): Connection throws OsError
 ```
 
 Opens a TCP connection. When `host` has several addresses, they are tried in turn.
@@ -161,7 +161,7 @@ Opens a TCP connection. When `host` has several addresses, they are tried in tur
 ### <a id="net.setTimeout"></a>`setTimeout`
 
 ```ec
-fn setTimeout(c: @Connection, timeout: time.Duration?)
+fn setTimeout(c: Connection, timeout: time.Duration?)
 ```
 
 How long each read and write of `c` may wait from now on; after that it fails with the code ERR_TIMEOUT. The
@@ -174,7 +174,7 @@ connection can still be used.
 ### <a id="net.send"></a>`send`
 
 ```ec
-fn send(c: @Connection, data: String) throws OsError
+fn send(c: Connection, data: String) throws OsError
 ```
 
 Sends all of `data`.
@@ -186,7 +186,7 @@ Sends all of `data`.
 ### <a id="net.read"></a>`read`
 
 ```ec
-fn read(c: @Connection, n: Size = 65536): String throws OsError
+fn read(c: Connection, n: Size = 65536): String throws OsError
 ```
 
 Reads what has arrived, as soon as there is something: up to `n` bytes, and often fewer. TCP keeps the order of the
@@ -206,7 +206,7 @@ bytes, but not where one `send` ended: see [`readExactly`](#net.readExactly) and
 ### <a id="net.readExactly"></a>`readExactly`
 
 ```ec
-fn readExactly(c: @Connection, n: Size): String throws OsError
+fn readExactly(c: Connection, n: Size): String throws OsError
 ```
 
 Reads exactly `n` bytes, for a message whose length is known.
@@ -218,7 +218,7 @@ Reads exactly `n` bytes, for a message whose length is known.
 ### <a id="net.readLine"></a>`readLine`
 
 ```ec
-fn readLine(c: @Connection, limit: Size? = null): String? throws OsError
+fn readLine(c: Connection, limit: Size? = null): String? throws OsError
 ```
 
 Reads the next line.
@@ -238,7 +238,7 @@ line break is given too
 ### <a id="net.readAll"></a>`readAll`
 
 ```ec
-fn readAll(c: @Connection): String throws OsError
+fn readAll(c: Connection): String throws OsError
 ```
 
 Reads until the other end closes the connection.
@@ -250,7 +250,7 @@ Reads until the other end closes the connection.
 ### <a id="net.waitReadable"></a>`waitReadable`
 
 ```ec
-fn waitReadable(c: @Connection, timeout: time.Duration? = null): Bool throws OsError
+fn waitReadable(c: Connection, timeout: time.Duration? = null): Bool throws OsError
 ```
 
 Waits until [`read`](#net.read) has something to give, or the other end has closed the connection.
@@ -269,7 +269,7 @@ Waits until [`read`](#net.read) has something to give, or the other end has clos
 ### <a id="net.finishSending"></a>`finishSending`
 
 ```ec
-fn finishSending(c: @Connection) throws OsError
+fn finishSending(c: Connection) throws OsError
 ```
 
 Tells the other end that nothing more will be sent, which ends its reads, and goes on reading its answer.
@@ -281,7 +281,7 @@ Tells the other end that nothing more will be sent, which ends its reads, and go
 ### <a id="net.close"></a>`close`
 
 ```ec
-fn close(c: @Connection)
+fn close(c: Connection)
 ```
 
 Closes the connection. Don't use `c` after this.
@@ -307,7 +307,7 @@ Starts listening for TCP connections.
 ### <a id="net.accept"></a>`accept`
 
 ```ec
-fn accept(l: Listener, timeout: time.Duration? = null): @Connection throws OsError
+fn accept(l: Listener, timeout: time.Duration? = null): Connection throws OsError
 ```
 
 Waits for the next connection. It belongs to the current pool: with a `pool do` block around each connection, a

@@ -32,12 +32,12 @@ declare fn apr_table_clear as (t: @apr_table_t)
 // null when the key isn't in the table.
 declare fn apr_table_get as (t: @apr_table_t, key: CString): CString?
 declare fn apr_table_set as (t: @apr_table_t, key: CString, value: CString)
-declare fn apr_table_setn as (t: @apr_table_t, key: CString, value: CString)
+declare fn apr_table_setn as (t: @apr_table_t, kept key: CString, kept value: CString)
 declare fn apr_table_unset as (t: @apr_table_t, key: CString)
 declare fn apr_table_merge as (t: @apr_table_t, key: CString, value: CString)
-declare fn apr_table_mergen as (t: @apr_table_t, key: CString, value: CString)
+declare fn apr_table_mergen as (t: @apr_table_t, kept key: CString, kept value: CString)
 declare fn apr_table_add as (t: @apr_table_t, key: CString, value: CString)
-declare fn apr_table_addn as (t: @apr_table_t, key: CString, value: CString)
+declare fn apr_table_addn as (t: @apr_table_t, kept key: CString, kept value: CString)
 declare fn apr_table_overlay as (p: @apr_pool_t, overlay: @apr_table_t, base: @apr_table_t): @apr_table_t
 declare fn apr_table_do as (comp: apr_table_do_callback_fn_t, data: @Any, t: @apr_table_t, ...): Int
 declare fn apr_table_vdo as (comp: apr_table_do_callback_fn_t, data: @Any, t: @apr_table_t, vp: va_list): Int

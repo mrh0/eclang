@@ -6,7 +6,7 @@ use "core:log.ec"
 
 /** What a thread is told. */
 rec Job as
-    l: @log.Logger
+    l: log.Logger
     id: Int
 
 const LINES = 500
@@ -116,7 +116,7 @@ fn main(): Int throws Error do
     val shared = log.logger("t")
     try log.toFile(shared, path)
     log.setTimestamps(shared, :none)
-    val threads: @List<thread.Thread> = list()
+    val threads: List<thread.Thread> = list()
     for i in 0..<THREADS do
         threads.push(try thread.spawn(fn work, new Job { shared, i as Int }))
     for t in threads do

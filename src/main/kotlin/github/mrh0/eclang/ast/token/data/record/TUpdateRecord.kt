@@ -1,11 +1,13 @@
 package github.mrh0.eclang.ast.token.data.record
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.token.accessor.readField
 import github.mrh0.eclang.ast.token.type.checkBits
+import github.mrh0.eclang.ast.token.type.fitBits
 import github.mrh0.eclang.ast.unnested
 import github.mrh0.eclang.context.ArgumentOrder
 import github.mrh0.eclang.context.CompileData
@@ -25,6 +27,8 @@ import github.mrh0.ect2.Types
  * type as p. A record extending the named one fits too, and gives the fields they share. p is evaluated once.
  */
 class TUpdateRecord(location: Loc, private val named: TCreateRecordTyped?, val base: ITok, val values: List<ITok>, private val names: List<String>) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(values + base)
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val order = ArgumentOrder(cd)
         val (baseType, compiledBase) = order.compile(0, base) { cd.usable(location, base.process(cd, hint), "`...`") }
@@ -44,7 +48,10 @@ class TUpdateRecord(location: Loc, private val named: TCreateRecordTyped?, val b
             order.compile(i + 1, values[i]) { values[i].process(cd, type).also { checkBits(location, record, name, type, it.first) } }
         }
         val finished = order.finish(location)
-        val given = names.mapIndexed { i, name -> cd.expect(location, finished.getValue(i + 1), fields[name]!!, "field '$name' of ${record.name}") }
+        val given = names.mapIndexed { i, name ->
+            val value = finished.getValue(i + 1)
+            fitBits(location, record, name, fields[name]!!, value.first, cd.expect(location, value, fields[name]!!, "field '$name' of ${record.name}"))
+        }
         val baseIR = finished.getValue(0).second
         // Each other field is read from the value, so anything but a variable goes into a temporary, unless it is in one already.
         val simple = base.unnested() is TNamed || baseIR !== compiledBase

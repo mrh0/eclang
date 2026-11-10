@@ -16,15 +16,15 @@ declare type apr_abortfunc_t as (retcode: Int) => Int
 
 declare fn apr_pool_initialize as (): apr_status_t
 declare fn apr_pool_terminate as ()
-declare fn apr_pool_create_ex as (newpool: @@apr_pool_t, parent: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
-declare fn apr_pool_create_core_ex as (newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
-declare fn apr_pool_create_unmanaged_ex as (newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
-declare fn apr_pool_create_ex_debug as (newpool: @@apr_pool_t, parent: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
-declare fn apr_pool_create_core_ex_debug as (newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
-declare fn apr_pool_create_unmanaged_ex_debug as (newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
-declare fn apr_pool_create as (newpool: @@apr_pool_t, parent: @apr_pool_t): apr_status_t
-declare fn apr_pool_create_core as (newpool: @@apr_pool_t): apr_status_t
-declare fn apr_pool_create_unmanaged as (newpool: @@apr_pool_t): apr_status_t
+declare fn apr_pool_create_ex as (out newpool: @apr_pool_t, parent: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
+declare fn apr_pool_create_core_ex as (out newpool: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
+declare fn apr_pool_create_unmanaged_ex as (out newpool: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
+declare fn apr_pool_create_ex_debug as (out newpool: @apr_pool_t, parent: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
+declare fn apr_pool_create_core_ex_debug as (out newpool: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
+declare fn apr_pool_create_unmanaged_ex_debug as (out newpool: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
+declare fn apr_pool_create as (out newpool: @apr_pool_t, parent: @apr_pool_t): apr_status_t
+declare fn apr_pool_create_core as (out newpool: @apr_pool_t): apr_status_t
+declare fn apr_pool_create_unmanaged as (out newpool: @apr_pool_t): apr_status_t
 declare fn apr_pool_allocator_get as (pool: @apr_pool_t): @apr_allocator_t
 declare fn apr_pool_clear as (p: @apr_pool_t)
 declare fn apr_pool_clear_debug as (p: @apr_pool_t, file_line: CString)
@@ -39,11 +39,11 @@ declare fn apr_pool_abort_get as (pool: @apr_pool_t): apr_abortfunc_t
 declare fn apr_pool_parent_get as (pool: @apr_pool_t): @apr_pool_t?
 declare fn apr_pool_is_ancestor as (a: @apr_pool_t, b: @apr_pool_t): Int
 declare fn apr_pool_tag as (pool: @apr_pool_t, tag: CString)
-declare fn apr_pool_userdata_set as (data: @Any, key: CString, cleanup: fn (@Any): apr_status_t, pool: @apr_pool_t): apr_status_t
-declare fn apr_pool_userdata_setn as (data: @Any, key: CString, cleanup: fn (@Any): apr_status_t, pool: @apr_pool_t): apr_status_t
-declare fn apr_pool_userdata_get as (data: @@Any, key: CString, pool: @apr_pool_t): apr_status_t
-declare fn apr_pool_cleanup_register as (p: @apr_pool_t, data: @Any, plain_cleanup: fn (@Any): apr_status_t, child_cleanup: fn (@Any): apr_status_t)
-declare fn apr_pool_pre_cleanup_register as (p: @apr_pool_t, data: @Any, plain_cleanup: fn (@Any): apr_status_t)
+declare fn apr_pool_userdata_set as (kept data: @Any, key: CString, cleanup: fn (@Any): apr_status_t, pool: @apr_pool_t): apr_status_t
+declare fn apr_pool_userdata_setn as (kept data: @Any, kept key: CString, cleanup: fn (@Any): apr_status_t, pool: @apr_pool_t): apr_status_t
+declare fn apr_pool_userdata_get as (out data: @Any, key: CString, pool: @apr_pool_t): apr_status_t
+declare fn apr_pool_cleanup_register as (p: @apr_pool_t, kept data: @Any, plain_cleanup: fn (@Any): apr_status_t, child_cleanup: fn (@Any): apr_status_t)
+declare fn apr_pool_pre_cleanup_register as (p: @apr_pool_t, kept data: @Any, plain_cleanup: fn (@Any): apr_status_t)
 declare fn apr_pool_cleanup_kill as (p: @apr_pool_t, data: @Any, cleanup: fn (@Any): apr_status_t)
 declare fn apr_pool_child_cleanup_set as (p: @apr_pool_t, data: @Any, plain_cleanup: fn (@Any): apr_status_t, child_cleanup: fn (@Any): apr_status_t)
 declare fn apr_pool_cleanup_run as (p: @apr_pool_t, data: @Any, cleanup: fn (@Any): apr_status_t): apr_status_t

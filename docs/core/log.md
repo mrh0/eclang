@@ -11,6 +11,7 @@ Logging: levels, timestamps, and output to stderr or a file, from any thread.
     try log.toFile("app.log")                           // adds to the end of the file, and makes it if needed
     log.toStderr()                                      // back to where it started
     log.setTimestamps(:local)                           // :utc (the first setting), :local or :none
+    log.setLocations(true)                              // ... INFO  main.ec:12: started
 
     val db = log.logger("db")                           // named, with its own settings
     log.info(db, "connected")                           // ... INFO  db: connected
@@ -48,10 +49,10 @@ What is at the start of each line: the time in UTC, the local time, or nothing.
 ### <a id="log.Logger"></a>`Logger`
 
 ```ec
-rec Logger
+mut sync ref rec Logger
 ```
 
-Writes messages somewhere: [`logger`](#log.logger).
+Writes messages somewhere: [`logger`](#log.logger). Threads can share one (it is `sync`): its [`Sink`](#log.Sink)'s lock guards what it writes and its settings.
 
 **Fields**
 
@@ -59,13 +60,14 @@ Writes messages somewhere: [`logger`](#log.logger).
 - <a id="log.Logger.level"></a>`level: Level` — The lowest level it writes. Change it with [`setLevel`](#log.setLevel).
 - <a id="log.Logger.timestamps"></a>`timestamps: Timestamps` — What it writes at the start of each line. Change it with [`setTimestamps`](#log.setTimestamps).
 - <a id="log.Logger.sink"></a>`sink: @Sink` — Where its lines go.
+- <a id="log.Logger.locations"></a>`locations: Bool = false` — Whether it writes where each message comes from ("main.ec:12"). Change it with [`setLocations`](#log.setLocations).
 
 ## Functions
 
 ### <a id="log.logger"></a>`logger`
 
 ```ec
-fn logger(name: String = ""): @Logger
+fn logger(name: String = ""): Logger
 ```
 
 A new logger writing to stderr, with the level `:info`, which belongs to the current pool.
@@ -77,7 +79,7 @@ A new logger writing to stderr, with the level `:info`, which belongs to the cur
 ### <a id="log.child"></a>`child`
 
 ```ec
-fn child(parent: @Logger, name: String): @Logger
+fn child(parent: Logger, name: String): Logger
 ```
 
 A logger that writes where `parent` does, with the same settings at first. Those are its own after that, except for the
@@ -103,7 +105,7 @@ The level called `s`, in any case, for reading it from a setting: `parseLevel("w
 ### <a id="log.setLevel"></a>`setLevel`
 
 ```ec
-fn setLevel(l: @Logger, level: Level)
+fn setLevel(l: Logger, level: Level)
 ```
 
 Sets the lowest level `l` writes.
@@ -119,7 +121,7 @@ Sets the lowest level that is written.
 ### <a id="log.enabled"></a>`enabled`
 
 ```ec
-fn enabled(l: @Logger, level: Level): Bool
+fn enabled(l: Logger, level: Level): Bool
 ```
 
 Whether `l` would write a message of `level`, to skip making one that takes work.
@@ -135,7 +137,7 @@ Whether a message of `level` would be written, to skip making one that takes wor
 ### <a id="log.setTimestamps"></a>`setTimestamps`
 
 ```ec
-fn setTimestamps(l: @Logger, timestamps: Timestamps)
+fn setTimestamps(l: Logger, timestamps: Timestamps)
 ```
 
 Sets what `l` writes at the start of each line.
@@ -148,10 +150,26 @@ fn setTimestamps(timestamps: Timestamps)
 
 Sets what is written at the start of each line.
 
+### <a id="log.setLocations"></a>`setLocations`
+
+```ec
+fn setLocations(l: Logger, on: Bool)
+```
+
+Sets whether `l` writes where each message comes from: the file and line of the call that logs it, after the level.
+
+### `setLocations`
+
+```ec
+fn setLocations(on: Bool)
+```
+
+Sets whether each line says where its message comes from: the file and line of the call that logs it, after the level.
+
 ### <a id="log.toFile"></a>`toFile`
 
 ```ec
-fn toFile(l: @Logger, path: String) throws IoError
+fn toFile(l: Logger, path: String) throws IoError
 ```
 
 Makes `l`, and the loggers sharing its output ([`child`](#log.child)), add their lines to the end of a file, which is made if it
@@ -185,7 +203,7 @@ Makes lines go to the end of a file; see the other `toFile`.
 ### <a id="log.toStderr"></a>`toStderr`
 
 ```ec
-fn toStderr(l: @Logger)
+fn toStderr(l: Logger)
 ```
 
 Makes `l`, and the loggers sharing its output, write to stderr. A file it wrote to is closed.
@@ -201,7 +219,7 @@ Makes lines go to stderr. A file they went to is closed.
 ### <a id="log.write"></a>`write`
 
 ```ec
-fn write(l: @Logger, level: Level, message: String)
+fn write(l: Logger, level: Level, message: String, at: Location = caller)
 ```
 
 Writes a message, if `level` is one that `l` writes.
@@ -211,11 +229,12 @@ Writes a message, if `level` is one that `l` writes.
 - `l` — the logger
 - `level` — how much it matters
 - `message` — what to say
+- `at` — where it comes from, written with [`setLocations`](#log.setLocations): the call, unless it is given
 
 ### <a id="log.debug"></a>`debug`
 
 ```ec
-fn debug(message: String)
+fn debug(message: String, at: Location = caller)
 ```
 
 Writes a message of the level `:debug`: details that are only of use when looking for a problem.
@@ -223,7 +242,7 @@ Writes a message of the level `:debug`: details that are only of use when lookin
 ### <a id="log.info"></a>`info`
 
 ```ec
-fn info(message: String)
+fn info(message: String, at: Location = caller)
 ```
 
 Writes a message of the level `:info`: what the program is doing.
@@ -231,7 +250,7 @@ Writes a message of the level `:info`: what the program is doing.
 ### <a id="log.warn"></a>`warn`
 
 ```ec
-fn warn(message: String)
+fn warn(message: String, at: Location = caller)
 ```
 
 Writes a message of the level `:warn`: something is wrong, but the program can go on.
@@ -239,7 +258,7 @@ Writes a message of the level `:warn`: something is wrong, but the program can g
 ### <a id="log.error"></a>`error`
 
 ```ec
-fn error(message: String)
+fn error(message: String, at: Location = caller)
 ```
 
 Writes a message of the level `:error`: something has failed.
@@ -247,7 +266,7 @@ Writes a message of the level `:error`: something has failed.
 ### `error`
 
 ```ec
-fn error(e: Error)
+fn error(e: Error, at: Location = caller)
 ```
 
 Writes an Error, of any kind, as a message of the level `:error`.
@@ -255,7 +274,7 @@ Writes an Error, of any kind, as a message of the level `:error`.
 ### `debug`
 
 ```ec
-fn debug(l: @Logger, message: String)
+fn debug(l: Logger, message: String, at: Location = caller)
 ```
 
 Writes a message of the level `:debug` to `l`.
@@ -263,7 +282,7 @@ Writes a message of the level `:debug` to `l`.
 ### `info`
 
 ```ec
-fn info(l: @Logger, message: String)
+fn info(l: Logger, message: String, at: Location = caller)
 ```
 
 Writes a message of the level `:info` to `l`.
@@ -271,7 +290,7 @@ Writes a message of the level `:info` to `l`.
 ### `warn`
 
 ```ec
-fn warn(l: @Logger, message: String)
+fn warn(l: Logger, message: String, at: Location = caller)
 ```
 
 Writes a message of the level `:warn` to `l`.
@@ -279,7 +298,7 @@ Writes a message of the level `:warn` to `l`.
 ### `error`
 
 ```ec
-fn error(l: @Logger, message: String)
+fn error(l: Logger, message: String, at: Location = caller)
 ```
 
 Writes a message of the level `:error` to `l`.
@@ -287,7 +306,7 @@ Writes a message of the level `:error` to `l`.
 ### `error`
 
 ```ec
-fn error(l: @Logger, e: Error)
+fn error(l: Logger, e: Error, at: Location = caller)
 ```
 
 Writes an Error, of any kind, as a message of the level `:error` to `l`.

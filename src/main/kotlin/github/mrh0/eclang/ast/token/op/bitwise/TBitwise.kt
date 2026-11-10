@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op.bitwise
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -23,6 +24,8 @@ import github.mrh0.ect2.Types
  * A shift has the type of its left side; the count must be less than that type's number of bits.
  */
 class TBitwise(location: Loc, private val op: String, private val left: ITok, private val right: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // a number or Bool
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         if (op == "<<" || op == ">>") return shift(cd)
         val fold: (Long, Long) -> Long = when (op) {

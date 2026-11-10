@@ -9,13 +9,23 @@ import github.mrh0.eclang.error.EcNotDefinedError
 import github.mrh0.ect2.Type
 
 /**
- * Memory allocated in [pool] ([poolName] in code) at point [seq] of the function, which `clearPool`/`freePool` of it later frees.
+ * Memory allocated in [pool] ([poolName] in code) at point [seq] of the function, which `clearPool`/`destroy` of it later frees.
  * With [carried] it stands for "what the variable [poolName] held when the previous round of that loop ended" instead: see [LoopRound].
- * [viaCall]: a value only may be in it, because it came from a call given something that is.
+ * [viaCall]: a value only may be in it, because it came from a call given something that is. [via] then says which calls, when
+ * each is of an eclang function ([Via]): once every body is compiled, [Escapes] knows whether the value really can be in it.
  */
-data class Alloc(val seq: Int, val pool: String, val poolName: String, val carried: LoopRound? = null, val viaCall: Boolean = false)
+data class Alloc(val seq: Int, val pool: String, val poolName: String, val carried: LoopRound? = null, val viaCall: Boolean = false, val via: Via? = null)
 
-/** `clearPool`/`freePool` of a pool at point [seq]: what was allocated in it before is freed. [how] says so in errors. */
+/**
+ * A value came out of the call of [callee] ([key]: [Escapes.key] of its overload) through its parameter [param], and before that
+ * through [next] (null: [param] was given the memory itself). See [Escapes.resultRoots].
+ */
+data class Via(val key: String, val callee: String, val param: String, val next: Via?) {
+    /** The calls, outermost first: `` `outer(...)`, given the result of `id(...)` ``. */
+    fun shown(): String = generateSequence(this) { it.next }.joinToString(", given the result of ") { "`${it.callee}(...)`" }
+}
+
+/** `clearPool`/`destroy` of a pool at point [seq]: what was allocated in it before is freed. [how] says so in errors. */
 data class Kill(val seq: Int, val how: String)
 
 /** What is known about pools where a round of a loop ends: at the end of its body, at a `continue` or at a `break`. [vars] tells a variable from a later one of the same name. */
@@ -55,11 +65,11 @@ open class ContextStack {
         val narrowed: MutableMap<String, Type> = mutableMapOf(),
         /** Variable → the named-pool memory its value may be in (see [Lifetimes.allocations]). */
         val allocations: MutableMap<String, Set<Alloc>> = mutableMapOf(),
-        /** Pool variable or field (`h.p`) → the pool it holds now (a new one after `p = newPool()`, the same as p after `val q = p`). */
+        /** Pool variable or field (`h.p`) → the pool it holds now (a new one after `p = new Pool`, the same as p after `val q = p`). */
         val pools: MutableMap<String, String> = mutableMapOf(),
-        /** Pool → the last `clearPool`/`freePool` of it. */
+        /** Pool → the last `clearPool`/`destroy` of it. */
         val killed: MutableMap<String, Kill> = mutableMapOf(),
-        /** Pools freed with `freePool`, with how ("`freePool(p)` at line 9"). */
+        /** Pools freed with `destroy`, with how ("`destroy p` at line 9"). */
         val freed: MutableMap<String, String> = mutableMapOf(),
     ) {
         /** True once this scope always leaves early (ret, throw, break, continue); later code is unreachable. */
@@ -73,7 +83,25 @@ open class ContextStack {
     val scopeStack: MutableList<Scope> = mutableListOf(Scope())
 
     /** The local memory each variable (by index in [vars]) may point into; see [Lifetimes]. */
-    private val origins = HashMap<Int, Local>()
+    private val realOrigins = HashMap<Int, Local>()
+
+    /**
+     * The same while [imagining]: what each variable would point into if the loops of [LoopPools] gave each round a pool,
+     * so it also holds the memory of those pools. Outside that, changes go to both maps, as the two agree there.
+     */
+    private val imaginedOrigins = HashMap<Int, Local>()
+
+    /** Whether [Lifetimes] is following memory as if loops had pools of their own (see [LoopPools]). */
+    var imagining = false
+
+    private val origins get() = if (imagining) imaginedOrigins else realOrigins
+
+    private fun setOriginAt(index: Int, local: Local?) {
+        for (map in if (imagining) listOf(imaginedOrigins) else listOf(realOrigins, imaginedOrigins)) {
+            val merged = if (local == null) null else Lifetimes.deepest(listOf(map[index], local))
+            if (merged != null) map[index] = merged
+        }
+    }
 
     /** The local variables each variable (by index in [vars]) may point at, so writes through it change them. */
     private val pointees = HashMap<Int, Set<String>>()
@@ -84,13 +112,26 @@ open class ContextStack {
     /** The pools of the `pool do` blocks of this function, which only their block may free. */
     val blockPools = HashSet<String>()
 
+    /** The pools this function made with `new Pool`, which it may clear and destroy without `unsafe`. */
+    val ownedPools = HashSet<String>()
+
     /** The loops around the code being compiled, innermost last. */
     val rounds = mutableListOf<LoopRound>()
 
     /** What to run again when the outermost loop has been compiled (see [Lifetimes]). */
     val replays = mutableListOf<Replay>()
 
+    /** How deep in `debug` statements the code being compiled is (see TDebug). */
+    var debugDepth = 0
+
+    /** The names defined in `debug` statements, with where, for the error when code after one uses them. */
+    val debugDefined = HashMap<String, Loc>()
+
+    /** The variables a `debug assert` (or `debug requires`) narrowed, with where, for the error when code after it relies on that. */
+    val debugNarrowed = HashMap<String, Loc>()
+
     fun define(location: Loc, variable: IVar): IVar {
+        if (debugDepth > 0) debugDefined.putIfAbsent(variable.getName(), location)
         val top = scopeStack.last()
         top.vars[variable.getName()]?.let { index ->
             val name = variable.getName()
@@ -136,13 +177,14 @@ open class ContextStack {
     /** Notes that [name] may point into [local] too (see [Lifetimes.deepest]). */
     fun setOrigin(name: String, local: Local) {
         val index = scopeStack.last().vars[name] ?: return
-        Lifetimes.deepest(listOf(origins[index], local))?.let { origins[index] = it }
+        setOriginAt(index, local)
     }
 
     /** The variable [name] was just defined: it points into [local], and nothing it held in the previous round of a loop. */
     fun resetOrigin(name: String, local: Local?) {
         val index = scopeStack.last().vars[name] ?: return
-        if (local != null) origins[index] = local else origins.remove(index)
+        for (map in if (imagining) listOf(imaginedOrigins) else listOf(realOrigins, imaginedOrigins))
+            if (local != null) map[index] = local else map.remove(index)
     }
 
     /** The local variables that [name] may point at. */
@@ -155,7 +197,7 @@ open class ContextStack {
     }
 
     /** A value that changes when what [origins] and [pointees] know changes, to tell when replaying a loop has settled. */
-    fun followed(): Any = origins.mapValues { (_, local) -> generateSequence(local) { it.inside }.map { it.depth }.toList() } to pointees.toMap()
+    fun followed(): Any = listOf(realOrigins, imaginedOrigins).map { map -> map.mapValues { (_, local) -> generateSequence(local) { it.inside }.map { it.depth to it.loopPools.size }.toList() } } to pointees.toMap()
 
     /** Runs [run] as if [scopes] were the open scopes. */
     fun <R> inScopes(scopes: List<Scope>, run: () -> R): R {
@@ -168,12 +210,19 @@ open class ContextStack {
     fun narrow(name: String, type: Type) { scopeStack.last().narrowed[name] = type }
 
     /**
+     * The narrowed type under [key], a variable's name or `@p` for what the `mut` parameter p points to (the caller's variable,
+     * which the code reads as `p`; see `TReadPointer.mutParameter`), or null when it isn't narrowed.
+     */
+    fun narrowedType(key: String): Type? = scopeStack.last().narrowed[key]
+
+    /**
      * Forgets what is known about [name] (it was just assigned), in every enclosing scope too: after
      * `if v is Int do (if c do v = "s"c)` the outer body can no longer rely on v being an Int.
      */
     fun forget(name: String) {
-        val index = scopeStack.last().vars[name] ?: return
-        scopeStack.forEach { if (it.vars[name] == index) it.narrowed.remove(name) }
+        val variable = name.removePrefix("@")
+        val index = scopeStack.last().vars[variable] ?: return
+        scopeStack.forEach { if (it.vars[variable] == index) it.narrowed.remove(name) }
     }
 
     /** How many scopes are open; [deferredSince] takes such a depth. */
@@ -186,39 +235,90 @@ open class ContextStack {
         val top = scopeStack.last()
         scopeStack.add(Scope(top.vars.toMutableMap(), top.deferred.toMutableList(), top.narrowed.toMutableMap(),
             top.allocations.toMutableMap(), top.pools.toMutableMap(), top.killed.toMutableMap(), top.freed.toMutableMap()))
+        pendingRound?.takeIf { it.depth == depth() }?.let { round ->
+            pendingRound = null
+            defer(round.location, round.leave)
+            round.registered()
+        }
     }
 
     /**
-     * Closes the innermost scope. Unless it always left early, what it learned about pools carries on in the
-     * enclosing one: the memory it freed stays freed, and a variable may hold what it held before or what the
-     * scope assigned. (A scope that left early, e.g. by `ret` after running `defer freePool(p)`, changes nothing.)
+     * A loop body about to be compiled whose rounds may get a pool of their own (see LoopPools): when the scope at [depth] (the
+     * body's) is pushed, [leave] is deferred there, so that every way out of a round frees the round's pool, and [registered] runs.
      */
-    fun pop(): Scope {
+    class PendingRound(val depth: Int, val location: Loc, val leave: ITok, val registered: () -> Unit)
+
+    var pendingRound: PendingRound? = null
+
+    /**
+     * Closes the innermost scope, whose code may or may not have run (a loop's body, a branch). Unless it always left
+     * early, what it learned about pools carries on in the enclosing one, joined with what that knew: the memory it freed
+     * may be freed, and a variable may hold what it held before or what the scope assigned. (A scope that left early,
+     * e.g. by `ret` after running `defer destroy p`, changes nothing.) With [ran], the scope's code always ran when the
+     * enclosing one got there (a block's own scope, see TBlock): what it knew replaces what the enclosing scope knew.
+     */
+    fun pop(ran: Boolean = false): Scope {
         val scope = scopeStack.removeLastOrNull() ?: throw Error("Scope empty")
         val parent = scopeStack.lastOrNull() ?: return scope
         if (scope.returned) return scope
-        merge(parent, snapshot(scope))
+        join(parent, listOf(snapshot(scope)), withInto = !ran)
         return scope
     }
 
-    /** What [end] knows carries on in [into], as far as it is about what [into] can see. */
-    private fun merge(into: Scope, end: RoundEnd) {
-        end.killed.forEach { (pool, kill) -> into.killed.merge(pool, kill) { a, b -> if (b.seq > a.seq) b else a } }
-        into.freed.putAll(end.freed)
+    /** Closes the innermost scope, a branch of an `if`, without passing on what it knows: [joinBranches] does. Null when it always left early. */
+    fun popBranch(): RoundEnd? {
+        val scope = scopeStack.removeLastOrNull() ?: throw Error("Scope empty")
+        return if (scope.returned) null else snapshot(scope)
+    }
+
+    /** After the branches of an `if` (see TStatementIf): what is known is what one of [ends], the ways on from it, knew. */
+    fun joinBranches(ends: List<RoundEnd>) = join(scopeStack.last(), ends, withInto = false)
+
+    /**
+     * What one of the [ends] (and, [withInto], [into] itself) knows carries on in [into], as far as it is about what [into]
+     * can see. Memory freed on one path may be freed. Following the paths, a variable may hold what it held on any of them,
+     * and that is freed when it is freed on one of the paths that hold it: after `if c do (clearPool(p); s = format(p, ...))`,
+     * the s of the other path holds what it held before, which that path didn't free. As [Kill]s are compared by when they
+     * happened, memory that no path holding it freed is moved to now, after every kill so far (later ones still free it).
+     */
+    private fun join(into: Scope, ends: List<RoundEnd>, withInto: Boolean) {
+        val paths = (if (withInto) listOf(snapshot(into)) else listOf()) + ends
+        if (paths.isEmpty()) return
         // A name that isn't local in either is a global, which outlives both.
-        end.allocations.forEach { (name, allocs) ->
-            if (into.vars[name] == end.vars[name]) into.allocations.merge(name, allocs, Set<Alloc>::plus)
+        fun visible(path: RoundEnd, name: String) = into.vars[name.substringBefore('.')] == path.vars[name.substringBefore('.')]
+        fun dead(path: RoundEnd, a: Alloc) = a.carried == null && path.killed[a.pool].let { it != null && it.seq > a.seq }
+
+        val killed = HashMap<String, Kill>()
+        paths.forEach { p -> p.killed.forEach { (pool, kill) -> killed.merge(pool, kill) { a, b -> if (b.seq > a.seq) b else a } } }
+        val now = next()
+        val allocations = HashMap<String, Set<Alloc>>()
+        val freedOnPath = HashSet<Alloc>()
+        val held = HashMap<String, MutableSet<Alloc>>()
+        for (p in paths) for ((name, allocs) in p.allocations) if (visible(p, name)) {
+            held.getOrPut(name) { HashSet() } += allocs
+            allocs.filter { dead(p, it) }.forEach { freedOnPath += it }
         }
-        end.pools.forEach { (name, pool) ->
-            val root = name.substringBefore('.')
-            if (into.vars[root] == end.vars[root]) into.pools[name] = pool
+        for ((name, allocs) in held) allocations[name] = allocs.map { a ->
+            val seemsFreed = a.carried == null && killed[a.pool].let { it != null && it.seq > a.seq }
+            if (seemsFreed && a !in freedOnPath) a.copy(seq = now) else a
+        }.toSet()
+
+        if (!withInto) {
+            into.killed.clear()
+            into.allocations.keys.removeAll { name -> paths.any { visible(it, name) } }
+        }
+        into.killed.putAll(killed)
+        ends.forEach { into.freed.putAll(it.freed) }
+        into.allocations.putAll(allocations)
+        ends.forEach { end ->
+            end.pools.forEach { (name, pool) -> if (visible(end, name)) into.pools[name] = pool }
         }
     }
 
     private fun snapshot(s: Scope) = RoundEnd(s.vars.toMap(), s.allocations.toMap(), s.killed.toMap(), s.pools.toMap(), s.freed.toMap())
 
     /** The code after a loop can be reached from each `break` in it ([ends]) too. */
-    fun mergeBreaks(ends: List<RoundEnd>) = ends.forEach { merge(scopeStack.last(), it) }
+    fun mergeBreaks(ends: List<RoundEnd>) = join(scopeStack.last(), ends, withInto = true)
 
     /** Runs [run], the deferred statements of a way out of this scope: what they free stays freed on that way out only. Also says whether they free anything. */
     fun <R> onExit(run: () -> R): Pair<R, Boolean> {
@@ -301,7 +401,7 @@ open class ContextStack {
     /** Memory allocated in [pool] (called [poolName]) now. */
     fun alloc(pool: String, poolName: String) = Alloc(next(), pool, poolName)
 
-    /** Frees what [pool] holds (`clearPool`), or with [free] the pool itself (`freePool`); [how] says so in errors. */
+    /** Frees what [pool] holds (`clearPool`), or with [free] the pool itself (`destroy`); [how] says so in errors. */
     fun kill(pool: String, how: String, free: Boolean) {
         val top = scopeStack.last()
         val kill = Kill(next(), how)
@@ -317,7 +417,7 @@ open class ContextStack {
     /** How the memory of [alloc] was freed, or null when it is still there. */
     fun killedBy(alloc: Alloc): String? = scopeStack.last().killed[alloc.pool]?.takeIf { it.seq > alloc.seq }?.how
 
-    /** How [pool] was freed with `freePool`, or null. */
+    /** How [pool] was freed with `destroy`, or null. */
     fun freedBy(pool: String): String? = scopeStack.last().freed[pool]
 
     fun setReturned(statically: Boolean = false) {

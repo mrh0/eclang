@@ -13,7 +13,7 @@ declare rec apr_thread_cond_t
 ### <a id="apr_thread_cond_create"></a>`apr_thread_cond_create`
 
 ```ec
-fn apr_thread_cond_create(cond: @@apr_thread_cond_t, pool: @apr_pool_t): apr_status_t
+fn apr_thread_cond_create(out cond: @apr_thread_cond_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_thread_cond_create`.*

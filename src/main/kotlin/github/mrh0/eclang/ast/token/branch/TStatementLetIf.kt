@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.branch
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -34,6 +35,8 @@ import github.mrh0.ect2.Union
 class TStatementLetIf(
     location: Loc, private val varName: String, private val mutable: Boolean, private val value: ITok, private val body: ITok, private val elseBody: ITok?,
 ) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.NotAValue
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val name = testIdentifier(location, varName)
         val keyword = if (mutable) "var" else "val"

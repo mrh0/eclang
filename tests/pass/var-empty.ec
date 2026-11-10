@@ -1,14 +1,14 @@
 use "core:io.ec"
 
 // `var x: T` without a value starts out empty.
-rec Point as
+mut rec Point as
     x: Int
     y: Int
 
-rec Shape as
+mut rec Shape as
     w: Int
 
-rec Square extends Shape as
+mut rec Square extends Shape as
     side: Int
 
 fn fill(p: @Point) do

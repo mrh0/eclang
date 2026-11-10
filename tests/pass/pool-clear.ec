@@ -3,8 +3,8 @@ use "core:io.ec"
 // A pool that is cleared every round: what is allocated after the clear can be used.
 
 fn main(): Int do
-    val p = newPool()
-    defer freePool(p)
+    val p = new Pool
+    defer destroy p
     var last = "none"
     for i in 0..<3 do
         clearPool(p)

@@ -13,7 +13,7 @@ declare rec apr_thread_rwlock_t
 ### <a id="apr_thread_rwlock_create"></a>`apr_thread_rwlock_create`
 
 ```ec
-fn apr_thread_rwlock_create(rwlock: @@apr_thread_rwlock_t, pool: @apr_pool_t): apr_status_t
+fn apr_thread_rwlock_create(out rwlock: @apr_thread_rwlock_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_thread_rwlock_create`.*

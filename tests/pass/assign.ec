@@ -1,11 +1,11 @@
 use "core:io.ec"
 
 // Assigning fields, elements and pointers, and the compound operators.
-rec Point as
+mut rec Point as
     x: Int
     y: Int
 
-rec Line as
+mut rec Line as
     a: Point
     b: Point
 

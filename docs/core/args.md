@@ -66,7 +66,7 @@ A positional argument of a [`Parser`](#args.Parser).
 ### <a id="args.Parser"></a>`Parser`
 
 ```ec
-rec Parser
+mut ref rec Parser
 ```
 
 What a program or command accepts, from [`parser`](#args.parser) and [`command`](#args.command).
@@ -76,26 +76,26 @@ What a program or command accepts, from [`parser`](#args.parser) and [`command`]
 - <a id="args.Parser.name"></a>`name: String` — Its name.
 - <a id="args.Parser.path"></a>`path: String` — The whole way to call it, for the help: "tool build".
 - <a id="args.Parser.about"></a>`about: String` — What it does, for the help.
-- <a id="args.Parser.options"></a>`options: @List<@Spec>` — Its flags and options.
-- <a id="args.Parser.positionals"></a>`positionals: @List<@Positional>` — Its positional arguments.
-- <a id="args.Parser.commands"></a>`commands: @List<@Parser>` — Its commands.
+- <a id="args.Parser.options"></a>`options: List<@Spec>` — Its flags and options.
+- <a id="args.Parser.positionals"></a>`positionals: List<@Positional>` — Its positional arguments.
+- <a id="args.Parser.commands"></a>`commands: List<Parser>` — Its commands.
 - <a id="args.Parser.commandOptional"></a>`commandOptional: Bool` — Whether it can be called without a command when it has commands.
 
 ### <a id="args.Parsed"></a>`Parsed`
 
 ```ec
-rec Parsed
+mut ref rec Parsed
 ```
 
 What the command line said, from [`parse`](#args.parse) and [`run`](#args.run).
 
 **Fields**
 
-- <a id="args.Parsed.parser"></a>`parser: @Parser` — What it was parsed with.
-- <a id="args.Parsed.given"></a>`given: @Map<String, @List<String>>` — The words of each option and positional argument, by name; a flag has one for each time it was given.
-- <a id="args.Parsed.parent"></a>`parent: @Parsed?` — The parts of the program this is a command of.
+- <a id="args.Parsed.parser"></a>`parser: Parser` — What it was parsed with.
+- <a id="args.Parsed.given"></a>`given: Map<String, List<String>>` — The words of each option and positional argument, by name; a flag has one for each time it was given.
+- <a id="args.Parsed.parent"></a>`parent: Parsed?` — The parts of the program this is a command of.
 - <a id="args.Parsed.command"></a>`command: String?` — The name of the command that was given, or null.
-- <a id="args.Parsed.sub"></a>`sub: @Parsed?` — What follows the command, or null.
+- <a id="args.Parsed.sub"></a>`sub: Parsed?` — What follows the command, or null.
 - <a id="args.Parsed.help"></a>`help: String?` — The help to print, when `--help` was given: nothing else is checked then.
 
 ### <a id="args.ArgsError"></a>`ArgsError`
@@ -115,7 +115,7 @@ The command line is wrong. Its message says how; [`run`](#args.run) prints it.
 ### <a id="args.parser"></a>`parser`
 
 ```ec
-fn parser(name: String, about: String): @Parser
+fn parser(name: String, about: String): Parser
 ```
 
 A new [`Parser`](#args.Parser) for a program.
@@ -128,7 +128,7 @@ A new [`Parser`](#args.Parser) for a program.
 ### <a id="args.flag"></a>`flag`
 
 ```ec
-fn flag(p: @Parser, name: String, help: String, short: Char = 0 as Char)
+fn flag(p: Parser, name: String, help: String, short: Char = 0 as Char)
 ```
 
 Adds a flag: `--name`, which is on or off.
@@ -143,7 +143,7 @@ Adds a flag: `--name`, which is on or off.
 ### <a id="args.option"></a>`option`
 
 ```ec
-fn option(p: @Parser, name: String, help: String, short: Char = 0 as Char, valueName: String = "VALUE")
+fn option(p: Parser, name: String, help: String, short: Char = 0 as Char, valueName: String = "VALUE")
 ```
 
 Adds an option: `--name value`, which may be left out. Given several times, it has several values; see [`valuesOf`](#args.valuesOf).
@@ -159,7 +159,7 @@ Adds an option: `--name value`, which may be left out. Given several times, it h
 ### `option`
 
 ```ec
-fn option(p: @Parser, name: String, help: String, short: Char, valueName: String, fallback: String)
+fn option(p: Parser, name: String, help: String, short: Char, valueName: String, fallback: String)
 ```
 
 Adds an option with a value for when it isn't given.
@@ -176,7 +176,7 @@ Adds an option with a value for when it isn't given.
 ### <a id="args.requiredOption"></a>`requiredOption`
 
 ```ec
-fn requiredOption(p: @Parser, name: String, help: String, short: Char = 0 as Char, valueName: String = "VALUE")
+fn requiredOption(p: Parser, name: String, help: String, short: Char = 0 as Char, valueName: String = "VALUE")
 ```
 
 Adds an option that must be given.
@@ -192,7 +192,7 @@ Adds an option that must be given.
 ### <a id="args.positional"></a>`positional`
 
 ```ec
-fn positional(p: @Parser, name: String, help: String, required: Bool = true)
+fn positional(p: Parser, name: String, help: String, required: Bool = true)
 ```
 
 Adds a positional argument, the next word that isn't an option. They are filled in the order they are added.
@@ -207,7 +207,7 @@ Adds a positional argument, the next word that isn't an option. They are filled 
 ### <a id="args.rest"></a>`rest`
 
 ```ec
-fn rest(p: @Parser, name: String, help: String, required: Bool = false)
+fn rest(p: Parser, name: String, help: String, required: Bool = false)
 ```
 
 Adds a last positional argument that takes all the words that are left; see [`valuesOf`](#args.valuesOf).
@@ -222,7 +222,7 @@ Adds a last positional argument that takes all the words that are left; see [`va
 ### <a id="args.command"></a>`command`
 
 ```ec
-fn command(p: @Parser, name: String, about: String): @Parser
+fn command(p: Parser, name: String, about: String): Parser
 ```
 
 Adds a command, as in `git commit`, with options of its own: the [`Parser`](#args.Parser) it returns. A program with commands
@@ -237,7 +237,7 @@ must be given one, unless its `commandOptional` is set.
 ### <a id="args.help"></a>`help`
 
 ```ec
-fn help(p: @Parser): String
+fn help(p: Parser): String
 ```
 
 The help of `p`, as `--help` prints it.
@@ -245,7 +245,7 @@ The help of `p`, as `--help` prints it.
 ### <a id="args.parse"></a>`parse`
 
 ```ec
-fn parse(p: @Parser, words: String[]): @Parsed throws ArgsError
+fn parse(p: Parser, words: String[]): Parsed throws ArgsError
 ```
 
 Reads command-line words as `p` says. When the help is asked for, nothing else is checked, and `help` in what comes
@@ -263,7 +263,7 @@ back holds it. See [`run`](#args.run) for what most programs need.
 ### <a id="args.run"></a>`run`
 
 ```ec
-fn run(p: @Parser): @Parsed
+fn run(p: Parser): Parsed
 ```
 
 Reads the program's arguments as `p` says. With `--help` this prints the help and ends the program with exit code 0.
@@ -272,7 +272,7 @@ When they are wrong, it prints why to stderr and ends the program with exit code
 ### <a id="args.isSet"></a>`isSet`
 
 ```ec
-fn isSet(r: @Parsed, name: String): Bool
+fn isSet(r: Parsed, name: String): Bool
 ```
 
 Whether a flag, option or positional argument was given.
@@ -280,7 +280,7 @@ Whether a flag, option or positional argument was given.
 ### <a id="args.times"></a>`times`
 
 ```ec
-fn times(r: @Parsed, name: String): Size
+fn times(r: Parsed, name: String): Size
 ```
 
 How many times it was given: for `-vvv`, 3.
@@ -288,7 +288,7 @@ How many times it was given: for `-vvv`, 3.
 ### <a id="args.value"></a>`value`
 
 ```ec
-fn value(r: @Parsed, name: String): String?
+fn value(r: Parsed, name: String): String?
 ```
 
 The value of an option or positional argument: the last one given, or else the default, or else null.
@@ -296,7 +296,7 @@ The value of an option or positional argument: the last one given, or else the d
 ### <a id="args.valuesOf"></a>`valuesOf`
 
 ```ec
-fn valuesOf(r: @Parsed, name: String): String[]
+fn valuesOf(r: Parsed, name: String): String[]
 ```
 
 All the values of an option or positional argument, in the order they were given; the default when none was.
@@ -304,7 +304,7 @@ All the values of an option or positional argument, in the order they were given
 ### <a id="args.longValue"></a>`longValue`
 
 ```ec
-fn longValue(r: @Parsed, name: String): Long? throws ArgsError
+fn longValue(r: Parsed, name: String): Long? throws ArgsError
 ```
 
 The value of an option or positional argument as a whole number.

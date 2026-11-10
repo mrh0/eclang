@@ -94,15 +94,23 @@ class ArgumentOrder(private val cd: CompileData) {
         if (e.value.second.isConstant() || e.value.first === Types.Null) return true
         return when (val tok = e.tok.unnested()) {
             is TString, is TLambda -> true
-            is TNamed -> {
-                if (TNamed.isCurrentPool(cd, tok.name)) return true
-                val name = testIdentifier(tok.location, tok.name)
-                val v = cd.findVar(name) ?: return false
-                val assignable = ((v as? NarrowedVar)?.base ?: v).canAssign()
-                // A `when` hoisted from a later value can assign a local.
-                if (cd.ctx().getRaw(name) != null) name !in cd.addressTaken && !(hoistsAfter && assignable) else !assignable
-            }
+            is TNamed -> isFixedVariable(cd, tok, hoistsAfter)
             else -> false
+        }
+    }
+
+    companion object {
+        /**
+         * Whether a call can't change the variable [tok]: a local whose address isn't taken (and that no `mut` argument
+         * or, with [hoistsAfter], hoisted `when` assigns), or a global that can't be assigned.
+         */
+        fun isFixedVariable(cd: CompileData, tok: TNamed, hoistsAfter: Boolean = false): Boolean {
+            if (TNamed.isCurrentPool(cd, tok.name)) return true
+            val name = testIdentifier(tok.location, tok.name)
+            val v = cd.findVar(name) ?: return false
+            val assignable = ((v as? NarrowedVar)?.base ?: v).canAssign()
+            // A `when` hoisted from a later value can assign a local.
+            return if (cd.ctx().getRaw(name) != null) name !in cd.addressTaken && name !in cd.changedByCalls && !(hoistsAfter && assignable) else !assignable
         }
     }
 }

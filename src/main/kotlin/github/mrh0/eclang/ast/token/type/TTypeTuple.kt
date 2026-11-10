@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token.type
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
@@ -11,7 +12,7 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 /** `(A, B)`: a tuple type, a struct in C. */
-class TTypeTuple(location: Loc, val types: List<ITok>) : Tok(location) {
+class TTypeTuple(location: Loc, val types: List<ITok>) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val parts = types.map { it.process(cd, Types.None).first }
         if (Types.None in parts) throw EcError(location, "None has no values, so it can't be a part of a tuple. Leave that part out.")

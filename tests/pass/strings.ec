@@ -8,7 +8,7 @@ rec Point as
 
 fn main(): Int do
     var pool: @apr_pool_t? = null
-    ret 1 if apr_pool_create_core(addrof(pool!)) != APR_SUCCESS
+    ret 1 if apr_pool_create_core(mut pool) != APR_SUCCESS
     val mem = pool!
     defer apr_pool_destroy(mem)
 

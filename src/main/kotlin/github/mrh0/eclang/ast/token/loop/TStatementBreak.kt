@@ -1,6 +1,7 @@
 package github.mrh0.eclang.ast.token.loop
 
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.Lifetimes
@@ -11,7 +12,7 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 /** `break`, or `break outer` to leave the loop labelled `outer` around this one. */
-class TStatementBreak (location: Loc, private val label: String? = null) : Tok(location) {
+class TStatementBreak (location: Loc, private val label: String? = null) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         if (cd.loopDepth == 0) throw EcError(location, "`break` can only be used inside a loop.")
         val deferred = cd.loopDeferred(location, label, "break")

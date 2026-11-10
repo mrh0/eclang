@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -11,6 +12,8 @@ import github.mrh0.ect2.FloatLiteral
 import github.mrh0.ect2.Type
 
 class TExprNest(location: Loc, val expr: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(expr)
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val res = expr.process(cd, hint)
         // Keep literals bare so they can still be folded and converted, e.g. `(2 + 3) * x`.

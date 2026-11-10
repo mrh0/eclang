@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op.arithmetic
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -10,6 +11,8 @@ import github.mrh0.eclang.ir.arithmetic.mul.IRMul
 import github.mrh0.ect2.Type
 
 class TMul(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // a number or Bool
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> =
         arithmetic(cd, location, "*", left, right, { a, b -> Math.multiplyExact(a, b) }, { a, b -> a * b }, checked = "*") { l, r -> IRMul(location, l, r) }
 

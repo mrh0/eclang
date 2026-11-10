@@ -5,8 +5,8 @@ use "core:apr/errno.ec"
 
 declare rec apr_global_mutex_t
 
-declare fn apr_global_mutex_create as (mutex: @@apr_global_mutex_t, fname: CString, mech: apr_lockmech_e, pool: @apr_pool_t): apr_status_t
-declare fn apr_global_mutex_child_init as (mutex: @@apr_global_mutex_t, fname: CString, pool: @apr_pool_t): apr_status_t
+declare fn apr_global_mutex_create as (out mutex: @apr_global_mutex_t, fname: CString, mech: apr_lockmech_e, pool: @apr_pool_t): apr_status_t
+declare fn apr_global_mutex_child_init as (mut mutex: @apr_global_mutex_t, fname: CString, pool: @apr_pool_t): apr_status_t
 declare fn apr_global_mutex_lock as (mutex: @apr_global_mutex_t): apr_status_t
 declare fn apr_global_mutex_trylock as (mutex: @apr_global_mutex_t): apr_status_t
 declare fn apr_global_mutex_unlock as (mutex: @apr_global_mutex_t): apr_status_t

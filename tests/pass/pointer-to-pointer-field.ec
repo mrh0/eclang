@@ -1,6 +1,6 @@
 use "core:io.ec"
 
-rec R as
+mut rec R as
     x: Int
 
 fn main() do

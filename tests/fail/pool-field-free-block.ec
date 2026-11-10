@@ -4,5 +4,5 @@ rec H as
 fn main(): Int do
     pool x do
         val h = H { p = x }
-        freePool(h.p)
+        destroy h.p
     ret 0

@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token.statement
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.Lifetimes
@@ -12,7 +13,7 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 /** `throw value`: returns the error from the current function, which must declare `throws`. */
-class TStatementThrow(location: Loc, val next: ITok) : Tok(location) {
+class TStatementThrow(location: Loc, val next: ITok) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val fn = cd.function ?: throw EcError(location, "`throw` can only be used inside a function.")
         val errorType = fn.throws ?: throw EcError(location, "Function ${fn.name} can't throw: add `throws <ErrorType>` after its return type, e.g. `fn ${fn.name}(...): ${fn.returns} throws Error`.")

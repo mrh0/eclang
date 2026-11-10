@@ -49,7 +49,7 @@ use "core:apr/version.ec"
 /** The fields of `uname`; they are empty if it fails, which it doesn't on a working system. */
 priv fn systemName(): utsname do
     var u: utsname
-    uname(addrof(u))
+    uname(mut u)
     ret u
 
 /** The name of the operating system, such as "Linux" or "Darwin". */
@@ -145,7 +145,7 @@ declare val environTable extern "__ec_environ" as CString?[]c
 /** The value of the environment variable `name` (`os.env("HOME")`), or null when it isn't set. */
 fn env(name: String): String? do
     var value: CString? = null
-    ret null if apr_env_get(addrof(value!), cstr(name), pool) != APR_SUCCESS
+    ret null if apr_env_get(mut value, cstr(name), pool) != APR_SUCCESS
     if val found = value do
         ret fromC(found)
     ret null
@@ -169,11 +169,12 @@ fn unsetEnv(name: String) throws OsError do
 /** All environment variables, in the order the system keeps them. */
 fn environment(): EnvVar[] do
     var count: Size = 0
-    while environTable[count] != null do
+    // C ends the table with a null.
+    while unsafe environTable[count] != null do
         count += 1
     val all = new EnvVar[count]
     for i in 0..<count do
-        val entry = fromC(environTable[i]!)
+        val entry = fromC((unsafe environTable[i])!)
         all[i] = EnvVar { entry.before("="), entry.after("=") }
     ret all
 
@@ -196,10 +197,10 @@ rec User as
 /** The {@link User} called `name`, whose numbers are known. */
 priv fn describeUser(name: String, id: UInt, groupId: UInt): User throws OsError do
     var home: CString = ""c
-    val status = apr_uid_homepath_get(addrof(home), cstr(name), pool)
+    val status = apr_uid_homepath_get(mut home, cstr(name), pool)
     throw osError(status, "find the home directory of '${name}'") if status != APR_SUCCESS
     var groupName: CString? = null
-    val named = apr_gid_name_get(addrof(groupName!), groupId, pool) == APR_SUCCESS
+    val named = apr_gid_name_get(mut groupName, groupId, pool) == APR_SUCCESS
     val group: String? = if named do fromC(groupName!) else null
     ret User { name, id, groupId, group, fromC(home) }
 
@@ -210,10 +211,10 @@ priv fn describeUser(name: String, id: UInt, groupId: UInt): User throws OsError
 fn user(): User throws OsError do
     var id: apr_uid_t = 0
     var groupId: apr_gid_t = 0
-    val status = apr_uid_current(addrof(id), addrof(groupId), pool)
+    val status = apr_uid_current(mut id, mut groupId, pool)
     throw osError(status, "find the current user") if status != APR_SUCCESS
     var name: CString = ""c
-    val named = apr_uid_name_get(addrof(name), id, pool)
+    val named = apr_uid_name_get(mut name, id, pool)
     throw osError(named, "find the name of user ${id}") if named != APR_SUCCESS
     ret try describeUser(fromC(name), id, groupId)
 
@@ -224,7 +225,7 @@ fn user(): User throws OsError do
 fn findUser(name: String): User throws OsError do
     var id: apr_uid_t = 0
     var groupId: apr_gid_t = 0
-    val status = apr_uid_get(addrof(id), addrof(groupId), cstr(name), pool)
+    val status = apr_uid_get(mut id, mut groupId, cstr(name), pool)
     throw osError(status, "find the user '${name}'") if status != APR_SUCCESS
     ret try describeUser(name, id, groupId)
 
@@ -328,13 +329,6 @@ rec Process as
  */
 declare type Stdio as :inherit | :pipe
 
-/** The fields of apr_proc_t, under names eclang can use: `in` is a keyword. */
-priv rec ProcessFields as
-    pid: Int
-    input: @apr_file_t?
-    output: @apr_file_t?
-    error: @apr_file_t?
-
 /**
  * Finds the file a program name stands for, the way a shell does: in the directories of the PATH environment
  * variable, in their order. A name with a "/" in it is a path, and isn't looked up.
@@ -360,7 +354,7 @@ fn findProgram(program: String): String? do
 priv fn start(kind: apr_cmdtype_e, path: String, args: String[], input: Bool, output: Bool, dir: String?): Process throws OsError do
     val what = "start '${path}'"
     var attr: @apr_procattr_t? = null
-    val made = apr_procattr_create(addrof(attr!), pool)
+    val made = apr_procattr_create(mut attr, pool)
     throw osError(made, what) if made != APR_SUCCESS
     val a = attr!
     val inMode = if input do APR_FULL_BLOCK else APR_NO_PIPE
@@ -383,15 +377,14 @@ priv fn start(kind: apr_cmdtype_e, path: String, args: String[], input: Bool, ou
     val status = apr_proc_create(proc, cstr(path), argv.data !as @CString, null, a, pool)
     throw osError(status, what) if status != APR_SUCCESS
 
-    val fields = proc !as @ProcessFields
     var inFile: io.File? = null
     var outFile: io.File? = null
     var errFile: io.File? = null
-    if val f = fields.input do
+    if val f = proc.input do
         inFile = io.File { f, "the standard input of ${path}" }
-    if val f = fields.output do
+    if val f = proc.out do
         outFile = io.File { f, "the standard output of ${path}" }
-    if val f = fields.error do
+    if val f = proc.err do
         errFile = io.File { f, "the standard error of ${path}" }
     ret Process { proc, proc.pid, inFile, outFile, errFile }
 
@@ -442,7 +435,7 @@ priv fn exitOf(code: Int, why: Int): Exit do
 fn wait(p: Process): Exit throws OsError do
     var code = 0
     var why = 0
-    val status = apr_proc_wait(p.handle, addrof(code), (addrof why) !as @Any, :wait)
+    val status = apr_proc_wait(p.handle, mut code, (addrof why) !as @Any, :wait)
     throw osError(status, "wait for process ${p.pid}") if status != APR_CHILD_DONE
     ret exitOf(code, why)
 
@@ -454,7 +447,7 @@ fn wait(p: Process): Exit throws OsError do
 fn poll(p: Process): Exit? throws OsError do
     var code = 0
     var why = 0
-    val status = apr_proc_wait(p.handle, addrof(code), (addrof why) !as @Any, :nowait)
+    val status = apr_proc_wait(p.handle, mut code, (addrof why) !as @Any, :nowait)
     ret null if status == APR_CHILD_NOTDONE
     throw osError(status, "check on process ${p.pid}") if status != APR_CHILD_DONE
     ret exitOf(code, why)
@@ -493,7 +486,7 @@ priv fn collect(p: Process): Output throws OsError do
                 waiting[count].client_data = null
                 count += 1
         var ready = 0
-        val polled = apr_poll(waiting.data !as @apr_pollfd_t, count, addrof(ready), -1)
+        val polled = apr_poll(waiting.data !as @apr_pollfd_t, count, mut ready, -1)
         continue if APR_STATUS_IS_EINTR(polled) != 0
         throw osError(polled, "read from process ${p.pid}") if polled != APR_SUCCESS
         for i in 0..<(count as Size) do
@@ -501,7 +494,7 @@ priv fn collect(p: Process): Output throws OsError do
             val f = waiting[i].desc.f!
             val index: Size = if f == p.stdout!.handle do 0 else 1
             var got = buffer.len
-            val status = apr_file_read(f, buffer.data, addrof(got))
+            val status = apr_file_read(f, buffer.data, mut got)
             if APR_STATUS_IS_EOF(status) != 0 do
                 files[index] = null
             else if status != APR_SUCCESS do

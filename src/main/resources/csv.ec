@@ -65,7 +65,7 @@ rec CsvError extends ParseError as
 // Reading
 
 /** Reads CSV a row at a time: {@link reader}. */
-rec Reader as
+mut ref rec Reader as
     /** What is read. */
     text: String
     /** How it is read. */
@@ -82,7 +82,7 @@ rec Reader as
     rowStart: Size = 0
 
 /** A {@link CsvError} at byte `at` of a line that starts at `lineStart`. */
-priv fn problem(r: @Reader, message: String, at: Size, line: Size, lineStart: Size): CsvError do
+priv fn problem(r: Reader, message: String, at: Size, line: Size, lineStart: Size): CsvError do
     val column = at - lineStart + 1
     ret CsvError { ERR_PARSE, "line ${line}, column ${column}: ${message}", r.text, at, line, column }
 
@@ -91,12 +91,12 @@ priv fn problem(r: @Reader, message: String, at: Size, line: Size, lineStart: Si
  * @param text the CSV
  * @param options how to read it
  */
-fn reader(text: String, options: Options = rfc4180()): @Reader do
+fn reader(text: String, options: Options = rfc4180()): Reader do
     val start: Size = if text.startsWith("\xEF\xBB\xBF") do 3 else 0
     ret new Reader { text, options, start, 1, start }
 
 /** Whether the line break at the current byte is there, and goes past it, counting the line. */
-priv fn skipLineBreak(r: @Reader): Bool do
+priv fn skipLineBreak(r: Reader): Bool do
     ret false if r.at >= r.text.len
     val c = r.text[r.at]
     ret false if c != '\n' and c != '\r'
@@ -109,7 +109,7 @@ priv fn skipLineBreak(r: @Reader): Bool do
  * Reads the field at the current byte, an opening quote.
  * @throws when it doesn't end, or something other than a separator or line break comes after it
  */
-priv fn quotedField(r: @Reader): String throws CsvError do
+priv fn quotedField(r: Reader): String throws CsvError do
     val q = r.options.quote
     val startAt = r.at
     val startLine = r.line
@@ -117,7 +117,7 @@ priv fn quotedField(r: @Reader): String throws CsvError do
     r.at += 1
     val start = r.at
     // Only a doubled quote or lenient reading needs a copy. Until then this is a slice of the text.
-    var copy: @StringBuilder? = null
+    var copy: StringBuilder? = null
     var copied = start
     while true do
         throw problem(r, "this quoted field has no closing ${q}", startAt, startLine, startOfLine) if r.at >= r.text.len
@@ -152,7 +152,7 @@ priv fn quotedField(r: @Reader): String throws CsvError do
     ret r.text[start..<end]
 
 /** Whether the current byte, which must exist, ends a field. */
-priv fn atFieldEnd(r: @Reader): Bool do
+priv fn atFieldEnd(r: Reader): Bool do
     val c = r.text[r.at]
     ret c == r.options.separator or c == '\n' or c == '\r'
 
@@ -160,7 +160,7 @@ priv fn atFieldEnd(r: @Reader): Bool do
  * Reads the field at the current byte, which isn't a quote.
  * @throws when it has a quote in it, in strict reading
  */
-priv fn plainField(r: @Reader): String throws CsvError do
+priv fn plainField(r: Reader): String throws CsvError do
     val start = r.at
     while r.at < r.text.len and not atFieldEnd(r) do
         throw problem(r, "a ${r.options.quote} in a field needs quotes around the whole field, and is written twice", r.at, r.line, r.lineStart) if r.text[r.at] == r.options.quote and r.options.strict
@@ -172,14 +172,14 @@ priv fn plainField(r: @Reader): String throws CsvError do
  * @return its fields, at least one; null when the text has ended
  * @throws when the row isn't valid
  */
-fn next(r: @Reader): String[]? throws CsvError do
+fn next(r: Reader): String[]? throws CsvError do
     if r.options.skipBlankLines do
         while skipLineBreak(r) do
             continue
     ret null if r.at >= r.text.len
     r.rowLine = r.line
     r.rowStart = r.at
-    val fields: @List<String> = list()
+    val fields: List<String> = list()
     while true do
         if r.at < r.text.len and r.text[r.at] == r.options.quote do
             fields.push(try quotedField(r))
@@ -202,7 +202,7 @@ fn next(r: @Reader): String[]? throws CsvError do
  */
 fn parse(text: String, options: Options = rfc4180()): String[][] throws CsvError do
     val r = reader(text, options)
-    val rows: @List<String[]> = list()
+    val rows: List<String[]> = list()
     while true do
         val row = try next(r) ?? break
         rows.push(row)
@@ -223,13 +223,13 @@ fn readFile(path: String, options: Options = rfc4180()): String[][] throws Error
 // Tables
 
 /** CSV whose first row names the columns: {@link table}. */
-rec Table as
+ref rec Table as
     /** The names of the columns. */
     header: String[]
     /** The rows after the first, each with a field for every column. */
     rows: String[][]
     /** Where each name is in the header. */
-    columns: @Map<String, Size>
+    columns: Map<String, Size>
 
 /**
  * Reads CSV whose first row names the columns, skipping empty lines.
@@ -238,14 +238,14 @@ rec Table as
  * @return the table, which is in the current pool
  * @throws when it isn't valid, has no header, or a row doesn't have as many fields as the header
  */
-fn table(text: String, options: Options = rfc4180()): @Table throws CsvError do
+fn table(text: String, options: Options = rfc4180()): Table throws CsvError do
     val r = reader(text, Options { ...options, skipBlankLines = true })
     val header = try next(r) ?? throw problem(r, "a table needs a header row, and this text has none", r.at, r.line, r.lineStart)
-    val columns: @Map<String, Size> = map()
+    val columns: Map<String, Size> = map()
     for i, name in header do
         // A name used twice means its first column, which is what a reader would look at first.
         columns.put(name, i) if not columns.has(name)
-    val rows: @List<String[]> = list()
+    val rows: List<String[]> = list()
     while true do
         val row = try next(r) ?? break
         throw problem(r, "this row has ${row.len} field(s), and the header has ${header.len}", r.rowStart, r.rowLine, r.rowStart) if row.len != header.len
@@ -253,7 +253,7 @@ fn table(text: String, options: Options = rfc4180()): @Table throws CsvError do
     ret new Table { header, rows.items(), columns }
 
 /** Where the column `name` is, or null when there is none. */
-fn columnIndex(t: @Table, name: String): Size? = t.columns.get(name)
+fn columnIndex(t: Table, name: String): Size? = t.columns.get(name)
 
 /**
  * The field of a column in a row: `csv.value(t, 0, "age")`.
@@ -262,13 +262,13 @@ fn columnIndex(t: @Table, name: String): Size? = t.columns.get(name)
  * @param name the column
  * @return the field; null when there is no such row or column
  */
-fn value(t: @Table, row: Size, name: String): String? do
+fn value(t: Table, row: Size, name: String): String? do
     ret null if row >= t.rows.len
     val at = columnIndex(t, name) ?? ret null
     ret t.rows[row][at]
 
 /** All the fields of the column `name`, or null when there is no such column. */
-fn column(t: @Table, name: String): String[]? do
+fn column(t: Table, name: String): String[]? do
     val at = columnIndex(t, name) ?? ret null
     val out = new String[t.rows.len]
     for i, row in t.rows do
@@ -285,7 +285,7 @@ priv fn needsQuotes(s: String, options: Options): Bool do
     ret false
 
 /** Adds a field to `b`, in quotes when it needs them. */
-priv fn addField(b: @StringBuilder, s: String, options: Options) do
+priv fn addField(b: StringBuilder, s: String, options: Options) do
     if needsQuotes(s, options) do
         b.append(options.quote)
         for c in s do
@@ -296,7 +296,7 @@ priv fn addField(b: @StringBuilder, s: String, options: Options) do
         b.append(s)
 
 /** Adds a row and its line break to `b`. */
-priv fn addRow(b: @StringBuilder, fields: String[], options: Options) do
+priv fn addRow(b: StringBuilder, fields: String[], options: Options) do
     // A row with one empty field would be an empty line, which readers may skip.
     if fields.len == 1 and fields[0].len == 0 do
         b.append(options.quote)
@@ -332,7 +332,7 @@ fn stringify(rows: String[][], options: Options = rfc4180()): String do
  * @param t the table
  * @param options how to write it
  */
-fn stringify(t: @Table, options: Options = rfc4180()): String do
+fn stringify(t: Table, options: Options = rfc4180()): String do
     val b = stringBuilder(256)
     addRow(b, t.header, options)
     for row in t.rows do

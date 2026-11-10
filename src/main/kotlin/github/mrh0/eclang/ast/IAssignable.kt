@@ -16,8 +16,11 @@ interface IAssignable {
 /**
  * A place in memory of type [type], written in C as [ir]. [readOnly] is null when it may be changed, otherwise
  * why it can't, as the end of a sentence ("'p' is a `val`"). [name] is the local variable it is, for narrowing.
+ * [value] reads what the place holds, with the checks a read has: a place written through (the `p.next` of
+ * `p.next.x = 1`, the `p.buf` of `p.buf[0] = c`) is read, not written, so it uses [value] (the NULL check of a C
+ * struct's pointer field, see `IRCNotNull`).
  */
-data class Place(val type: Type, val ir: IIR, val readOnly: String? = null, val name: String? = null)
+data class Place(val type: Type, val ir: IIR, val readOnly: String? = null, val name: String? = null, val value: IIR = ir)
 
 /** This expression without the parentheses around it. */
 fun ITok.unnested(): ITok = if (this is github.mrh0.eclang.ast.token.TExprNest) expr.unnested() else this

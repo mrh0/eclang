@@ -13,8 +13,14 @@ import github.mrh0.ect2.*
  *   any union of atoms. These are "plain" unions.
  * - Every other union is a tagged union: `struct { int tag; union { A m0; B m1; } v; }`, where `tag` is the
  *   index of the member in [Union.members].
- * - Arrays, tuples and `T throws E` results are small generated structs. Records are structs with their parent's
- *   fields first, plus a hidden `__ec_tid` type tag when they take part in `extends`.
+ * - Arrays, tuples and `T throws E` results are small generated structs. Records are structs. A record that extends
+ *   another holds its parent as its first member, named like the parent (`struct Dog { Animal Animal; bool good; }`, so
+ *   `d.Animal.legs`; see [fieldPath]): C lets a pointer to a struct be used as a pointer to its first member, which a
+ *   copy of the parent's fields wouldn't allow (gcc's `-O2` assumes two unrelated structs don't overlap). The record at
+ *   the top of a hierarchy starts with a hidden `__ec_tid` type tag, so every record of it starts with the tag.
+ * - A function value (`(A) => R`) is a pointer to a closure: a struct whose first member is the C function, called with
+ *   the closure itself first (`f->call(f, a)`), so that a lambda finds the variables it uses after it ([closureStruct]).
+ *   A C function type (from a `declare`, [FunctionType.isC]) is a plain C function pointer.
  * - `T[N]` is a struct with one C array in it (`__ec_fixed_Int_4`), so that C can assign and return it, except as a
  *   record field: that is a C array (`int d[4];`) as C code expects, read through a cast of it to the struct ([member]).
  *
@@ -22,6 +28,9 @@ import github.mrh0.ect2.*
  * them all in an order where every struct is complete before it is used by value.
  */
 class CTypes(private val types: TypeContext, private val printers: Map<Type, Overload?> = mapOf(), private val library: Boolean = false) {
+    /** `--check-memory` (see CompileData.checkMemory): a `malloc` per allocation, and `#line`s before statements. */
+    var checkMemory = false
+
     private val names = HashMap<Type, String>()
     private val scheduled = LinkedHashSet<Type>()
     private val completed = HashSet<Type>()
@@ -31,8 +40,11 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
     private val helpers = LinkedHashMap<String, String?>()
     private val mangled = HashMap<String, Type>()
 
-    /** Atoms the helpers refer to (by label), so the program defines them even if its own code doesn't use them. */
-    val helperAtoms = LinkedHashSet<String>()
+    /**
+     * Atoms the C refers to (by label), from code and helpers: the program defines only those, as gcc's
+     * `-Wunused-const-variable` rejects the others (an unused member of a `declare type`).
+     */
+    val usedAtoms = LinkedHashSet<String>()
 
     // ---------------------------------------------------------------------------------------------------
     // Representation rules.
@@ -59,7 +71,11 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         is Tuple -> struct(t, "tuple")
         is Union -> if (isPlain(t)) t.members.firstOrNull { it !== Types.Null }?.let { cName(it) } ?: "void*" else struct(t, "union")
         is Result -> struct(t, "result")
-        is FunctionType -> names.getOrPut(t) { "__ec_fn_${mangle(t)}" }.also { scheduled += t }
+        is FunctionType -> names[t] ?: (if (t.isC) "__ec_cfn_${mangle(t)}" else "__ec_fn_${mangle(t)}").also { name ->
+            names[t] = name
+            scheduled += t
+            if (!t.isC) "__ec_closure_${name.removePrefix("__ec_fn_")}".let { forward.append("typedef struct $it $it;\ntypedef $it* $name;\n") }
+        }
         is Record -> recordName(t)
         is Distinct -> distinctName(t)
         is Interface, is TypeParam, is Applied, is GenericRecord -> error("BUG: ${t} has no C representation")
@@ -118,7 +134,7 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
             is Union -> t.members.joinToString("_") { mangle(it) }
             is Tuple -> t.elements.joinToString("_") { mangle(it) }
             is Result -> mangle(t.value) + "_" + mangle(t.error)
-            is FunctionType -> t.params.joinToString("_") { mangle(it) } + "_to_" + mangle(t.returns) + (t.throws?.let { "_throws_" + mangle(it) } ?: "")
+            is FunctionType -> (if (t.isC) "c" else "") + t.params.joinToString("_") { mangle(it) } + "_to_" + mangle(t.returns) + (t.throws?.let { "_throws_" + mangle(it) } ?: "")
             is AtomLiteral -> "a" + t.name
             is TypeParam, is Applied, is GenericRecord -> "t${t.id}"
             is IntLiteral, is FloatLiteral -> error("BUG: handled above")
@@ -126,6 +142,24 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         // Different types can read the same, such as `(Int, (Int, Int))` and `((Int, Int), Int)`.
         val name = if (m.length <= 40) m else "t${t.id}"
         return if (mangled.getOrPut(name) { t } === t) name else "t${t.id}"
+    }
+
+    /** The struct a function value of type [t] points to: `struct __ec_closure_M { R (*call)(void*, A); }`. A lambda's adds its captured variables. */
+    fun closureStruct(t: FunctionType): String = "__ec_closure_" + cName(t).removePrefix("__ec_fn_")
+
+    /** What a C function a function value of type [t] calls returns: R, or the result struct when it `throws`. */
+    fun closureReturns(t: FunctionType): Type = t.throws?.let { types.result(t.returns, it) } ?: t.returns
+
+    /**
+     * Calls a function value of type [t] that isn't a plain name, which `f->call(f, ...)` would compute twice:
+     * `static inline R __ec_call_M(__ec_fn_M f, A0 a0) { return f->call(f, a0); }`.
+     */
+    fun closureCall(t: FunctionType): String = helper("__ec_call_" + cName(t).removePrefix("__ec_fn_")) { name ->
+        val returns = closureReturns(t)
+        val params = t.params.mapIndexed { i, p -> "${cName(p)} a$i" }
+        val args = (listOf("f") + t.params.indices.map { "a$it" }).joinToString(", ")
+        val ret = if (returns === Types.None || returns === Types.Never) "" else "return "
+        "static inline ${cName(returns)} $name(${(listOf("${cName(t)} f") + params).joinToString(", ")}) {\n\t${ret}f->call($args);\n}\n"
     }
 
     // ---------------------------------------------------------------------------------------------------
@@ -160,17 +194,23 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
                 t.params.forEach { complete(it) }
                 val returns = t.throws?.let { types.result(t.returns, it) } ?: t.returns
                 complete(returns)
-                val params = if (t.params.isEmpty()) "void" else t.params.joinToString(", ") { cName(it) }
-                bodies.append("typedef ${cName(returns)} (*${cName(t)})($params);\n")
+                if (t.isC) {
+                    val params = if (t.params.isEmpty()) "void" else t.params.joinToString(", ") { cName(it) }
+                    bodies.append("typedef ${cName(returns)} (*${cName(t)})($params);\n")
+                } else {
+                    val params = (listOf("void*") + t.params.map { cName(it) }).joinToString(", ")
+                    bodies.append("struct ${closureStruct(t)} { ${cName(returns)} (*call)($params); };\n")
+                }
             }
             is Distinct -> {
                 complete(t.base)
                 if (t.base is FunctionType) bodies.append("typedef ${cName(t.base)} ${cName(t)};\n")
             }
             is Record -> if (!t.isExternal) {
-                val fields = t.fields.map { (name, type) -> complete(type); "\t${fieldDeclaration(t, name, type)};\n" }
-                val tid = if (t.inHierarchy) "\tint __ec_tid;\n" else ""
-                bodies.append("${keyword(t)} ${attributes(t.layout)}${t.cName} {\n$tid${fields.joinToString("")}};\n")
+                val parent = t.parent?.let { complete(it); "\t${cName(it)} ${parentMember(t)};\n" } ?: ""
+                val fields = t.ownFieldMap.map { (name, type) -> complete(type); "\t${fieldDeclaration(t, name, type)};\n" }
+                val tid = if (t.inHierarchy && t.parent == null) "\tint __ec_tid;\n" else ""
+                bodies.append("${keyword(t)} ${attributes(t.layout)}${t.cName} {\n$tid$parent${fields.joinToString("")}};\n")
             }
             else -> {}
         }
@@ -198,7 +238,7 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
      * in, which has the same bytes; the result stays assignable. See [storage].
      */
     fun member(r: Record, base: String, field: String, type: Type): String =
-        if (fixedOf(type) != null) storage("$base.$field", type, r.layout.packed) else "$base.$field"
+        "$base.${fieldPath(r, field)}".let { if (fixedOf(type) != null) storage(it, type, r.layout.packed) else it }
 
     /** The C array [expr] as the [type] (a `T[N]`) it holds. In a [packed] record the array may be at any address. */
     fun storage(expr: String, type: Type, packed: Boolean): String = "(*(${if (packed) unalignedName(type) else cName(type)}*)$expr)"
@@ -306,6 +346,7 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
                 }
             }
             from === Types.String && to is ArrayType -> "${stringToArray(to)}($expr)"
+            from === Types.String && to is FixedArray -> "${stringToFixed(to)}($expr, $where)"
             from is Prim && to is Prim -> if (explicit) "((${cName(to)})($expr))" else expr
             else -> if (explicit) "((${cName(to)})($expr))" else expr
         }
@@ -554,7 +595,7 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
     fun zero(t: Type): String = when {
         t === Types.Bool -> "false"
         t is Prim && t !== Types.String -> "0"
-        t is Record && t.inHierarchy -> "(${cName(t)}){.__ec_tid = ${t.id}}"
+        t is Record && t.inHierarchy -> "(${cName(t)}){.${tagPath(t)} = ${t.id}}"
         t is FixedArray && t.element is Record && t.element.inHierarchy -> "(${cName(t)}){{[0 ... ${t.size - 1}] = ${zero(t.element)}}}"
         else -> "(${cName(t)}){0}"
     }
@@ -678,6 +719,29 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
     }
 
     private var shiftRuntime = false
+
+    /**
+     * `__EC_DEBUG`, the condition of `debug` statements (see TDebug): 1, or 0 in a release build. A C file can be built either way
+     * with `-D__EC_DEBUG=0` or `1`; code in a `debug` statement stays in the C, so the helpers it uses are still used.
+     */
+    fun useDebugFlag(release: Boolean) {
+        if (debugFlag) return
+        debugFlag = true
+        prototypes.append("#ifndef __EC_DEBUG\n#define __EC_DEBUG ${if (release) 0 else 1} /* 0: a release build, without `debug` statements */\n#endif\n")
+    }
+    private var debugFlag = false
+
+    /**
+     * Where the call of a function with `requires` is (see Functions.contractEntry): the caller sets it right before the call, and
+     * the function takes it first thing, so a call through a function value or from C sees NULL.
+     */
+    fun useCallSite() {
+        if (callSite) return
+        callSite = true
+        prototypes.append("static _Thread_local const char* __ec_call_site; /* where the function with `requires` being entered was called */\n" +
+            "static inline const char* __ec_take_call_site(const char* otherwise) { const char* at = __ec_call_site; __ec_call_site = NULL; return at != NULL ? at : otherwise; }\n")
+    }
+    private var callSite = false
 
     private var cloneRuntime = false
     private val cloneKinds = HashMap<Type, Int>()
@@ -829,12 +893,10 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         return "$name($expr, $where)"
     }
 
-    /** By-value upcast: copies the parent's fields out of the child (the copy really is a [to]). */
+    /** By-value upcast: copies the parent inside the child, with the parent's type tag (the copy really is a [to]). */
     private fun upcast(from: Record, to: Record): String = helper("__ec_up_${from.cName}__${to.cName}") { name ->
-        val (arrays, plain) = to.fields.entries.partition { fixedOf(it.value) != null }
-        val fields = plain.map { ".${it.key} = v.${it.key}" } + if (to.inHierarchy) listOf(".__ec_tid = ${to.id}") else listOf()
-        val copy = arrays.fold("(${cName(to)}){${fields.joinToString(", ")}}") { made, (field, ft) -> "${setFixed(to, field, ft)}($made, ${member(from, "v", field, ft)})" }
-        "static inline ${cName(to)} $name(${cName(from)} v) { return $copy; }\n"
+        val inside = generateSequence(from) { it.parent }.takeWhile { it !== to }.joinToString("") { ".${parentMember(it)}" }
+        "static inline ${cName(to)} $name(${cName(from)} v) {\n\t${cName(to)} r = v$inside;\n\tr.${tagPath(to)} = ${to.id};\n\treturn r;\n}\n"
     }
 
     /**
@@ -849,14 +911,14 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
 
     /** `__ec_enum_to_c_Name(atom)`: the C constant of an atom of a `declare enum` ([members]: atom label to constant). */
     fun enumToC(cName: String, members: List<Pair<String, String>>): String = helper("__ec_enum_to_c_$cName") { name ->
-        helperAtoms += members.dropLast(1).map { it.first }
+        usedAtoms += members.dropLast(1).map { it.first }
         val chain = members.dropLast(1).joinToString("") { (atom, constant) -> "v == __ec_atom_$atom ? $constant : " } + members.last().second
         "static inline int $name(char* v) { return $chain; }\n"
     }
 
     /** `__ec_enum_of_c_Name(value, where)`: the atom of a C constant of a `declare enum`; any other value stops the program. */
     fun enumFromC(cName: String, enumName: String, members: List<Pair<String, String>>): String = helper("__ec_enum_of_c_$cName") { name ->
-        helperAtoms += members.map { it.first }
+        usedAtoms += members.map { it.first }
         val checks = members.joinToString("") { (atom, constant) -> "\tif (v == $constant) return __ec_atom_$atom;\n" }
         "static inline char* $name(int v, const char* at) {\n$checks\t__ec_panic(at, \"a C function returned a value that the enum $enumName doesn't list\");\n}\n"
     }
@@ -883,8 +945,9 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         helper("__ec_safe_${mangle(from)}__$field") { name ->
             // Only reached when v is not null, so the value needs no check.
             val value = if (isPlain(from)) "v" else narrow(from, nonNull, "v", "\"?.\"")
-            val read = "($value)${if (throughPointer) "->" else "."}$field".let { field ->
-                val owner = (nonNull as? Pointer)?.target ?: nonNull
+            val owner = (nonNull as? Pointer)?.target ?: nonNull
+            val path = if (owner is Record) fieldPath(owner, field) else field
+            val read = "($value)${if (throughPointer) "->" else "."}$path".let { field ->
                 if (owner is Record && fixedOf(fieldType) != null) storage(field, fieldType, owner.layout.packed) else field
             }
             "static inline ${cName(result)} $name(${cName(from)} v) {\n" +
@@ -896,6 +959,36 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         "static inline ${cName(to)} $name(__ec_string_t s) { return (${cName(to)}){s.len, s.data}; }\n"
     }
 
+    /** A String's bytes copied into a `Char[N]`, the rest zeros; one longer than N stops the program. */
+    private fun stringToFixed(to: FixedArray): String = helper("__ec_str_to_${mangle(to)}") { name ->
+        val c = cName(to)
+        "static inline $c $name(__ec_string_t s, const char* at) {\n" +
+            "\tif (s.len > ${to.size}) { fflush(stdout); fprintf(stderr, \"%s: a String of %zu bytes doesn't fit a $to\\n\", at, s.len); abort(); }\n" +
+            "\t$c r;\n\tmemset(&r, 0, sizeof r);\n\tif (s.len > 0) memcpy(r.data, s.data, s.len);\n\treturn r;\n}\n"
+    }
+
+    /** A helper comparing the text of a `Char[N]` (up to its first 0, or all N Chars) with a String's (`a == s`). */
+    fun fixedTextEquals(t: FixedArray): String = helper("__ec_eq_text_${mangle(t)}") { name ->
+        "static inline bool $name(${cName(t)} a, __ec_string_t s) {\n\tconst char* end = memchr(a.data, 0, ${t.size});\n" +
+            "\tsize_t len = end == NULL ? ${t.size} : (size_t)(end - a.data);\n\treturn len == s.len && (len == 0 || memcmp(a.data, s.data, len) == 0);\n}\n"
+    }
+
+    /**
+     * A helper giving back a value for a bit-field of [t] with [width] bits, which stops the program when it doesn't fit
+     * (C would cut it to the width). `field` names the bit-field in the message.
+     */
+    fun checkedBits(t: Prim, width: Int): String = helper("__ec_bits_${mangle(t)}_$width") { name ->
+        val c = cName(t)
+        val signed = t.category == Category.SINT
+        val lowest = if (signed) -(1L shl (width - 1)) else 0L
+        val highest = if (signed) (1L shl (width - 1)) - 1 else (1L shl width) - 1
+        val (test, format, cast) = if (signed) Triple("v < ${lowest}LL || v > ${highest}LL", "%lld", "(long long)")
+            else Triple("v > ${highest}ULL", "%llu", "(unsigned long long)")
+        "static inline $c $name($c v, const char* field, const char* at) {\n" +
+            "\tif ($test) { fflush(stdout); fprintf(stderr, \"%s: $format doesn't fit bit-field '%s', which has $width bit(s): it holds $lowest to $highest\\n\", at, ${cast}v, field); abort(); }\n" +
+            "\treturn v;\n}\n"
+    }
+
     /** `expr !as to` in C (see [canCastUnsafe]): a C cast between scalars, or a view of the same bytes between byte arrays. */
     fun unsafeCast(from: Type, to: Type, expr: String): String = when {
         from === to && !isScalar(from) -> expr
@@ -903,6 +996,13 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
             "static inline ${cName(to)} $name(${cName(from)} a) { return (${cName(to)}){a.len, (${element(to)}*)a.data}; }\n"
         }}($expr)"
         else -> "((${cName(to)})($expr))"
+    }
+
+    /** A C expression naming the member of [u] that [expr] holds, as text ("a String", "null"), for the report of a failed `assert` (see Assertions). */
+    fun heldType(u: Union, expr: String): String {
+        fun named(t: Type) = "\"${if (t === Types.Null) "null" else "a $t"}\""
+        if (isPlain(u)) return if (Types.Null in u.members) "(($expr) == NULL ? \"null\" : ${named(u.members.first { it !== Types.Null })})" else named(u)
+        return u.members.foldRight("\"an unknown value\"") { m, rest -> "(($expr).tag == ${tagOf(u, m)} ? ${named(m)} : $rest)" }
     }
 
     /** A C condition that is true when [expr] (of type [from]) currently holds a [target]. */
@@ -917,7 +1017,7 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         if (isPlain(from)) return when {
             matching.all { it === Types.Null } -> "(($expr) == NULL)"
             matching.size == from.members.size -> "true"
-            target is AtomLiteral -> "(($expr) == __ec_atom_${target.name})"
+            target is AtomLiteral -> { usedAtoms += target.name; "(($expr) == __ec_atom_${target.name})" }
             else -> "(($expr) != NULL)"
         }
         return matching.joinToString(" || ", "(", ")") { "($expr).tag == ${tagOf(from, it)}" }
@@ -936,6 +1036,29 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
     }
 
     companion object {
+        /**
+         * The member of [child]'s C struct that holds its parent: named like the parent's C type (`Animal`), or with the
+         * `__ec_` prefix when [child] has a field of that name.
+         */
+        fun parentMember(child: Record): String {
+            val parent = child.parent ?: error("${child.name} extends nothing")
+            return if (parent.cName in child.ownFieldMap) "__ec_${parent.cName}" else parent.cName
+        }
+
+        /** Where the field [field] of [r] is in a C value of [r]: `legs`, or `Animal.legs` when [r] inherits it from Animal. */
+        fun fieldPath(r: Record, field: String): String {
+            var owner = r
+            val path = StringBuilder()
+            while (owner.parent != null && field !in owner.ownFieldMap) {
+                path.append(parentMember(owner)).append('.')
+                owner = owner.parent!!
+            }
+            return path.append(owner.cFieldNames[field] ?: field).toString()
+        }
+
+        /** Where the type tag of [r], a record in a hierarchy, is: `__ec_tid` in the top record, `Animal.__ec_tid` below it. */
+        fun tagPath(r: Record): String = generateSequence(r) { it.parent }.filter { it.parent != null }.joinToString("") { "${parentMember(it)}." } + "__ec_tid"
+
         /** What `apr_palloc` aligns memory to. */
         private const val POOL_ALIGNMENT = 8L
 

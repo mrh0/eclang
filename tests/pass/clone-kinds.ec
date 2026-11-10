@@ -2,11 +2,11 @@ use "core:c/stdio.ec"
 
 // A record and its first field are at one address, but a copy of one can't stand in for the other.
 
-rec Inner as
+mut rec Inner as
     a: Int
     b: Int
 
-rec Outer as
+mut rec Outer as
     first: Inner
     second: Inner
 
@@ -21,10 +21,10 @@ rec Reversed as
     after: @Inner
 
 // Pointers to one object stay shared, though their types differ.
-rec Animal as
+mut rec Animal as
     legs: Int
 
-rec Dog extends Animal as
+mut rec Dog extends Animal as
     name: CString
 
 rec Kennel as

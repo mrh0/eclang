@@ -2,10 +2,10 @@
 use "core:io.ec"
 
 fn main() do
-    val p = newPool()
+    val p = new Pool
     var s: String = "a"
     for i in 0..<3 do
-        defer freePool(p)
+        defer destroy p
         s = format(p, "x${i}")
         break
     io.log(s)

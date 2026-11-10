@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -25,6 +26,8 @@ import github.mrh0.ect2.Types
  * the stage uses `it` more than once, it goes into a temporary first (unless it is a plain variable or literal).
  */
 class TPipe(location: Loc, val value: ITok, val stage: ITok, private val itUses: Int) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // Lifetimes follows pipes itself (Lifetimes.piped)
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         var v = cd.usable(location, value.process(cd, Types.None), "value before `|>`")
         val simple = value.unnested().let { it is TNamed || it is TInteger || it is TFloat || it is TBoolean || it is TChar }
@@ -49,6 +52,8 @@ class TPipe(location: Loc, val value: ITok, val stage: ITok, private val itUses:
 
 /** `it`: the value before `|>` in the stage being compiled. */
 class TIt(location: Loc) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // what `it` stands for: Lifetimes.unpiped
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> =
         cd.pipeValues.lastOrNull() ?: throw EcError(location, "`it` can only be used in a `|>` stage, where it is the value before the `|>`, e.g. `x |> it * 2`.")
 
@@ -57,6 +62,12 @@ class TIt(location: Loc) : Tok(location) {
 
 /** `callee(args)` where callee is any expression of function type, e.g. a lambda as a `|>` stage. */
 class TCallValue(location: Loc, private val callee: ITok, val args: List<ITok>) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(listOf(callee) + args) // a closure's result may point into what it captured
+
+    /** The arguments a store through the result of the last compiled call may write into (see Lifetimes.storedInto). */
+    var storedInto: List<ITok> = listOf()
+        private set
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val values = args.mapIndexed { i, a -> cd.usable(location, a.process(cd, Types.None), "argument ${i + 1}") }
         // The arguments' types tell a lambda the types of parameters written without one.
@@ -65,8 +76,10 @@ class TCallValue(location: Loc, private val callee: ITok, val args: List<ITok>) 
         if (values.size != type.params.size) throw EcError(location, "This function takes ${type.params.size} arguments ($type), but ${values.size} were given.")
         val irs = values.mapIndexed { i, v -> cd.expect(location, v, type.params[i], "argument ${i + 1}") }
         val result = type.throws?.let { cd.types.result(type.returns, it) } ?: type.returns
+        storedInto = github.mrh0.eclang.context.Lifetimes.storedInto(args, type.params, result)
+        github.mrh0.eclang.context.Lifetimes.noteValueCall(cd, location, "this function", type, args)
         cd.noteEffect()
-        return result to IRCallValue(location, ir, irs)
+        return result to IRCallValue(location, ir, irs, type)
     }
 
     override fun toString() = "TCallValue($callee, $args)"

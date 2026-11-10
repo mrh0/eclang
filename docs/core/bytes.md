@@ -37,7 +37,7 @@ The order of the bytes of a number: `:big` puts the most significant byte first,
 ### <a id="bytes.Writer"></a>`Writer`
 
 ```ec
-rec Writer
+mut ref rec Writer
 ```
 
 Builds binary data, growing as needed: [`writer`](#bytes.writer).
@@ -45,12 +45,12 @@ Builds binary data, growing as needed: [`writer`](#bytes.writer).
 **Fields**
 
 - <a id="bytes.Writer.endian"></a>`endian: Endian` — The order of the bytes of the numbers written from now on.
-- <a id="bytes.Writer.out"></a>`out: @StringBuilder` — What is written so far.
+- <a id="bytes.Writer.out"></a>`out: StringBuilder` — What is written so far.
 
 ### <a id="bytes.Reader"></a>`Reader`
 
 ```ec
-rec Reader
+mut ref rec Reader
 ```
 
 Reads binary data from the start: [`reader`](#bytes.reader).
@@ -98,7 +98,7 @@ The Double with the IEEE 754 bits `bits`.
 ### <a id="bytes.writer"></a>`writer`
 
 ```ec
-fn writer(endian: Endian = :big, capacity: Size = 64): @Writer
+fn writer(endian: Endian = :big, capacity: Size = 64): Writer
 ```
 
 A new empty [`Writer`](#bytes.Writer), in the current pool.
@@ -111,7 +111,7 @@ A new empty [`Writer`](#bytes.Writer), in the current pool.
 ### <a id="bytes.position"></a>`position`
 
 ```ec
-fn position(w: @Writer): Size
+fn position(w: Writer): Size
 ```
 
 How many bytes are written so far, which is where the next one goes.
@@ -119,7 +119,7 @@ How many bytes are written so far, which is where the next one goes.
 ### <a id="bytes.finish"></a>`finish`
 
 ```ec
-fn finish(w: @Writer): String
+fn finish(w: Writer): String
 ```
 
 All that is written, as a String. It shares the memory of `w`, so copy it with `clone` to go on writing after this.
@@ -127,7 +127,7 @@ All that is written, as a String. It shares the memory of `w`, so copy it with `
 ### <a id="bytes.clear"></a>`clear`
 
 ```ec
-fn clear(w: @Writer)
+fn clear(w: Writer)
 ```
 
 Forgets what is written, keeping the memory.
@@ -135,7 +135,7 @@ Forgets what is written, keeping the memory.
 ### <a id="bytes.writeU8"></a>`writeU8`
 
 ```ec
-fn writeU8(w: @Writer, x: UChar)
+fn writeU8(w: Writer, x: UChar)
 ```
 
 Writes one byte.
@@ -143,7 +143,7 @@ Writes one byte.
 ### <a id="bytes.writeU16"></a>`writeU16`
 
 ```ec
-fn writeU16(w: @Writer, x: UShort)
+fn writeU16(w: Writer, x: UShort)
 ```
 
 Writes a number in 2 bytes.
@@ -151,7 +151,7 @@ Writes a number in 2 bytes.
 ### <a id="bytes.writeU32"></a>`writeU32`
 
 ```ec
-fn writeU32(w: @Writer, x: UInt)
+fn writeU32(w: Writer, x: UInt)
 ```
 
 Writes a number in 4 bytes.
@@ -159,7 +159,7 @@ Writes a number in 4 bytes.
 ### <a id="bytes.writeU64"></a>`writeU64`
 
 ```ec
-fn writeU64(w: @Writer, x: ULong)
+fn writeU64(w: Writer, x: ULong)
 ```
 
 Writes a number in 8 bytes.
@@ -167,7 +167,7 @@ Writes a number in 8 bytes.
 ### <a id="bytes.writeI8"></a>`writeI8`
 
 ```ec
-fn writeI8(w: @Writer, x: Char)
+fn writeI8(w: Writer, x: Char)
 ```
 
 Writes a signed byte.
@@ -175,7 +175,7 @@ Writes a signed byte.
 ### <a id="bytes.writeI16"></a>`writeI16`
 
 ```ec
-fn writeI16(w: @Writer, x: Short)
+fn writeI16(w: Writer, x: Short)
 ```
 
 Writes a signed number in 2 bytes, in two's complement.
@@ -183,7 +183,7 @@ Writes a signed number in 2 bytes, in two's complement.
 ### <a id="bytes.writeI32"></a>`writeI32`
 
 ```ec
-fn writeI32(w: @Writer, x: Int)
+fn writeI32(w: Writer, x: Int)
 ```
 
 Writes a signed number in 4 bytes, in two's complement.
@@ -191,7 +191,7 @@ Writes a signed number in 4 bytes, in two's complement.
 ### <a id="bytes.writeI64"></a>`writeI64`
 
 ```ec
-fn writeI64(w: @Writer, x: Long)
+fn writeI64(w: Writer, x: Long)
 ```
 
 Writes a signed number in 8 bytes, in two's complement.
@@ -199,7 +199,7 @@ Writes a signed number in 8 bytes, in two's complement.
 ### <a id="bytes.writeF32"></a>`writeF32`
 
 ```ec
-fn writeF32(w: @Writer, x: Float)
+fn writeF32(w: Writer, x: Float)
 ```
 
 Writes a Float in 4 bytes, as IEEE 754.
@@ -207,7 +207,7 @@ Writes a Float in 4 bytes, as IEEE 754.
 ### <a id="bytes.writeF64"></a>`writeF64`
 
 ```ec
-fn writeF64(w: @Writer, x: Double)
+fn writeF64(w: Writer, x: Double)
 ```
 
 Writes a Double in 8 bytes, as IEEE 754.
@@ -215,7 +215,7 @@ Writes a Double in 8 bytes, as IEEE 754.
 ### <a id="bytes.writeString"></a>`writeString`
 
 ```ec
-fn writeString(w: @Writer, s: String)
+fn writeString(w: Writer, s: String)
 ```
 
 Writes the bytes of `s` as they are, with nothing to say how many there are.
@@ -223,7 +223,7 @@ Writes the bytes of `s` as they are, with nothing to say how many there are.
 ### <a id="bytes.writeCString"></a>`writeCString`
 
 ```ec
-fn writeCString(w: @Writer, s: String)
+fn writeCString(w: Writer, s: String)
 ```
 
 Writes the bytes of `s` and a 0 byte after them, as a C string; see [`readCString`](#bytes.readCString).
@@ -231,7 +231,7 @@ Writes the bytes of `s` and a 0 byte after them, as a C string; see [`readCStrin
 ### <a id="bytes.writeZeros"></a>`writeZeros`
 
 ```ec
-fn writeZeros(w: @Writer, n: Size)
+fn writeZeros(w: Writer, n: Size)
 ```
 
 Writes `n` zero bytes, for padding.
@@ -239,7 +239,7 @@ Writes `n` zero bytes, for padding.
 ### <a id="bytes.alignTo"></a>`alignTo`
 
 ```ec
-fn alignTo(w: @Writer, alignment: Size)
+fn alignTo(w: Writer, alignment: Size)
 ```
 
 Writes zero bytes until the position is a multiple of `alignment`, which must not be 0.
@@ -247,7 +247,7 @@ Writes zero bytes until the position is a multiple of `alignment`, which must no
 ### <a id="bytes.writeVarint"></a>`writeVarint`
 
 ```ec
-fn writeVarint(w: @Writer, x: ULong)
+fn writeVarint(w: Writer, x: ULong)
 ```
 
 Writes a number in as many bytes as it needs: LEB128, as in Protocol Buffers, WebAssembly and DWARF. There are 7 bits
@@ -256,7 +256,7 @@ in each byte, the lowest first, whatever `w.endian` is.
 ### <a id="bytes.writeSignedVarint"></a>`writeSignedVarint`
 
 ```ec
-fn writeSignedVarint(w: @Writer, x: Long)
+fn writeSignedVarint(w: Writer, x: Long)
 ```
 
 Writes a signed number with [`writeVarint`](#bytes.writeVarint), after a zigzag step, so that small negative numbers stay short.
@@ -264,7 +264,7 @@ Writes a signed number with [`writeVarint`](#bytes.writeVarint), after a zigzag 
 ### <a id="bytes.setU8"></a>`setU8`
 
 ```ec
-fn setU8(w: @Writer, at: Size, x: UChar)
+fn setU8(w: Writer, at: Size, x: UChar)
 ```
 
 Changes a byte written before, for what is only known later. The program stops when `at` isn't written yet.
@@ -278,7 +278,7 @@ Changes a byte written before, for what is only known later. The program stops w
 ### <a id="bytes.setU16"></a>`setU16`
 
 ```ec
-fn setU16(w: @Writer, at: Size, x: UShort)
+fn setU16(w: Writer, at: Size, x: UShort)
 ```
 
 Changes 2 bytes written before, as [`setU8`](#bytes.setU8) does.
@@ -286,7 +286,7 @@ Changes 2 bytes written before, as [`setU8`](#bytes.setU8) does.
 ### <a id="bytes.setU32"></a>`setU32`
 
 ```ec
-fn setU32(w: @Writer, at: Size, x: UInt)
+fn setU32(w: Writer, at: Size, x: UInt)
 ```
 
 Changes 4 bytes written before, as [`setU8`](#bytes.setU8) does: a length in front of what it measures, say.
@@ -294,7 +294,7 @@ Changes 4 bytes written before, as [`setU8`](#bytes.setU8) does: a length in fro
 ### <a id="bytes.setU64"></a>`setU64`
 
 ```ec
-fn setU64(w: @Writer, at: Size, x: ULong)
+fn setU64(w: Writer, at: Size, x: ULong)
 ```
 
 Changes 8 bytes written before, as [`setU8`](#bytes.setU8) does.
@@ -302,7 +302,7 @@ Changes 8 bytes written before, as [`setU8`](#bytes.setU8) does.
 ### <a id="bytes.reader"></a>`reader`
 
 ```ec
-fn reader(data: String, endian: Endian = :big): @Reader
+fn reader(data: String, endian: Endian = :big): Reader
 ```
 
 A [`Reader`](#bytes.Reader) at the start of `data`, in the current pool.
@@ -315,7 +315,7 @@ A [`Reader`](#bytes.Reader) at the start of `data`, in the current pool.
 ### `position`
 
 ```ec
-fn position(r: @Reader): Size
+fn position(r: Reader): Size
 ```
 
 The byte to read next.
@@ -323,7 +323,7 @@ The byte to read next.
 ### <a id="bytes.remaining"></a>`remaining`
 
 ```ec
-fn remaining(r: @Reader): Size
+fn remaining(r: Reader): Size
 ```
 
 How many bytes are left to read.
@@ -331,7 +331,7 @@ How many bytes are left to read.
 ### <a id="bytes.isAtEnd"></a>`isAtEnd`
 
 ```ec
-fn isAtEnd(r: @Reader): Bool
+fn isAtEnd(r: Reader): Bool
 ```
 
 Whether everything is read.
@@ -339,7 +339,7 @@ Whether everything is read.
 ### <a id="bytes.readU8"></a>`readU8`
 
 ```ec
-fn readU8(r: @Reader): UChar throws ParseError
+fn readU8(r: Reader): UChar throws ParseError
 ```
 
 Reads one byte.
@@ -351,7 +351,7 @@ Reads one byte.
 ### <a id="bytes.readU16"></a>`readU16`
 
 ```ec
-fn readU16(r: @Reader): UShort throws ParseError
+fn readU16(r: Reader): UShort throws ParseError
 ```
 
 Reads a number from 2 bytes.
@@ -363,7 +363,7 @@ Reads a number from 2 bytes.
 ### <a id="bytes.readU32"></a>`readU32`
 
 ```ec
-fn readU32(r: @Reader): UInt throws ParseError
+fn readU32(r: Reader): UInt throws ParseError
 ```
 
 Reads a number from 4 bytes.
@@ -375,7 +375,7 @@ Reads a number from 4 bytes.
 ### <a id="bytes.readU64"></a>`readU64`
 
 ```ec
-fn readU64(r: @Reader): ULong throws ParseError
+fn readU64(r: Reader): ULong throws ParseError
 ```
 
 Reads a number from 8 bytes.
@@ -387,7 +387,7 @@ Reads a number from 8 bytes.
 ### <a id="bytes.readI8"></a>`readI8`
 
 ```ec
-fn readI8(r: @Reader): Char throws ParseError
+fn readI8(r: Reader): Char throws ParseError
 ```
 
 Reads a signed byte.
@@ -399,7 +399,7 @@ Reads a signed byte.
 ### <a id="bytes.readI16"></a>`readI16`
 
 ```ec
-fn readI16(r: @Reader): Short throws ParseError
+fn readI16(r: Reader): Short throws ParseError
 ```
 
 Reads a signed number from 2 bytes, in two's complement.
@@ -411,7 +411,7 @@ Reads a signed number from 2 bytes, in two's complement.
 ### <a id="bytes.readI32"></a>`readI32`
 
 ```ec
-fn readI32(r: @Reader): Int throws ParseError
+fn readI32(r: Reader): Int throws ParseError
 ```
 
 Reads a signed number from 4 bytes, in two's complement.
@@ -423,7 +423,7 @@ Reads a signed number from 4 bytes, in two's complement.
 ### <a id="bytes.readI64"></a>`readI64`
 
 ```ec
-fn readI64(r: @Reader): Long throws ParseError
+fn readI64(r: Reader): Long throws ParseError
 ```
 
 Reads a signed number from 8 bytes, in two's complement.
@@ -435,7 +435,7 @@ Reads a signed number from 8 bytes, in two's complement.
 ### <a id="bytes.readF32"></a>`readF32`
 
 ```ec
-fn readF32(r: @Reader): Float throws ParseError
+fn readF32(r: Reader): Float throws ParseError
 ```
 
 Reads a Float from 4 bytes, as IEEE 754.
@@ -447,7 +447,7 @@ Reads a Float from 4 bytes, as IEEE 754.
 ### <a id="bytes.readF64"></a>`readF64`
 
 ```ec
-fn readF64(r: @Reader): Double throws ParseError
+fn readF64(r: Reader): Double throws ParseError
 ```
 
 Reads a Double from 8 bytes, as IEEE 754.
@@ -459,7 +459,7 @@ Reads a Double from 8 bytes, as IEEE 754.
 ### <a id="bytes.read"></a>`read`
 
 ```ec
-fn read(r: @Reader, n: Size): String throws ParseError
+fn read(r: Reader, n: Size): String throws ParseError
 ```
 
 Reads `n` bytes, as a slice of the data.
@@ -471,7 +471,7 @@ Reads `n` bytes, as a slice of the data.
 ### <a id="bytes.readRest"></a>`readRest`
 
 ```ec
-fn readRest(r: @Reader): String
+fn readRest(r: Reader): String
 ```
 
 Reads all that is left, as a slice of the data.
@@ -479,7 +479,7 @@ Reads all that is left, as a slice of the data.
 ### <a id="bytes.readCString"></a>`readCString`
 
 ```ec
-fn readCString(r: @Reader): String throws ParseError
+fn readCString(r: Reader): String throws ParseError
 ```
 
 Reads up to the next 0 byte, and goes past it, as [`writeCString`](#bytes.writeCString) wrote it.
@@ -493,7 +493,7 @@ Reads up to the next 0 byte, and goes past it, as [`writeCString`](#bytes.writeC
 ### <a id="bytes.readVarint"></a>`readVarint`
 
 ```ec
-fn readVarint(r: @Reader): ULong throws ParseError
+fn readVarint(r: Reader): ULong throws ParseError
 ```
 
 Reads a number that [`writeVarint`](#bytes.writeVarint) wrote. When that fails, `r` stays where it was.
@@ -505,7 +505,7 @@ Reads a number that [`writeVarint`](#bytes.writeVarint) wrote. When that fails, 
 ### <a id="bytes.readSignedVarint"></a>`readSignedVarint`
 
 ```ec
-fn readSignedVarint(r: @Reader): Long throws ParseError
+fn readSignedVarint(r: Reader): Long throws ParseError
 ```
 
 Reads a number that [`writeSignedVarint`](#bytes.writeSignedVarint) wrote.
@@ -517,7 +517,7 @@ Reads a number that [`writeSignedVarint`](#bytes.writeSignedVarint) wrote.
 ### <a id="bytes.skip"></a>`skip`
 
 ```ec
-fn skip(r: @Reader, n: Size) throws ParseError
+fn skip(r: Reader, n: Size) throws ParseError
 ```
 
 Goes `n` bytes forward.
@@ -529,7 +529,7 @@ Goes `n` bytes forward.
 ### <a id="bytes.seek"></a>`seek`
 
 ```ec
-fn seek(r: @Reader, at: Size) throws ParseError
+fn seek(r: Reader, at: Size) throws ParseError
 ```
 
 Goes to byte `at` of the data, forward or back.
@@ -541,7 +541,7 @@ Goes to byte `at` of the data, forward or back.
 ### <a id="bytes.peek"></a>`peek`
 
 ```ec
-fn peek(r: @Reader): UChar?
+fn peek(r: Reader): UChar?
 ```
 
 The next byte, without going past it.

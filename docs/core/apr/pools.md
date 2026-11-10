@@ -37,7 +37,7 @@ fn apr_pool_terminate()
 ### <a id="apr_pool_create_ex"></a>`apr_pool_create_ex`
 
 ```ec
-fn apr_pool_create_ex(newpool: @@apr_pool_t, parent: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
+fn apr_pool_create_ex(out newpool: @apr_pool_t, parent: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
 ```
 
 *Binds the C function `apr_pool_create_ex`.*
@@ -45,7 +45,7 @@ fn apr_pool_create_ex(newpool: @@apr_pool_t, parent: @apr_pool_t, abort_fn: apr_
 ### <a id="apr_pool_create_core_ex"></a>`apr_pool_create_core_ex`
 
 ```ec
-fn apr_pool_create_core_ex(newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
+fn apr_pool_create_core_ex(out newpool: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
 ```
 
 *Binds the C function `apr_pool_create_core_ex`.*
@@ -53,7 +53,7 @@ fn apr_pool_create_core_ex(newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t, all
 ### <a id="apr_pool_create_unmanaged_ex"></a>`apr_pool_create_unmanaged_ex`
 
 ```ec
-fn apr_pool_create_unmanaged_ex(newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
+fn apr_pool_create_unmanaged_ex(out newpool: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t): apr_status_t
 ```
 
 *Binds the C function `apr_pool_create_unmanaged_ex`.*
@@ -61,7 +61,7 @@ fn apr_pool_create_unmanaged_ex(newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t
 ### <a id="apr_pool_create_ex_debug"></a>`apr_pool_create_ex_debug`
 
 ```ec
-fn apr_pool_create_ex_debug(newpool: @@apr_pool_t, parent: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
+fn apr_pool_create_ex_debug(out newpool: @apr_pool_t, parent: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
 ```
 
 *Binds the C function `apr_pool_create_ex_debug`.*
@@ -69,7 +69,7 @@ fn apr_pool_create_ex_debug(newpool: @@apr_pool_t, parent: @apr_pool_t, abort_fn
 ### <a id="apr_pool_create_core_ex_debug"></a>`apr_pool_create_core_ex_debug`
 
 ```ec
-fn apr_pool_create_core_ex_debug(newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
+fn apr_pool_create_core_ex_debug(out newpool: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
 ```
 
 *Binds the C function `apr_pool_create_core_ex_debug`.*
@@ -77,7 +77,7 @@ fn apr_pool_create_core_ex_debug(newpool: @@apr_pool_t, abort_fn: apr_abortfunc_
 ### <a id="apr_pool_create_unmanaged_ex_debug"></a>`apr_pool_create_unmanaged_ex_debug`
 
 ```ec
-fn apr_pool_create_unmanaged_ex_debug(newpool: @@apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
+fn apr_pool_create_unmanaged_ex_debug(out newpool: @apr_pool_t, abort_fn: apr_abortfunc_t, allocator: @apr_allocator_t, file_line: CString): apr_status_t
 ```
 
 *Binds the C function `apr_pool_create_unmanaged_ex_debug`.*
@@ -85,7 +85,7 @@ fn apr_pool_create_unmanaged_ex_debug(newpool: @@apr_pool_t, abort_fn: apr_abort
 ### <a id="apr_pool_create"></a>`apr_pool_create`
 
 ```ec
-fn apr_pool_create(newpool: @@apr_pool_t, parent: @apr_pool_t): apr_status_t
+fn apr_pool_create(out newpool: @apr_pool_t, parent: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_pool_create`.*
@@ -93,7 +93,7 @@ fn apr_pool_create(newpool: @@apr_pool_t, parent: @apr_pool_t): apr_status_t
 ### <a id="apr_pool_create_core"></a>`apr_pool_create_core`
 
 ```ec
-fn apr_pool_create_core(newpool: @@apr_pool_t): apr_status_t
+fn apr_pool_create_core(out newpool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_pool_create_core`.*
@@ -101,7 +101,7 @@ fn apr_pool_create_core(newpool: @@apr_pool_t): apr_status_t
 ### <a id="apr_pool_create_unmanaged"></a>`apr_pool_create_unmanaged`
 
 ```ec
-fn apr_pool_create_unmanaged(newpool: @@apr_pool_t): apr_status_t
+fn apr_pool_create_unmanaged(out newpool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_pool_create_unmanaged`.*
@@ -221,7 +221,7 @@ fn apr_pool_tag(pool: @apr_pool_t, tag: CString)
 ### <a id="apr_pool_userdata_set"></a>`apr_pool_userdata_set`
 
 ```ec
-fn apr_pool_userdata_set(data: @Any, key: CString, cleanup: fn (@Any): apr_status_t, pool: @apr_pool_t): apr_status_t
+fn apr_pool_userdata_set(kept data: @Any, key: CString, cleanup: fn (@Any): apr_status_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_pool_userdata_set`.*
@@ -229,7 +229,7 @@ fn apr_pool_userdata_set(data: @Any, key: CString, cleanup: fn (@Any): apr_statu
 ### <a id="apr_pool_userdata_setn"></a>`apr_pool_userdata_setn`
 
 ```ec
-fn apr_pool_userdata_setn(data: @Any, key: CString, cleanup: fn (@Any): apr_status_t, pool: @apr_pool_t): apr_status_t
+fn apr_pool_userdata_setn(kept data: @Any, kept key: CString, cleanup: fn (@Any): apr_status_t, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_pool_userdata_setn`.*
@@ -237,7 +237,7 @@ fn apr_pool_userdata_setn(data: @Any, key: CString, cleanup: fn (@Any): apr_stat
 ### <a id="apr_pool_userdata_get"></a>`apr_pool_userdata_get`
 
 ```ec
-fn apr_pool_userdata_get(data: @@Any, key: CString, pool: @apr_pool_t): apr_status_t
+fn apr_pool_userdata_get(out data: @Any, key: CString, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_pool_userdata_get`.*
@@ -245,7 +245,7 @@ fn apr_pool_userdata_get(data: @@Any, key: CString, pool: @apr_pool_t): apr_stat
 ### <a id="apr_pool_cleanup_register"></a>`apr_pool_cleanup_register`
 
 ```ec
-fn apr_pool_cleanup_register(p: @apr_pool_t, data: @Any, plain_cleanup: fn (@Any): apr_status_t, child_cleanup: fn (@Any): apr_status_t)
+fn apr_pool_cleanup_register(p: @apr_pool_t, kept data: @Any, plain_cleanup: fn (@Any): apr_status_t, child_cleanup: fn (@Any): apr_status_t)
 ```
 
 *Binds the C function `apr_pool_cleanup_register`.*
@@ -253,7 +253,7 @@ fn apr_pool_cleanup_register(p: @apr_pool_t, data: @Any, plain_cleanup: fn (@Any
 ### <a id="apr_pool_pre_cleanup_register"></a>`apr_pool_pre_cleanup_register`
 
 ```ec
-fn apr_pool_pre_cleanup_register(p: @apr_pool_t, data: @Any, plain_cleanup: fn (@Any): apr_status_t)
+fn apr_pool_pre_cleanup_register(p: @apr_pool_t, kept data: @Any, plain_cleanup: fn (@Any): apr_status_t)
 ```
 
 *Binds the C function `apr_pool_pre_cleanup_register`.*

@@ -3,6 +3,7 @@ package github.mrh0.eclang.ast.token.loop
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.context.LoopPools
 import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.ir.IRLabel
@@ -26,8 +27,10 @@ internal fun compileLoop(
     compileBody: () -> IIR, makeLoop: (IIR) -> IIR,
 ): IIR {
     val body = cd.loop(location, elseBody != null, label, compileBody)
+    // A round may get a pool of its own (see LoopPools), freed at its end and by every way out, which run its deferred statements.
+    val round = body.round?.let { LoopPools.IRRound(location, it, body.value) } ?: body.value
     // `continue outer` jumps to the end of the body, past its deferred statements (it has already run them).
-    val loop = makeLoop(if (body.nextLabel == null) body.value else IRBlock(location, listOf(body.value, IRLabel(location, body.nextLabel)), listOf()))
+    val loop = makeLoop(if (body.nextLabel == null) round else IRBlock(location, listOf(round, IRLabel(location, body.nextLabel)), listOf()))
     if (endless && !body.breaks) cd.ctx().setReturned()
     if (elseBody == null) return if (body.label == null) loop else IRBlock(location, listOf(loop, IRLabel(location, body.label)), listOf())
     cd.ctx().push()

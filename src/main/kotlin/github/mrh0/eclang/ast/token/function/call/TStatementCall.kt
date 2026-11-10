@@ -18,6 +18,7 @@ class TStatementCall (location: Loc, name: String, args: List<ITok>, isMethod: B
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val (type, ir) = super.process(cd, hint)
         if (type is Result) throw EcError(location, "The error from $name(...) is ignored: ${cd.types.explain(type, cd.types.concrete(type.value))}.")
+        cd.resourceRecord(type)?.let { throw cd.resourceError(location, it, "The ${it.name} $name(...) returns is dropped") }
         if (type === Types.Never) {
             cd.ctx().setReturned()
             // C knows a function never returns from its `_Noreturn`, but not a function pointer.

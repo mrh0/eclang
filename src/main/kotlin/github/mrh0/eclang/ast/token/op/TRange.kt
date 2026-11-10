@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -14,6 +15,8 @@ import github.mrh0.ect2.Type
  * be missing (null): `s[1..]`, `s[..<3]`.
  */
 class TRange(location: Loc, val from: ITok?, val to: ITok?, val inclusive: Boolean) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> =
         throw EcError(location, "A range can't be stored or passed around yet; use it directly, to count (`for i in a..<b do`) or to slice an array or String (`s[a..<b]`).")
 

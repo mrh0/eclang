@@ -122,7 +122,8 @@ private fun literalValue(t: Type) = when (t) {
 }
 
 /** Which kind of values a comparison compares, deciding the C code it becomes. */
-internal enum class CompareKind { NUMBER, STRING, CSTRING, IDENTITY, RECORD }
+/** TEXT: a `Char[N]`'s text with a String's, the `Char[N]` first. */
+internal enum class CompareKind { NUMBER, STRING, CSTRING, IDENTITY, RECORD, TEXT }
 
 /**
  * Checks that `a op b` compares two values of compatible types and converts both sides. Returns the kind of
@@ -145,6 +146,8 @@ internal fun comparison(
             Triple(CompareKind.NUMBER, cd.expect(location, l, type, "`$op`"), cd.expect(location, r, type, "`$op`"))
         }
         lt === Types.CString && rt === Types.CString -> Triple(CompareKind.CSTRING, l.second, r.second)
+        equality && isText(lt) && rt === Types.String -> Triple(CompareKind.TEXT, l.second, r.second)
+        equality && lt === Types.String && isText(rt) -> Triple(CompareKind.TEXT, r.second, l.second)
         lt === Types.String && rt === Types.String && equality -> Triple(CompareKind.STRING, l.second, r.second)
         equality && lt === Types.Bool && rt === Types.Bool -> Triple(CompareKind.IDENTITY, l.second, r.second)
         equality && atomish(lt) && atomish(rt) -> Triple(CompareKind.IDENTITY, l.second, r.second)
@@ -160,6 +163,9 @@ internal fun comparison(
         else -> throw EcError(location, "`$op` can't compare $lt with $rt.")
     }
 }
+
+/** Whether [t] is a `Char[N]` (or a `distinct` one), which `==` compares with a String as text, up to its first 0. */
+internal fun isText(t: Type) = (Ops.base(t) as? FixedArray)?.element === Types.Char
 
 /**
  * Why `==` can't compare two values of type [t] field by field, or null when it can: numbers, Bools, Chars,

@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.branch
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -13,6 +14,8 @@ import github.mrh0.ect2.Types
 
 /** `if (condition) a else b` as a value. Its type fits both a and b (a union when they differ). */
 class TInlineIf(location: Loc, private val condition: ITok, val body: ITok, val elseBody: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(body, elseBody)
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         when (Narrowing.constant(cd, condition)) {
             true -> return body.process(cd, hint)

@@ -131,14 +131,14 @@ fn decodeBefore(s: String, i: Size): (UInt, Size) do
     ret (REPLACEMENT, 1)
 
 /** Goes through the code points of a String: {@link codePoints}. */
-rec CodePoints as
+mut rec CodePoints as
     /** What is gone through. */
     text: String
     /** The byte where the next code point starts. */
     at: Size
 
 /** What `for at, cp in unicode.codePoints(s)` goes through. */
-rec CodePointsAt as
+mut rec CodePointsAt as
     /** The code points. */
     points: CodePoints
 
@@ -189,7 +189,7 @@ fn encodedLength(cp: UInt): Size do
     ret 4
 
 /** Adds `cp` to `b` as UTF-8. What isn't a scalar value ({@link isScalar}) adds {@link REPLACEMENT}. */
-fn appendCodePoint(b: @StringBuilder, cp: UInt) do
+fn appendCodePoint(b: StringBuilder, cp: UInt) do
     val c = if isScalar(cp) do cp else REPLACEMENT
     if c < 0x80 do
         b.append(c as Char)

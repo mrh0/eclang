@@ -37,5 +37,5 @@ declare fn timegm as (t: @tm): time_t
 declare fn gmtime_r as (t: @time_t, result: @tm): @tm?
 declare fn localtime_r as (t: @time_t, result: @tm): @tm?
 declare fn strftime as (s: CString, max: Size, format: CString, t: @tm): Size
-declare fn clock_gettime as (clock: clockid_t, ts: @timespec): Int
+declare fn clock_gettime as (clock: clockid_t, out ts: timespec): Int
 declare fn nanosleep as (request: @timespec, remaining: @timespec?): Int

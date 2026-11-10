@@ -6,7 +6,7 @@ inter Teller as
     fn write(String) throws Error
     fn flush(): None throws Error
 
-rec F as
+mut rec F as
     pos: Long
 
 fn tell(f: @F): Long throws Error do

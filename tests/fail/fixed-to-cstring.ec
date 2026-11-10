@@ -1,4 +1,4 @@
-// error: `a.data` is a pointer to them
+// error: `cstr(a)` is a copy of its text (up to its first 0) that does
 declare fn puts as (s: CString): Int
 
 fn main(): Int do

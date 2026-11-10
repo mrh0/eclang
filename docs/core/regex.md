@@ -49,7 +49,7 @@ What is made is allocated in the current pool.
 ### <a id="regex.Regex"></a>`Regex`
 
 ```ec
-rec Regex
+ref rec Regex
 ```
 
 A compiled pattern: [`compile`](#regex.compile).
@@ -67,7 +67,7 @@ A compiled pattern: [`compile`](#regex.compile).
 ### <a id="regex.Match"></a>`Match`
 
 ```ec
-rec Match
+ref rec Match
 ```
 
 Where a match is and what it captured: [`find`](#regex.find).
@@ -75,7 +75,7 @@ Where a match is and what it captured: [`find`](#regex.find).
 **Fields**
 
 - <a id="regex.Match.input"></a>`input: String` — The text it is in.
-- <a id="regex.Match.re"></a>`re: @Regex` — The pattern.
+- <a id="regex.Match.re"></a>`re: Regex` — The pattern.
 - <a id="regex.Match.spans"></a>`spans: Size[]` — Where each group starts and ends, in turn, from group 0, the whole match.
 
 ## Functions
@@ -83,7 +83,7 @@ Where a match is and what it captured: [`find`](#regex.find).
 ### <a id="regex.compile"></a>`compile`
 
 ```ec
-fn compile(pattern: String, ignoreCase: Bool = false, multiline: Bool = false, dotAll: Bool = false): @Regex throws ParseError
+fn compile(pattern: String, ignoreCase: Bool = false, multiline: Bool = false, dotAll: Bool = false): Regex throws ParseError
 ```
 
 Compiles a pattern; the header of this file says what a pattern can hold. Compile it once, and use it many times.
@@ -104,7 +104,7 @@ Compiles a pattern; the header of this file says what a pattern can hold. Compil
 ### <a id="regex.matches"></a>`matches`
 
 ```ec
-fn matches(re: @Regex, s: String): Bool
+fn matches(re: Regex, s: String): Bool
 ```
 
 Whether all of `s` matches: `regex.matches(digits, "123")`.
@@ -112,7 +112,7 @@ Whether all of `s` matches: `regex.matches(digits, "123")`.
 ### <a id="regex.contains"></a>`contains`
 
 ```ec
-fn contains(re: @Regex, s: String): Bool
+fn contains(re: Regex, s: String): Bool
 ```
 
 Whether a part of `s` matches, which takes less work than [`find`](#regex.find).
@@ -120,7 +120,7 @@ Whether a part of `s` matches, which takes less work than [`find`](#regex.find).
 ### <a id="regex.find"></a>`find`
 
 ```ec
-fn find(re: @Regex, s: String, from: Size = 0): @Match?
+fn find(re: Regex, s: String, from: Size = 0): Match?
 ```
 
 Finds the first match.
@@ -136,7 +136,7 @@ Finds the first match.
 ### <a id="regex.findAll"></a>`findAll`
 
 ```ec
-fn findAll(re: @Regex, s: String): (@Match)[]
+fn findAll(re: Regex, s: String): (Match)[]
 ```
 
 All the matches in `s`, one after the other, not overlapping. A match can be empty; one right after another match doesn't count.
@@ -151,7 +151,7 @@ All the matches in `s`, one after the other, not overlapping. A match can be emp
 ### <a id="regex.start"></a>`start`
 
 ```ec
-fn start(m: @Match): Size
+fn start(m: Match): Size
 ```
 
 Where the whole match starts.
@@ -159,7 +159,7 @@ Where the whole match starts.
 ### <a id="regex.end"></a>`end`
 
 ```ec
-fn end(m: @Match): Size
+fn end(m: Match): Size
 ```
 
 Where the whole match ends: the byte after it.
@@ -167,7 +167,7 @@ Where the whole match ends: the byte after it.
 ### <a id="regex.text"></a>`text`
 
 ```ec
-fn text(m: @Match): String
+fn text(m: Match): String
 ```
 
 What the whole match took. It shares the memory of the text.
@@ -175,7 +175,7 @@ What the whole match took. It shares the memory of the text.
 ### <a id="regex.span"></a>`span`
 
 ```ec
-fn span(m: @Match, i: Size): (Size, Size)?
+fn span(m: Match, i: Size): (Size, Size)?
 ```
 
 Where group `i` is.
@@ -185,7 +185,7 @@ Where group `i` is.
 ### <a id="regex.group"></a>`group`
 
 ```ec
-fn group(m: @Match, i: Size): String?
+fn group(m: Match, i: Size): String?
 ```
 
 What group `i` took. Groups count their `(` from 1, and group 0 is the whole match.
@@ -195,7 +195,7 @@ What group `i` took. Groups count their `(` from 1, and group 0 is the whole mat
 ### <a id="regex.groupIndex"></a>`groupIndex`
 
 ```ec
-fn groupIndex(re: @Regex, name: String): Size?
+fn groupIndex(re: Regex, name: String): Size?
 ```
 
 The number of the group called `name`, or null when there is none.
@@ -203,7 +203,7 @@ The number of the group called `name`, or null when there is none.
 ### `group`
 
 ```ec
-fn group(m: @Match, name: String): String?
+fn group(m: Match, name: String): String?
 ```
 
 What the group called `name` took.
@@ -213,7 +213,7 @@ What the group called `name` took.
 ### <a id="regex.replaceAll"></a>`replaceAll`
 
 ```ec
-fn replaceAll(re: @Regex, s: String, template: String): String throws ArgumentError
+fn replaceAll(re: Regex, s: String, template: String): String throws ArgumentError
 ```
 
 `s` with every match replaced: `regex.replaceAll(words, "a b", "<$0>")` is "<a> <b>".
@@ -232,7 +232,7 @@ fn replaceAll(re: @Regex, s: String, template: String): String throws ArgumentEr
 ### <a id="regex.replaceFirst"></a>`replaceFirst`
 
 ```ec
-fn replaceFirst(re: @Regex, s: String, template: String): String throws ArgumentError
+fn replaceFirst(re: Regex, s: String, template: String): String throws ArgumentError
 ```
 
 `s` with the first match replaced.
@@ -250,7 +250,7 @@ fn replaceFirst(re: @Regex, s: String, template: String): String throws Argument
 ### <a id="regex.replaceWith"></a>`replaceWith`
 
 ```ec
-fn replaceWith(re: @Regex, s: String, f: (@Match) => String): String
+fn replaceWith(re: Regex, s: String, f: (Match) => String): String
 ```
 
 `s` with every match replaced by what a function makes of it, for when a template isn't enough.
@@ -264,7 +264,7 @@ fn replaceWith(re: @Regex, s: String, f: (@Match) => String): String
 ### <a id="regex.split"></a>`split`
 
 ```ec
-fn split(re: @Regex, s: String): String[]
+fn split(re: Regex, s: String): String[]
 ```
 
 The parts of `s` between the matches: `regex.split(commas, "a, b,c")` is ["a", "b", "c"]. They share the memory of `s`.

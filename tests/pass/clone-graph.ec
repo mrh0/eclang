@@ -2,7 +2,7 @@ use "core:io.ec"
 
 // `clone` copies each pointer once: a cycle is copied as a cycle, and a shared value stays shared.
 
-rec Node as
+mut rec Node as
     v: Int
     next: @Node?
 

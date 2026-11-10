@@ -29,12 +29,12 @@ fn bad(pattern: String) do
     try regex.compile(pattern) catch e do
         io.log("${e.message} (${e.position})")
 
-fn startOf(m: @regex.Match?): Size do
+fn startOf(m: regex.Match?): Size do
     if val found = m do
         ret regex.start(found)
     ret 99
 
-fn upper(m: @regex.Match): String = regex.text(m).toUpper()
+fn upper(m: regex.Match): String = regex.text(m).toUpper()
 
 fn main(): Int throws Error do
     // Characters, classes and escapes.

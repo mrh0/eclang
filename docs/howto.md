@@ -5,7 +5,7 @@ Paths are relative to `src/main/kotlin/github/mrh0/eclang/` unless they start wi
 ## Add syntax (statement, expression or operator)
 1. Add a labelled alternative to `src/main/antlr4/Eclang.g4` (`... #myThing`). Blocks use `INDENT`/`DEDENT` from antlr-denter; keep the `do` + indented-block style. In `expr`, where you put the alternative sets its precedence (earlier binds tighter).
 2. Run `tools/regen-parser.sh`. Maven's own ANTLR output is **not** used.
-3. Create a token `ast/token/<group>/TMyThing.kt : Tok(location)`. In `process(cd, hint)`:
+3. Create a token `ast/token/<group>/TMyThing.kt`: `NonValueTok(location)` for a statement, declaration or type, `Tok(location)` for an expression. An expression must override `pointerFlow()` (it has no default): `PointerFlow.From(children)` with the values its value may point into, or `PointerFlow.Nothing` for a number, Bool or literal. `Lifetimes` follows pointers through it with that. In `process(cd, hint)`:
    - Process children with a sensible hint (`Types.None` when nothing is expected).
    - Check values with `cd.expect` (conversion), `cd.usable` (not None, not an unhandled Result) and `cd.storable` (for variable, field or return types).
    - Throw `EcError(location, "<what's wrong>. <how to fix it>")` for anything else.

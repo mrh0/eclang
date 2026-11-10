@@ -3,11 +3,12 @@ use "core:thread.ec"
 
 // core:thread.ec: threads, a mutex, atomics, a wait group, a channel, a read-write lock and a condition.
 
-rec Shared as
+// Threads share it, so it is `sync`: its lock guards total, and the rest are made to be shared.
+mut sync rec Shared as
     lock: thread.Mutex
     total: Long
     hits: thread.Atomic
-    group: @thread.WaitGroup
+    group: thread.WaitGroup
 
 rec Job as
     id: Int
@@ -19,11 +20,11 @@ fn work(job: @Job) do
         thread.lock(job.shared.lock)
         job.shared.total += 1
         thread.unlock(job.shared.lock)
-        thread.increment(addrof(job.shared.hits))
+        thread.increment(mut job.shared.hits)
     thread.done(job.shared.group)
 
-rec Pipe as
-    jobs: @thread.Channel
+mut rec Pipe as
+    jobs: thread.Channel
     sum: Long
 
 fn consume(p: @Pipe) do
@@ -37,21 +38,22 @@ fn plain() do
     ran = 1
 
 fn main(): Int throws Error do
-    var shared = Shared { try thread.mutex(), 0, thread.Atomic { 0 }, try thread.waitGroup() }
+    // What a thread is given must outlive main's locals: it is allocated in the current pool.
+    val shared = new Shared { try thread.mutex(), 0, thread.Atomic { 0 }, try thread.waitGroup() }
     thread.add(shared.group, 4)
-    var a = Job { 1, addrof(shared) }
-    var b = Job { 2, addrof(shared) }
-    var c3 = Job { 3, addrof(shared) }
-    var d = Job { 4, addrof(shared) }
-    val threads = [try thread.spawn(fn work, addrof(a)), try thread.spawn(fn work, addrof(b)), try thread.spawn(fn work, addrof(c3)), try thread.spawn(fn work, addrof(d))]
+    val a = new Job { 1, shared }
+    val b = new Job { 2, shared }
+    val c3 = new Job { 3, shared }
+    val d = new Job { 4, shared }
+    val threads = [try thread.spawn(fn work, a), try thread.spawn(fn work, b), try thread.spawn(fn work, c3), try thread.spawn(fn work, d)]
     thread.wait(shared.group)
     for t in threads do
         try thread.join(t)
     io.log(shared.total)
-    io.log(thread.load(addrof(shared.hits)))
+    io.log(thread.load(mut shared.hits))
 
-    var p = Pipe { try thread.channel(4), 0 }
-    val consumer = try thread.spawn(fn consume, addrof(p))
+    val p = new Pipe { try thread.channel(4), 0 }
+    val consumer = try thread.spawn(fn consume, p)
     val values = new Long[100]
     for i in 0..<100 do
         values[i] = i as Long

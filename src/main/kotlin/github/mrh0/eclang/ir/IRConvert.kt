@@ -21,7 +21,7 @@ class IRConvert(location: Loc, val expr: IIR, val from: Type, val to: Type, val 
 
     /** Conversions out of a union or between records call a helper function, so they're never constant. */
     override fun isConstant() = expr.isConstant() && (mode == Mode.IMPLICIT || mode == Mode.UNSAFE) && from !is Union &&
-        !(from is Record && to is Record) && !(from === Types.String && to is ArrayType) && !(mode == Mode.UNSAFE && from !== to && !CTypes.isScalar(from))
+        !(from is Record && to is Record) && !(from === Types.String && (to is ArrayType || to is FixedArray)) && !(mode == Mode.UNSAFE && from !== to && !CTypes.isScalar(from))
 
     override fun toC(sb: CSourceBuilder, c: Context) {
         val inner = sb.render { expr.toC(it, c) }

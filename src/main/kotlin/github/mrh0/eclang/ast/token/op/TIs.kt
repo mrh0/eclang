@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -18,6 +19,8 @@ import github.mrh0.ect2.Union
  * (or a record extending T). Inside `if x is T do`, x is a T.
  */
 class TIs(location: Loc, val expr: ITok, val type: ITok, val negated: Boolean) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val (t, ir) = cd.usable(location, expr.process(cd, Types.None), "`is`")
         val target = type.process(cd, Types.None).first

@@ -73,7 +73,7 @@ fn cArray(n: Int): Int do
     val b = when n do
         1 do [10, 20, 30]c
         else do [40]c
-    ret a[2] * 100 + b[1]
+    ret unsafe (a[2] * 100 + b[1])
 
 fn records(n: Int): Int do
     val a: Point[] = when n do

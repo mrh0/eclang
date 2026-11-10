@@ -5,96 +5,96 @@
 1
 ok   passing
 FAIL mismatches
-  check 1: the values differ
+  check 1 (std-test.ec:34): the values differ
       expected: 3
       actual:   2
-  check 2, the count: the values differ
+  check 2 (std-test.ec:35), the count: the values differ
       expected: 6
       actual:   5
-  check 3: the values differ
+  check 3 (std-test.ec:36): the values differ
       expected: 2.5
       actual:   1.5
-  check 4: the values differ
+  check 4 (std-test.ec:37): the values differ
       expected: 'b'
       actual:   'a'
-  check 5: the values differ
+  check 5 (std-test.ec:38): the values differ
       expected: false
       actual:   true
-  check 6: the values differ
+  check 6 (std-test.ec:39): the values differ
       expected: :off
       actual:   :on
-  check 7: the values differ
+  check 7 (std-test.ec:40): the values differ
       expected: Point { x: 1, name: "b" }
       actual:   Point { x: 1, name: "a" }
-  check 8: the values differ
+  check 8 (std-test.ec:41): the values differ
       expected: (2, "a")
       actual:   (1, "a")
-  check 9: element 2 differs
+  check 9 (std-test.ec:42): element 2 differs
       expected: [1, 2, 4]
       actual:   [1, 2, 3]
-  check 10: the lengths differ: 2 expected, 3 here
+  check 10 (std-test.ec:43): the lengths differ: 2 expected, 3 here
       expected: [1, 2]
       actual:   [1, 2, 3]
-  check 11, the names: element 0 differs
+  check 11 (std-test.ec:44), the names: element 0 differs
       expected: ["b"]
       actual:   ["a"]
-  check 12: these should differ, and both are 1
-  check 13, the text: these should differ, and both are "a"
-  check 14, thing: this should be true, and it is false
-  check 15: this should be true, and it is false
-  check 16: this should be false, and it is true
-  check 17: these should be within 0.01 of each other
+  check 12 (std-test.ec:45): these should differ, and both are 1
+  check 13 (std-test.ec:46), the text: these should differ, and both are "a"
+  check 14 (std-test.ec:47), thing: this should be true, and it is false
+  check 15 (std-test.ec:48): this should be true, and it is false
+  check 16 (std-test.ec:49): this should be false, and it is true
+  check 17 (std-test.ec:50): these should be within 0.01 of each other
       expected: 1.1
       actual:   1
-  check 18, the name: this should be null, and it is "x"
-  check 19: this should have a value, and it is null
-  check 20: the text doesn't have this in it
+  check 18 (std-test.ec:53), the name: this should be null, and it is "x"
+  check 19 (std-test.ec:54): this should have a value, and it is null
+  check 20 (std-test.ec:55): the text doesn't have this in it
       wanted: "z"
       actual: "hello"
-  check 21: this shouldn't happen
+  check 21 (std-test.ec:56): this shouldn't happen
 FAIL strings
-  check 1: the strings differ at byte 6
+  check 1 (std-test.ec:59): the strings differ at byte 6
       expected: "hello there"
       actual:   "hello world"
                        ^
-  check 2: the strings differ at byte 3
+  check 2 (std-test.ec:60): the strings differ at byte 3
       expected: "abcd"
       actual:   "abc"
                     ^
-  check 3: the strings differ at byte 0
+  check 3 (std-test.ec:61): the strings differ at byte 0
       expected: "x"
       actual:   ""
                  ^
-  check 4: the strings differ at byte 4
+  check 4 (std-test.ec:62): the strings differ at byte 4
       expected: "tab\tthere"
       actual:   "tab\there"
                       ^
-  check 5: the strings differ at byte 12
+  check 5 (std-test.ec:63): the strings differ at byte 12
       expected: "héllo wörlx"
       actual:   "héllo wörld"
                            ^
-  check 6: the strings differ at byte 9
+  check 6 (std-test.ec:64): the strings differ at byte 9
       expected: "日本語y"
       actual:   "日本語x"
                        ^
-  check 7: the strings differ at byte 1
+  check 7 (std-test.ec:66): the strings differ at byte 1
       expected: "aè"
       actual:   "aé"
                   ^
-  check 8: the strings differ at byte 200
+  check 8 (std-test.ec:69): the strings differ at byte 200
       expected: ..."cdefghijabcdefghijabcdefghijabcdefghijYabcdefghijabcdefghijabcdefghijabcdefg"...
       actual:   ..."cdefghijabcdefghijabcdefghijabcdefghijXabcdefghijabcdefghijabcdefghijabcdefg"...
                                                           ^
-  check 9: the strings differ at byte 0
+  check 9 (std-test.ec:70): the strings differ at byte 0
       expected: "Yabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcde"...
       actual:   "Xabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcde"...
                  ^
-  check 10: the strings differ at byte 200
+  check 10 (std-test.ec:71): the strings differ at byte 200
       expected: ..."cdefghijabcdefghijabcdefghijabcdefghijY"
       actual:   ..."cdefghijabcdefghijabcdefghijabcdefghijX"
                                                           ^
 FAIL diffs
-  check 1, one line: the strings differ (- expected, + actual)
+  check 1 (std-test.ec:74), one line: the strings differ (- expected, + actual)
       ...
         c
         d
@@ -103,27 +103,27 @@ FAIL diffs
         f
         g
       ...
-  check 2, a line too many: the strings differ (- expected, + actual)
+  check 2 (std-test.ec:75), a line too many: the strings differ (- expected, + actual)
         a
       + b
         c
-  check 3, a line missing: the strings differ (- expected, + actual)
+  check 3 (std-test.ec:76), a line missing: the strings differ (- expected, + actual)
         a
       - b
         c
-  check 4, the last line break: the strings differ (- expected, + actual)
+  check 4 (std-test.ec:77), the last line break: the strings differ (- expected, + actual)
         a
         b
       + ""
-  check 5, a carriage return: the strings differ (- expected, + actual)
+  check 5 (std-test.ec:78), a carriage return: the strings differ (- expected, + actual)
       - a
       + "a\r"
         b
-  check 6, a space at the end: the strings differ (- expected, + actual)
+  check 6 (std-test.ec:79), a space at the end: the strings differ (- expected, + actual)
       - a
       + "a "
         b
-  check 7, two changes: the strings differ (- expected, + actual)
+  check 7 (std-test.ec:80), two changes: the strings differ (- expected, + actual)
       - 0
       + 1
         2
@@ -133,17 +133,17 @@ FAIL diffs
         9
       - X
       + 10
-  check 8, empty lines: the strings differ (- expected, + actual)
+  check 8 (std-test.ec:81), empty lines: the strings differ (- expected, + actual)
         
       - y
       + ""
       + x
-  check 9, only one has a line break: the strings differ (- expected, + actual)
+  check 9 (std-test.ec:82), only one has a line break: the strings differ (- expected, + actual)
         one
       - two
 ok   sized
 FAIL stopping
-  check 3, the number: this should be true, and it is false
+  check 3 (std-test.ec:100), the number: this should be true, and it is false
 FAIL failing
   it stopped with an error: parse error: not a number: it has other characters than digits
 ok   fine

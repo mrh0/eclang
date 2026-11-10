@@ -3,6 +3,7 @@ package github.mrh0.eclang.ast.token.statement
 import github.mrh0.eclang.ast.IAssignable
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.token.accessor.TAccessorNamed
@@ -67,7 +68,7 @@ internal fun defineLocal(cd: CompileData, location: Loc, target: ITok, value: IT
  * part is then an ordinary definition or assignment reading from it. So `(a, b) = (b, a)` swaps, and flow typing,
  * lifetimes and `val` rules work as they do for one variable.
  */
-class TDestructure(location: Loc, private val pattern: TCreateTuple, private val expr: ITok, private val typeTok: ITok?, private val kind: Kind) : Tok(location) {
+class TDestructure(location: Loc, private val pattern: TCreateTuple, private val expr: ITok, private val typeTok: ITok?, private val kind: Kind) : NonValueTok(location) {
     enum class Kind { VAL, VAR, ASSIGN }
 
     /** `(a, b) = value`, which declares no name. */

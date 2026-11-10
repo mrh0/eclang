@@ -10,4 +10,4 @@ declare struct utsname as
     machine: Char[]c
 
 // 0, or -1 when it fails.
-declare fn uname as (buf: @utsname): Int
+declare fn uname as (out buf: utsname): Int

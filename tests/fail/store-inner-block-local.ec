@@ -1,4 +1,4 @@
-// error: Can't store this in 'p': it points to 'y', a local variable, which is freed when its block ends, but 'p' lives longer
+// error: Can't store this in 'p': it points to 'y', a local variable, which is freed when its block ends, before 'p' is
 fn main(): Int do
     var x = 1
     var p = addrof x

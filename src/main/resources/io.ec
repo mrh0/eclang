@@ -38,7 +38,9 @@ fn log(value: CString) do
 
 /** Writes a String and a line break to stdout. */
 fn log(value: String) do
-    printf("%.*s\n"c, value.len as Int, value.data)
+    // fwrite rather than printf("%.*s"), which AddressSanitizer doesn't check (`--check-memory`).
+    fwrite(value.data, 1, value.len, stdout)
+    fputc('\n' as Int, stdout)
 
 /** Writes an atom, as `:name` and a line break to stdout. */
 fn log(value: Atom) do
@@ -173,11 +175,11 @@ fn args(): String[] do
     val count = if commandLineLength < 1 do 0 else (commandLineLength - 1) as Size
     val all = new String[count]
     for i in 0..<count do
-        all[i] = fromC(commandLine[i + 1])
+        all[i] = fromC(unsafe commandLine[i + 1])   // i + 1 < commandLineLength
     ret all
 
 /** How the program was started, the first word of the command line: "./app". */
-fn programName(): String = if commandLineLength < 1 do "" else fromC(commandLine[0])
+fn programName(): String = if commandLineLength < 1 do "" else fromC(unsafe commandLine[0])
 
 // ---------------------------------------------------------------------------------------------------
 // Files
@@ -219,7 +221,7 @@ priv fn flagsOf(mode: OpenMode): Int do
  */
 fn open(path: String, mode: OpenMode = :read): File throws IoError do
     var handle: @apr_file_t? = null
-    val status = apr_file_open(addrof(handle!), cstr(path), flagsOf(mode), APR_FPROT_OS_DEFAULT, pool)
+    val status = apr_file_open(mut handle, cstr(path), flagsOf(mode), APR_FPROT_OS_DEFAULT, pool)
     throw ioError(status, path) if status != APR_SUCCESS
     ret File { handle!, path }
 
@@ -235,7 +237,7 @@ fn close(f: File) do
 fn read(f: File, n: Size): String throws IoError do
     val buffer = new Char[n]
     var got = n
-    val status = apr_file_read(f.handle, buffer.data, addrof(got))
+    val status = apr_file_read(f.handle, buffer.data, mut got)
     ret "" if APR_STATUS_IS_EOF(status) != 0
     throw ioError(status, f.path) if status != APR_SUCCESS
     ret buffer[0..<got] !as String
@@ -278,7 +280,7 @@ fn readAll(f: File): String throws IoError do
  */
 fn write(f: File, s: String) throws IoError do
     var written: Size = 0
-    val status = apr_file_write_full(f.handle, s.data, s.len, addrof(written))
+    val status = apr_file_write_full(f.handle, s.data, s.len, mut written)
     throw ioError(status, f.path) if status != APR_SUCCESS
 
 /**
@@ -303,7 +305,7 @@ fn flush(f: File) throws IoError do
  */
 fn seek(f: File, offset: Long) throws IoError do
     var at = offset
-    val status = apr_file_seek(f.handle, APR_SET, addrof(at))
+    val status = apr_file_seek(f.handle, APR_SET, mut at)
     throw ioError(status, f.path) if status != APR_SUCCESS
 
 // ---------------------------------------------------------------------------------------------------
@@ -352,7 +354,7 @@ fn appendFile(path: String, s: String) throws IoError do
 /** What the system knows about `path` (the `wanted` APR_FINFO_* fields), or null when it can't be looked at. */
 priv fn stat(path: String, wanted: Int): apr_finfo_t? do
     var info: apr_finfo_t
-    val status = apr_stat(addrof(info), cstr(path), wanted, pool)
+    val status = apr_stat(mut info, cstr(path), wanted, pool)
     // APR_INCOMPLETE: some of the wanted fields aren't known on this system; the others are filled in.
     ret null if status != APR_SUCCESS and status != APR_INCOMPLETE
     ret info
@@ -378,7 +380,7 @@ fn isDir(path: String): Bool do
  */
 fn fileSize(path: String): Long throws IoError do
     var info: apr_finfo_t
-    val status = apr_stat(addrof(info), cstr(path), APR_FINFO_SIZE, pool)
+    val status = apr_stat(mut info, cstr(path), APR_FINFO_SIZE, pool)
     throw ioError(status, path) if status != APR_SUCCESS and status != APR_INCOMPLETE
     ret info.size
 
@@ -388,7 +390,7 @@ fn fileSize(path: String): Long throws IoError do
  */
 fn modified(path: String): time.Time throws IoError do
     var info: apr_finfo_t
-    val status = apr_stat(addrof(info), cstr(path), APR_FINFO_MTIME, pool)
+    val status = apr_stat(mut info, cstr(path), APR_FINFO_MTIME, pool)
     throw ioError(status, path) if status != APR_SUCCESS and status != APR_INCOMPLETE
     ret time.Time { info.mtime }
 
@@ -444,20 +446,20 @@ fn removeDir(path: String) throws IoError do
  */
 fn listDir(path: String): String[] throws IoError do
     var dir: @apr_dir_t? = null
-    val status = apr_dir_open(addrof(dir!), cstr(path), pool)
+    val status = apr_dir_open(mut dir, cstr(path), pool)
     throw ioError(status, path) if status != APR_SUCCESS
     val d = dir!
     defer apr_dir_close(d)
     // Count the entries first, then read them again into an array of that size.
     var count: Size = 0
     var info: apr_finfo_t
-    while apr_dir_read(addrof(info), APR_FINFO_NAME, d) == APR_SUCCESS do
+    while apr_dir_read(mut info, APR_FINFO_NAME, d) == APR_SUCCESS do
         if not isDotName(nameOf(info)) do
             count += 1
     apr_dir_rewind(d)
     val names = new String[count]
     var i: Size = 0
-    while i < count and apr_dir_read(addrof(info), APR_FINFO_NAME, d) == APR_SUCCESS do
+    while i < count and apr_dir_read(mut info, APR_FINFO_NAME, d) == APR_SUCCESS do
         val name = nameOf(info)
         if not isDotName(name) do
             names[i] = fromC(name ?? ""c)
@@ -494,7 +496,7 @@ fn sorted(names: String[]): String[] do
  */
 fn currentDir(): String throws IoError do
     var path: CString = ""c
-    val status = apr_filepath_get(addrof(path), 0, pool)
+    val status = apr_filepath_get(mut path, 0, pool)
     throw ioError(status, ".") if status != APR_SUCCESS
     ret fromC(path)
 
@@ -504,7 +506,7 @@ fn currentDir(): String throws IoError do
  */
 fn tempDir(): String throws IoError do
     var path: CString = ""c
-    val status = apr_temp_dir_get(addrof(path), pool)
+    val status = apr_temp_dir_get(mut path, pool)
     throw ioError(status, "the temporary directory") if status != APR_SUCCESS
     ret fromC(path)
 

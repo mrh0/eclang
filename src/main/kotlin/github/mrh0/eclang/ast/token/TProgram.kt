@@ -3,6 +3,7 @@ package github.mrh0.eclang.ast.token
 import github.mrh0.eclang.Compiler
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.function.TFunc
 import github.mrh0.eclang.ast.token.global.TGlobalTypeDefine
@@ -12,6 +13,7 @@ import github.mrh0.eclang.ast.token.type.ITypeDeclaration
 import github.mrh0.eclang.ast.token.type.TTypeRecord
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.Module
+import github.mrh0.eclang.context.LoopPools
 import github.mrh0.eclang.doc.FileDocs
 import github.mrh0.eclang.ast.token.global.TGlobalModule
 import github.mrh0.eclang.ast.token.global.TGlobalConstant
@@ -30,7 +32,7 @@ import github.mrh0.ect2.Types
  * order of declarations doesn't matter: type names, type aliases, type fields, function signatures, constants,
  * other globals, and finally function bodies. Each declaration is compiled in the module of the file it is in.
  */
-class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val usesIn: List<TGlobalUse>, private val globalsIn: List<ITok>, private val privates: List<Private> = listOf()) : Tok(location) {
+class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val usesIn: List<TGlobalUse>, private val globalsIn: List<ITok>, private val privates: List<Private> = listOf()) : NonValueTok(location) {
     /** A declaration marked `priv`: a `fn`, a `value` (global) or a `type`, called [name]. */
     class Private(val tok: ITok, val kind: String, val name: String)
 
@@ -71,8 +73,12 @@ class TProgram(location: Loc, private val functionsIn: List<TFunc>, private val 
             } }
         cd.checkpoint()
 
+        if (cd.library == null) cd.programMain = cd.functions.main(entryModule)
         val functionIRs = cd.functions.buildAll()
         cd.checkpoint()
+        cd.escapes.check(cd)
+        cd.checkpoint()
+        LoopPools.decide(cd)
         val initOrder = cd.functions.initializationOrder(globalIRs.filterIsInstance<IRGlobalDefine>())
 
         cd.library?.let { library ->

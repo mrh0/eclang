@@ -6,7 +6,7 @@ import github.mrh0.eclang.ir.IIR
 import github.mrh0.eclang.ir.IR
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRNotEquals(location: Loc, private val left: IIR, private val right: IIR) : IR(location) {
+class IRNotEquals(location: Loc, val left: IIR, val right: IIR) : IR(location) {
     override fun toString() = "($left i!=i $right)"
 
     override fun toC(sb: CSourceBuilder, c: Context) {

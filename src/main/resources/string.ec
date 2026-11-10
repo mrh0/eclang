@@ -608,7 +608,7 @@ fn parseDouble(s: String): Double throws ParseError do
     throw parseError("not a number: it is empty", s, 0) if t.len == 0
     val text = cstr(t)
     var end = text
-    val value = strtod(text, addrof(end))
+    val value = strtod(text, addrof end)
     val used = (end !as ULong) - (text !as ULong)
     throw parseError("not a number", s, 0) if used == 0
     throw parseError("the number has other characters after it", s, (indexOf(s, t) ?? 0) + used) if used != t.len
@@ -667,7 +667,7 @@ fn isUtf8(s: String): Bool do
  *         b.append(',')
  *     io.log(b.build())
  */
-rec StringBuilder as
+mut ref rec StringBuilder as
     /** What it holds so far, and room for more. */
     buffer: Char[]
     /** How many bytes of {@code buffer} it holds. */
@@ -679,17 +679,17 @@ rec StringBuilder as
  * A new {@link StringBuilder}, in the current pool.
  * @param capacity how many bytes it has room for before it grows
  */
-fn stringBuilder(capacity: Size = 16): @StringBuilder = new StringBuilder { new Char[if capacity == 0 do 16 else capacity], 0, pool }
+fn stringBuilder(capacity: Size = 16): StringBuilder = new StringBuilder { new Char[if capacity == 0 do 16 else capacity], 0, pool }
 
 /**
  * A new {@link StringBuilder}, in the pool `mem`.
  * @param mem the pool for its memory and the String it builds
  * @param capacity how many bytes it has room for before it grows
  */
-fn stringBuilder(mem: Pool, capacity: Size): @StringBuilder = new StringBuilder { new Char[if capacity == 0 do 16 else capacity] in mem, 0, mem } in mem
+fn stringBuilder(mem: Pool, capacity: Size): StringBuilder = new StringBuilder { new Char[if capacity == 0 do 16 else capacity] in mem, 0, mem } in mem
 
 /** Makes room for `n` more bytes, so that appending them doesn't grow the buffer again. */
-fn reserve(b: @StringBuilder, n: Size) do
+fn reserve(b: StringBuilder, n: Size) do
     if b.len + n > b.buffer.len do
         var capacity = b.buffer.len * 2
         while capacity < b.len + n do
@@ -699,41 +699,41 @@ fn reserve(b: @StringBuilder, n: Size) do
         b.buffer = grown
 
 /** Appends `s`. */
-fn append(b: @StringBuilder, s: String) do
+fn append(b: StringBuilder, s: String) do
     reserve(b, s.len)
     memcpy(b.buffer[b.len..<b.buffer.len].data, s.data, s.len)
     b.len += s.len
 
 /** Appends the character `c`. */
-fn append(b: @StringBuilder, c: Char) do
+fn append(b: StringBuilder, c: Char) do
     reserve(b, 1)
     b.buffer[b.len] = c
     b.len += 1
 
 /** Appends the C string `s`. */
-fn append(b: @StringBuilder, s: CString) do
+fn append(b: StringBuilder, s: CString) do
     val n = strlen(s)
     reserve(b, n)
     memcpy(b.buffer[b.len..<b.buffer.len].data, s, n)
     b.len += n
 
 /** Appends `n` in decimal. */
-fn append(b: @StringBuilder, n: Long) do
+fn append(b: StringBuilder, n: Long) do
     append(b, format(b.mem, "${n}"))
 
 /** Appends `x`, written as `"${x}"` writes it. */
-fn append(b: @StringBuilder, x: Double) do
+fn append(b: StringBuilder, x: Double) do
     append(b, format(b.mem, "${x}"))
 
 /** Appends `s` and a line break. */
-fn appendLine(b: @StringBuilder, s: String) do
+fn appendLine(b: StringBuilder, s: String) do
     append(b, s)
     append(b, '\n')
 
 /** Starts again from an empty String. Strings that {@link build} gave before stay as they were. */
-fn clear(b: @StringBuilder) do
+fn clear(b: StringBuilder) do
     b.buffer = new Char[b.buffer.len] in b.mem
     b.len = 0
 
 /** The String built so far, without copying it: appending more later doesn't change it. */
-fn build(b: @StringBuilder): String = b.buffer[0..<b.len] !as String
+fn build(b: StringBuilder): String = b.buffer[0..<b.len] !as String

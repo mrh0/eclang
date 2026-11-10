@@ -35,6 +35,13 @@ export class Problem {
         const text = this.lines[line - 1] ?? "";
         return text.length - text.replace(/^ +/, "").length;
     }
+    /** The same problem at the end of the last line with code before this one, for an error the parser only finds there. */
+    lineBefore(): Problem | null {
+        let before = this.line - 1;
+        while (before >= 1 && isBlank(this.lines[before - 1] ?? "")) before--;
+        if (before < 1) return null;
+        return new Problem(this.lines, before, this.lines[before - 1].length, this.token, this.antlr);
+    }
 }
 
 /** Where to report a problem, and what to say. */
@@ -50,7 +57,7 @@ const blockKeywords = ["fn", "if", "else", "while", "for", "inline", "defer"];
 const declarationKeywords = "`fn`, `val`, `var`, `const`, `rec`, `inter`, `use`, `module` or `declare`";
 
 /** Words a declaration can start with that are no keywords, so the parser reads any name there as one and fails after it. */
-const declarationWords = new Set(["packed", "align", "union", "export"]);
+const declarationWords = new Set(["packed", "align", "union", "export", "resource", "sync", "module"]);
 const reservedWords = new Set(EclangParser.literalNames.flatMap(n => n === null ? [] : [n.replace(/^'|'$/g, "")]));
 
 /** A line at the top level starting with a name that starts no declaration: `io.log(1)`. */
@@ -85,11 +92,11 @@ const rules: ((p: Problem) => Hint | null)[] = [
             if (p.code.endsWith(":")) return at(p, `A block starts with \`do\` in eclang, not \`:\`. Write \`${p.code.slice(0, -1).trimEnd()} do\`.`);
             return at(p, `The indented block below needs a \`do\` at the end of this line: \`${p.code} do\`.`);
         }
-        if (["rec", "record", "inter"].includes(p.keyword)) return at(p, `The fields go in an indented block after \`as\`: \`${p.code} as\`.`);
+        if (["rec", "inter"].includes(p.keyword)) return at(p, `The fields go in an indented block after \`as\`: \`${p.code} as\`.`);
         return null;
     },
     p => {
-        if (["rec", "record"].includes(p.keyword) && p.expected.includes("as"))
+        if (p.keyword === "rec" && p.expected.includes("as"))
             return at(p, `A record's fields follow \`as\`, not \`${p.token?.text}\`: \`${p.keyword} Name as\`, then one \`name: Type\` per indented line.`);
         return null;
     },
@@ -116,8 +123,9 @@ const rules: ((p: Problem) => Hint | null)[] = [
     p => p.token?.text === "{" && blockKeywords.includes(p.keyword)
         ? at(p, "Blocks are indented, not written in `{ }`. End the line with `do` and indent the body by 4 spaces.")
         : null,
-    // Keywords from other languages.
-    p => {
+    // Keywords from other languages. `return 0` reads as a word before a statement (`debug x`), which fails at the next line.
+    r => {
+        const p = r.keyword === "" ? r.lineBefore() ?? r : r;
         switch (p.keyword) {
             case "return": return at(p, `\`return\` is written \`ret\` in eclang: \`${replaceFirst(p.code, "return", "ret")}\`.`);
             case "let": return at(p, `Declare a value with \`val\` (it can't change) or \`var\` (it can): \`${replaceFirst(p.code, "let", "val")}\`.`);

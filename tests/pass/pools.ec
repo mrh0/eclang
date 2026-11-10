@@ -6,7 +6,7 @@ rec Point as
     x: Int
     y: Int
 
-rec Node as
+mut rec Node as
     value: Int
     name: String
     next: @Node?
@@ -111,9 +111,9 @@ fn main(): Int do
     try checked(-5) catch e do
         io.log(e.message)
 
-    val own = newPool()
+    val own = new Pool
     val s = label(own, 7)
     io.log(s)
     clearPool(own)
-    freePool(own)
+    destroy own
     ret 0

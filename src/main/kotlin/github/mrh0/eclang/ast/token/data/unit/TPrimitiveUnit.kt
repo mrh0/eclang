@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.data.unit
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -16,6 +17,8 @@ import github.mrh0.ect2.Types
 
 /** A number with a type suffix: `10b` is a Char, `10ul` a ULong, `6f` a Float. The value must fit. */
 class TPrimitiveUnit(location: Loc, private val expr: ITok, private val name: String) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         testIdentifier(location, name)
         val (literal, unsigned) = expr.process(cd, Types.None)

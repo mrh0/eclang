@@ -70,7 +70,7 @@ declare val TCSAFLUSH as Int
 ### <a id="tcgetattr"></a>`tcgetattr`
 
 ```ec
-fn tcgetattr(fd: Int, settings: @termios): Int
+fn tcgetattr(fd: Int, out settings: termios): Int
 ```
 
 *Binds the C function `tcgetattr`.*
@@ -86,7 +86,7 @@ fn tcsetattr(fd: Int, when_: Int, settings: @termios): Int
 ### <a id="cfmakeraw"></a>`cfmakeraw`
 
 ```ec
-fn cfmakeraw(settings: @termios)
+fn cfmakeraw(mut settings: termios)
 ```
 
 *Binds the C function `cfmakeraw`.*

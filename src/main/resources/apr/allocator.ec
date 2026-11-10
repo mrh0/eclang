@@ -8,7 +8,7 @@ declare val APR_ALLOCATOR_MAX_FREE_UNLIMITED as Int
 declare rec apr_allocator_t
 declare rec apr_memnode_t
 
-declare fn apr_allocator_create as (allocator: @@apr_allocator_t): apr_status_t
+declare fn apr_allocator_create as (out allocator: @apr_allocator_t): apr_status_t
 declare fn apr_allocator_destroy as (allocator: @apr_allocator_t)
 declare fn apr_allocator_alloc as (allocator: @apr_allocator_t, size: apr_size_t): @apr_memnode_t
 declare fn apr_allocator_free as (allocator: @apr_allocator_t, memnode: @apr_memnode_t)

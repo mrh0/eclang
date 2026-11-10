@@ -10,7 +10,7 @@ rec Point as
 fn hash(p: Point): ULong = hash((p.x * 31 + p.y) as Long)
 
 fn main(): Int do
-    val l: @List<Int> = list(1)
+    val l: List<Int> = list(1)
     for i in 0..<100 do
         l.push(i * i)
     io.log(l.len)
@@ -26,10 +26,10 @@ fn main(): Int do
     val few = listOf("x", "y")
     few.pushAll(["z"])
     io.log(join(few.toArray(), ","))
-    val empty: @List<String> = list()
+    val empty: List<String> = list()
     io.log(empty.pop() ?? "none")
 
-    val ages: @Map<String, Int> = map()
+    val ages: Map<String, Int> = map()
     ages.put("Ada", 36)
     ages.put("Alan", 41)
     ages.put("Ada", 37)
@@ -45,7 +45,7 @@ fn main(): Int do
     io.log(ages.values()[1])
 
     // Growth, and removed keys left in the table.
-    val big: @Map<Int, Int> = map()
+    val big: Map<Int, Int> = map()
     for i in 0..<5000 do
         big.put(i, i * 2)
     for i in 0..<5000 where i % 2 == 0 do
@@ -60,18 +60,18 @@ fn main(): Int do
     io.log(big.get(4999) ?? 0)
     io.log(big.get(4998) ?? -1)
     // Adding and removing the same key must not fill the table.
-    val churn: @Map<Int, Int> = map()
+    val churn: Map<Int, Int> = map()
     for i in 0..<100000 do
         churn.put(i, i)
         churn.remove(i)
     io.log(churn.len)
 
-    val grid: @Map<Point, String> = map()
+    val grid: Map<Point, String> = map()
     grid.put(Point { 1, 2 }, "a")
     io.log(grid.get(Point { 1, 2 }) ?? "?")
     io.log(grid.get(Point { 2, 1 }) ?? "?")
 
-    val seen: @Set<String> = set()
+    val seen: Set<String> = set()
     io.log(seen.add("a"))
     io.log(seen.add("a"))
     seen.add("b")
@@ -82,7 +82,7 @@ fn main(): Int do
     io.log(intersection(a, b).toArray()[0])
     io.log(difference(a, b).toArray()[0])
 
-    val d: @Deque<Int> = deque()
+    val d: Deque<Int> = deque()
     for i in 0..<20 do
         d.pushBack(i)
     d.pushFront(-1)
@@ -93,7 +93,7 @@ fn main(): Int do
     io.log(d.toArray()[0])
     io.log(d.size())
 
-    val h: @Heap<Int> = heap(fn (x: Int, y: Int) = x < y)
+    val h: Heap<Int> = heap(fn (x: Int, y: Int) = x < y)
     for v in [5, 1, 4, 2, 3] do
         h.push(v)
     io.log(h.peek() ?? 0)
@@ -103,7 +103,7 @@ fn main(): Int do
 
     // A structure in a pool of its own, and elements that are pointers.
     pool kept do
-        val own: @List<@Point> = list(kept, 1)
+        val own: List<@Point> = list(kept, 1)
         for i in 0..<10 do
             own.push(new Point { i, i } in kept)
         io.log(own.get(9).y)

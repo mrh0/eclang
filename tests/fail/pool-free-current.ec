@@ -1,4 +1,4 @@
-// error: Can't free the current pool
+// error: Can't destroy the current pool
 fn main(): Int do
-    freePool(pool)
+    destroy pool
     ret 0

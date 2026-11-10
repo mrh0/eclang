@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.data
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -22,6 +23,8 @@ import github.mrh0.ect2.Union
  * Also the left side of `(a, b) = ...` and, built by the Visitor, of `val (a, b) = ...` (see `TDestructure`).
  */
 class TCreateTuple(location: Loc, val values: List<ITok>) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(values)
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val expected = expected(cd, hint)?.elements
         val order = ArgumentOrder(cd)

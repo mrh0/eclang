@@ -5,6 +5,6 @@ rec Row as
     cells: Int[]
 
 fn main(): Int do
-    val m: @Map<Row, Int> = map()
+    val m: Map<Row, Int> = map()
     m.put(Row { clone([1]) }, 2)
     ret 0

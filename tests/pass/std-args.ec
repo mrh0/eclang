@@ -2,7 +2,7 @@ use "core:io.ec"
 use "core:args.ec"
 use "core:string.ec"
 
-fn makeParser(): @args.Parser do
+fn makeParser(): args.Parser do
     val p = args.parser("tool", "Copies files around.")
     args.flag(p, "verbose", "Say more", 'v')
     args.flag(p, "dry-run", "Change nothing")
@@ -17,18 +17,18 @@ fn makeParser(): @args.Parser do
     args.command(p, "test", "Run the tests")
     ret p
 
-fn count(r: @args.Parsed, name: String): String do
+fn count(r: args.Parsed, name: String): String do
     val n = args.times(r, name)
     ret "${n}"
 
-fn yes(r: @args.Parsed, name: String): String = if args.isSet(r, name) do "yes" else "no"
+fn yes(r: args.Parsed, name: String): String = if args.isSet(r, name) do "yes" else "no"
 
 fn field(name: String, value: String?) do
     io.print("${name}=")
     io.print(value ?? "-")
     io.print(" ")
 
-fn show(r: @args.Parsed) throws args.ArgsError do
+fn show(r: args.Parsed) throws args.ArgsError do
     if val text = r.help do
         io.print(text)
     else do

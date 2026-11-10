@@ -57,25 +57,25 @@ fn main(): Int do
     io.log(hash(Fixed { 1 }))
 
     // Keys of a Map and a Set need nothing more.
-    val names: @Map<Point, String> = map()
+    val names: Map<Point, String> = map()
     for i in 0..<100 do
         names.put(Point { i, i * 2 }, "p${i}")
     io.log(names.len)
     io.log(names.get(Point { 7, 14 }) ?? "none")
     io.log(names.get(Point { 7, 15 }) ?? "none")
 
-    val seen: @Set<Label> = set()
+    val seen: Set<Label> = set()
     seen.add(one)
     seen.add(two)
     io.log(seen.size())
 
-    val cells: @Set<(Int, Int)> = set()
+    val cells: Set<(Int, Int)> = set()
     cells.add((1, 2))
     cells.add((1, 2))
     cells.add((2, 1))
     io.log(cells.size())
 
-    val nodes: @Set<@Node> = set()
+    val nodes: Set<@Node> = set()
     nodes.add(a)
     nodes.add(a)
     nodes.add(b)

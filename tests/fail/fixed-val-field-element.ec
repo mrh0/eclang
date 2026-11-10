@@ -1,5 +1,5 @@
 // error: so its fields can't change either
-rec R as
+mut rec R as
     a: Int[2]
 
 fn main(): Int do

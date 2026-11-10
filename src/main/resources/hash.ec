@@ -136,7 +136,7 @@ fn file(path: String, algorithm: Algorithm = :sha256): String throws IoError do
     val buffer = new Char[65536]
     while true do
         var got = buffer.len
-        val status = apr_file_read(f.handle, buffer.data, addrof(got))
+        val status = apr_file_read(f.handle, buffer.data, mut got)
         break if APR_STATUS_IS_EOF(status) != 0
         throw ioError(status, path) if status != APR_SUCCESS
         update(h, buffer[0..<got] !as String)

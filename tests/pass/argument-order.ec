@@ -30,7 +30,7 @@ fn raise(p: @Int): Int do
     @p += 100
     ret @p
 
-rec Box as
+mut rec Box as
     value: Int
     make: (Int, Int) => Int
 

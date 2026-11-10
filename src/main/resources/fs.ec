@@ -81,14 +81,14 @@ priv fn kindOf(filetype: Int): Kind do
  */
 priv fn entryAt(path: String, name: String, depth: Int): Entry? throws IoError do
     var info: apr_finfo_t
-    val status = apr_stat(addrof(info), cstr(path), APR_FINFO_LINK | APR_FINFO_TYPE | APR_FINFO_SIZE | APR_FINFO_MTIME, pool)
+    val status = apr_stat(mut info, cstr(path), APR_FINFO_LINK | APR_FINFO_TYPE | APR_FINFO_SIZE | APR_FINFO_MTIME, pool)
     ret null if APR_STATUS_IS_ENOENT(status) != 0
     // APR_INCOMPLETE: some of the wanted fields aren't known on this system; the others are filled in.
     throw ioError(status, path) if status != APR_SUCCESS and status != APR_INCOMPLETE
     ret Entry { path, name, kindOf(info.filetype), info.size, time.Time { info.mtime }, depth }
 
 /** Adds what is below `dir` to `found`. */
-priv fn walkInto(dir: String, depth: Int, maxDepth: Int, found: @List<Entry>) throws IoError do
+priv fn walkInto(dir: String, depth: Int, maxDepth: Int, found: List<Entry>) throws IoError do
     val names = try io.listDir(dir)
     names.sort()
     for name in names do
@@ -108,7 +108,7 @@ priv fn walkInto(dir: String, depth: Int, maxDepth: Int, found: @List<Entry>) th
  * @throws when a directory can't be read
  */
 fn walk(root: String, maxDepth: Int = -1): Entry[] throws IoError do
-    val found: @List<Entry> = list()
+    val found: List<Entry> = list()
     try walkInto(root, 1, maxDepth, found)
     ret found.items()
 
@@ -116,8 +116,8 @@ fn walk(root: String, maxDepth: Int = -1): Entry[] throws IoError do
 // Patterns
 
 /** The parts of `pattern` between its "/"s, without empty ones and with `**` once where it is repeated. */
-priv fn segmentsOf(pattern: String): @List<String> do
-    val out: @List<String> = list()
+priv fn segmentsOf(pattern: String): List<String> do
+    val out: List<String> = list()
     for part in pattern.split('/') do
         val repeated = part == "**" and out.len > 0 and out.buffer[out.len - 1] == "**"
         out.push(part) if part.len > 0 and not repeated
@@ -138,7 +138,7 @@ priv fn isRealDir(path: String): Bool do
     ret false
 
 /** Adds the paths that fit the parts of `segments` from `at` on, below `base`, to `found`. */
-priv fn expand(base: String, segments: @List<String>, at: Size, found: @List<String>) do
+priv fn expand(base: String, segments: List<String>, at: Size, found: List<String>) do
     if at == segments.len do
         found.push(base)
     else do
@@ -172,7 +172,7 @@ priv fn expand(base: String, segments: @List<String>, at: Size, found: @List<Str
  * @return the paths; none is no error
  */
 fn glob(pattern: String): String[] do
-    val found: @List<String> = list()
+    val found: List<String> = list()
     val base = if startsWith(pattern, '/') do "/" else ""
     val segments = segmentsOf(pattern)
     expand(base, segments, 0, found) if segments.len > 0
@@ -181,7 +181,7 @@ fn glob(pattern: String): String[] do
     ret paths
 
 /** Whether the parts of `path` from `p` on fit the parts of a pattern from `s` on. */
-priv fn segmentsFit(segments: @List<String>, s: Size, parts: @List<String>, p: Size): Bool do
+priv fn segmentsFit(segments: List<String>, s: Size, parts: List<String>, p: Size): Bool do
     ret p == parts.len if s == segments.len
     val segment = segments.buffer[s]
     if segment == "**" do
@@ -225,7 +225,7 @@ priv fn template(prefix: String): String throws IoError = io.joinPath(try io.tem
 fn tempFile(prefix: String = "tmp"): TempFile throws IoError do
     val path = cstr(try template(prefix))
     var handle: @apr_file_t? = null
-    val status = apr_file_mktemp(addrof(handle!), path, 0, pool)
+    val status = apr_file_mktemp(mut handle, path, 0, pool)
     throw ioError(status, fromC(path)) if status != APR_SUCCESS
     val name = fromC(path)
     ret TempFile { io.File { handle!, name }, name }
@@ -272,7 +272,7 @@ fn isAbsolute(path: String): Bool = startsWith(path, '/')
  * @return the path, "." when nothing is left
  */
 fn normalize(path: String): String do
-    val parts: @List<String> = list()
+    val parts: List<String> = list()
     val rooted = isAbsolute(path)
     for part in path.split('/') do
         if part == ".." do
@@ -292,7 +292,7 @@ fn normalize(path: String): String do
  */
 fn absolute(path: String): String throws IoError do
     var merged: CString = ""c
-    val status = apr_filepath_merge(addrof(merged), cstr(try io.currentDir()), cstr(path), 0, pool)
+    val status = apr_filepath_merge(mut merged, cstr(try io.currentDir()), cstr(path), 0, pool)
     throw ioError(status, path) if status != APR_SUCCESS
     ret fromC(merged)
 
@@ -308,7 +308,7 @@ fn relative(base: String, path: String): String throws IoError do
     var same: Size = 0
     while same < start.len and same < target.len and start[same] == target[same] do
         same += 1
-    val parts: @List<String> = list()
+    val parts: List<String> = list()
     for i in same..<start.len where start[i].len > 0 do
         parts.push("..")
     for i in same..<target.len where target[i].len > 0 do
@@ -341,14 +341,14 @@ fn map(path: String): Mapped throws IoError do
     ret Mapped { "", null } if size == 0
     // Not io.open: APR doesn't map a buffered file.
     var file: @apr_file_t? = null
-    val opened = apr_file_open(addrof(file!), cstr(path), APR_FOPEN_READ, APR_FPROT_OS_DEFAULT, pool)
+    val opened = apr_file_open(mut file, cstr(path), APR_FOPEN_READ, APR_FPROT_OS_DEFAULT, pool)
     throw ioError(opened, path) if opened != APR_SUCCESS
     defer apr_file_close(file!)
     var handle: @apr_mmap_t? = null
-    val status = apr_mmap_create(addrof(handle!), file!, 0, size as Size, APR_MMAP_READ, pool)
+    val status = apr_mmap_create(mut handle, file!, 0, size as Size, APR_MMAP_READ, pool)
     throw ioError(status, path) if status != APR_SUCCESS
     var start: @Any? = null
-    val located = apr_mmap_offset(addrof(start!), handle!, 0)
+    val located = apr_mmap_offset(mut start, handle!, 0)
     throw ioError(located, path) if located != APR_SUCCESS
     val view = new StringFields { size as Size, start! }
     ret Mapped { @(view !as @String), handle }

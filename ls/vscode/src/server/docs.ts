@@ -167,7 +167,7 @@ export class DocExtractor {
 
     private checkTags(doc: Ecdoc, fnName: string, params: P.ParameterContext[], returns: P.TypeContext | null, throws: P.TypeContext | null): void {
         const names = params.flatMap(p => paramName(p) ?? []);
-        const generics = [...new Set(params.flatMap(p => [...this.source(p).matchAll(/(?<![\w>])<(\w+)>/g)].map(m => `<${m[1]}>`)))];
+        const generics = [...new Set(params.flatMap(p => [...this.source(p).matchAll(/(?<![\w>])<(?:mut\s+)?(\w+)>/g)].map(m => `<${m[1]}>`)))];
         const fn = `'${fnName}'`;
         const documented = new Set<string>();
         for (const tag of doc.all(PARAM)) {
@@ -214,8 +214,7 @@ export class DocExtractor {
         const fields = (names: Token[], types: P.TypeContext[]) =>
             names.map((n, i) => member("FIELD", n, `${n.text}: ${this.source(types[i])}`, n, "a record field"));
 
-        if (g instanceof P.GlobalDefineContext || g instanceof P.GlobalDefineTypedContext
-            || g instanceof P.GlobalDefineVolatileContext || g instanceof P.GlobalDefineVolatileTypedContext) return value("VARIABLE", "the variable");
+        if (g instanceof P.GlobalDefineContext || g instanceof P.GlobalDefineTypedContext) return value("VARIABLE", "the variable");
         if (g instanceof P.GlobalDefineConstContext || g instanceof P.GlobalDefineConstTypedContext) return value("VALUE", "the value");
         if (g instanceof P.GlobalConstantContext) return value("CONSTANT", "the constant");
         if (g instanceof P.GlobalDeclareDefineContext) return item("C_VALUE", g._name, `the C variable '${g._name.text}'`);
@@ -234,12 +233,11 @@ export class DocExtractor {
         if (g instanceof P.GlobalUnionDefineContext)
             return item("RECORD", g._name, "a record", this.header(g), g._fields.map(f =>
                 member("FIELD", f._name, this.source(f), f.start, "a record field")));
+        // `declare struct x`, `declare union x` and `declare union rec x_t`.
         if (g instanceof P.GlobalUnionDeclareDefineContext) return item("C_STRUCT", g._name, "a record", this.header(g), fields(g._names, g._types));
         if (g instanceof P.GlobalUnionDeclareContext) return item("C_STRUCT", g._name, "a record", this.header(g));
         if (g instanceof P.GlobalRecordDeclareDefineContext) return item("C_RECORD", g._name, "a record", this.header(g), fields(g._names, g._types));
         if (g instanceof P.GlobalRecordDeclareContext) return item("C_RECORD", g._name, "a record", this.header(g));
-        if (g instanceof P.GlobalStructDeclareDefineContext) return item("C_STRUCT", g._name, "a record", this.header(g), fields(g._names, g._types));
-        if (g instanceof P.GlobalStructDeclareContext) return item("C_STRUCT", g._name, "a record", this.header(g));
         if (g instanceof P.GlobalInterfaceDefineContext)
             return item("INTERFACE", g._name, "an interface", this.header(g), g._members.map(m =>
                 member(m instanceof P.InterfaceMethodContext ? "METHOD" : "FIELD", m.getToken(EclangParser.NAME, 0).symbol, this.source(m), m.start, "an interface member")));
@@ -275,7 +273,9 @@ function stopOf(node: unknown): Token {
 }
 
 function paramToken(p: P.ParameterContext): Token | null {
-    if (p instanceof P.ParameterVariableContext || p instanceof P.ParameterConstContext || p instanceof P.ParameterVolatileContext)
+    // `out p: T`, `escaping p: T`: the first NAME is the word.
+    if (p instanceof P.ParameterVariableContext || p instanceof P.ParameterConstContext ||
+        p instanceof P.ParameterMutContext || p instanceof P.ParameterKeywordContext)
         return paramToken(p.parameter());
     return p.getToken(EclangParser.NAME, 0)?.symbol ?? null;
 }
@@ -291,10 +291,10 @@ function collectLocals(node: ParserRuleContext, into: Map<string, Loc[]>): void 
         if (node._name) add(node._name);
     } else if (node instanceof P.StatementPoolContext) {
         if (node._name) add(node._name);
-    } else if (node instanceof P.StatementDefineVarContext || node instanceof P.StatementDefineValContext || node instanceof P.StatementDefineVolContext
+    } else if (node instanceof P.StatementDefineVarContext || node instanceof P.StatementDefineValContext
         || node instanceof P.StatementDefineConstContext || node instanceof P.StatementDefineVarTypedContext || node instanceof P.StatementDefineValTypedContext
-        || node instanceof P.StatementDefineVolTypedContext || node instanceof P.StatementDefineConstTypedContext || node instanceof P.StatementDeclareVarContext
+        || node instanceof P.StatementDefineConstTypedContext || node instanceof P.StatementDeclareVarContext
         || node instanceof P.StatementWhenContext || node instanceof P.StatementLetIfContext || node instanceof P.StatementForInRangeContext
-        || node instanceof P.StatementTryCatchContext || node instanceof P.LambdaParameterContext || node instanceof P.DestructurePartContext) name(node);
+        || node instanceof P.StatementTryCatchContext || node instanceof P.TryCatchContext || node instanceof P.LambdaParameterContext || node instanceof P.DestructurePartContext) name(node);
     for (const child of node.children ?? []) if (child instanceof ParserRuleContext) collectLocals(child, into);
 }

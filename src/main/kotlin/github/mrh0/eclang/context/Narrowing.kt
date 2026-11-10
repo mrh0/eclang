@@ -5,6 +5,7 @@ import github.mrh0.eclang.ast.token.TExprNest
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.token.data.TNull
 import github.mrh0.eclang.ast.token.op.TIs
+import github.mrh0.eclang.ast.token.op.TReadPointer
 import github.mrh0.eclang.ast.token.op.compare.TEquals
 import github.mrh0.eclang.ast.token.op.compare.TNotEquals
 import github.mrh0.eclang.ast.token.op.logical.TAnd
@@ -45,7 +46,8 @@ object Narrowing {
     fun constant(cd: CompileData, condition: ITok): Boolean? =
         if (cd.function?.isUnionCopy == true) decided(cd, condition) else null
 
-    private fun decided(cd: CompileData, condition: ITok): Boolean? = when (condition) {
+    /** What [condition] is by the types alone (see [constant]), in any function: an `assert` that can't fail warns (see Assertions). */
+    fun decided(cd: CompileData, condition: ITok): Boolean? = when (condition) {
         is TExprNest -> decided(cd, condition.expr)
         is TNot -> decided(cd, condition.expr)?.not()
         is TAnd -> {
@@ -95,6 +97,14 @@ object Narrowing {
     fun apply(cd: CompileData, narrowings: Map<String, Type>) = narrowings.forEach { (name, type) -> cd.ctx().narrow(name, type) }
 
     private fun local(cd: CompileData, tok: ITok?): Pair<String, Type>? {
+        // A `mut` parameter p, written `p` (`@p`): what it points to is narrowed under `@p`. Nothing else can reach the
+        // caller's variable during the call, as a call can't be given it twice to change (see TExprCall.followChanges).
+        if (tok is TReadPointer && tok.mutParameter) {
+            val p = tok.expr as? TNamed ?: return null
+            val name = Util.testIdentifier(p.location, p.name)
+            val pointer = cd.ctx().getRaw(name)?.getType() as? Pointer ?: return null
+            return "@$name" to (cd.ctx().stack.narrowedType("@$name") ?: pointer.target)
+        }
         if (tok !is TNamed) return null
         val name = Util.testIdentifier(tok.location, tok.name)
         val variable = cd.ctx().getRaw(name) ?: return null
@@ -109,7 +119,7 @@ object Narrowing {
             else -> null
         } ?: return mapOf()
         if (type !is Union || !type.isNullable) return mapOf()
-        return unlessAliased(cd, left.takeIf { it is TNamed } ?: right!!, mapOf(name to if (isNull) Types.Null else cd.types.nonNull(type)), nullCheck = true)
+        return unlessAliased(cd, left.takeIf { it is TNamed || it is TReadPointer } ?: right!!, mapOf(name to if (isNull) Types.Null else cd.types.nonNull(type)), nullCheck = true)
     }
 
     private fun isCheck(cd: CompileData, check: TIs, matches: Boolean): Map<String, Type> {
@@ -128,6 +138,12 @@ object Narrowing {
      */
     private fun unlessAliased(cd: CompileData, tok: ITok, narrowings: Map<String, Type>, nullCheck: Boolean = false): Map<String, Type> {
         val name = (tok as? TNamed)?.name ?: return narrowings
+        cd.changedByClosures[name]?.let { at ->
+            if (cd.warnedAliased.add(tok.location.toString()))
+                cd.warn(tok.location, "This check doesn't narrow '$name', because the lambda at line ${at.getLine()} uses it and may change it, " +
+                    "so calling that lambda could undo the check. Check a copy instead: `val ${name}Now = $name`, then check and use `${name}Now`.")
+            return mapOf()
+        }
         val at = cd.addressTaken[name] ?: return narrowings
         if (cd.warnedAliased.add(tok.location.toString()))
             cd.warn(tok.location, "This check doesn't narrow '$name', because its address is taken at line ${at.getLine()} " +

@@ -67,7 +67,7 @@ fn apr_time_now(): apr_time_t
 ### <a id="apr_time_ansi_put"></a>`apr_time_ansi_put`
 
 ```ec
-fn apr_time_ansi_put(result: @apr_time_t, input: time_t): apr_status_t
+fn apr_time_ansi_put(out result: apr_time_t, input: time_t): apr_status_t
 ```
 
 *Binds the C function `apr_time_ansi_put`.*
@@ -75,7 +75,7 @@ fn apr_time_ansi_put(result: @apr_time_t, input: time_t): apr_status_t
 ### <a id="apr_time_exp_tz"></a>`apr_time_exp_tz`
 
 ```ec
-fn apr_time_exp_tz(result: @apr_time_exp_t, input: apr_time_t, offs: apr_int32_t): apr_status_t
+fn apr_time_exp_tz(out result: apr_time_exp_t, input: apr_time_t, offs: apr_int32_t): apr_status_t
 ```
 
 *Binds the C function `apr_time_exp_tz`.*
@@ -83,7 +83,7 @@ fn apr_time_exp_tz(result: @apr_time_exp_t, input: apr_time_t, offs: apr_int32_t
 ### <a id="apr_time_exp_gmt"></a>`apr_time_exp_gmt`
 
 ```ec
-fn apr_time_exp_gmt(result: @apr_time_exp_t, input: apr_time_t): apr_status_t
+fn apr_time_exp_gmt(out result: apr_time_exp_t, input: apr_time_t): apr_status_t
 ```
 
 *Binds the C function `apr_time_exp_gmt`.*
@@ -91,7 +91,7 @@ fn apr_time_exp_gmt(result: @apr_time_exp_t, input: apr_time_t): apr_status_t
 ### <a id="apr_time_exp_lt"></a>`apr_time_exp_lt`
 
 ```ec
-fn apr_time_exp_lt(result: @apr_time_exp_t, input: apr_time_t): apr_status_t
+fn apr_time_exp_lt(out result: apr_time_exp_t, input: apr_time_t): apr_status_t
 ```
 
 *Binds the C function `apr_time_exp_lt`.*
@@ -99,7 +99,7 @@ fn apr_time_exp_lt(result: @apr_time_exp_t, input: apr_time_t): apr_status_t
 ### <a id="apr_time_exp_get"></a>`apr_time_exp_get`
 
 ```ec
-fn apr_time_exp_get(result: @apr_time_t, input: @apr_time_exp_t): apr_status_t
+fn apr_time_exp_get(out result: apr_time_t, input: @apr_time_exp_t): apr_status_t
 ```
 
 *Binds the C function `apr_time_exp_get`.*
@@ -107,7 +107,7 @@ fn apr_time_exp_get(result: @apr_time_t, input: @apr_time_exp_t): apr_status_t
 ### <a id="apr_time_exp_gmt_get"></a>`apr_time_exp_gmt_get`
 
 ```ec
-fn apr_time_exp_gmt_get(result: @apr_time_t, input: @apr_time_exp_t): apr_status_t
+fn apr_time_exp_gmt_get(out result: apr_time_t, input: @apr_time_exp_t): apr_status_t
 ```
 
 *Binds the C function `apr_time_exp_gmt_get`.*
@@ -139,7 +139,7 @@ fn apr_ctime(date_str: CString, t: apr_time_t): apr_status_t
 ### <a id="apr_strftime"></a>`apr_strftime`
 
 ```ec
-fn apr_strftime(s: CString, retsize: @apr_size_t, max: apr_size_t, format: CString, tm: @apr_time_exp_t): apr_status_t
+fn apr_strftime(s: CString, out retsize: apr_size_t, max: apr_size_t, format: CString, tm: @apr_time_exp_t): apr_status_t
 ```
 
 *Binds the C function `apr_strftime`.*

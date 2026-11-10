@@ -9,6 +9,7 @@ class IRAtom(location: Loc, val atom: AtomInstance) : IRValue(location) {
     override fun toString() = atom.toString()
 
     override fun toC(sb: CSourceBuilder, c: Context) {
+        sb.types.usedAtoms += atom.label
         sb.put(atom.getId())
     }
 }

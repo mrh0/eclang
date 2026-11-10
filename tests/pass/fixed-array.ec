@@ -6,7 +6,7 @@ const SIDE = 2
 const AREA = SIDE * SIDE
 const TYPED: Size = 3
 
-rec Grid as
+mut rec Grid as
     id: Int
     cells: Int[AREA]
     tag: Char[4] = ['a', 'b', 0 as Char, 'z']
@@ -44,7 +44,7 @@ fn doubled(a: Int[3]): Int[3] do
 fn firstOf(a: <T>[2]): <T> = a[0]
 
 fn fill(a: @(Int[3])) do
-    a.data[0] = 70
+    unsafe a.data[0] = 70
     (@a)[1] = 80
 
 fn main(): Int do
@@ -78,7 +78,7 @@ fn main(): Int do
     val cells = g.cells
     g.cells[0] = 0
     io.log("${cells} ${g.cells}")
-    io.log(g.tag.data)
+    io.log(cstr(g.tag))
     val p = addrof g
     p.cells[3] = 80
     io.log("${p.cells} ${@p}")
@@ -114,7 +114,7 @@ fn main(): Int do
     mixed = [3, 4]
     if mixed is Int[2] do
         io.log("${mixed}")
-    val pairs: @List<Int[2]> = list()
+    val pairs: List<Int[2]> = list()
     val onePair: Int[2] = [1, 2]
     pairs.push(onePair)
     io.log("${pairs.get(0)}")

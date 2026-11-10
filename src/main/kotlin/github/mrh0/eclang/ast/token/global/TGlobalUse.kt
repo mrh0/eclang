@@ -1,6 +1,7 @@
 package github.mrh0.eclang.ast.token.global
 
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
@@ -12,7 +13,7 @@ import github.mrh0.eclang.util.Util
 import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
-class TGlobalUse(location: Loc, val path: String) : Tok(location) {
+class TGlobalUse(location: Loc, val path: String) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         if (path.startsWith(LIBRARY)) return link(cd, path.removePrefix(LIBRARY))
         if (path.endsWith(".ec")) return Types.None to IRPass(location, "use $path")

@@ -14,18 +14,20 @@ import github.mrh0.eclang.ast.token.branch.TStatementWhen
 import github.mrh0.eclang.ast.token.branch.WhenArm
 import github.mrh0.eclang.ast.token.branch.TStatementLetIf
 import github.mrh0.eclang.ast.token.branch.TWhenExpr
+import github.mrh0.eclang.ast.token.op.TTryCatchExpr
+import github.mrh0.eclang.ast.token.TUnsafe
 import github.mrh0.eclang.ast.token.branch.TTailIf
 import github.mrh0.eclang.ast.token.data.*
 import github.mrh0.eclang.ast.token.data.record.TCreateRecord
 import github.mrh0.eclang.ast.token.data.record.TCreateRecordTyped
 import github.mrh0.eclang.ast.token.data.record.TUpdateRecord
-import github.mrh0.eclang.ast.token.data.record.THere
 import github.mrh0.eclang.ast.token.data.unit.TPrimitiveUnit
 import github.mrh0.eclang.ast.token.type.TLayout
 import github.mrh0.eclang.ast.token.type.TTypeFixedArray
 import github.mrh0.eclang.ast.token.type.TTypeRecord
 import github.mrh0.eclang.ast.token.function.*
 import github.mrh0.eclang.ast.token.function.call.TExprCall
+import github.mrh0.eclang.ast.token.function.call.TMutArg
 import github.mrh0.eclang.ast.token.function.call.TSafeCall
 import github.mrh0.eclang.ast.token.function.call.TStatementCall
 import github.mrh0.eclang.ast.token.global.*
@@ -37,20 +39,53 @@ import github.mrh0.eclang.ast.token.op.compare.*
 import github.mrh0.eclang.ast.token.op.logical.*
 import github.mrh0.eclang.ast.token.type.*
 import github.mrh0.eclang.ast.token.statement.*
+import org.antlr.v4.runtime.CommonToken
+import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.ListTokenSource
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.misc.Interval
+import org.antlr.v4.runtime.tree.ParseTree
+import org.antlr.v4.runtime.tree.TerminalNode
 import github.mrh0.eclang.util.FormatSpec
 import github.mrh0.eclang.util.StringLiteral
 import java.io.File
 
-/** Builds the tokens of [file]. With [fixed], every token gets that location (an expression inside a string's `${...}`). */
-class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBaseVisitor<ITok>() {
+/**
+ * Builds the tokens of [file]. With [fixed], every token gets that location (an expression inside a string's `${...}`), and
+ * [mutNames] are the `mut` parameters of the function it is in.
+ */
+class Visitor(private val file: File, private val fixed: Loc? = null, private var mutNames: Set<String> = setOf()) : EclangBaseVisitor<ITok>() {
+    /**
+     * Runs [visit] (a function) with the names of its `mut` parameters in [mutNames]: in its body, such a `p` is `@p`, as the
+     * parameter is a pointer to the caller's variable. A function can't hide a name (no shadowing), so every `p` is that one.
+     */
+    private fun <T> withMutParameters(params: List<EclangParser.ParameterContext>, visit: () -> T): T {
+        val saved = mutNames
+        mutNames = params.mapNotNull { p ->
+            when (p) {
+                is EclangParser.ParameterMutContext -> p.parameter()
+                is EclangParser.ParameterKeywordContext -> p.parameter().takeIf { p.keyword.text !in setOf("escaping", "own", "kept", "flat") }
+                else -> null
+            }?.getToken(EclangParser.NAME, 0)?.text
+        }.toSet()
+        try { return visit() } finally { mutNames = saved }
+    }
+
     /** The name of every assignment visited so far, for [assignedIn]. */
     private val assignedNames = mutableListOf<String>()
 
     /** Every local whose address is taken (`addrof x`, `addrof x.f`) so far, for [addressTakenIn]. */
     private val addressTakenNames = mutableListOf<Pair<String, Loc>>()
+
+    /** The variables that are the receiver of a method-style call (`x.f()`), which may pass x to change it, for lambdas. */
+    private val receiverNames = mutableListOf<String>()
+
+    /** [call], noting its receiver for [receiverNames]. */
+    private fun noteReceiver(call: TExprCall): TExprCall {
+        if (call.isMethod) (call.args.firstOrNull()?.unnested() as? TNamed)?.let { receiverNames += it.name }
+        return call
+    }
 
     /** Runs [visit] (a function) and gives the function the names whose address its body takes. */
     private fun <T : TFunc> addressTakenIn(visit: () -> T): T {
@@ -91,6 +126,23 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
 
     fun loc(ctx: ParserRuleContext) = fixed ?: Loc(ctx.start, file)
 
+    /** While visiting the condition of an `assert` or contract: the text of each expression's token, for its report (see Assertions). */
+    private var assertSources: java.util.IdentityHashMap<ITok, String>? = null
+
+    override fun visit(tree: org.antlr.v4.runtime.tree.ParseTree): ITok {
+        val tok = super.visit(tree)
+        assertSources?.let { if (tok != null && tree is EclangParser.ExprContext) it.putIfAbsent(tok, source(tree)) }
+        return tok
+    }
+
+    /** [visit], with the text of every expression in it (see [assertSources]). */
+    private fun <T> withSources(visit: () -> T): Pair<T, Map<ITok, String>> {
+        val saved = assertSources
+        val sources = java.util.IdentityHashMap<ITok, String>()
+        assertSources = sources
+        try { return visit() to sources } finally { assertSources = saved }
+    }
+
     /** The source text of [ctx], as written (with its spaces). */
     private fun source(ctx: ParserRuleContext): String = ctx.start.inputStream.getText(Interval(ctx.start.startIndex, ctx.stop.stopIndex))
 
@@ -112,13 +164,13 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
             is EclangParser.PrivateGlobalContext -> {
                 val g = p.global()
                 val (kind, name) = when (g) {
-                    is EclangParser.GlobalDefineContext, is EclangParser.GlobalDefineConstContext, is EclangParser.GlobalDefineVolatileContext,
-                    is EclangParser.GlobalDefineTypedContext, is EclangParser.GlobalDefineConstTypedContext, is EclangParser.GlobalDefineVolatileTypedContext,
+                    is EclangParser.GlobalDefineContext, is EclangParser.GlobalDefineConstContext,
+                    is EclangParser.GlobalDefineTypedContext, is EclangParser.GlobalDefineConstTypedContext,
                     is EclangParser.GlobalConstantContext -> "value" to g.getToken(EclangParser.NAME, 0).text
                     is EclangParser.GlobalRecordDefineContext -> "type" to g.name.text
                     is EclangParser.GlobalUnionDefineContext -> "type" to g.name.text
                     is EclangParser.GlobalInterfaceDefineContext -> "type" to g.name.text
-                    else -> throw EcError(loc(p), "`priv` can be put before `fn`, `val`, `var`, `vol`, `const`, `rec` and `inter`.")
+                    else -> throw EcError(loc(p), "`priv` can be put before `fn`, `val`, `var`, `const`, `rec` and `inter`.")
                 }
                 val tok: ITok = visit(g)
                 globals += tok
@@ -128,13 +180,26 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
         for (e in ctx.exports) {
             if (e.keyword.text != "export") throw EcError(loc(e), "`${e.keyword.text}` can't go before a function. To let C code call it, write `export fn`.")
             val f = visit(e.func()) as TFunc
-            f.exportName = Util.getStringContent(e.externalName?.text) ?: Util.testIdentifier(loc(e), f.name)
+            f.exportName = externName(e, e.ext, e.externalName) ?: Util.testIdentifier(loc(e), f.name)
             functions += f
         }
         return TProgram(loc(ctx), functions, visit(ctx.uses), globals, privates)
     }
 
     /** The widths of the bit-fields among [widths]: `: 3`, or `:3`, which the lexer reads as an atom. */
+    /** The C names of the fields of a `declare rec` (`input extern "in": ...`), null where it is the eclang name. */
+    private fun cNames(externs: List<EclangParser.FieldExternContext>): List<String?> = externs.map { e -> externName(e, e.ext, e.cName) }
+
+    /**
+     * The C name in `extern "c_name"`, or null without one. `extern` isn't a keyword (it stays usable as a name), so the
+     * grammar takes any name before the string, and [word] is checked here.
+     */
+    private fun externName(ctx: ParserRuleContext, word: Token?, name: Token?): String? {
+        if (word == null || name == null) return null
+        if (word.text != "extern") throw EcError(loc(ctx), "`${word.text} ${name.text}` isn't anything eclang knows. To give the name C uses, write `extern ${name.text}`.")
+        return Util.getStringContent(name.text)
+    }
+
     private fun widths(widths: List<EclangParser.FieldWidthContext>): List<ITok?> = widths.map { w ->
         val atom = w.atomWidth?.text?.drop(1)
         when {
@@ -145,16 +210,27 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
         }
     }
 
-    /** `packed` and `align(n)` before `rec` and `union`. */
+    /** `packed`, `align(n)` and `mut` before `rec` and `union`, and `ref` before `rec`. */
     private fun layout(modifiers: List<EclangParser.RecordModifierContext>, isUnion: Boolean = false): TLayout {
-        val words = modifiers.map { it.name.text }
+        val words = modifiers.map { if (it.mut != null) "mut" else it.name.text }
         words.groupBy { it }.filter { it.value.size > 1 }.keys.firstOrNull()?.let { throw EcError(loc(modifiers[0]), "`$it` is written twice.") }
-        for (m in modifiers) when (m.name.text) {
+        for (m in modifiers) when (if (m.mut != null) "mut" else m.name.text) {
+            "mut" -> {}
             "packed" -> if (m.size != null) throw EcError(loc(m), "`packed` takes no value. To set an alignment, write `align(n)`.")
             "align" -> if (m.size == null) throw EcError(loc(m), "`align` needs the alignment, such as `align(16)`.")
-            else -> throw EcError(loc(m), "`${m.name.text}` can't go before `rec` or `union`. These can: `packed`, and `align(n)`.")
+            "resource" -> if (m.size != null) throw EcError(loc(m), "`resource` takes no value: `resource rec Name as`.")
+            "sync" -> {
+                if (m.size != null) throw EcError(loc(m), "`sync` takes no value: `sync rec Name as`.")
+                if (isUnion) throw EcError(loc(m), "`sync` goes before `rec`: it says the record's own functions make sharing it between threads safe.")
+            }
+            "ref" -> {
+                if (m.size != null) throw EcError(loc(m), "`ref` takes no value: `ref rec Name as`.")
+                if (isUnion) throw EcError(loc(m), "`ref` goes before `rec`: a `union` is a value of one of its fields. Use `@Name` for a pointer to it.")
+            }
+            else -> throw EcError(loc(m), "`${m.name.text}` can't go before `rec` or `union`. These can: `mut`, `packed`, `align(n)`, `resource`, and before `rec`, `ref` and `sync`.")
         }
-        return TLayout("packed" in words, modifiers.firstOrNull { it.name.text == "align" }?.let { visit(it.size) }, isUnion)
+        return TLayout("packed" in words, modifiers.firstOrNull { it.mut == null && it.name.text == "align" }?.let { visit(it.size) }, isUnion, isRef = "ref" in words, isResource = "resource" in words, isSync = "sync" in words,
+            isMut = "mut" in words)
     }
 
     private fun checkUnion(ctx: ParserRuleContext, word: Token) {
@@ -172,36 +248,67 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
 
     // Records
     override fun visitGlobalRecordDefine(ctx: EclangParser.GlobalRecordDefineContext): ITok =
-        TTypeRecord(loc(ctx), ctx.name.text, ctx.fields.map { it.name.text }, ctx.fields.map { visit(it.type()) }, ctx.extending?.let { recordTypeName(ctx.qualifier, it) }, ctx.fields.map { f -> f.value?.let { visit(it) } }, ctx.typeParams.map { it.text },
-            layout(ctx.modifiers), widths(ctx.fields.map { it.fieldWidth() }))
+        TTypeRecord(loc(ctx), ctx.name.text, ctx.fields.map { it.name.text }, ctx.fields.map { visit(it.type()) }, ctx.extending?.let { recordTypeName(ctx.qualifier, it) }, ctx.fields.map { f -> f.value?.let { visit(it) } }, ctx.typeParams.map { it.name.text },
+            layout(ctx.modifiers), widths(ctx.fields.map { it.fieldWidth() }), ctx.typeParams.filter { it.mut != null }.map { it.name.text }.toSet())
     override fun visitGlobalUnionDefine(ctx: EclangParser.GlobalUnionDefineContext): ITok {
         checkUnion(ctx, ctx.keyword)
         return TTypeRecord(loc(ctx), ctx.name.text, ctx.fields.map { it.name.text }, ctx.fields.map { visit(it.type()) }, null, ctx.fields.map { f -> f.value?.let { visit(it) } }, listOf(),
             layout(ctx.modifiers, isUnion = true), widths(ctx.fields.map { it.fieldWidth() }))
     }
+    // `declare struct x` and `declare union x` (C's `struct x` and `union x`), and `declare union rec x_t` (a typedef of a union).
     override fun visitGlobalUnionDeclare(ctx: EclangParser.GlobalUnionDeclareContext): ITok {
-        checkUnion(ctx, ctx.keyword)
-        val external = Util.getStringContent(ctx.externalName?.text)
-        return if (ctx.typedef != null) TTypeDeclareRecord(loc(ctx), ctx.name.text, listOf(), listOf(), null, external, isUnion = true)
-            else TTypeDeclareStruct(loc(ctx), ctx.name.text, listOf(), listOf(), external, isUnion = true)
+        val isUnion = checkDeclared(ctx, ctx.keyword, ctx.mut, ctx.typedef)
+        val external = externName(ctx, ctx.ext, ctx.externalName)
+        return if (ctx.typedef != null) TTypeDeclareRecord(loc(ctx), ctx.name.text, listOf(), listOf(), null, external, isUnion = true, isMut = ctx.mut != null)
+            else TTypeDeclareStruct(loc(ctx), ctx.name.text, listOf(), listOf(), external, isUnion = isUnion)
     }
     override fun visitGlobalUnionDeclareDefine(ctx: EclangParser.GlobalUnionDeclareDefineContext): ITok {
-        checkUnion(ctx, ctx.keyword)
-        val external = Util.getStringContent(ctx.externalName?.text)
-        return if (ctx.typedef != null) TTypeDeclareRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), null, external, widths(ctx.widths), isUnion = true)
-            else TTypeDeclareStruct(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), external, widths(ctx.widths), isUnion = true)
+        val isUnion = checkDeclared(ctx, ctx.keyword, ctx.mut, ctx.typedef)
+        val external = externName(ctx, ctx.ext, ctx.externalName)
+        return if (ctx.typedef != null) TTypeDeclareRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), null, external, widths(ctx.widths), isUnion = true, cNames = cNames(ctx.externs), isMut = ctx.mut != null)
+            else TTypeDeclareStruct(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), external, widths(ctx.widths), isUnion = isUnion, cNames = cNames(ctx.externs))
     }
-    override fun visitGlobalRecordDeclare(ctx: EclangParser.GlobalRecordDeclareContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, listOf(), listOf(), null, Util.getStringContent(ctx.externalName?.text))
-    override fun visitGlobalRecordDeclareDefine(ctx: EclangParser.GlobalRecordDeclareDefineContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), null, Util.getStringContent(ctx.externalName?.text), widths(ctx.widths))
+    /**
+     * The word after `declare` (and `mut`) in a C struct or union: `struct` or `union`, neither of them a keyword. Whether it is
+     * a union. C's `struct x` and `union x` are always mutable, so `mut` is only for `declare mut union rec`, a typedef.
+     */
+    private fun checkDeclared(ctx: ParserRuleContext, word: Token, mut: Token?, typedef: Token?): Boolean {
+        when (word.text) {
+            "union" -> if (mut != null && typedef == null) throw EcError(loc(ctx), "`declare union` is C's `union x`, whose fields can always change, like a `declare struct`, so it takes no `mut`. Remove it, or write `declare mut union rec` for a typedef.")
+            "struct" -> {
+                if (typedef != null) throw EcError(loc(ctx), "`declare struct rec` isn't a declaration: `declare struct x` is C's `struct x`, and a typedef of a struct is a `declare rec` (`declare rec x_t`).")
+                if (mut != null) throw EcError(loc(ctx), "`declare struct` is C's `struct x`, whose fields can always change, so it takes no `mut`. Remove it, or write `declare mut rec` for a typedef.")
+            }
+            else -> throw EcError(loc(ctx), "`declare ${word.text}` isn't a declaration. A C type is declared with `declare rec` (a typedef), `declare struct`, `declare union` or `declare type`.")
+        }
+        return word.text == "union"
+    }
 
-    override fun visitGlobalStructDeclare(ctx: EclangParser.GlobalStructDeclareContext): ITok  = TTypeDeclareStruct(loc(ctx), ctx.name.text, listOf(), listOf(), Util.getStringContent(ctx.externalName?.text))
-    override fun visitGlobalStructDeclareDefine(ctx: EclangParser.GlobalStructDeclareDefineContext): ITok  = TTypeDeclareStruct(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), Util.getStringContent(ctx.externalName?.text), widths(ctx.widths))
+    override fun visitGlobalRecordDeclare(ctx: EclangParser.GlobalRecordDeclareContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, listOf(), listOf(), null, externName(ctx, ctx.ext, ctx.externalName), isMut = ctx.mut != null)
+    override fun visitGlobalRecordDeclareDefine(ctx: EclangParser.GlobalRecordDeclareDefineContext): ITok = TTypeDeclareRecord(loc(ctx), ctx.name.text, tvisit(ctx.names), visit(ctx.types), null, externName(ctx, ctx.ext, ctx.externalName), widths(ctx.widths), cNames = cNames(ctx.externs), isMut = ctx.mut != null)
+
 
     // Types
     override fun visitTypeByName(ctx: EclangParser.TypeByNameContext): ITok = TTypeByName(loc(ctx), ctx.text)
 
-    override fun visitTypeByNameParameters(ctx: EclangParser.TypeByNameParametersContext): ITok =
-        TTypeApplied(loc(ctx), recordTypeName(ctx.qualifier, ctx.name), typeArgs(ctx.args))
+    override fun visitTypeByNameParameters(ctx: EclangParser.TypeByNameParametersContext): ITok {
+        if (isVolatile(ctx)) throw EcError(loc(ctx), "`Volatile<T>` can only be the type of a `var` (`var x: Volatile<Int> = 0`, also at the top level): it makes the variable itself volatile in C. " +
+            "It can't be part of another type, a field's, a parameter's or a `val`'s.")
+        return TTypeApplied(loc(ctx), recordTypeName(ctx.qualifier, ctx.name), typeArgs(ctx.args))
+    }
+
+    /** Whether [ctx] is `Volatile<T>`, which isn't a type of its own: a `var` declared with it is a C `volatile` variable of type T. */
+    private fun isVolatile(ctx: EclangParser.TypeContext?): Boolean =
+        ctx is EclangParser.TypeByNameParametersContext && ctx.qualifier == null && ctx.name.text == VOLATILE
+
+    /** The type of a `var` declared with [ctx], and whether it is volatile: `var x: Volatile<Int>` is a volatile Int. */
+    private fun varType(ctx: EclangParser.TypeContext): Pair<ITok, Boolean> {
+        if (!isVolatile(ctx)) return visit(ctx) to false
+        val args = (ctx as EclangParser.TypeByNameParametersContext).args
+        if (args.size != 1) throw EcError(loc(ctx), "`Volatile` takes one type, the variable's: `Volatile<Int>`.")
+        if (isVolatile(args[0])) throw EcError(loc(ctx), "`Volatile<Volatile<...>>`: a variable is volatile once. Write one `Volatile`.")
+        return visit(args[0]) to true
+    }
 
     /** The type arguments of `List<T>`: a bare T, K or V2 there may be a type parameter (`<<T>>` would lex as a shift). */
     private fun typeArgs(args: List<EclangParser.TypeContext>): List<ITok> = args.map {
@@ -210,9 +317,16 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
 
     override fun visitTypeAddressByName(ctx: EclangParser.TypeAddressByNameContext): ITok = TTypePointerByName(loc(ctx), visit(ctx.type()))
 
-    override fun visitTypeUnion(ctx: EclangParser.TypeUnionContext): ITok = TTypeUnion(loc(ctx), visit(ctx.types))
+    override fun visitTypeUnion(ctx: EclangParser.TypeUnionContext): ITok = TTypeUnion(loc(ctx), visit(unionTypes(ctx)))
 
-    override fun visitTypeEnum(ctx: EclangParser.TypeEnumContext): ITok = TTypeEnum(loc(ctx), visit(ctx.types))
+    override fun visitTypeEnum(ctx: EclangParser.TypeEnumContext): ITok = TTypeEnum(loc(ctx), visit(enumTypes(ctx)))
+
+    /** `A | B | C` parses as `(A | B) | C`, and is one union of three. Brackets are a [EclangParser.TypeNestContext], so they stay. */
+    private fun unionTypes(ctx: EclangParser.TypeUnionContext): MutableList<EclangParser.TypeContext> =
+        ctx.types.flatMapTo(mutableListOf()) { if (it is EclangParser.TypeUnionContext) unionTypes(it) else listOf(it) }
+
+    private fun enumTypes(ctx: EclangParser.TypeEnumContext): MutableList<EclangParser.TypeContext> =
+        ctx.types.flatMapTo(mutableListOf()) { if (it is EclangParser.TypeEnumContext) enumTypes(it) else listOf(it) }
 
     override fun visitTypeNullable(ctx: EclangParser.TypeNullableContext): ITok = TTypeNullable(loc(ctx), visit(ctx.type()))
 
@@ -221,7 +335,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitTypeNest(ctx: EclangParser.TypeNestContext): ITok = visit(ctx.type())
     override fun visitTypeTuple(ctx: EclangParser.TypeTupleContext): ITok = TTypeTuple(loc(ctx), visit(ctx.types))
 
-    override fun visitTypeGeneric(ctx: EclangParser.TypeGenericContext): ITok = TTypeGeneric(loc(ctx), ctx.NAME().text)
+    override fun visitTypeGeneric(ctx: EclangParser.TypeGenericContext): ITok = TTypeGeneric(loc(ctx), ctx.NAME().text, isMut = ctx.mut != null)
 
     override fun visitTypeTypeOf(ctx: EclangParser.TypeTypeOfContext): ITok = TTypeOf(loc(ctx), visit(ctx.expr()))
 
@@ -235,15 +349,15 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
 
     // Functions
     override fun visitFunctionBlock(ctx: EclangParser.FunctionBlockContext): ITok {
-        return addressTakenIn { TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), returns(ctx, ctx.returnType, ctx.throwing)) }
+        return addressTakenIn { withMutParameters(ctx.params) { TFuncBlock(loc(ctx), cvisit(ctx.body), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), returns(ctx, ctx.returnType, ctx.throwing)).also { it.contracts = contracts(ctx.contracts) } } }
     }
 
     override fun visitFunctionInline(ctx: EclangParser.FunctionInlineContext): ITok {
-        return addressTakenIn { TFuncInline(loc(ctx), cvisit(ctx.tail()), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), returns(ctx, ctx.returnType, ctx.throwing)) }
+        return addressTakenIn { withMutParameters(ctx.params) { TFuncInline(loc(ctx), cvisit(ctx.tail()), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), returns(ctx, ctx.returnType, ctx.throwing)).also { it.contracts = contracts(ctx.contracts) } } }
     }
 
     override fun visitFunctionDeclare(ctx: EclangParser.FunctionDeclareContext): ITok {
-        return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), returns(ctx, ctx.returnType, ctx.throwing), Util.getStringContent(ctx.externalName?.text))
+        return TFuncExternal(loc(ctx), ctx.name.text, TParameters(loc(ctx), visit(ctx.params)), returns(ctx, ctx.returnType, ctx.throwing), externName(ctx, ctx.ext, ctx.externalName))
     }
 
     /** A function's return type: `: T`, `: T throws E`, `throws E` (returns nothing, may fail) or nothing. */
@@ -262,14 +376,24 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitParameterTypedDefault(ctx: EclangParser.ParameterTypedDefaultContext): ITok = TParameterTypedDefault(loc(ctx), ctx.NAME().text, visit(ctx.type()), visit(ctx.expr()))
     override fun visitParameterVarArg(ctx: EclangParser.ParameterVarArgContext): ITok = TParameterVarArg(loc(ctx), ctx.NAME().text, visit(ctx.type()))
     override fun visitParameterVarArgC(ctx: EclangParser.ParameterVarArgCContext): ITok = TParameterVarArgC(loc(ctx))
+    override fun visitParameterMut(ctx: EclangParser.ParameterMutContext): ITok = TParameterMut(loc(ctx), visit(ctx.parameter()) as TParameter, isOut = false)
+    /** `out p: T`. `out` isn't a keyword (it is a common name), so other words are rejected here. */
+    override fun visitParameterKeyword(ctx: EclangParser.ParameterKeywordContext): ITok {
+        if (ctx.keyword.text == "escaping") return TParameterEscaping(loc(ctx), visit(ctx.parameter()) as TParameter)
+        if (ctx.keyword.text == "own") return TParameterOwn(loc(ctx), visit(ctx.parameter()) as TParameter)
+        if (ctx.keyword.text == "kept") return TParameterKept(loc(ctx), visit(ctx.parameter()) as TParameter)
+        if (ctx.keyword.text == "flat") return TParameterFlat(loc(ctx), visit(ctx.parameter()) as TParameter)
+        if (ctx.keyword.text != "out") throw EcError(loc(ctx), "`${ctx.keyword.text}` can't go before a parameter. These can: `mut` (the function changes the caller's variable), `escaping` (the function keeps the value after the call), `own` (the function takes a pool over), `flat` (the value may go to another thread: it reaches no memory but `sync` records) and, in a `declare fn`, `out` (C only writes it) and `kept` (C keeps it in the other arguments).")
+        return TParameterMut(loc(ctx), visit(ctx.parameter()) as TParameter, isOut = true)
+    }
 
     /** True for `first.name(...)`, which starts with an expression rather than the name. */
     private fun isMethod(ctx: ParserRuleContext) = ctx.getChild(0) is ParserRuleContext
 
-    override fun visitExprFunctionCallNoArgs(ctx: EclangParser.ExprFunctionCallNoArgsContext): ITok = TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args), isMethod(ctx))
+    override fun visitExprFunctionCallNoArgs(ctx: EclangParser.ExprFunctionCallNoArgsContext): ITok = noteReceiver(TExprCall(loc(ctx), ctx.NAME().text, visit(ctx.args), isMethod(ctx)))
     override fun visitExprFunctionCallWithArgs(ctx: EclangParser.ExprFunctionCallWithArgsContext): ITok {
         val (rest, names) = arguments(ctx.rest)
-        return TExprCall(loc(ctx), ctx.NAME().text, poolKill(ctx.NAME().text, (visit<_, ITok>(ctx.args) + rest).toMutableList()), isMethod(ctx), names)
+        return noteReceiver(TExprCall(loc(ctx), ctx.NAME().text, poolKill(ctx.NAME().text, (visit<_, ITok>(ctx.args) + rest).toMutableList()), isMethod(ctx), names))
     }
 
     override fun visitStatementFunctionCallNoArgs(ctx: EclangParser.StatementFunctionCallNoArgsContext): ITok = TStatementCall(loc(ctx), ctx.NAME().text, visit(ctx.args), isMethod(ctx))
@@ -285,7 +409,9 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
             throw EcError(loc(b), "`${source(b)}` comes after the named argument `${source(a)}`. Arguments in order come first, then the named ones.")
         }
         names.filterNotNull().groupBy { it }.values.firstOrNull { it.size > 1 }?.let { throw EcError(loc(list[0]), "Parameter '${it[0]}' is given twice.") }
-        return list.map { visit(it.expr()) as ITok } to names.takeIf { n -> n.any { it != null } }
+        return list.map { a ->
+            (visit(a.expr()) as ITok).let { if (a.mut == null) it else TMutArg(loc(a), it).also { _ -> changedName(it)?.let { n -> assignedNames += n } } }
+        } to names.takeIf { n -> n.any { it != null } }
     }
 
     override fun visitExprSafeCall(ctx: EclangParser.ExprSafeCallContext): ITok {
@@ -298,9 +424,9 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
         return TSafeCall(loc(ctx), visit(ctx.args[0]), ctx.NAME().text, rest, names, statement = true)
     }
 
-    /** `clearPool(p)` and `freePool(p)` free what p holds, which a loop must know like an assignment of p (see `Lifetimes.loopKills`). */
+    /** `clearPool(p)` frees what p holds, which a loop treats like an assignment of p (`cd.forgetAssigned`). */
     private fun poolKill(name: String, args: MutableList<ITok>): MutableList<ITok> {
-        if (name == "clearPool" || name == "freePool") (args.firstOrNull()?.unnested() as? TNamed)?.let { assignedNames += it.name }
+        if (name == "clearPool") (args.firstOrNull()?.unnested() as? TNamed)?.let { assignedNames += it.name }
         return args
     }
 
@@ -321,7 +447,6 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitExprSizeOf(ctx: EclangParser.ExprSizeOfContext): ITok = TSizeOf(loc(ctx), visit(ctx.type()))
     override fun visitExprAlignOf(ctx: EclangParser.ExprAlignOfContext): ITok = TAlignOf(loc(ctx), visit(ctx.type()))
     override fun visitExprOffsetOf(ctx: EclangParser.ExprOffsetOfContext): ITok = TOffsetOf(loc(ctx), visit(ctx.type()), ctx.field.text)
-    override fun visitExprHere(ctx: EclangParser.ExprHereContext): ITok = THere(loc(ctx))
 
     // Primitives
     override fun visitNumberInteger(ctx: EclangParser.NumberIntegerContext): ITok = TInteger(loc(ctx), number(ctx, ctx.text.replace("_", ""), 10))
@@ -360,7 +485,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
         return TInterpolated(at, parts.flatMapIndexed { i, part ->
             if (i % 2 == 0) return@flatMapIndexed listOf(StringLiteral.parse(at, part))
             val field = FormatSpec.split(at, part)
-            listOfNotNull(field.label?.let { StringLiteral.parse(at, it) }, TInterpolated.Field(github.mrh0.eclang.Compiler.parseInterpolation(field.expression, at), field.spec))
+            listOfNotNull(field.label?.let { StringLiteral.parse(at, it) }, TInterpolated.Field(github.mrh0.eclang.Compiler.parseInterpolation(field.expression, at, mutNames), field.spec))
         })
     }
     override fun visitPrimitiveAtom(ctx: EclangParser.PrimitiveAtomContext): ITok = TAtom(loc(ctx), ctx.text.substring(1))
@@ -474,6 +599,15 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitExprIs(ctx: EclangParser.ExprIsContext): ITok = TIs(loc(ctx), visit(ctx.expr()), visit(ctx.type()), false)
     override fun visitExprIsNot(ctx: EclangParser.ExprIsNotContext): ITok = TIs(loc(ctx), visit(ctx.expr()), visit(ctx.type()), true)
     override fun visitExprTry(ctx: EclangParser.ExprTryContext): ITok = TTry(loc(ctx), visit(ctx.expr()))
+    override fun visitExprUnsafe(ctx: EclangParser.ExprUnsafeContext): ITok = TUnsafe(loc(ctx), visit(ctx.expr()), isBlock = false)
+    override fun visitStatementUnsafe(ctx: EclangParser.StatementUnsafeContext): ITok = TUnsafe(loc(ctx), visit(ctx.body), isBlock = true)
+    override fun visitStatementUnsafeLine(ctx: EclangParser.StatementUnsafeLineContext): ITok = TUnsafe(loc(ctx), visit(ctx.statement()), isBlock = true)
+    /** `destroy p` frees what p holds, which a loop treats like an assignment of p (`cd.forgetAssigned`). */
+    override fun visitStatementDestroy(ctx: EclangParser.StatementDestroyContext): ITok {
+        val target = visit(ctx.target)
+        (target.unnested() as? TNamed)?.let { assignedNames += it.name }
+        return TStatementDestroy(loc(ctx), target)
+    }
     override fun visitStatementTry(ctx: EclangParser.StatementTryContext): ITok = TStatement(loc(ctx), TTry(loc(ctx), visit(ctx.left)))
     override fun visitStatementTryCatch(ctx: EclangParser.StatementTryCatchContext): ITok = TStatementTryCatch(loc(ctx), visit(ctx.left), ctx.NAME().text, visit(ctx.elseBody))
     override fun visitGlobalInterfaceDefine(ctx: EclangParser.GlobalInterfaceDefineContext): ITok {
@@ -489,8 +623,11 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
 
     override fun visitGlobalDefine(ctx: EclangParser.GlobalDefineContext): ITok = TGlobalDefine(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
     override fun visitGlobalDefineConst(ctx: EclangParser.GlobalDefineConstContext): ITok = TGlobalDefineConst(loc(ctx), ctx.NAME().text, visit(ctx.expr()))
-    override fun visitGlobalDeclareConst(ctx: EclangParser.GlobalDeclareConstContext): ITok = TGlobalDeclareConst(loc(ctx), ctx.NAME().text, visit(ctx.type()), if (ctx.externalName != null) Util.getStringContent(ctx.externalName.text) else null)
-    override fun visitGlobalDefineTyped(ctx: EclangParser.GlobalDefineTypedContext): ITok = TGlobalDefineTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
+    override fun visitGlobalDeclareConst(ctx: EclangParser.GlobalDeclareConstContext): ITok = TGlobalDeclareConst(loc(ctx), ctx.name.text, visit(ctx.type()), externName(ctx, ctx.ext, ctx.externalName))
+    override fun visitGlobalDefineTyped(ctx: EclangParser.GlobalDefineTypedContext): ITok {
+        val (type, volatile) = ctx.type()?.let { varType(it) } ?: (null to false)
+        return if (type == null) TGlobalDefine(loc(ctx), ctx.NAME().text, visit(ctx.expr())) else TGlobalDefineTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), type, volatile)
+    }
     override fun visitGlobalDefineConstTyped(ctx: EclangParser.GlobalDefineConstTypedContext): ITok = TGlobalDefineConstTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
     override fun visitGlobalConstant(ctx: EclangParser.GlobalConstantContext): ITok = TGlobalConstant(loc(ctx), ctx.NAME().text, visit(ctx.expr()), ctx.type()?.let { visit(it) })
     override fun visitGlobalTypeDefine(ctx: EclangParser.GlobalTypeDefineContext): ITok = TGlobalTypeDefine(loc(ctx), ctx.NAME().text, visit(ctx.type()), external = true)
@@ -502,15 +639,27 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitGlobalEnumDeclare(ctx: EclangParser.GlobalEnumDeclareContext): ITok =
         TGlobalEnumDeclare(loc(ctx), ctx.name.text, ctx.atoms.map { it.text }, ctx.constants.map { it.text })
     override fun visitUse(ctx: EclangParser.UseContext): ITok = TGlobalUse(loc(ctx), Util.getStringContent(ctx.from.text) ?: "")
-    override fun visitGlobalNamespace(ctx: EclangParser.GlobalNamespaceContext): ITok = TGlobalModule(loc(ctx), Util.getStringContent(ctx.name.text) ?: "")
+    override fun visitGlobalNamespace(ctx: EclangParser.GlobalNamespaceContext): ITok {
+        // `module` isn't a keyword, so the grammar takes any name before the string.
+        if (ctx.keyword.text != "module") throw EcError(loc(ctx), "`${ctx.keyword.text} ${ctx.name.text}` isn't a declaration. To name the module of this file, write `module ${ctx.name.text}`; to use another file, `use ${ctx.name.text}`.")
+        return TGlobalModule(loc(ctx), Util.getStringContent(ctx.name.text) ?: "")
+    }
 
     /** A value that ends a statement: an expression and its NL, or a `when`, which ends without one. */
-    override fun visitTail(ctx: EclangParser.TailContext): ITok = visit(ctx.expr() ?: ctx.whenExpr())
+    override fun visitTail(ctx: EclangParser.TailContext): ITok = visit(ctx.expr() ?: ctx.whenExpr() ?: ctx.tryCatch())
+    override fun visitTryCatch(ctx: EclangParser.TryCatchContext): ITok =
+        TTryCatchExpr(loc(ctx), visit(ctx.left), ctx.NAME().text, ctx.value?.let { visit(it) }, ctx.body?.let { visit(it) })
 
     override fun visitStatementDefineVar(ctx: EclangParser.StatementDefineVarContext): ITok = TStatementDefineVar(loc(ctx), ctx.NAME().text, visit(ctx.tail()))
-    override fun visitStatementDefineVarTyped(ctx: EclangParser.StatementDefineVarTypedContext): ITok = TStatementDefineVarTyped(loc(ctx), ctx.NAME().text, visit(ctx.tail()), visit(ctx.type()))
+    override fun visitStatementDefineVarTyped(ctx: EclangParser.StatementDefineVarTypedContext): ITok {
+        val (type, volatile) = varType(ctx.type())
+        return TStatementDefineVarTyped(loc(ctx), ctx.NAME().text, visit(ctx.tail()), type, volatile)
+    }
 
-    override fun visitStatementDeclareVar(ctx: EclangParser.StatementDeclareVarContext): ITok = TStatementDeclareVar(loc(ctx), ctx.NAME().text, visit(ctx.type()))
+    override fun visitStatementDeclareVar(ctx: EclangParser.StatementDeclareVarContext): ITok {
+        val (type, volatile) = varType(ctx.type())
+        return TStatementDeclareVar(loc(ctx), ctx.NAME().text, type, volatile)
+    }
 
     override fun visitStatementDefineVal(ctx: EclangParser.StatementDefineValContext): ITok = TStatementDefineVal(loc(ctx), ctx.NAME().text, visit(ctx.tail()))
     override fun visitStatementDefineValTyped(ctx: EclangParser.StatementDefineValTypedContext): ITok = TStatementDefineValTyped(loc(ctx), ctx.NAME().text, visit(ctx.tail()), visit(ctx.type()))
@@ -519,24 +668,47 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitStatementDefineConstTyped(ctx: EclangParser.StatementDefineConstTypedContext): ITok = TStatementDefineConstTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()))
 
     override fun visitStatementAssignment(ctx: EclangParser.StatementAssignmentContext): ITok {
+        // `unsafe p[i] = v` parses with `unsafe p[i]` as the target: it means `unsafe` + the whole assignment.
         val target: ITok = visit(ctx.target)
+        if (target is TUnsafe) return TUnsafe(target.location, assignment(ctx, target.body), isBlock = true)
+        return assignment(ctx, target)
+    }
+
+    private fun assignment(ctx: EclangParser.StatementAssignmentContext, target: ITok): ITok {
         (target.unnested() as? TCreateTuple)?.let { tuple ->
             if (ctx.op.text != "=") throw EcError(loc(ctx), "`${ctx.op.text}` changes one value, so it can't have a tuple on its left. Change each part on its own line, e.g. `a ${ctx.op.text} 1`.")
             assignedNames += tupleTargets(tuple)
             return TDestructure(loc(ctx), tuple, visit(ctx.value), null, TDestructure.Kind.ASSIGN)
         }
-        (target.unnested() as? TNamed)?.let { assignedNames += it.name }
+        changedName(target)?.let { assignedNames += it }
         return TStatementAssign(loc(ctx), target, ctx.op.text.dropLast(1), visit(ctx.value))
     }
-    override fun visitExprNamed(ctx: EclangParser.ExprNamedContext): ITok = TNamed(loc(ctx), ctx.NAME().text)
+    override fun visitExprNamed(ctx: EclangParser.ExprNamedContext): ITok {
+        // `it` isn't a keyword: in a `|>` stage it is the value before the `|>`, elsewhere an ordinary name.
+        if (ctx.NAME().text == "it" && itUses.isNotEmpty()) {
+            itUses[itUses.size - 1]++
+            return TIt(loc(ctx))
+        }
+        // `here` and `pool` aren't keywords either: TNamed gives them their meaning when no variable has the name.
+        return TNamed(loc(ctx), ctx.NAME().text).let { if (it.name in mutNames) TReadPointer(it.location, it, mutParameter = true) else it }
+    }
 
     /** The plain variables among the targets of `(a, (b, c.x)) = ...`. */
     private fun tupleTargets(tuple: TCreateTuple): List<String> = tuple.values.flatMap { v ->
         when (val t = v.unnested()) {
             is TCreateTuple -> tupleTargets(t)
-            is TNamed -> listOf(t.name)
-            else -> listOf()
+            else -> listOfNotNull(changedName(t))
         }
+    }
+
+    /**
+     * The name a loop must forget the narrowing of when [target] is assigned or passed as `mut`: x for a variable x, `@p` for a
+     * `mut` parameter p (what it points to, see `Narrowing.local`), or null for a field or element, which isn't narrowed.
+     */
+    private fun changedName(target: ITok): String? = when (val t = target.unnested()) {
+        is TNamed -> t.name
+        is TReadPointer -> if (t.mutParameter) (t.expr as? TNamed)?.let { "@${it.name}" } else null
+        else -> null
     }
 
     /** `(a, (b, _))`, as the tuple of names it looks like. */
@@ -586,7 +758,10 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     override fun visitWhenValueUpTo(ctx: EclangParser.WhenValueUpToContext): ITok = TRange(loc(ctx), null, visit(ctx.to), ctx.op.text == "..=")
 
     override fun visitStatementIf(ctx: EclangParser.StatementIfContext): ITok {
-        return TStatementIf(loc(ctx), visit(ctx.conditions), visit(ctx.bodies), elseOf(ctx.elseBody, ctx.next))
+        // `else if` parses as an `if` nested in `next`; a chain of them is one statement.
+        val chain = generateSequence(ctx) { it.next as? EclangParser.StatementIfContext }.toMutableList()
+        val last = chain.last()
+        return TStatementIf(loc(ctx), visit(chain.mapTo(mutableListOf()) { it.condition }), visit(chain.mapTo(mutableListOf()) { it.body }), elseOf(last.elseBody, last.next))
     }
 
     /** What follows `else`: a block, or [next], one more `if`, as a block of its own. */
@@ -613,6 +788,8 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
             "and `${source(ctx.lower)}..=${source(ctx.upper)}` includes it.")
 
     override fun visitStatementForIn(ctx: EclangParser.StatementForInContext): ITok {
+        // `where` isn't a keyword, so the grammar takes any name between the iterable and the filter.
+        ctx.where?.let { if (it.text != "where") throw EcError(loc(ctx), "`${it.text}` after what a `for` loops over isn't anything eclang knows. To skip some elements, write `where` and a condition: `for x in xs where x > 0 do`.") }
         val iterable = visit(ctx.iterable)
         val filter: ITok? = ctx.filter?.let { visit(it) }
         val (body, assigned) = assignedIn { visit(ctx.body) }
@@ -632,33 +809,109 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
         return tok
     }
 
-    // Volatile variables (`vol`) and C variables (`declare var`)
-    override fun visitStatementDefineVol(ctx: EclangParser.StatementDefineVolContext): ITok = TStatementDefineVar(loc(ctx), ctx.NAME().text, visit(ctx.tail()), volatile = true)
-    override fun visitStatementDefineVolTyped(ctx: EclangParser.StatementDefineVolTypedContext): ITok = TStatementDefineVarTyped(loc(ctx), ctx.NAME().text, visit(ctx.tail()), visit(ctx.type()), volatile = true)
-    override fun visitGlobalDefineVolatile(ctx: EclangParser.GlobalDefineVolatileContext): ITok = TGlobalDefine(loc(ctx), ctx.NAME().text, visit(ctx.expr()), volatile = true)
-    override fun visitGlobalDefineVolatileTyped(ctx: EclangParser.GlobalDefineVolatileTypedContext): ITok = TGlobalDefineTyped(loc(ctx), ctx.NAME().text, visit(ctx.expr()), visit(ctx.type()), volatile = true)
-    override fun visitGlobalDeclareDefine(ctx: EclangParser.GlobalDeclareDefineContext): ITok = TGlobalDeclareConst(loc(ctx), ctx.name.text, visit(ctx.type()), Util.getStringContent(ctx.externalName?.text), assignable = true)
+    // C variables (`declare var`)
+    override fun visitGlobalDeclareDefine(ctx: EclangParser.GlobalDeclareDefineContext): ITok = TGlobalDeclareConst(loc(ctx), ctx.name.text, visit(ctx.type()), externName(ctx, ctx.ext, ctx.externalName), assignable = true)
 
     override fun visitStatementAssert(ctx: EclangParser.StatementAssertContext): ITok {
-        val message = ctx.message?.let {
-            if (it.text.endsWith("\"c")) throw EcError(loc(ctx), "The message of `assert` is a plain string literal; remove the `c`.")
-            val content = Util.getStringContent(it.text) ?: ""
-            if (StringLiteral.splitInterpolation(loc(ctx), content).size > 1) throw EcError(loc(ctx), "The message of `assert` can't contain `\${...}`; write `\\$` for a plain dollar sign.")
-            StringLiteral.parse(loc(ctx), content)
+        val (condition, sources) = withSources { visit(ctx.condition) }
+        return TAssert(loc(ctx), condition, ctx.message?.let { visit(it) }, source(ctx.condition), sources)
+    }
+
+    // `const assert`
+    override fun visitStatementConstAssert(ctx: EclangParser.StatementConstAssertContext): ITok = visit(ctx.constAssert())
+    override fun visitGlobalConstAssert(ctx: EclangParser.GlobalConstAssertContext): ITok = visit(ctx.constAssert())
+
+    override fun visitConstAssertCondition(ctx: EclangParser.ConstAssertConditionContext): ITok =
+        TConstAssert(loc(ctx), TConstAssert.Condition(visit(ctx.condition)), constMessage(ctx.message), source(ctx.condition))
+
+    override fun visitConstAssertIn(ctx: EclangParser.ConstAssertInContext): ITok =
+        TConstAssert(loc(ctx), TConstAssert.InPool(visit(ctx.value), visit(ctx.pool), source(ctx.value)), constMessage(ctx.message), "${source(ctx.value)} in ${source(ctx.pool)}")
+
+    override fun visitConstAssertRelation(ctx: EclangParser.ConstAssertRelationContext): ITok {
+        val relation = ctx.relation.text
+        val (left, right) = source(ctx.left) to source(ctx.right)
+        val claim = when (relation) {
+            "is", "fits" -> TConstAssert.Relation(visit(ctx.left), relation, visit(ctx.right), left, right)
+            "outlives" -> TConstAssert.Outlives(valueNamed(ctx.left), valueNamed(ctx.right), left, right)
+            else -> throw EcError(loc(ctx), "`const assert` doesn't know the relation `$relation`. It knows `A is B` and `A fits B` of types, `a outlives b` of values, and `x in p` of a value and a pool.")
         }
-        return TAssert(loc(ctx), visit(ctx.condition), message, source(ctx.condition))
+        return TConstAssert(loc(ctx), claim, constMessage(ctx.message), "$left $relation $right")
+    }
+
+    /** The variable or field `a` or `a.b` that `const assert a outlives b` names, which the grammar reads as a type. */
+    private fun valueNamed(ctx: EclangParser.TypeContext): ITok {
+        if (ctx !is EclangParser.TypeByNameContext) throw EcError(loc(ctx), "`outlives` compares two variables or fields, such as `node outlives list` or `h.data outlives h`.")
+        val names = ctx.text.split('.')
+        val first = TNamed(loc(ctx), names[0]).let { if (it.name in mutNames) TReadPointer(it.location, it, mutParameter = true) else it }
+        return names.drop(1).fold(first as ITok) { tok, name -> TAccessorNamed(loc(ctx), tok, name) }
+    }
+
+    /** The message of a `const assert`: a plain String literal, as it is part of an error or of C. */
+    private fun constMessage(token: org.antlr.v4.runtime.Token?): String? = token?.let {
+        if (it.text.endsWith("\"c")) throw EcError(Loc(it, file), "The message of `const assert` is a plain String literal; remove the `c`.")
+        val content = Util.getStringContent(it.text) ?: ""
+        if (StringLiteral.splitInterpolation(Loc(it, file), content).size > 1) throw EcError(Loc(it, file), "The message of `const assert` is checked when compiling, so it can't contain `\${...}`; write `\\$` for a plain dollar sign.")
+        content
+    }
+
+    /** `debug statement`: the statement only runs in a debug build. `debug` isn't a keyword, so other words are rejected here. */
+    override fun visitStatementPrefixed(ctx: EclangParser.StatementPrefixedContext): ITok {
+        val word = ctx.keyword.text
+        if (word != "debug") throw EcError(loc(ctx), "`$word` before a statement isn't anything eclang knows. Only `debug` can be written there: `debug io.log(x)` runs only in a debug build.")
+        return when (val inner = ctx.statement()) {
+            is EclangParser.StatementConstAssertContext -> throw EcError(loc(ctx), "A `const assert` is checked when compiling, so there is nothing for `debug` to leave out of a release build. Remove `debug`.")
+            is EclangParser.StatementPrefixedContext -> throw EcError(loc(ctx), "`${inner.keyword.text}` can't follow `debug`: write `debug` once.")
+            // `debug defer x`: what is deferred is only done in a debug build (`debug` around the `defer` would end with its block).
+            is EclangParser.StatementDeferContext, is EclangParser.StatementDeferDoContext -> TDefer(loc(inner), debugOf(loc(ctx), (visit(inner) as TDefer).statement))
+            is EclangParser.StatementErrDeferContext, is EclangParser.StatementErrDeferDoContext -> TErrDefer(loc(inner), debugOf(loc(ctx), (visit(inner) as TErrDefer).statement))
+            else -> debugOf(loc(ctx), visit(inner))
+        }
+    }
+
+    private fun debugOf(at: Loc, tok: ITok): ITok = TDebug(at, tok as? TBlock ?: TBlock(at, listOf(tok)))
+
+    /** The `requires` and `ensures` of a function. None of the three words is a keyword, so they are checked here. */
+    private fun contracts(list: List<EclangParser.ContractContext>): List<Contract> {
+        val contracts = ArrayList<Contract>()
+        var i = 0
+        while (i < list.size) {
+            var c = list[i++]
+            var debug = c.debug != null
+            // `debug requires x - 1 > 0` parses as `debug requires` and `x -1 > 0` (see the grammar): parse the second part again.
+            if (c.debug == null && c.kind.text == "debug" && i < list.size && (c.condition as? EclangParser.ExprNamedContext)?.text in KINDS) {
+                c = reparseContract(c.condition.start, list[i++])
+                debug = true
+            }
+            c.debug?.let { if (it.text != "debug") throw EcError(loc(c), "`${it.text} ${c.kind.text}` isn't anything eclang knows. After a function's signature come `requires` (checked at each call), " +
+                "`ensures` (checked when it returns) and `debug requires`/`debug ensures` (only checked in a debug build).") }
+            if (c.kind.text !in KINDS) throw EcError(loc(c), "`${c.kind.text}` isn't anything eclang knows after a function's signature. A condition there starts with `requires` (checked at each call) or `ensures` (checked when it returns): `requires ${source(c.condition)}`.")
+            val (condition, sources) = withSources { visit(c.condition) }
+            contracts += Contract(loc(c), c.kind.text == "requires", condition, c.message?.let { visit(it) }, source(c.condition), sources, debug)
+        }
+        return contracts
+    }
+
+    /** [kind] (`requires` or `ensures`) followed by the tokens of [rest], parsed as one contract. */
+    private fun reparseContract(kind: Token, rest: EclangParser.ContractContext): EclangParser.ContractContext {
+        // Copies: the token stream numbers the tokens it is given.
+        val tokens = ArrayList<Token>()
+        tokens += CommonToken(kind)
+        fun collect(t: ParseTree) {
+            if (t is TerminalNode) tokens += CommonToken(t.symbol) else for (i in 0 until t.childCount) collect(t.getChild(i))
+        }
+        collect(rest)
+        val parser = EclangParser(CommonTokenStream(ListTokenSource(tokens)))
+        parser.removeErrorListeners()
+        val c = parser.contract()
+        if (parser.numberOfSyntaxErrors > 0 || c.stop !== tokens.last() || c.debug != null)
+            throw EcError(Loc(kind, file), "`debug ${kind.text} ${source(rest)}` can't be read as one condition. Put it in parentheses: `debug ${kind.text} (${source(rest)})`.")
+        return c
     }
 
     override fun visitStatementLetIf(ctx: EclangParser.StatementLetIfContext): ITok =
         TStatementLetIf(loc(ctx), ctx.NAME().text, ctx.kind.text == "var", visit(ctx.value), visit(ctx.body), elseOf(ctx.elseBody, ctx.next))
 
-    // Pipes and lambdas
-    override fun visitExprIt(ctx: EclangParser.ExprItContext): ITok {
-        if (itUses.isEmpty()) throw EcError(loc(ctx), "`it` can only be used in a `|>` stage, where it is the value before the `|>`, e.g. `x |> it * 2`.")
-        itUses[itUses.size - 1]++
-        return TIt(loc(ctx))
-    }
-
+    // Pipes and lambdas (`it` is in visitExprNamed)
     override fun visitExprPipe(ctx: EclangParser.ExprPipeContext): ITok {
         val value: ITok = visit(ctx.left)
         itUses += 0
@@ -673,7 +926,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
                 throw EcError(at, "In `|> ${source(ctx.right)}`, say where the value goes with `it`, e.g. `|> $withIt`.")
             } else TExprCall(at, tok.name, listOf(TIt(at)) + tok.args, argNames = tok.argNames?.let { listOf(null) + it })
             is TNamed -> TExprCall(at, tok.name, listOf(TIt(at)))
-            is TLambda -> TCallValue(at, tok, listOf(TIt(at)))
+            is TLambda -> TCallValue(at, tok.also { it.calledDirectly = true }, listOf(TIt(at)))
             else -> throw EcError(at, "A `|>` stage must be a call (`x |> f(2)` is `f(x, 2)`), a function name (`x |> f`), a lambda, " +
                 "or use `it` (`x |> it * 2`), but `${source(ctx.right)}` is none of these.")
         }
@@ -681,27 +934,33 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
     }
 
     override fun visitExprLambda(ctx: EclangParser.ExprLambdaContext): ITok {
-        // `it` inside a lambda would refer to a value of the function around it, which a lambda can't use.
+        // `it` inside a lambda isn't the value of a `|>` around it: a lambda is called later, after the pipe.
+        // A `mut` parameter of the function around it is a name of the lambda's own (using one is an error, see CompileData.capture).
         val saved = ArrayList(itUses)
+        val savedMut = mutNames
         itUses.clear()
+        mutNames = setOf()
+        val marks = Triple(assignedNames.size, addressTakenNames.size, receiverNames.size)
         try {
             val params = ctx.params.map { p -> p.NAME().text to p.type()?.let { visit(it) as ITok } }
-            return TLambda(loc(ctx), params, ctx.returnType?.let { visit(it) }, visit(ctx.body))
+            val body: ITok = visit(ctx.body)
+            // What the body may change of the variables it captures (see Closure.changes).
+            val changes = assignedNames.subList(marks.first, assignedNames.size).map { it.removePrefix("@") } +
+                addressTakenNames.subList(marks.second, addressTakenNames.size).map { it.first } + receiverNames.subList(marks.third, receiverNames.size)
+            return TLambda(loc(ctx), params, ctx.returnType?.let { visit(it) }, body, changes.toSet() - params.map { it.first }.toSet())
         } finally {
             itUses.clear(); itUses += saved
+            mutNames = savedMut
         }
     }
 
     // Parsed, but not part of the language yet: a clear error instead of a crash.
     private fun unsupported(ctx: ParserRuleContext, what: String): Nothing = throw EcError(loc(ctx), "$what is not supported yet.")
     override fun visitExprAccessNameNullishCoalescing(ctx: EclangParser.ExprAccessNameNullishCoalescingContext): ITok = TAccessorNamed(loc(ctx), visit(ctx.accesssed), ctx.NAME().text, safe = true)
-    override fun visitGlobalUnitDeclare(ctx: EclangParser.GlobalUnitDeclareContext): ITok = unsupported(ctx, "`unit`")
     override fun visitStatementTailWhile(ctx: EclangParser.StatementTailWhileContext): ITok = unsupported(ctx, "A trailing `while`")
     override fun visitStatementYield(ctx: EclangParser.StatementYieldContext): ITok = unsupported(ctx, "`yield`")
-    override fun visitTypeUnionAnon(ctx: EclangParser.TypeUnionAnonContext): ITok = unsupported(ctx, "`anon` unions")
     override fun visitParameterVariable(ctx: EclangParser.ParameterVariableContext): ITok = unsupported(ctx, "A `var` parameter")
     override fun visitParameterConst(ctx: EclangParser.ParameterConstContext): ITok = unsupported(ctx, "A `val` parameter")
-    override fun visitParameterVolatile(ctx: EclangParser.ParameterVolatileContext): ITok = unsupported(ctx, "A `vol` parameter")
     override fun visitStatementDefer(ctx: EclangParser.StatementDeferContext): ITok = TDefer(loc(ctx), visit(ctx.statement()))
     override fun visitStatementDeferDo(ctx: EclangParser.StatementDeferDoContext): ITok = TDefer(loc(ctx), visit(ctx.block()))
     override fun visitStatementErrDefer(ctx: EclangParser.StatementErrDeferContext): ITok = TErrDefer(loc(ctx), visit(ctx.statement()))
@@ -713,7 +972,21 @@ class Visitor(private val file: File, private val fixed: Loc? = null) : EclangBa
 
     /** `pool do` / `pool name do`. `pool` isn't a keyword (it stays usable as a name), so other words are rejected here. */
     override fun visitStatementPool(ctx: EclangParser.StatementPoolContext): ITok {
-        if (ctx.keyword.text != "pool") throw EcError(loc(ctx), "`${ctx.keyword.text}${ctx.name?.let { " " + it.text } ?: ""} do` isn't a statement. A block that starts with a name is a pool block: `pool do` (or `pool name do`).")
+        // `debug do`, and `debug pool do`, which reads as a pool block named `pool`.
+        if (ctx.keyword.text == "debug") return when (ctx.name?.text) {
+            null -> TDebug(loc(ctx), visit(ctx.body))
+            "pool" -> debugOf(loc(ctx), TStatementPool(loc(ctx), null, visit(ctx.body)))
+            else -> throw EcError(loc(ctx), "`debug ${ctx.name.text} do` isn't a statement. `debug do` makes a block that only runs in a debug build; `debug pool ${ctx.name.text} do` a pool block in one.")
+        }
+        if (ctx.keyword.text != "pool") throw EcError(loc(ctx), "`${ctx.keyword.text}${ctx.name?.let { " " + it.text } ?: ""} do` isn't a statement. A block that starts with a name is a pool block, `pool do` (or `pool name do`), or one that only runs in a debug build, `debug do`.")
         return TStatementPool(loc(ctx), ctx.name?.text, visit(ctx.body))
+    }
+
+    companion object {
+        /** The words that start a contract. */
+        private val KINDS = setOf("requires", "ensures")
+
+        /** `var x: Volatile<T>`: a C `volatile` variable. Not a type of its own, and not a keyword. */
+        const val VOLATILE = "Volatile"
     }
 }

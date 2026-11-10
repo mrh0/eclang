@@ -88,13 +88,13 @@ block:
 // (so `-2 ** 2` is `-(2 ** 2)`, as in maths), then binary operators from `*` down to `??`, and last the inline `if`,
 // `|>` and lambdas, whose last part reaches as far right as it can.
 expr:
-      'here'                                                        #exprHere
-    | 'null'                                                        #exprNull
-    | 'it'                                                          #exprIt // For shorthand functions, switch and pipe op
+      'null'                                                        #exprNull
+    // `here`, `it` (the value of a `|>` stage) and `pool` are names (#exprNamed): Visitor and TNamed give them their meaning.
     | '(' expr (',' expr)* ')'                                      #exprNest // A tuple with more than one
     | '(' INDENT expr (',' NL expr)* NL DEDENT ')'                  #exprNest
-    | primitive NAME                                                #exprPrimitiveUnit
+    // The plain number first: where both parse (`requires n > 0 ensures -r`), it isn't a number with a suffix.
     | primitive                                                     #exprPrimitive
+    | primitive NAME                                                #exprPrimitiveUnit
     | 'sizeof' type                                                 #exprSizeOf
     | 'alignof' type                                                #exprAlignOf
     | 'offsetof' '(' type ',' field=NAME ')'                        #exprOffsetOf
@@ -142,6 +142,7 @@ expr:
     | op='@' expr                                                   #exprUnOp
     | 'addrof' expr                                                 #exprAddressOf
     | 'try' expr                                                    #exprTry
+    | 'unsafe' expr                                                 #exprUnsafe // allows what the compiler can't check, in this expression
     | 'new' value=expr 'in' pool=expr                               #exprNew // A copy of the value (or an empty T, or T[n]) in a pool
     | 'new' value=expr                                              #exprNew
     | 'new' '(' elementType=type ')' '[' count=expr ']' ('in' pool=expr)?    #exprNewArrayOfType // `new (@T?)[n]`: any element type
@@ -180,7 +181,7 @@ expr:
 
 // A call argument, with its parameter's name or in order.
 argument:
-      (name=NAME '=')? expr
+      (name=NAME '=')? mut='mut'? expr
     ;
 
 // What leaves on the right of `??`: `x ?? ret 0`.
@@ -195,6 +196,12 @@ jump:
 tail:
       expr NL
     | whenExpr
+    | tryCatch
+    ;
+
+// `val n = try f() catch e do 0`, or with a block after `do` that leaves: the value of f, or the one after `do`.
+tryCatch:
+      'try' left=expr 'catch' NAME 'do' (value=tail | body=block)
     ;
 
 lambdaParameter:
@@ -207,17 +214,17 @@ type:
     | NAME                                                                      #typeByName
     | '@' type                                                                  #typeAddressByName
     | type '?'                                                                  #typeNullable
-    | types+=type '&' types+=type ('&' types+=type)*                            #typeEnum
-    | types+=type '|' types+=type ('|' types+=type)*                            #typeUnion
-    | 'anon' types+=type '|' types+=type ('|' types+=type)*                     #typeUnionAnon // Anonymus union
-    | '(' type ')'                                                              #typeNest
-    | ATOM                                                                      #typeAtom
-    | '<' NAME '>'                                                              #typeGeneric
-    | 'typeof' expr                                                             #typeTypeOf
+    // Before `&` and `|`: `A | B[]` is `A | (B[])`.
     | type '[' (']c' | ']')                                                     #typeArray
     | type '[' size=expr ']'                                                    #typeFixedArray // Int[4]: the elements are part of the value, like a C array in a struct
+    // Two operands each, not a list: a `(...)*` here lets `A | B | C` parse in many ways, which takes exponential time. The Visitor flattens them.
+    | types+=type '&' types+=type                                               #typeEnum
+    | types+=type '|' types+=type                                               #typeUnion
+    | '(' type ')'                                                              #typeNest
+    | ATOM                                                                      #typeAtom
+    | '<' mut='mut'? NAME '>'                                                   #typeGeneric // `<mut T>`: T must be a type whose fields can change
+    | 'typeof' expr                                                             #typeTypeOf
     | left=type 'throws' throwing=type                                          #typeThrows
-    //| ('vol' | 'volatile') type                                                 #typeVolatile
     | 'fn' '(' ')' (('=>' | ':') returnType=type)?                              #typeCallSignature
     | 'fn' '(' (NAME ':')? argTypes+=type (',' (NAME ':')? argTypes+=type)* ')' (('=>' | ':') returnType=type)?    #typeCallSignature
     | '(' ')' '=>' returnType=type                                              #typeCallSignature
@@ -237,19 +244,20 @@ parameter:
     | NAME '=' expr                         #parameterDefault
     | '...' NAME ':' type                   #parameterVarArg
     | '...'                                 #parameterVarArgC
+    // `mut p: T`: the function changes the caller's variable, passed as `f(mut x)`. `out p: T` (only in `declare fn`): C
+    // only writes it. `out` isn't a keyword, like `pool`, so Visitor checks the word.
+    | 'mut' parameter                       #parameterMut
+    | keyword=NAME parameter                #parameterKeyword
     | 'var' parameter                       #parameterVariable
     | 'val' parameter                       #parameterConst
-    | 'vol' parameter                       #parameterVolatile
     ;
 
 statement:
       'var' NAME '=' tail                                                               #statementDefineVar
     | 'val' NAME '=' tail                                                               #statementDefineVal
-    | 'vol' NAME '=' tail                                                               #statementDefineVol
     | 'const' NAME '=' expr NL                                                          #statementDefineConst
     | 'var' NAME ':' type '=' tail                                                      #statementDefineVarTyped
     | 'val' NAME ':' type '=' tail                                                      #statementDefineValTyped
-    | 'vol' NAME ':' type '=' tail                                                      #statementDefineVolTyped
     | 'const' NAME ':' type '=' expr NL                                                 #statementDefineConstTyped
 
     | 'var' NAME ':' type NL                                                            #statementDeclareVar
@@ -263,7 +271,8 @@ statement:
     | 'pass' ('if' condition=expr)? NL                                                       #statementPass
     | 'yield' ('if' condition=expr)? NL                                                      #statementYield
     | 'throw' throw=expr ('if' condition=expr)? NL                                           #statementThrow
-    | 'assert' condition=expr (',' message=STRING)? NL                                       #statementAssert
+    | 'assert' condition=expr (',' message=expr)? NL                                         #statementAssert
+    | constAssert                                                                            #statementConstAssert
     | 'ret' return=expr? ('if' condition=expr)? NL                                           #statementReturn
     | 'ret' whenExpr                                                                         #statementReturn
     | expression=expr 'if' condition=expr NL                                                 #statementTailIf
@@ -282,12 +291,13 @@ statement:
 
     | 'if' kind=('val' | 'var') NAME '=' value=expr 'do' body=block ('else' 'do'? elseBody=block | 'else' next=statement)?             #statementLetIf // `next`: `else if ...`, see Visitor
 
-    | 'if' conditions+=expr 'do' bodies+=block ('else' 'if' conditions+=expr 'do' bodies+=block)* ('else' 'do'? elseBody=block | 'else' next=statement)?      	#statementIf // `next`: `else if val ...`
+    | 'if' condition=expr 'do' body=block ('else' 'do'? elseBody=block | 'else' next=statement)?      	#statementIf // `next`: `else if ...`, which the Visitor flattens. A loop for it as well would take cubic time.
     | label=NAME ':' statement                                                                                                        #statementLabeled // `outer: for ...`
     | 'while' condition=expr 'do' body=block ('else' 'do'? elseBody=block)?                                                           	#statementWhile
 
+    // `where` isn't a keyword: Visitor checks the word.
     | 'for' ('var' | 'val')? NAME 'in' lower=expr 'to' upper=expr 'do' body=block ('else' 'do'? elseBody=block)?                        #statementForInRange // Rejected with a hint to use a range
-    | 'for' ('var' | 'val')? (index=NAME ',')? (name=NAME | parts=destructure) 'in' iterable=expr ('where' filter=expr)? 'do' body=block ('else' 'do'? elseBody=block)?    #statementForIn
+    | 'for' ('var' | 'val')? (index=NAME ',')? (name=NAME | parts=destructure) 'in' iterable=expr (where=NAME filter=expr)? 'do' body=block ('else' 'do'? elseBody=block)?    #statementForIn
 
     // Before the calls: `try m.f(x)` is a `try` of the call, not a call of `f` on `try m`.
     | 'try' left=expr NL                                                                        #statementTry
@@ -304,8 +314,31 @@ statement:
     | args+=expr '?.' NAME '(' rest+=argument (',' rest+=argument)* ')' NL      #statementSafeCall
     | args+=expr '?.' NAME '(' INDENT rest+=argument (',' NL rest+=argument)* NL DEDENT ')' NL      #statementSafeCall
 
-    | keyword=NAME (name=NAME)? 'do' body=block                                                 #statementPool // `pool do` / `pool name do`; `pool` stays usable as a name
-    // | 'try' INDENT left=expr NL DEDENT 'catch' NAME 'do' elseBody=block                          #statementTryCatch
+    | 'unsafe' 'do' body=block                                                                  #statementUnsafe // allows what the compiler can't check, in this block
+    | 'unsafe' statement                                                                        #statementUnsafeLine // `unsafe destroy p`: the same for one statement
+    | 'destroy' target=expr NL                                                                  #statementDestroy // frees a pool
+    | keyword=NAME (name=NAME)? 'do' body=block                                                 #statementPool // `pool do` / `pool name do`, `debug do`; `pool` and `debug` stay usable as names
+    // `debug io.log(x)`: the statement only runs in a debug build. `debug` isn't a keyword (`log.debug(...)`), so Visitor checks the word.
+    // Last: `f (x).g()` is a call of f, not a word before the statement `(x).g()`.
+    | keyword=NAME statement                                                                    #statementPrefixed
+    ;
+
+// `const assert`: checked when compiling. A relation of two types (`Cat is Animal`, `Point fits Shape`) or two values (`a outlives b`),
+// where the pool a value is in (`x in p`), or a condition known when compiling (`sizeof(H) == 16`, or C checks it).
+// `fits` and `outlives` aren't keywords, so Visitor checks the word. `Cat is Animal` parses as the first alternative.
+constAssert:
+      'const' 'assert' left=type relation=('is' | NAME) right=type (',' message=STRING)? NL         #constAssertRelation
+    | 'const' 'assert' value=expr 'in' pool=expr (',' message=STRING)? NL                        #constAssertIn
+    | 'const' 'assert' condition=expr (',' message=STRING)? NL                                   #constAssertCondition
+    ;
+
+// `requires x > 0` after a function's signature: checked at each call. `ensures result > 0`: checked when it returns.
+// `debug requires`: only in a debug build. None of the three is a keyword, so Visitor checks the words. Without `debug` first:
+// `requires x - 1 > 0` also parses as `debug requires` with the words `requires` and `x`, and ANTLR takes the first alternative.
+// `debug requires x - 1 > 0` then parses as the first too (`debug requires`, then `x -1 > 0`); Visitor parses it again.
+contract:
+      kind=NAME condition=expr (',' message=expr)?
+    | debug=NAME kind=NAME condition=expr (',' message=expr)?
     ;
 
 // What `val (a, (b, _)) = ...` and `for (a, b) in ...` name: the parts of a tuple. `_` skips a part.
@@ -349,46 +382,44 @@ whenValueArm:
     ;
 
 func:
-      'declare' 'fn' name=NAME ('extern' externalName=STRING)? 'as' '(' params+=parameter? (',' params+=parameter)* ')' ((':' | '=>') returnType=type)? ('throws' throwing=type)? NL       #functionDeclare
-    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? 'do' body=block	            #functionBlock
-    | 'inline'? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? '=' expression=tail               #functionInline
+      'declare' 'fn' name=NAME (ext=NAME externalName=STRING)? 'as' '(' params+=parameter? (',' params+=parameter)* ')' ((':' | '=>') returnType=type)? ('throws' throwing=type)? NL       #functionDeclare
+    | 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? (contracts+=contract)* 'do' body=block	            #functionBlock
+    | 'inline'? 'fn' name=NAME '(' params+=parameter? (',' params+=parameter)* ')' (':' returnType=type)? ('throws' throwing=type)? (contracts+=contract)* '=' expression=tail               #functionInline
     ;
 
 global:
       'var' NAME '=' expr NL                                                                                                        #globalDefine
     | 'val' NAME '=' expr NL                                                                                                        #globalDefineConst
-    | 'vol' NAME '=' expr NL                                                                                                        #globalDefineVolatile
     | 'var' NAME (':' type)? '=' expr NL                                                                                            #globalDefineTyped
     | 'val' NAME (':' type)? '=' expr NL                                                                                            #globalDefineConstTyped
-    | 'vol' NAME (':' type)? '=' expr NL                                                                                            #globalDefineVolatileTyped
 
     | 'const' NAME (':' type)? '=' expr NL                                                                                          #globalConstant
 
-    | 'declare' 'var' name=NAME ('extern' externalName=STRING)? 'as' type  NL                                                       #globalDeclareDefine
-    | 'declare' ('val' | 'const') name=NAME ('extern' externalName=STRING)? 'as' type  NL                                           #globalDeclareConst
+    // `extern "c_name"`: the name in C. `extern` isn't a keyword, so Visitor checks the word.
+    | 'declare' 'var' name=NAME (ext=NAME externalName=STRING)? 'as' type  NL                                                       #globalDeclareDefine
+    | 'declare' ('val' | 'const') name=NAME (ext=NAME externalName=STRING)? 'as' type  NL                                           #globalDeclareConst
     | 'declare' 'type' NAME 'as' type NL                                                                                            #globalTypeDefine
     | 'type' name=NAME '=' modifier=NAME? type NL                                                                                   #globalTypeAlias // `distinct` isn't a keyword, like `pool`
     | 'declare' 'enum' name=NAME 'as' INDENT (atoms+=ATOM '=' constants+=NAME NL)+ DEDENT                                          #globalEnumDeclare
 
-    | 'unit' NAME '(' NAME ':' type ')' '=' expr NL                                                                                 #globalUnitDeclare // Number sufix
-
-    | (modifiers+=recordModifier)* ('rec' | 'record') name=NAME ('<' typeParams+=NAME (',' typeParams+=NAME)* '>')? ('extends' (qualifier=NAME '.')? extending=NAME)? 'as' INDENT (fields+=recordField)+ DEDENT    #globalRecordDefine
-    | ('rec' | 'record') name=NAME 'extends' (qualifier=NAME '.')? extending=NAME NL                                                              #globalRecordDefine
+    | (modifiers+=recordModifier)* 'rec' name=NAME ('<' typeParams+=typeParameter (',' typeParams+=typeParameter)* '>')? ('extends' (qualifier=NAME '.')? extending=NAME)? 'as' INDENT (fields+=recordField)+ DEDENT    #globalRecordDefine
+    | (modifiers+=recordModifier)* 'rec' name=NAME 'extends' (qualifier=NAME '.')? extending=NAME NL                                  #globalRecordDefine
     // `union Name as`: the fields share their memory. `union` isn't a keyword (`union(a, b)` is a function of Set), so Visitor checks the word.
     | (modifiers+=recordModifier)* keyword=NAME name=NAME 'as' INDENT (fields+=recordField)+ DEDENT                                              #globalUnionDefine
-    | 'declare' ('rec' | 'record') name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type widths+=fieldWidth NL)+  DEDENT               #globalRecordDeclareDefine
-    | 'declare' ('rec' | 'record') name=NAME ('extern' externalName=STRING)? NL                                                                  #globalRecordDeclare
+    | 'declare' mut='mut'? 'rec' name=NAME (ext=NAME externalName=STRING)? 'as' INDENT (names+=NAME externs+=fieldExtern ':' types+=type widths+=fieldWidth NL)+  DEDENT               #globalRecordDeclareDefine
+    | 'declare' mut='mut'? 'rec' name=NAME (ext=NAME externalName=STRING)? NL                                                                  #globalRecordDeclare
 
-    | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type widths+=fieldWidth NL)+  DEDENT            #globalStructDeclareDefine
-    | 'declare' 'struct' name=NAME ('extern' externalName=STRING)? NL                                                               #globalStructDeclare
-
+    // `declare mut rec x`: a C typedef whose fields eclang code may assign; without `mut` they are read-only, as in a `rec`.
+    // `declare struct x`: C's `struct x`, always mutable, for compatibility with C code that fills structs in.
     // `declare union x`: C's `union x`. `declare union rec x_t`: a typedef of a union, as `declare rec` is of a struct.
-    | 'declare' keyword=NAME typedef=('rec' | 'record')? name=NAME ('extern' externalName=STRING)? 'as' INDENT (names+=NAME ':' types+=type widths+=fieldWidth NL)+  DEDENT    #globalUnionDeclareDefine
-    | 'declare' keyword=NAME typedef=('rec' | 'record')? name=NAME ('extern' externalName=STRING)? NL                                                                         #globalUnionDeclare
+    // `struct` and `union` aren't keywords, so Visitor checks the word.
+    | 'declare' mut='mut'? keyword=NAME typedef='rec'? name=NAME (ext=NAME externalName=STRING)? 'as' INDENT (names+=NAME externs+=fieldExtern ':' types+=type widths+=fieldWidth NL)+  DEDENT    #globalUnionDeclareDefine
+    | 'declare' mut='mut'? keyword=NAME typedef='rec'? name=NAME (ext=NAME externalName=STRING)? NL                                                                         #globalUnionDeclare
 
     | 'inter' name=NAME 'as' INDENT (members+=interfaceMember)+ DEDENT                                                             #globalInterfaceDefine
 
-    | 'module' name=STRING NL                                                                                                           #globalNamespace
+    | keyword=NAME name=STRING NL                                                                                                       #globalNamespace // `module "name"`; `module` isn't a keyword
+    | constAssert                                                                                                                       #globalConstAssert
     ;
 
 // What an interface asks of a record: a field `name: Type`, or a function `fn name(Types): R` callable on it (`x.name(...)`).
@@ -407,9 +438,20 @@ fieldWidth:
       (':' width=expr | atomWidth=ATOM)?
     ;
 
-// `packed` or `align(16)` before `rec` or `union`. Not keywords, like `pool`, so Visitor checks the word.
+// `input extern "in": @apr_file_t` in a `declare rec`: the field's name in C, for one eclang can't use (a keyword).
+fieldExtern:
+      (ext=NAME cName=STRING)?
+    ;
+
+// `packed`, `align(16)`, `ref` or `mut` before `rec` or `union`. Not keywords (but `mut`), like `pool`, so Visitor checks the word.
 recordModifier:
       name=NAME ('(' size=expr ')')?
+    | mut='mut'
+    ;
+
+// A type parameter of a generic record: `T`, or `mut T` for one whose fields its code changes.
+typeParameter:
+      mut='mut'? name=NAME
     ;
 
 use:
@@ -423,7 +465,7 @@ interpolation:
 
 // `export fn f()`: C code can call f by its name; `export extern "c_name" fn f()` gives it another. `export` isn't a keyword either.
 exportDeclaration:
-      keyword=NAME ('extern' externalName=STRING)? func
+      keyword=NAME (ext=NAME externalName=STRING)? func
     ;
 
 // `priv` before a declaration: only code in the same module can use it.

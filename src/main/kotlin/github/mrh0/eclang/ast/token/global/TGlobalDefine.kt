@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token.global
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.statement.defineValue
 import github.mrh0.eclang.context.CompileData
@@ -12,12 +13,12 @@ import github.mrh0.eclang.util.Util.testIdentifier
 import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
-class TGlobalDefine(location: Loc, private val varName: String, private val expr: ITok, private val volatile: Boolean = false) : Tok(location) {
+class TGlobalDefine(location: Loc, private val varName: String, private val expr: ITok) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val fixedName = testIdentifier(location, varName)
         val (varType, value) = defineValue(cd, location, varName, expr, null)
         val ivar = cd.getGlobal().define(location, Variable(fixedName, varType, cd.claimCName(location, cd.module.cName(fixedName), "global '$varName'")))
-        return Types.None to IRGlobalDefine(location, ivar, value, volatile)
+        return Types.None to IRGlobalDefine(location, ivar, value)
     }
 
     override fun toString(): String {

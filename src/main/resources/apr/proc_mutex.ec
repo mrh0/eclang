@@ -13,8 +13,8 @@ declare enum apr_lockmech_e as
 
 declare rec apr_proc_mutex_t
 
-declare fn apr_proc_mutex_create as (mutex: @@apr_proc_mutex_t, fname: CString, mech: apr_lockmech_e, pool: @apr_pool_t): apr_status_t
-declare fn apr_proc_mutex_child_init as (mutex: @@apr_proc_mutex_t, fname: CString, pool: @apr_pool_t): apr_status_t
+declare fn apr_proc_mutex_create as (out mutex: @apr_proc_mutex_t, fname: CString, mech: apr_lockmech_e, pool: @apr_pool_t): apr_status_t
+declare fn apr_proc_mutex_child_init as (mut mutex: @apr_proc_mutex_t, fname: CString, pool: @apr_pool_t): apr_status_t
 declare fn apr_proc_mutex_lock as (mutex: @apr_proc_mutex_t): apr_status_t
 declare fn apr_proc_mutex_trylock as (mutex: @apr_proc_mutex_t): apr_status_t
 declare fn apr_proc_mutex_unlock as (mutex: @apr_proc_mutex_t): apr_status_t

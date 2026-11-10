@@ -30,6 +30,11 @@ object SyntaxHints {
         /** The character the lexer couldn't read, for "token recognition error at: ';'". */
         val badText: String? get() = Regex("token recognition error at: '(.*)'$", RegexOption.DOT_MATCHES_ALL).find(antlr)?.groupValues?.get(1)
         fun indentOf(line: Int) = lines.getOrElse(line - 1) { "" }.let { it.length - it.trimStart(' ').length }
+        /** The same problem at the end of the last line with code before this one, for an error the parser only finds there. */
+        fun lineBefore(): Problem? {
+            val before = (line - 1 downTo 1).firstOrNull { lines.getOrElse(it - 1) { "" }.isNotBlank() } ?: return null
+            return Problem(lines, before, lines[before - 1].length, token, antlr)
+        }
     }
 
     /** Where to report a problem, and what to say. */
@@ -42,7 +47,7 @@ object SyntaxHints {
     private val declarationKeywords = "`fn`, `val`, `var`, `const`, `rec`, `inter`, `use`, `module` or `declare`"
 
     /** Words a declaration can start with that are no keywords, so the parser reads any name there as one and fails after it. */
-    private val declarationWords = setOf("packed", "align", "union", "export")
+    private val declarationWords = setOf("packed", "align", "union", "export", "resource", "sync", "module")
 
     /** A line at the top level starting with a name that starts no declaration: `io.log(1)`. */
     private fun startsTopLevelStatement(p: Problem) = p.column > 0 && p.indentOf(p.line) == 0 && p.keyword.isNotEmpty() && p.keyword !in declarationWords && p.keyword !in reservedWords
@@ -84,12 +89,12 @@ object SyntaxHints {
                 in blockKeywords ->
                     if (p.code.endsWith(":")) at(p, "A block starts with `do` in eclang, not `:`. Write `${p.code.dropLast(1).trimEnd()} do`.")
                     else at(p, "The indented block below needs a `do` at the end of this line: `${p.code} do`.")
-                "rec", "record", "inter" -> at(p, "The fields go in an indented block after `as`: `${p.code} as`.")
+                "rec", "inter" -> at(p, "The fields go in an indented block after `as`: `${p.code} as`.")
                 else -> null
             }
         },
         rule { p ->
-            if (p.keyword in listOf("rec", "record") && p.expected.contains("as")) at(p, "A record's fields follow `as`, not `${p.token?.text}`: `${p.keyword} Name as`, then one `name: Type` per indented line.")
+            if (p.keyword == "rec" && p.expected.contains("as")) at(p, "A record's fields follow `as`, not `${p.token?.text}`: `${p.keyword} Name as`, then one `name: Type` per indented line.")
             else null
         },
         // An unexpected indented line: deeper than its block, or not lined up with any block when going back out.
@@ -116,8 +121,9 @@ object SyntaxHints {
             if (p.token?.text == "{" && p.keyword in blockKeywords) at(p, "Blocks are indented, not written in `{ }`. End the line with `do` and indent the body by 4 spaces.")
             else null
         },
-        // Keywords from other languages.
-        rule { p ->
+        // Keywords from other languages. `return 0` reads as a word before a statement (`debug x`), which fails at the next line.
+        rule { r ->
+            val p = if (r.keyword.isEmpty()) r.lineBefore() ?: r else r
             when (p.keyword) {
                 "return" -> at(p, "`return` is written `ret` in eclang: `${p.code.replaceFirst("return", "ret")}`.")
                 "let" -> at(p, "Declare a value with `val` (it can't change) or `var` (it can): `${p.code.replaceFirst("let", "val")}`.")

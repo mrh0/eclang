@@ -7,7 +7,7 @@ var finished = thread.Atomic { 0 }
 fn briefly() do
     time.sleep(time.millis(20))
     val x = new 1
-    thread.add(addrof finished, (@x) as UInt)
+    thread.add(mut finished, (@x) as UInt)
 
 // Still allocating when the program ends.
 fn forever() do
@@ -23,12 +23,12 @@ fn main(): Int throws Error do
         val t = try thread.spawn(fn briefly)
         try thread.detach(t)
     time.sleep(time.millis(100))
-    io.log(thread.load(addrof finished))
+    io.log(thread.load(mut finished))
 
-    var n = 0
-    val t = try thread.spawn(fn work, addrof(n))
+    val n = new 0
+    val t = try thread.spawn(fn work, n)
     try thread.join(t)
-    io.log(n)
+    io.log(@n)
     // A thread can only be joined or detached once.
     try thread.join(t) catch e do
         io.log("second join: ${e.message}")

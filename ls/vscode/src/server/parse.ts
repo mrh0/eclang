@@ -81,8 +81,43 @@ export function parse(text: string): Parsed {
     } catch (e) {
         if (!(e instanceof Stop)) throw e;
     }
-    if (errors.hint !== null) return { docs: null, error: errors.hint };
+    if (errors.hint !== null) return { docs: null, error: quoteInInterpolation(parser.getTokenStream() as CommonTokenStream) ?? errors.hint };
     return { docs: new DocExtractor(text, lexer.ecdocs, lexer.strayEcdocs).extract(tree!), error: null };
+}
+
+/** Where the first `${` of [content] (the text between a string's quotes) that has no closing `}` starts, as `StringLiteral.unclosedInterpolation`. */
+function unclosedInterpolation(content: string): number | null {
+    let i = 0;
+    while (i < content.length) {
+        if (content[i] === "\\") i += 2;
+        else if (content.startsWith("${", i)) {
+            let depth = 1, j = i + 2;
+            while (j < content.length && depth > 0) {
+                if (content[j] === "{") depth++; else if (content[j] === "}") depth--;
+                j++;
+            }
+            if (depth > 0) return i;
+            i = j;
+        } else i++;
+    }
+    return null;
+}
+
+/** A `"` inside `${...}`, which ends the string there, reported at that `"`, as `Compiler.quoteInInterpolation`. */
+function quoteInInterpolation(stream: CommonTokenStream): Hint | null {
+    stream.fill();
+    const list = (stream as unknown as { tokens: Token[] }).tokens;
+    for (let k = 0; k < list.length; k++) {
+        const t = list[k];
+        if (t.type !== EclangParser.STRING) continue;
+        const end = t.text.lastIndexOf("\"");
+        if (end <= 0 || unclosedInterpolation(t.text.substring(1, end)) === null) continue;
+        const next = list[k + 1];
+        if (next === undefined || next.line !== t.line || next.type === EclangParser.NL || next.type === Token.EOF) continue;
+        return { line: t.line, column: t.column + end, message: "This `\"` ends the string, although it is inside `${...}`: " +
+            "a string can't hold another string in `${...}`. Put the inner text in a variable first (`val text = \"...\"`), and use the variable inside `${...}`." };
+    }
+    return null;
 }
 
 /** The tokens of [text], for finding what's under the cursor. It may not parse; what can't be read is left out. */

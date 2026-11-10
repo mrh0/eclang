@@ -189,7 +189,7 @@ fn apr_table_set(t: @apr_table_t, key: CString, value: CString)
 ### <a id="apr_table_setn"></a>`apr_table_setn`
 
 ```ec
-fn apr_table_setn(t: @apr_table_t, key: CString, value: CString)
+fn apr_table_setn(t: @apr_table_t, kept key: CString, kept value: CString)
 ```
 
 *Binds the C function `apr_table_setn`.*
@@ -213,7 +213,7 @@ fn apr_table_merge(t: @apr_table_t, key: CString, value: CString)
 ### <a id="apr_table_mergen"></a>`apr_table_mergen`
 
 ```ec
-fn apr_table_mergen(t: @apr_table_t, key: CString, value: CString)
+fn apr_table_mergen(t: @apr_table_t, kept key: CString, kept value: CString)
 ```
 
 *Binds the C function `apr_table_mergen`.*
@@ -229,7 +229,7 @@ fn apr_table_add(t: @apr_table_t, key: CString, value: CString)
 ### <a id="apr_table_addn"></a>`apr_table_addn`
 
 ```ec
-fn apr_table_addn(t: @apr_table_t, key: CString, value: CString)
+fn apr_table_addn(t: @apr_table_t, kept key: CString, kept value: CString)
 ```
 
 *Binds the C function `apr_table_addn`.*

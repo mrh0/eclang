@@ -187,8 +187,33 @@ fn errorKind(code: Int): String do
 /** The error in words: "<kind>: <message>", e.g. "parse error: expected a digit". See {@link errorKind}. */
 fn describe(e: Error): String = "${errorKind(e.code)}: ${e.message}"
 
-/** Stops the program: flushes stdout, prints "panic: <message>" to stderr, and exits with status 1. */
-fn panic(message: String): Never do
+/**
+ * A place in the source: what `here` is, and what a parameter with the default `caller` is given, the place of the call.
+ *
+ *     fn check(ok: Bool, at: Location = caller) do
+ *         io.log("failed at ${at}") if not ok             // failed at main.ec:12
+ */
+rec Location as
+    /** The name of the file, without its directory: "main.ec". */
+    file: String
+    /** The line, from 1. */
+    line: Int
+    /** The column, from 1. */
+    column: Int
+    /** The function it is in, or "" outside functions. */
+    function: String
+
+/** "file.ec:12". */
+fn str(l: Location): String = "${l.file}:${l.line}"
+
+/**
+ * Stops the program: flushes stdout, prints "panic: <message>" and where it was called from to stderr, and exits with status 1.
+ * @param message what went wrong
+ * @param at where: the call, unless it is given
+ */
+fn panic(message: String, at: Location = caller): Never do
     fflush(stdout)
-    fprintf(stderr, "panic: %.*s\n"c, message.len as Int, message.data)
+    val function = if at.function.len == 0 do "" else " in ${at.function}"
+    val place = "${at}${function}"
+    fprintf(stderr, "panic: %.*s\n  at %.*s\n"c, message.len as Int, message.data, place.len as Int, place.data)
     exit(1)

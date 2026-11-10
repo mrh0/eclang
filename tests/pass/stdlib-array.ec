@@ -42,7 +42,7 @@ fn main(): Int do
     var rng = math.random(42)
     val many = new Int[10000]
     for i in 0..<many.len do
-        many[i] = math.nextInt(addrof(rng), 0, 1000)
+        many[i] = math.nextInt(mut rng, 0, 1000)
     many.sort()
     io.log(many.isSorted())
 

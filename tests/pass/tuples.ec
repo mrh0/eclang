@@ -1,7 +1,7 @@
 use "core:io.ec"
 use "core:string.ec"
 
-rec Point as
+mut rec Point as
     x: Int
     y: Int
 

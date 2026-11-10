@@ -3,12 +3,12 @@
  *
  *     use "core:test.ec"
  *
- *     fn addition(t: @test.Test) do
+ *     fn addition(t: test.Test) do
  *         test.equal(t, 1 + 1, 2)
  *         test.isTrue(t, 2 > 1, "2 is more than 1")
  *         test.equal(t, render(), "line one\nline two\n", "the rendered text")
  *
- *     fn parsing(t: @test.Test) throws Error do           // an error that gets out fails the test
+ *     fn parsing(t: test.Test) throws Error do           // an error that gets out fails the test
  *         val n = try parseInt("12")
  *         test.equal(t, n, 12)
  *
@@ -23,15 +23,15 @@
  * the first difference when they are one line:
  *
  *     FAIL addition
- *       check 3, the rendered text: the strings differ (- expected, + actual)
+ *       check 3 (tests.ec:4), the rendered text: the strings differ (- expected, + actual)
  *           line one
  *         - line two
  *         + line 2
  *
  * A program run with an argument only runs the tests whose name has it in it: `./tests parsing`.
  *
- * Tests are listed by hand, and a failure names the check by its number and the `what` given to it, not by its line,
- * since a function can't see where it was called from. A panic ends the whole run, with the results so far printed.
+ * Tests are listed by hand. A failure names the check by its number, its place (each assertion takes `at: Location = caller`,
+ * so a helper that makes checks can pass on its own caller's place) and the `what` given to it. A panic ends the whole run, with the results so far printed.
  * Each test runs in its own pool. Everything is written to stdout.
  */
 module "test"
@@ -45,18 +45,18 @@ use "core:io.ec"
 // Running
 
 /** A group of tests that are run and counted together: {@link suite}. */
-rec Suite as
+mut ref rec Suite as
     /** Only tests with this in their name run, unless it is empty. */
     filter: String
     /** How many tests passed. */
     passed: Size
     /** The names of the tests that failed. */
-    failed: @List<String>
+    failed: List<String>
     /** How many tests the filter left out. */
     skipped: Size
 
 /** The test that is running, which its function is given. */
-rec Test as
+mut ref rec Test as
     /** Its name. */
     name: String
     /** How many checks it has made. */
@@ -64,26 +64,26 @@ rec Test as
     /** How many of them failed. */
     failures: Size
     /** What to print about them. */
-    report: @StringBuilder
+    report: StringBuilder
     /** Whether {@link require} ended it. */
     stopped: Bool = false
 
 /** A new empty suite, in the current pool. The first command-line argument of the program, if any, is its filter. */
-fn suite(): @Suite do
+fn suite(): Suite do
     val args = io.args()
-    val names: @List<String> = list()
+    val names: List<String> = list()
     ret new Suite { if args.len > 0 do args[0] else "", 0, names, 0 }
 
 /** A new suite that only runs the tests with `filter` in their name. */
-fn suite(filter: String): @Suite do
-    val names: @List<String> = list()
+fn suite(filter: String): Suite do
+    val names: List<String> = list()
     ret new Suite { filter, 0, names, 0 }
 
 /** Whether `s` has `part` in it. */
 priv fn has(s: String, part: String): Bool = indexOf(s, part) != null
 
 /** Prints how `t` went and counts it. */
-priv fn conclude(s: @Suite, t: @Test) do
+priv fn conclude(s: Suite, t: Test) do
     if t.failures == 0 do
         io.log("ok   ${t.name}")
         s.passed += 1
@@ -95,7 +95,7 @@ priv fn conclude(s: @Suite, t: @Test) do
     io.flush()
 
 /** Whether the test called `name` is to run. */
-priv fn wanted(s: @Suite, name: String): Bool do
+priv fn wanted(s: Suite, name: String): Bool do
     ret true if has(name, s.filter)
     s.skipped += 1
     ret false
@@ -106,7 +106,7 @@ priv fn wanted(s: @Suite, name: String): Bool do
  * @param name what to call it
  * @param body the test
  */
-fn run(s: @Suite, name: String, body: (@Test) => None) do
+fn run(s: Suite, name: String, body: (Test) => None) do
     if wanted(s, name) do
         pool do
             val t = new Test { name, 0, 0, stringBuilder(256) }
@@ -119,7 +119,7 @@ fn run(s: @Suite, name: String, body: (@Test) => None) do
  * @param name what to call it
  * @param body the test
  */
-fn run(s: @Suite, name: String, body: (@Test) => None throws Error) do
+fn run(s: Suite, name: String, body: (Test) => None throws Error) do
     if wanted(s, name) do
         pool do
             val t = new Test { name, 0, 0, stringBuilder(256) }
@@ -133,7 +133,7 @@ fn run(s: @Suite, name: String, body: (@Test) => None throws Error) do
  * Prints how many tests passed and failed, naming those that failed.
  * @return what `main` should return: 0 when all passed, and 1 when one failed, or the filter left nothing to run
  */
-fn finish(s: @Suite): Int do
+fn finish(s: Suite): Int do
     val total = s.passed + s.failed.len
     val left = if s.skipped > 0 do format(", ${s.skipped} left out") else ""
     io.log("")
@@ -150,11 +150,11 @@ fn finish(s: @Suite): Int do
 // Reporting
 
 /** Counts a failed check, with `details` under a line saying what failed. */
-priv fn failure(t: @Test, what: String, details: String) do
+priv fn failure(t: Test, what: String, details: String, at: Location) do
     t.failures += 1
     val label = if what.len == 0 do "" else concat(", ", what)
     val first = before(details, "\n")
-    t.report.append("  check ${t.checks}${label}: ${first}\n")
+    t.report.append("  check ${t.checks} (${at})${label}: ${first}\n")
     if first.len < details.len do
         t.report.append(details[first.len + 1..<details.len])
 
@@ -164,7 +164,7 @@ priv fn shown(v: <V>): String do
     ret text[1..<text.len - 4]
 
 /** Counts a check that is made. Each assertion starts with this. */
-priv fn counted(t: @Test, passed: Bool): Bool do
+priv fn counted(t: Test, passed: Bool): Bool do
     t.checks += 1
     ret passed
 
@@ -198,7 +198,7 @@ priv fn visible(line: String): String do
     ret line
 
 /** The lines of a diff of `a` and `b`, which have `from` lines in common at their start and `end` at their end. */
-priv fn compareLines(out: @List<DiffLine>, a: String[], b: String[], from: Size, end: Size) do
+priv fn compareLines(out: List<DiffLine>, a: String[], b: String[], from: Size, end: Size) do
     val n = a.len - from - end
     val m = b.len - from - end
     if n * m > DIFF_LIMIT do
@@ -256,7 +256,7 @@ fn diff(expected: String, actual: String): String do
     var end: Size = 0
     while end < a.len - from and end < b.len - from and a[a.len - 1 - end] == b[b.len - 1 - end] do
         end += 1
-    val lines: @List<DiffLine> = list(a.len + b.len)
+    val lines: List<DiffLine> = list(a.len + b.len)
     for i in 0..<from do
         lines.push(DiffLine { ' ', a[i] })
     compareLines(lines, a, b, from, end)
@@ -340,18 +340,20 @@ priv fn oneLine(actual: String, expected: String): String do
  * @param t the test
  * @param condition what must be true
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn isTrue(t: @Test, condition: Bool, what: String = "") do
-    failure(t, what, "this should be true, and it is false") if not counted(t, condition)
+fn isTrue(t: Test, condition: Bool, what: String = "", at: Location = caller) do
+    failure(t, what, "this should be true, and it is false", at) if not counted(t, condition)
 
 /**
  * Checks that a condition is false.
  * @param t the test
  * @param condition what must be false
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn isFalse(t: @Test, condition: Bool, what: String = "") do
-    failure(t, what, "this should be false, and it is true") if not counted(t, not condition)
+fn isFalse(t: Test, condition: Bool, what: String = "", at: Location = caller) do
+    failure(t, what, "this should be false, and it is true", at) if not counted(t, not condition)
 
 /**
  * Checks that two values are equal, with `==`. They can be of any type `==` compares and `${...}` shows.
@@ -359,9 +361,10 @@ fn isFalse(t: @Test, condition: Bool, what: String = "") do
  * @param actual what the code gave
  * @param expected what it should give
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn equal(t: @Test, actual: <V>, expected: <V>, what: String = "") do
-    failure(t, what, values(shown(actual), shown(expected))) if not counted(t, actual == expected)
+fn equal(t: Test, actual: <V>, expected: <V>, what: String = "", at: Location = caller) do
+    failure(t, what, values(shown(actual), shown(expected)), at) if not counted(t, actual == expected)
 
 /**
  * Checks that two Strings are equal. The report shows where they differ: with a diff when they have several lines.
@@ -369,13 +372,14 @@ fn equal(t: @Test, actual: <V>, expected: <V>, what: String = "") do
  * @param actual what the code gave
  * @param expected what it should give
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn equal(t: @Test, actual: String, expected: String, what: String = "") do
+fn equal(t: Test, actual: String, expected: String, what: String = "", at: Location = caller) do
     if not counted(t, actual == expected) do
         if has(actual, "\n") or has(expected, "\n") do
-            failure(t, what, concat("the strings differ (- expected, + actual)\n", indented(diff(expected, actual), "      ")))
+            failure(t, what, concat("the strings differ (- expected, + actual)\n", indented(diff(expected, actual), "      ")), at)
         else do
-            failure(t, what, oneLine(actual, expected))
+            failure(t, what, oneLine(actual, expected), at)
 
 /**
  * Checks that two atoms are the same.
@@ -383,9 +387,10 @@ fn equal(t: @Test, actual: String, expected: String, what: String = "") do
  * @param actual what the code gave
  * @param expected what it should give
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn equal(t: @Test, actual: Atom, expected: Atom, what: String = "") do
-    failure(t, what, values("${actual}", "${expected}")) if not counted(t, actual == expected)
+fn equal(t: Test, actual: Atom, expected: Atom, what: String = "", at: Location = caller) do
+    failure(t, what, values("${actual}", "${expected}"), at) if not counted(t, actual == expected)
 
 /**
  * Checks that two arrays have the same elements. The report names the first one that differs.
@@ -393,17 +398,18 @@ fn equal(t: @Test, actual: Atom, expected: Atom, what: String = "") do
  * @param actual what the code gave
  * @param expected what it should give
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn equalArrays(t: @Test, actual: <V>[], expected: <V>[], what: String = "") do
-    var at: Size? = null
+fn equalArrays(t: Test, actual: <V>[], expected: <V>[], what: String = "", at: Location = caller) do
+    var differs: Size? = null
     val shorter = if actual.len < expected.len do actual.len else expected.len
     for i in 0..<shorter do
         if actual[i] != expected[i] do
-            at = i
+            differs = i
             break
-    if not counted(t, at == null and actual.len == expected.len) do
-        val intro = if at != null do format("element ${at} differs") else format("the lengths differ: ${expected.len} expected, ${actual.len} here")
-        failure(t, what, concat(intro, "\n      expected: ", shown(expected), "\n      actual:   ", shown(actual), "\n"))
+    if not counted(t, differs == null and actual.len == expected.len) do
+        val intro = if differs != null do format("element ${differs} differs") else format("the lengths differ: ${expected.len} expected, ${actual.len} here")
+        failure(t, what, concat(intro, "\n      expected: ", shown(expected), "\n      actual:   ", shown(actual), "\n"), at)
 
 /**
  * Checks that two values aren't equal.
@@ -411,9 +417,10 @@ fn equalArrays(t: @Test, actual: <V>[], expected: <V>[], what: String = "") do
  * @param actual what the code gave
  * @param other what it shouldn't give
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn notEqual(t: @Test, actual: <V>, other: <V>, what: String = "") do
-    failure(t, what, concat("these should differ, and both are ", shown(actual))) if not counted(t, actual != other)
+fn notEqual(t: Test, actual: <V>, other: <V>, what: String = "", at: Location = caller) do
+    failure(t, what, concat("these should differ, and both are ", shown(actual)), at) if not counted(t, actual != other)
 
 /**
  * Checks that two numbers are close, for results of floating point arithmetic.
@@ -422,23 +429,25 @@ fn notEqual(t: @Test, actual: <V>, other: <V>, what: String = "") do
  * @param expected what it should give
  * @param tolerance how far off it may be
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn near(t: @Test, actual: Double, expected: Double, tolerance: Double = 0.000000001, what: String = "") do
+fn near(t: Test, actual: Double, expected: Double, tolerance: Double = 0.000000001, what: String = "", at: Location = caller) do
     val distance = if actual < expected do expected - actual else actual - expected
     // Written this way, a NaN fails.
     if not counted(t, distance <= tolerance) do
-        failure(t, what, "these should be within ${tolerance} of each other\n      expected: ${expected}\n      actual:   ${actual}\n")
+        failure(t, what, "these should be within ${tolerance} of each other\n      expected: ${expected}\n      actual:   ${actual}\n", at)
 
 /**
  * Checks that a value is null.
  * @param t the test
  * @param actual what the code gave
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn isNull(t: @Test, actual: <V>?, what: String = "") do
+fn isNull(t: Test, actual: <V>?, what: String = "", at: Location = caller) do
     if val value = actual do
         counted(t, false)
-        failure(t, what, concat("this should be null, and it is ", shown(value)))
+        failure(t, what, concat("this should be null, and it is ", shown(value)), at)
     else do
         counted(t, true)
 
@@ -447,9 +456,10 @@ fn isNull(t: @Test, actual: <V>?, what: String = "") do
  * @param t the test
  * @param actual what the code gave
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn notNull(t: @Test, actual: <V>?, what: String = "") do
-    failure(t, what, "this should have a value, and it is null") if not counted(t, actual != null)
+fn notNull(t: Test, actual: <V>?, what: String = "", at: Location = caller) do
+    failure(t, what, "this should have a value, and it is null", at) if not counted(t, actual != null)
 
 /**
  * Checks that a String has another one in it.
@@ -457,31 +467,34 @@ fn notNull(t: @Test, actual: <V>?, what: String = "") do
  * @param actual what the code gave
  * @param part what should be in it
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  */
-fn hasText(t: @Test, actual: String, part: String, what: String = "") do
+fn hasText(t: Test, actual: String, part: String, what: String = "", at: Location = caller) do
     if not counted(t, has(actual, part)) do
         val wanted = quote(part)
         val got = quote(actual)
-        failure(t, what, "the text doesn't have this in it\n      wanted: ${wanted}\n      actual: ${got}\n")
+        failure(t, what, "the text doesn't have this in it\n      wanted: ${wanted}\n      actual: ${got}\n", at)
 
 /**
  * Fails the test, for a place the code shouldn't reach, and goes on.
  * @param t the test
  * @param message what went wrong
+ * @param at where, for the report: the call, unless it is given
  */
-fn fail(t: @Test, message: String) do
+fn fail(t: Test, message: String, at: Location = caller) do
     counted(t, false)
-    failure(t, "", message)
+    failure(t, "", message, at)
 
 /**
  * Checks something the rest of the test can't do without: `try test.require(t, list.len > 0, "the list")`.
  * @param t the test
  * @param condition what must be true
  * @param what what is being checked, for the report
+ * @param at where the check is, for the report: the call, unless it is given
  * @throws when it is false, which ends a test that `throws Error`
  */
-fn require(t: @Test, condition: Bool, what: String = "") throws Error do
-    isTrue(t, condition, what)
+fn require(t: Test, condition: Bool, what: String = "", at: Location = caller) throws Error do
+    isTrue(t, condition, what, at)
     if not condition do
         t.stopped = true
         throw Error { ERR_FAILED, "a required check failed" }

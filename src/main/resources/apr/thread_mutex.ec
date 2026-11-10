@@ -9,7 +9,7 @@ declare val APR_THREAD_MUTEX_UNNESTED as Int
 
 declare rec apr_thread_mutex_t
 
-declare fn apr_thread_mutex_create as (mutex: @@apr_thread_mutex_t, flags: UInt, pool: @apr_pool_t): apr_status_t
+declare fn apr_thread_mutex_create as (out mutex: @apr_thread_mutex_t, flags: UInt, pool: @apr_pool_t): apr_status_t
 declare fn apr_thread_mutex_lock as (mutex: @apr_thread_mutex_t): apr_status_t
 declare fn apr_thread_mutex_trylock as (mutex: @apr_thread_mutex_t): apr_status_t
 declare fn apr_thread_mutex_unlock as (mutex: @apr_thread_mutex_t): apr_status_t

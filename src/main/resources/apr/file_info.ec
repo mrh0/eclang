@@ -99,15 +99,15 @@ declare val APR_LNK as Int
 declare val APR_SOCK as Int
 declare val APR_UNKFILE as Int
 
-declare fn apr_stat as (finfo: @apr_finfo_t, fname: CString, wanted: apr_int32_t, pool: @apr_pool_t): apr_status_t
-declare fn apr_dir_open as (new_dir: @@apr_dir_t, dirname: CString, pool: @apr_pool_t): apr_status_t
+declare fn apr_stat as (out finfo: apr_finfo_t, fname: CString, wanted: apr_int32_t, pool: @apr_pool_t): apr_status_t
+declare fn apr_dir_open as (out new_dir: @apr_dir_t, dirname: CString, pool: @apr_pool_t): apr_status_t
 declare fn apr_dir_close as (thedir: @apr_dir_t): apr_status_t
-declare fn apr_dir_read as (finfo: @apr_finfo_t, wanted: apr_int32_t, thedir: @apr_dir_t): apr_status_t
+declare fn apr_dir_read as (out finfo: apr_finfo_t, wanted: apr_int32_t, thedir: @apr_dir_t): apr_status_t
 declare fn apr_dir_rewind as (thedir: @apr_dir_t): apr_status_t
-declare fn apr_filepath_root as (rootpath: @CString, filepath: @CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
-declare fn apr_filepath_merge as (newpath: @CString, rootpath: CString, addpath: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
-declare fn apr_filepath_list_split as (pathelts: @@apr_array_header_t, liststr: CString, p: @apr_pool_t): apr_status_t
-declare fn apr_filepath_list_merge as (liststr: @CString, pathelts: @apr_array_header_t, p: @apr_pool_t): apr_status_t
-declare fn apr_filepath_get as (path: @CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
+declare fn apr_filepath_root as (out rootpath: CString, mut filepath: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
+declare fn apr_filepath_merge as (out newpath: CString, rootpath: CString, addpath: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
+declare fn apr_filepath_list_split as (out pathelts: @apr_array_header_t, liststr: CString, p: @apr_pool_t): apr_status_t
+declare fn apr_filepath_list_merge as (out liststr: CString, pathelts: @apr_array_header_t, p: @apr_pool_t): apr_status_t
+declare fn apr_filepath_get as (out path: CString, flags: apr_int32_t, p: @apr_pool_t): apr_status_t
 declare fn apr_filepath_set as (path: CString, p: @apr_pool_t): apr_status_t
 declare fn apr_filepath_encoding as (style: @Int, p: @apr_pool_t): apr_status_t

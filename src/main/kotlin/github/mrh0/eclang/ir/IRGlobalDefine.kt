@@ -25,7 +25,8 @@ open class IRGlobalDefine(location: Loc, private val ivar: IVar, private val exp
     val setAtStart get() = initializedInMain
 
     override fun toC(sb: CSourceBuilder, c: Context) {
-        sb.putStatement("static ${if (volatile) "volatile " else ""}${sb.types.cName(ivar.getType())} ${ivar.cName()}")
+        // `T volatile x`: after the type, so that a pointer variable is volatile itself, not what it points at.
+        sb.putStatement("static ${sb.types.cName(ivar.getType())}${if (volatile) " volatile" else ""} ${ivar.cName()}")
         if (!initializedInMain) {
             sb.put(" = ")
             expr.toC(sb, c)

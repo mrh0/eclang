@@ -23,10 +23,10 @@ class IRCreateRecord(location: Loc, val record: Record, val names: List<String>,
         later.reversed().forEach { sb.put("${sb.types.setFixed(record, names[it], record.fields[names[it]]!!)}(") }
         sb.put("((${sb.types.cName(record)}){")
         val now = names.indices - later.toSet()
-        if (record.inHierarchy) sb.put(".__ec_tid = ${record.id}${if (now.isEmpty()) "" else ", "}")
+        if (record.inHierarchy) sb.put(".${CTypes.tagPath(record)} = ${record.id}${if (now.isEmpty()) "" else ", "}")
         now.forEachIndexed { index, i ->
             if (index != 0) sb.put(", ")
-            sb.put(".${names[i]} = ")
+            sb.put(".${CTypes.fieldPath(record, names[i])} = ")
             (values[i] as? IRCreateFixed)?.takeIf { CTypes.fixedOf(record.fields[names[i]]!!) != null }?.braces(sb, c) ?: values[i].toC(sb, c)
         }
         sb.put("})")

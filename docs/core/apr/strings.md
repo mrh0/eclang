@@ -101,7 +101,7 @@ fn apr_collapse_spaces(dest: CString, src: CString): CString
 ### <a id="apr_tokenize_to_argv"></a>`apr_tokenize_to_argv`
 
 ```ec
-fn apr_tokenize_to_argv(arg_str: CString, argv_out: @@CString, token_context: @apr_pool_t): apr_status_t
+fn apr_tokenize_to_argv(arg_str: CString, out argv_out: @CString, token_context: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_tokenize_to_argv`.*
@@ -109,7 +109,7 @@ fn apr_tokenize_to_argv(arg_str: CString, argv_out: @@CString, token_context: @a
 ### <a id="apr_strtok"></a>`apr_strtok`
 
 ```ec
-fn apr_strtok(str: CString?, sep: CString, last: @CString): CString?
+fn apr_strtok(str: CString?, sep: CString, mut last: CString): CString?
 ```
 
 *Binds the C function `apr_strtok`.*
@@ -141,7 +141,7 @@ fn apr_off_t_toa(p: @apr_pool_t, n: apr_off_t): CString
 ### <a id="apr_strtoff"></a>`apr_strtoff`
 
 ```ec
-fn apr_strtoff(offset: @apr_off_t, buf: CString, end: @CString, base: Int): apr_status_t
+fn apr_strtoff(out offset: apr_off_t, buf: CString, out end: CString, base: Int): apr_status_t
 ```
 
 *Binds the C function `apr_strtoff`.*
@@ -149,7 +149,7 @@ fn apr_strtoff(offset: @apr_off_t, buf: CString, end: @CString, base: Int): apr_
 ### <a id="apr_strtoi64"></a>`apr_strtoi64`
 
 ```ec
-fn apr_strtoi64(buf: CString, end: @CString, base: Int): apr_int64_t
+fn apr_strtoi64(buf: CString, out end: CString, base: Int): apr_int64_t
 ```
 
 *Binds the C function `apr_strtoi64`.*

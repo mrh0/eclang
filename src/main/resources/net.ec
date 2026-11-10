@@ -76,7 +76,7 @@ priv fn checkPort(port: Int) throws OsError do
 priv fn resolve(host: String, port: Int): @apr_sockaddr_t throws OsError do
     try checkPort(port)
     var first: @apr_sockaddr_t? = null
-    val status = apr_sockaddr_info_get(addrof(first!), cstr(host), APR_UNSPEC, port as apr_port_t, 0, pool)
+    val status = apr_sockaddr_info_get(mut first, cstr(host), APR_UNSPEC, port as apr_port_t, 0, pool)
     throw osError(status, "look up '${host}'") if status != APR_SUCCESS
     ret first!
 
@@ -109,7 +109,7 @@ fn lookup(host: String): String[] throws OsError do
 fn reverseLookup(ip: String): String? throws OsError do
     val sa = try resolve(ip, 0)
     var name: CString? = null
-    ret null if apr_getnameinfo(addrof(name!), sa, 0) != APR_SUCCESS
+    ret null if apr_getnameinfo(mut name, sa, 0) != APR_SUCCESS
     if val found = name do
         ret fromC(found)
     ret null
@@ -138,7 +138,7 @@ priv fn waitFor(socket: @apr_socket_t, timeout: time.Duration?): Bool throws OsE
     waiting.client_data = null
     var ready = 0
     while true do
-        val status = apr_poll(waiting, 1, addrof(ready), microsOf(timeout))
+        val status = apr_poll(waiting, 1, mut ready, microsOf(timeout))
         ret ready > 0 if status == APR_SUCCESS
         ret false if APR_STATUS_IS_TIMEUP(status) != 0
         throw osError(status, "wait for a socket") if APR_STATUS_IS_EINTR(status) == 0
@@ -150,7 +150,7 @@ priv fn waitFor(socket: @apr_socket_t, timeout: time.Duration?): Bool throws OsE
 priv const READ_AHEAD: Size = 8192
 
 /** An open TCP connection, from {@link connect} or {@link accept}. Close it with {@link close}. */
-rec Connection as
+mut ref rec Connection as
     /** The APR socket, for calling apr_socket_* functions directly. */
     socket: @apr_socket_t
     /** The other end. */
@@ -167,12 +167,12 @@ rec Connection as
 /** The {@link Address} of one end of `socket`. */
 priv fn endOf(socket: @apr_socket_t, which: apr_interface_e): Address throws OsError do
     var sa: @apr_sockaddr_t? = null
-    val status = apr_socket_addr_get(addrof(sa!), which, socket)
+    val status = apr_socket_addr_get(mut sa, which, socket)
     throw osError(status, "find a socket's address") if status != APR_SUCCESS
     ret addressOf(sa!)
 
 /** A {@link Connection} on `socket`, which is connected. */
-priv fn connectionOn(socket: @apr_socket_t): @Connection throws OsError do
+priv fn connectionOn(socket: @apr_socket_t): Connection throws OsError do
     apr_signal(SIGPIPE, SIG_IGN)
     apr_socket_opt_set(socket, APR_TCP_NODELAY, 1)
     ret new Connection { socket, try endOf(socket, :remote), try endOf(socket, :local), new Char[READ_AHEAD], 0, 0 }
@@ -185,13 +185,13 @@ priv fn connectionOn(socket: @apr_socket_t): @Connection throws OsError do
  *     limited by it: see {@link setTimeout}
  * @throws when the name has no address, or none of them answers
  */
-fn connect(host: String, port: Int, timeout: time.Duration? = null): @Connection throws OsError do
+fn connect(host: String, port: Int, timeout: time.Duration? = null): Connection throws OsError do
     var at: @apr_sockaddr_t? = try resolve(host, port)
     var status = APR_SUCCESS
     while at != null do
         val sa = at
         var socket: @apr_socket_t? = null
-        val made = apr_socket_create(addrof(socket!), sa.family, SOCK_STREAM, APR_PROTO_TCP, pool)
+        val made = apr_socket_create(mut socket, sa.family, SOCK_STREAM, APR_PROTO_TCP, pool)
         throw osError(made, "make a socket") if made != APR_SUCCESS
         val s = socket!
         apr_socket_timeout_set(s, microsOf(timeout))
@@ -208,24 +208,24 @@ fn connect(host: String, port: Int, timeout: time.Duration? = null): @Connection
  * connection can still be used.
  * @param timeout the time, or null to wait as long as it takes, as a new connection does
  */
-fn setTimeout(c: @Connection, timeout: time.Duration?) do
+fn setTimeout(c: Connection, timeout: time.Duration?) do
     apr_socket_timeout_set(c.socket, microsOf(timeout))
 
 /**
  * Sends all of `data`.
  * @throws when the connection fails or a timeout passes; part of `data` may have been sent by then
  */
-fn send(c: @Connection, data: String) throws OsError do
+fn send(c: Connection, data: String) throws OsError do
     var done: Size = 0
     while done < data.len do
         val part = data[done..<data.len]
         var length = part.len
-        val status = apr_socket_send(c.socket, part.data !as CString, addrof(length))
+        val status = apr_socket_send(c.socket, part.data !as CString, mut length)
         done += length
         throw osError(status, "send to ${text(c.remote)}") if status != APR_SUCCESS
 
 /** Takes up to `n` bytes of what was read ahead, as a new String in the current pool. */
-priv fn takeAhead(c: @Connection, n: Size): String do
+priv fn takeAhead(c: Connection, n: Size): String do
     val count = if n < c.end - c.start do n else c.end - c.start
     val out = clone(c.ahead[c.start..<c.start + count])
     c.start += count
@@ -236,10 +236,10 @@ priv fn takeAhead(c: @Connection, n: Size): String do
  * @return false at the end of the connection
  * @throws when reading fails or a timeout passes
  */
-priv fn fill(c: @Connection): Bool throws OsError do
+priv fn fill(c: Connection): Bool throws OsError do
     ret true if c.start < c.end
     var length = c.ahead.len
-    val status = apr_socket_recv(c.socket, c.ahead.data !as CString, addrof(length))
+    val status = apr_socket_recv(c.socket, c.ahead.data !as CString, mut length)
     c.start = 0
     c.end = length
     throw osError(status, "read from ${text(c.remote)}") if status != APR_SUCCESS and APR_STATUS_IS_EOF(status) == 0
@@ -253,11 +253,11 @@ priv fn fill(c: @Connection): Bool throws OsError do
  * @return the bytes; "" when the other end has closed the connection and nothing is left
  * @throws when reading fails or a timeout passes
  */
-fn read(c: @Connection, n: Size = 65536): String throws OsError do
+fn read(c: Connection, n: Size = 65536): String throws OsError do
     ret takeAhead(c, n) if c.start < c.end
     val buffer = new Char[n]
     var length = n
-    val status = apr_socket_recv(c.socket, buffer.data !as CString, addrof(length))
+    val status = apr_socket_recv(c.socket, buffer.data !as CString, mut length)
     throw osError(status, "read from ${text(c.remote)}") if status != APR_SUCCESS and APR_STATUS_IS_EOF(status) == 0
     ret buffer[0..<length] !as String
 
@@ -265,7 +265,7 @@ fn read(c: @Connection, n: Size = 65536): String throws OsError do
  * Reads exactly `n` bytes, for a message whose length is known.
  * @throws when the connection ends before that, with the code ERR_IO; or reading fails, or a timeout passes
  */
-fn readExactly(c: @Connection, n: Size): String throws OsError do
+fn readExactly(c: Connection, n: Size): String throws OsError do
     val out = new Char[n]
     var got: Size = 0
     while got < n do
@@ -284,7 +284,7 @@ fn readExactly(c: @Connection, n: Size): String throws OsError do
  *     line break is given too
  * @throws when reading fails or a timeout passes, or a line is longer than `limit`, with the code ERR_RANGE
  */
-fn readLine(c: @Connection, limit: Size? = null): String? throws OsError do
+fn readLine(c: Connection, limit: Size? = null): String? throws OsError do
     val line = stringBuilder(128)
     var got = false
     while true do
@@ -309,7 +309,7 @@ fn readLine(c: @Connection, limit: Size? = null): String? throws OsError do
  * Reads until the other end closes the connection.
  * @throws when reading fails or a timeout passes
  */
-fn readAll(c: @Connection): String throws OsError do
+fn readAll(c: Connection): String throws OsError do
     val all = stringBuilder(4096)
     while true do
         val part = try read(c)
@@ -324,7 +324,7 @@ fn readAll(c: @Connection): String throws OsError do
  * @return false when the time passed first
  * @throws when waiting fails
  */
-fn waitReadable(c: @Connection, timeout: time.Duration? = null): Bool throws OsError do
+fn waitReadable(c: Connection, timeout: time.Duration? = null): Bool throws OsError do
     ret true if c.start < c.end
     ret try waitFor(c.socket, timeout)
 
@@ -332,12 +332,12 @@ fn waitReadable(c: @Connection, timeout: time.Duration? = null): Bool throws OsE
  * Tells the other end that nothing more will be sent, which ends its reads, and goes on reading its answer.
  * @throws when the connection has already failed
  */
-fn finishSending(c: @Connection) throws OsError do
+fn finishSending(c: Connection) throws OsError do
     val status = apr_socket_shutdown(c.socket, :write)
     throw osError(status, "finish sending to ${text(c.remote)}") if status != APR_SUCCESS
 
 /** Closes the connection. Don't use `c` after this. */
-fn close(c: @Connection) do
+fn close(c: Connection) do
     apr_socket_close(c.socket)
 
 // ---------------------------------------------------------------------------------------------------
@@ -360,7 +360,7 @@ rec Listener as
 fn listen(port: Int, host: String = "0.0.0.0", backlog: Int = 128): Listener throws OsError do
     val sa = try resolve(host, port)
     var socket: @apr_socket_t? = null
-    val made = apr_socket_create(addrof(socket!), sa.family, SOCK_STREAM, APR_PROTO_TCP, pool)
+    val made = apr_socket_create(mut socket, sa.family, SOCK_STREAM, APR_PROTO_TCP, pool)
     throw osError(made, "make a socket") if made != APR_SUCCESS
     val s = socket!
     apr_socket_opt_set(s, APR_SO_REUSEADDR, 1)
@@ -381,12 +381,12 @@ fn listen(port: Int, host: String = "0.0.0.0", backlog: Int = 128): Listener thr
  * @param timeout how long to wait; null for as long as it takes
  * @throws when accepting fails, or the time passes, with the code ERR_TIMEOUT
  */
-fn accept(l: Listener, timeout: time.Duration? = null): @Connection throws OsError do
+fn accept(l: Listener, timeout: time.Duration? = null): Connection throws OsError do
     // apr_socket_accept doesn't wait by itself when a socket has a timeout, so that isn't used here.
     val ready = try waitFor(l.socket, timeout)
     throw OsError { ERR_TIMEOUT, "no connection came to ${text(l.address)} in time", APR_TIMEUP } if not ready
     var socket: @apr_socket_t? = null
-    val status = apr_socket_accept(addrof(socket!), l.socket, pool)
+    val status = apr_socket_accept(mut socket, l.socket, pool)
     throw osError(status, "accept a connection on ${text(l.address)}") if status != APR_SUCCESS
     ret try connectionOn(socket!)
 
@@ -430,7 +430,7 @@ rec Datagram as
 fn udp(port: Int = 0, host: String = "0.0.0.0"): UdpSocket throws OsError do
     val sa = try resolve(host, port)
     var socket: @apr_socket_t? = null
-    val made = apr_socket_create(addrof(socket!), sa.family, SOCK_DGRAM, APR_PROTO_UDP, pool)
+    val made = apr_socket_create(mut socket, sa.family, SOCK_DGRAM, APR_PROTO_UDP, pool)
     throw osError(made, "make a socket") if made != APR_SUCCESS
     val s = socket!
     val bound = apr_socket_bind(s, sa)
@@ -450,7 +450,7 @@ fn udp(port: Int = 0, host: String = "0.0.0.0"): UdpSocket throws OsError do
 fn sendTo(u: UdpSocket, host: String, port: Int, data: String) throws OsError do
     val sa = try resolve(host, port)
     var length = data.len
-    val status = apr_socket_sendto(u.socket, sa, 0, data.data !as CString, addrof(length))
+    val status = apr_socket_sendto(u.socket, sa, 0, data.data !as CString, mut length)
     throw osError(status, "send to ${host}:${port}") if status != APR_SUCCESS
 
 /**
@@ -463,7 +463,7 @@ fn receiveFrom(u: UdpSocket, n: Size = 65536): Datagram throws OsError do
     val buffer = new Char[n]
     var length = n
     val source = new apr_sockaddr_t
-    val status = apr_socket_recvfrom(source, u.socket, 0, buffer.data !as CString, addrof(length))
+    val status = apr_socket_recvfrom(source, u.socket, 0, buffer.data !as CString, mut length)
     throw osError(status, "receive on ${text(u.address)}") if status != APR_SUCCESS
     ret Datagram { buffer[0..<length] !as String, addressOf(source) }
 

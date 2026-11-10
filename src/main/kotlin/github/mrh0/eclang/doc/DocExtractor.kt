@@ -117,7 +117,7 @@ class DocExtractor(private val file: File, private val docs: Map<Int, Token>, pr
         }
         if (doc != null) {
             val names = params.mapNotNull { paramName(it) }
-            val generics = params.flatMap { p -> Regex("(?<![\\w>])<(\\w+)>").findAll(text(p)).map { "<${it.groupValues[1]}>" } }.distinct()
+            val generics = params.flatMap { p -> Regex("(?<![\\w>])<(?:mut\\s+)?(\\w+)>").findAll(text(p)).map { "<${it.groupValues[1]}>" } }.distinct()
             val fn = "'${name.text}'"
             val documented = mutableSetOf<String>()
             for (tag in doc.params) {
@@ -142,7 +142,9 @@ class DocExtractor(private val file: File, private val docs: Map<Int, Token>, pr
     private fun paramName(p: ParameterContext): String? = when (p) {
         is ParameterVariableContext -> paramName(p.parameter())
         is ParameterConstContext -> paramName(p.parameter())
-        is ParameterVolatileContext -> paramName(p.parameter())
+        is ParameterMutContext -> paramName(p.parameter())
+        // `out p: T`, `escaping p: T`: the first NAME is the word.
+        is ParameterKeywordContext -> paramName(p.parameter())
         else -> p.getToken(NAME, 0)?.text
     }
 
@@ -155,7 +157,6 @@ class DocExtractor(private val file: File, private val docs: Map<Int, Token>, pr
         }
         return when (g) {
             is GlobalDefineContext, is GlobalDefineTypedContext -> value(DocKind.VARIABLE, "the variable")
-            is GlobalDefineVolatileContext, is GlobalDefineVolatileTypedContext -> value(DocKind.VARIABLE, "the variable")
             is GlobalDefineConstContext, is GlobalDefineConstTypedContext -> value(DocKind.VALUE, "the value")
             is GlobalConstantContext -> value(DocKind.CONSTANT, "the constant")
             is GlobalDeclareDefineContext -> item(DocKind.C_VALUE, g.name, "the C variable '${g.name.text}'")
@@ -171,12 +172,11 @@ class DocExtractor(private val file: File, private val docs: Map<Int, Token>, pr
             is GlobalUnionDefineContext -> item(DocKind.RECORD, g.name, "a record", header(g), g.fields.map { field ->
                 DocItem(DocKind.FIELD, field.name.text, text(field), Loc(field.name, file), doc(field.start, "a record field"))
             })
+            // `declare struct x`, `declare union x` and `declare union rec x_t`.
             is GlobalUnionDeclareDefineContext -> item(DocKind.C_STRUCT, g.name, "a record", header(g), fields(g.names, g.types))
             is GlobalUnionDeclareContext -> item(DocKind.C_STRUCT, g.name, "a record", header(g))
             is GlobalRecordDeclareDefineContext -> item(DocKind.C_RECORD, g.name, "a record", header(g), fields(g.names, g.types))
             is GlobalRecordDeclareContext -> item(DocKind.C_RECORD, g.name, "a record", header(g))
-            is GlobalStructDeclareDefineContext -> item(DocKind.C_STRUCT, g.name, "a record", header(g), fields(g.names, g.types))
-            is GlobalStructDeclareContext -> item(DocKind.C_STRUCT, g.name, "a record", header(g))
             is GlobalInterfaceDefineContext -> item(DocKind.INTERFACE, g.name, "an interface", header(g), g.members.map { m ->
                 val name = m.getToken(NAME, 0).symbol
                 DocItem(if (m is InterfaceMethodContext) DocKind.METHOD else DocKind.FIELD, name.text, text(m), Loc(name, file), doc(m.start, "an interface member"))

@@ -3,17 +3,17 @@ use "core:io.ec"
 
 const WIDE = 32
 
-packed rec Header as
+mut packed rec Header as
     tag: UChar
     size: Int
     words: UShort[3]
     name: Char[3]
 
-rec Plain as
+mut rec Plain as
     tag: UChar
     size: Int
 
-packed rec Outer as
+mut packed rec Outer as
     tag: UChar
     inner: Plain
 
@@ -27,7 +27,7 @@ packed align(4) rec Both as
 rec Holder as
     line: Line
 
-rec Flags as
+mut rec Flags as
     a: UInt : 3
     b: Int : 3
     on: Bool : 1
@@ -37,7 +37,7 @@ packed rec Bits<T> as
     tag: T
     flag: UChar : 1
 
-union Value as
+mut union Value as
     i: Int
     f: Float
     bytes: UChar[4]
@@ -49,7 +49,7 @@ packed union Mixed as
 align(16) union Aligned as
     a: Int
 
-rec Tagged as
+mut rec Tagged as
     kind: Int
     value: Value
 
@@ -70,7 +70,7 @@ fn main(): Int do
     io.log("${words} ${h == same} ${hash(h) == hash(same)}")
     for w in h.words do
         io.log(w)
-    io.log(h.name.data)
+    io.log(cstr(h.name))
     val tagAddress = addrof h.tag
     io.log(@tagAddress)
     io.log("${sizeof Outer} ${offsetof(Outer, inner)}")
@@ -98,7 +98,7 @@ fn main(): Int do
     val g = f
     io.log("${f == g} ${hash(f) == hash(g)}")
     val p = addrof f
-    p.a = 7
+    p.a = 3
     p.a <<= 1
     io.log(f.a)
     val bits = Bits<Int> { 1, 1 }

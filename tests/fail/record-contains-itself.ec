@@ -1,4 +1,4 @@
-// error: Record A contains itself (through A.a), so it would be infinitely large. Store a pointer instead, e.g. `a: @A?`.
+// error: Record A contains itself (through A.a), so it would be infinitely large. Make A a `ref rec A`
 
 rec A as
     a: A

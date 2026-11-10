@@ -1,7 +1,7 @@
 use "core:io.ec"
 
 // `==` on records compares field by field; a `@Interface` parameter accepts a pointer to any record that fits.
-rec Point as
+mut rec Point as
     x: Int
     y: Int
 
@@ -14,7 +14,7 @@ rec Tagged as
 inter Named as
     name: CString
 
-rec Dog as
+mut rec Dog as
     name: CString
     age: Int
 

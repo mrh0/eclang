@@ -1,0 +1,10 @@
+start
+debug build
+in a debug block: 2
+tail if
+pool block: 2
+total 5
+checks 1
+false
+deferred
+deferred, debug only

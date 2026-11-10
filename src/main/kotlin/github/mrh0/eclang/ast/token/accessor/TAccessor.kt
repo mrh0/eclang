@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.accessor
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.IAssignable
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
@@ -32,6 +33,8 @@ import github.mrh0.ect2.Types
  * A `T[N]` holds its elements itself: `a[i]` is part of a, and a slice of it, an array, points into a.
  */
 class TAccessor(location: Loc, val expr: ITok, val index: ITok) : Tok(location), IAssignable {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(expr)
+
     /** Whether the last compiled access read an element of a `T[N]`, which is in x's own memory (see Lifetimes). */
     var inValue = false
         private set
@@ -50,7 +53,9 @@ class TAccessor(location: Loc, val expr: ITok, val index: ITok) : Tok(location),
         if (index.unnested() is TRange) throw EcError(location, "Can't assign to a slice. Assign its elements one by one, e.g. `a[i] = x`.")
         val e = expr.unnested()
         val owner = (e as? IAssignable)?.place(cd)
-        val (type, ir, base) = access(cd, owner?.let { it.type to it.ir } ?: expr.process(cd, Types.None))
+        if (owner != null && Ops.base(owner.type) !is FixedArray) checkUnionRead(cd, location, e)
+        // Only an element of a `T[N]` is in the place itself; anything else is reached through a pointer the place holds, which is read (see Place.value).
+        val (type, ir, base) = access(cd, owner?.let { it.type to if (Ops.base(it.type) is FixedArray) it.ir else it.value } ?: expr.process(cd, Types.None))
         val readOnly = when {
             base === Types.String -> "A String's bytes can't be changed in place (a literal's bytes are read-only). Build a new String instead, e.g. with `\"\${...}\"` or `concat(a, b)`."
             base is FixedArray -> if (owner != null) owner.readOnly else "This array is a temporary value, so changing an element would have no effect. Store it in a `var` first."
@@ -76,9 +81,9 @@ class TAccessor(location: Loc, val expr: ITok, val index: ITok) : Tok(location),
                 t.element to IRAccessorFixed(location, ir, iir, t, cd.boundsChecks && literal == null)
             }
             t is ArrayType && !t.isC -> t.element to IRAccessorArray(location, ir, iir, t, cd.boundsChecks)
-            t is ArrayType -> t.element to IRAccessorCArray(location, ir, iir)
+            t is ArrayType -> { checkUnbounded(cd, t, it); t.element to IRAccessorCArray(location, ir, iir) }
             t === Types.String -> Types.Char to IRAccessorArray(location, ir, iir, t, cd.boundsChecks)
-            t is Pointer && t.target !== Types.Any -> t.target to IRAccessorCArray(location, ir, iir)
+            t is Pointer && t.target !== Types.Any -> { checkUnbounded(cd, t, it); t.target to IRAccessorCArray(location, ir, iir) }
             t is Tuple -> throw EcError(location, "A tuple's parts have names, not indexes: write `.first`, `.second`, and so on, or take it apart with `val (a, b) = t`.")
             else -> throw EcError(location, "Can't index a $t with `[]`.")
         }
@@ -101,6 +106,21 @@ class TAccessor(location: Loc, val expr: ITok, val index: ITok) : Tok(location),
         if (f != null && e != null && f > e + (if (range.inclusive) 1 else 0))
             throw EcError(location, "This slice starts after it ends ($f > $e).")
         return Triple(t, IRSlice(location, ir, from.second, to?.second, range.inclusive, t, cd.boundsChecks), t)
+    }
+
+    /**
+     * `p[i]` of a C array or a pointer [t] has no length to check i against, so it needs `unsafe`. `p[0]` of a
+     * pointer is `@p`, which is fine.
+     */
+    private fun checkUnbounded(cd: CompileData, t: Type, index: Type) {
+        if (cd.isUnsafe || (t is Pointer && (index as? IntLiteral)?.value == 0L)) return
+        val e = expr.unnested()
+        val fix = when {
+            e is TAccessorNamed && e.name == "data" -> "Index the array itself (`a[i]`, which is checked), or write `unsafe a.data[i]` to skip the check where speed matters."
+            t is Pointer -> "Pass an array (`T[]`, which knows its length) instead of a pointer to its first element, or write `unsafe p[i]` once you have checked i."
+            else -> "Use an array (`T[]`, which knows its length) where you can, or write `unsafe p[i]` once you have checked i."
+        }
+        throw EcError(location, "`[]` on a $t isn't checked: it has no length, so a wrong index reads or writes memory it doesn't own. $fix")
     }
 
     private fun index(cd: CompileData, tok: ITok, what: String): Pair<Type, IIR> {

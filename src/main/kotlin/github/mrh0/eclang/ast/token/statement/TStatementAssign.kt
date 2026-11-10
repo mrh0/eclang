@@ -4,17 +4,26 @@ import github.mrh0.eclang.ast.IAssignable
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Place
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.unnested
 import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ast.token.op.Ops
+import github.mrh0.eclang.context.ArgumentOrder
 import github.mrh0.eclang.context.CompileData
+import github.mrh0.eclang.ast.token.data.TAtom
+import github.mrh0.eclang.ast.token.data.TBoolean
+import github.mrh0.eclang.ast.token.data.TFloat
+import github.mrh0.eclang.ast.token.data.TInteger
 import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.ast.token.accessor.TAccessor
 import github.mrh0.eclang.ast.token.accessor.TAccessorNamed
 import github.mrh0.eclang.ast.token.accessor.alignedAnywhere
 import github.mrh0.eclang.ast.token.accessor.inPacked
 import github.mrh0.eclang.ast.token.type.checkBits
+import github.mrh0.eclang.ast.token.type.fitBits
+import github.mrh0.eclang.ast.token.type.bitsToCheck
+import github.mrh0.eclang.ir.arithmetic.IRBitFieldCompound
 import github.mrh0.eclang.ast.token.op.TReadPointer
 import github.mrh0.eclang.context.state.NarrowedVar
 import github.mrh0.eclang.error.EcAssignConstError
@@ -37,25 +46,46 @@ import github.mrh0.ect2.Types
  * `target = value`, or `target op= value` with [op] one of `+ - * / % & | ^ << >>` (empty for a plain `=`). The
  * target is a variable, a field (`p.x`), an element (`a[i]`) or what a pointer points to (`@p`).
  */
-class TStatementAssign(location: Loc, private val target: ITok, private val op: String, private val expr: ITok) : Tok(location) {
+class TStatementAssign(location: Loc, private val target: ITok, private val op: String, private val expr: ITok) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val (effectsBefore, hoistedBefore) = cd.effects to cd.hoistMark
         val place = when (val t = target.unnested()) {
             is TNamed -> variable(cd, t.name, narrowed = op.isNotEmpty())
+            is TReadPointer -> (if (op.isNotEmpty()) t.narrowedPlace(cd) else null) ?: t.place(cd).also { p -> p.readOnly?.let { throw EcError(location, it) } }
             is IAssignable -> t.place(cd).also { p -> p.readOnly?.let { throw EcError(location, it) } }
             else -> throw EcError(location, "Can't assign to this expression. You can assign to a variable (`x = 1`), a field (`p.x = 1`), an element (`a[i] = 1`) or what a pointer points to (`@p = 1`).")
         }
         val targetRuns = cd.effects != effectsBefore || cd.hoistedSince(hoistedBefore)
         val (effectsAtValue, hoistedAtValue) = cd.effects to cd.hoistMark
         var valueType: Type = place.type
-        val value = if (op.isEmpty()) expr.process(cd, place.type).let { v ->
-            (target.unnested() as? TAccessorNamed)?.let { t -> t.bitFieldOf?.let { record -> checkBits(location, record, t.fixedName, place.type, v.first) } }
-            cd.expect(location, v, place.type, "assignment to ${describe()}")
+        var value = if (op.isEmpty()) expr.process(cd, place.type).let { v ->
+            valueType = v.first
+            val converted = cd.expect(location, v, place.type, "assignment to ${describe()}")
+            (target.unnested() as? TAccessorNamed)?.let { t -> t.bitFieldOf?.let { record ->
+                checkBits(location, record, t.fixedName, place.type, v.first)
+                fitBits(location, record, t.fixedName, place.type, v.first, converted)
+            } } ?: converted
         } else compound(cd, place.type) { valueType = it }
         if (op.isEmpty()) Lifetimes.assign(cd, location, target, expr, place.type, describe())
         place.name?.let { cd.ctx().forget(it) }
-        val runBoth = targetRuns && (cd.effects != effectsAtValue || cd.hoistedSince(hoistedAtValue))
+        val valueRuns = cd.effects != effectsAtValue || cd.hoistedSince(hoistedAtValue)
+        val runBoth = targetRuns && valueRuns
         val targetIR = if (runBoth) pinned(cd, place, hoistedAtValue) else place.ir
+        if (valueRuns && valueType !== Types.Never && cd.hoistProblem() == null &&
+            (if (runBoth) op.isNotEmpty() else placeReads(cd, target) || (op.isNotEmpty() && valueReads(cd, target)))) {
+            // The value runs first, then the target is read: C would read it before or after the value's calls as it liked.
+            val temp = cd.temp()
+            val type = if (op == "<<" || op == ">>") cd.types.concrete(valueType) else place.type
+            cd.hoist(location, IRTempDefine(location, temp, type, value))
+            value = IRRaw(location, temp)
+        }
+        val bits = (target.unnested() as? TAccessorNamed)?.let { t -> t.bitFieldOf?.let { r -> bitsToCheck(r, t.fixedName, place.type)?.let { t.fixedName to it } } }
+        if (op.isNotEmpty() && bits != null) {
+            // The result must fit the bit-field too: `target = check(target op value)`, which needs a target without calls.
+            noPointer(place.type)
+            val count = if (op == "<<" || op == ">>") Ops.base(cd.types.concrete(valueType)) as Prim else null
+            return Types.None to IRBitFieldCompound(location, targetIR, op, Ops.base(place.type) as Prim, count, value, bits.second, bits.first, RuntimeChecks.needed(cd, op, place.type, valueType))
+        }
         if (op.isNotEmpty() && RuntimeChecks.needed(cd, op, place.type, valueType)) {
             val count = if (op == "<<" || op == ">>") Ops.base(cd.types.concrete(valueType)) as Prim else null
             return Types.None to IRCheckedCompound(location, targetIR, op, Ops.base(place.type) as Prim, count, value, cd.temp(), noPointer(place.type))
@@ -66,7 +96,8 @@ class TStatementAssign(location: Loc, private val target: ITok, private val op: 
     /**
      * What to assign to when both the target and the value call something. C doesn't say which runs first, so the
      * target's address goes into a temporary before the value (and what it hoisted, after [mark]) runs: `a[f()] = g()`
-     * runs f first. A target that calls nothing is left alone, and is read after the value.
+     * runs f first. A target that calls nothing is read after the value: when the value calls something that could change
+     * what the target reads (`a[i] = f()` with a global i), the value goes into a temporary first.
      */
     private fun pinned(cd: CompileData, place: Place, mark: Int): IIR {
         val t = target.unnested()
@@ -75,6 +106,26 @@ class TStatementAssign(location: Loc, private val target: ITok, private val op: 
         val temp = cd.temp()
         cd.hoistAt(mark, IRTempDefine(location, temp, cd.types.pointer(place.type), IRAddressOf(location, place.ir)))
         return IRRaw(location, "(*$temp)")
+    }
+
+    /**
+     * Whether a call could change what the target reads to find its place: the pointers and indices it goes through, not
+     * the place itself (`x` and `r.f` of a variable x or r read nothing). Only what is certain to be unaffected is false.
+     */
+    private fun placeReads(cd: CompileData, tok: ITok): Boolean = when (val t = tok.unnested()) {
+        is TNamed -> false
+        is TAccessorNamed -> if (t.throughPointer) valueReads(cd, t.expr) else placeReads(cd, t.expr)
+        is TReadPointer -> valueReads(cd, t.expr)
+        is TAccessor -> (if (t.inValue && t.expr.unnested() is IAssignable) placeReads(cd, t.expr) else valueReads(cd, t.expr)) || valueReads(cd, t.index)
+        else -> true
+    }
+
+    /** Whether a call could change the value of [tok]: anything but a fixed variable ([ArgumentOrder.isFixedVariable]), a literal, or a field of one. */
+    private fun valueReads(cd: CompileData, tok: ITok): Boolean = when (val t = tok.unnested()) {
+        is TNamed -> !ArgumentOrder.isFixedVariable(cd, t)
+        is TInteger, is TBoolean, is TFloat, is TAtom -> false
+        is TAccessorNamed -> t.throughPointer || valueReads(cd, t.expr)
+        else -> true
     }
 
     /**
@@ -101,7 +152,7 @@ class TStatementAssign(location: Loc, private val target: ITok, private val op: 
      * [narrowed] (`x += 1` inside `if x != null`) the value keeps its narrowed type, which stays true.
      */
     private fun variable(cd: CompileData, name: String, narrowed: Boolean): Place {
-        if (TNamed.isCurrentPool(cd, name)) throw EcError(location, TNamed(location, name).place(cd).readOnly!!)
+        if (TNamed.isCurrentPool(cd, name) || TNamed.isHere(cd, name)) throw EcError(location, TNamed(location, name).place(cd).readOnly!!)
         val fixedName = testIdentifier(location, name)
         val found = cd.getVar(location, fixedName)
         val ivar = (found as? NarrowedVar)?.base ?: found

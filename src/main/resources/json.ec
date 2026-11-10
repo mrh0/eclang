@@ -34,7 +34,7 @@ use "core:c/stdlib.ec"
 declare type Kind as :null | :bool | :number | :string | :array | :object
 
 /** A JSON value. Make one with {@link parse} or the functions below, and read it with {@link asString} and the like. */
-rec Value as
+ref rec Value as
     /** What it is; the fields that go with that are set. */
     kind: Kind
     /** The value of a `:bool`. */
@@ -48,9 +48,9 @@ rec Value as
     /** The value of a `:string`. */
     text: String = ""
     /** The elements of an `:array`. */
-    elements: @List<@Value>? = null
+    elements: List<Value>? = null
     /** The fields of an `:object`. */
-    fields: @Map<String, @Value>? = null
+    fields: Map<String, Value>? = null
 
 /** Text isn't valid JSON. */
 rec JsonError extends ParseError as
@@ -63,95 +63,95 @@ rec JsonError extends ParseError as
 // Making values
 
 /** The JSON value `null`. */
-fn nil(): @Value = new Value { kind = :null }
+fn nil(): Value = new Value { kind = :null }
 
 /** A JSON `true` or `false`. */
-fn boolean(b: Bool): @Value = new Value { kind = :bool, flag = b }
+fn boolean(b: Bool): Value = new Value { kind = :bool, flag = b }
 
 /** A JSON number. */
-fn number(x: Double): @Value = new Value { kind = :number, number = x }
+fn number(x: Double): Value = new Value { kind = :number, number = x }
 
 /** A JSON number that stays exact. */
-fn number(x: Long): @Value = new Value { kind = :number, number = x as Double, whole = x, isWhole = true }
+fn number(x: Long): Value = new Value { kind = :number, number = x as Double, whole = x, isWhole = true }
 
 /** A JSON string. */
-fn string(s: String): @Value = new Value { kind = :string, text = s }
+fn string(s: String): Value = new Value { kind = :string, text = s }
 
 /** A new empty JSON array; see {@link add}. */
-fn array(): @Value do
-    val elements: @List<@Value> = list()
+fn array(): Value do
+    val elements: List<Value> = list()
     ret new Value { kind = :array, elements = elements }
 
 /** A new empty JSON object; see {@link put}. */
-fn object(): @Value do
-    val fields: @Map<String, @Value> = map()
+fn object(): Value do
+    val fields: Map<String, Value> = map()
     ret new Value { kind = :object, fields = fields }
 
 /** Adds `item` at the end of the array `a`. The program stops when `a` isn't an array. */
-fn add(a: @Value, item: @Value) do
+fn add(a: Value, item: Value) do
     assert a.kind == :array, "json.add needs an array; make one with json.array()"
     a.elements!.push(item)
 
 /** Adds a string at the end of the array `a`. */
-fn add(a: @Value, item: String) do
+fn add(a: Value, item: String) do
     add(a, string(item))
 
 /** Adds a number at the end of the array `a`. */
-fn add(a: @Value, item: Long) do
+fn add(a: Value, item: Long) do
     add(a, number(item))
 
 /** Adds a number at the end of the array `a`. */
-fn add(a: @Value, item: Double) do
+fn add(a: Value, item: Double) do
     add(a, number(item))
 
 /** Adds a `true` or `false` at the end of the array `a`. */
-fn add(a: @Value, item: Bool) do
+fn add(a: Value, item: Bool) do
     add(a, boolean(item))
 
 /** Sets the field `key` of the object `o`. The program stops when `o` isn't an object. */
-fn put(o: @Value, key: String, value: @Value) do
+fn put(o: Value, key: String, value: Value) do
     assert o.kind == :object, "json.put needs an object; make one with json.object()"
     o.fields!.put(key, value)
 
 /** Sets the field `key` of the object `o` to a string. */
-fn put(o: @Value, key: String, value: String) do
+fn put(o: Value, key: String, value: String) do
     put(o, key, string(value))
 
 /** Sets the field `key` of the object `o` to a number. */
-fn put(o: @Value, key: String, value: Long) do
+fn put(o: Value, key: String, value: Long) do
     put(o, key, number(value))
 
 /** Sets the field `key` of the object `o` to a number. */
-fn put(o: @Value, key: String, value: Double) do
+fn put(o: Value, key: String, value: Double) do
     put(o, key, number(value))
 
 /** Sets the field `key` of the object `o` to `true` or `false`. */
-fn put(o: @Value, key: String, value: Bool) do
+fn put(o: Value, key: String, value: Bool) do
     put(o, key, boolean(value))
 
 // ---------------------------------------------------------------------------------------------------
 // Reading values
 
 /** Whether `v` is the JSON value `null`. False when there is no value at all. */
-fn isNull(v: @Value?): Bool do
+fn isNull(v: Value?): Bool do
     if val value = v do
         ret value.kind == :null
     ret false
 
 /** The text of a string, or null for anything else. */
-fn asString(v: @Value?): String? do
+fn asString(v: Value?): String? do
     if val value = v do
         ret value.text if value.kind == :string
     ret null
 
 /** The value of a number, or null for anything else. */
-fn asNumber(v: @Value?): Double? do
+fn asNumber(v: Value?): Double? do
     if val value = v do
         ret value.number if value.kind == :number
     ret null
 
 /** The value of a whole number that fits a Long, or null for anything else. 3.0 and 1e3 are whole; 3.5 isn't. */
-fn asLong(v: @Value?): Long? do
+fn asLong(v: Value?): Long? do
     if val value = v do
         if value.kind == :number do
             ret value.whole if value.isWhole
@@ -160,42 +160,42 @@ fn asLong(v: @Value?): Long? do
     ret null
 
 /** The value of a `true` or `false`, or null for anything else. */
-fn asBool(v: @Value?): Bool? do
+fn asBool(v: Value?): Bool? do
     if val value = v do
         ret value.flag if value.kind == :bool
     ret null
 
 /** The field `key` of an object; null when there is no such field, or `v` isn't an object. */
-fn field(v: @Value?, key: String): @Value? do
+fn field(v: Value?, key: String): Value? do
     if val value = v do
         if val fields = value.fields do
             ret fields.get(key)
     ret null
 
 /** Element `i` of an array; null when there is no such element, or `v` isn't an array. */
-fn item(v: @Value?, i: Size): @Value? do
+fn item(v: Value?, i: Size): Value? do
     if val value = v do
         if val elements = value.elements do
             ret elements.buffer[i] if i < elements.len
     ret null
 
 /** The elements of an array, for `for`; none for anything else. */
-fn items(v: @Value?): (@Value)[] do
+fn items(v: Value?): (Value)[] do
     if val value = v do
         if val elements = value.elements do
             ret elements.items()
-    val none: @List<@Value> = list(1)
+    val none: List<Value> = list(1)
     ret none.items()
 
 /** The names of the fields of an object, in their order; none for anything else. */
-fn keys(v: @Value?): String[] do
+fn keys(v: Value?): String[] do
     if val value = v do
         if val fields = value.fields do
             ret fields.keys()
     ret new String[0]
 
 /** How many elements an array, or fields an object, has; 0 for anything else. */
-fn count(v: @Value?): Size do
+fn count(v: Value?): Size do
     if val value = v do
         if val elements = value.elements do
             ret elements.len
@@ -208,7 +208,7 @@ fn count(v: @Value?): Size do
  * {@link field}.
  * @return what is there, or null when the path leads nowhere
  */
-fn find(v: @Value?, path: String): @Value? do
+fn find(v: Value?, path: String): Value? do
     var at = v
     var i: Size = 0
     while i < path.len do
@@ -234,7 +234,7 @@ fn find(v: @Value?, path: String): @Value? do
 priv const MAX_DEPTH = 512
 
 /** Where {@link parse} is. */
-priv rec Parser as
+priv mut rec Parser as
     /** The text. */
     input: String
     /** The byte it is at. */
@@ -282,7 +282,7 @@ priv fn hex4(p: @Parser, at: Size): UInt throws JsonError do
  * Reads the \u escape at the current byte, the one after the "u", and the second half of a surrogate pair.
  * @throws when it isn't valid
  */
-priv fn unicodeEscape(p: @Parser, out: @StringBuilder) throws JsonError do
+priv fn unicodeEscape(p: @Parser, out: StringBuilder) throws JsonError do
     val start = p.at - 2
     val first = try hex4(p, p.at)
     p.at += 4
@@ -349,7 +349,7 @@ priv fn skipDigits(p: @Parser): Size do
  * Reads the number at the current byte.
  * @throws when it isn't valid
  */
-priv fn parseNumber(p: @Parser): @Value throws JsonError do
+priv fn parseNumber(p: @Parser): Value throws JsonError do
     val start = p.at
     val negative = p.input[p.at] == '-'
     if negative do
@@ -384,7 +384,7 @@ priv fn parseNumber(p: @Parser): @Value throws JsonError do
  * Reads the array at the current byte, a `[`.
  * @throws when it isn't valid
  */
-priv fn parseArray(p: @Parser): @Value throws JsonError do
+priv fn parseArray(p: @Parser): Value throws JsonError do
     val start = p.at
     p.at += 1
     val a = array()
@@ -408,7 +408,7 @@ priv fn parseArray(p: @Parser): @Value throws JsonError do
  * Reads the object at the current byte, a `{`.
  * @throws when it isn't valid
  */
-priv fn parseObject(p: @Parser): @Value throws JsonError do
+priv fn parseObject(p: @Parser): Value throws JsonError do
     val start = p.at
     p.at += 1
     val o = object()
@@ -438,7 +438,7 @@ priv fn parseObject(p: @Parser): @Value throws JsonError do
  * Reads the array or object at the current byte.
  * @throws when it isn't valid or too deep
  */
-priv fn parseNested(p: @Parser, isArray: Bool): @Value throws JsonError do
+priv fn parseNested(p: @Parser, isArray: Bool): Value throws JsonError do
     throw problem(p, "arrays and objects are nested more than ${MAX_DEPTH} deep", p.at) if p.depth >= MAX_DEPTH
     p.depth += 1
     if isArray do
@@ -453,7 +453,7 @@ priv fn parseNested(p: @Parser, isArray: Bool): @Value throws JsonError do
  * Reads the value at the current byte, after any spaces.
  * @throws when it isn't valid
  */
-priv fn parseValue(p: @Parser): @Value throws JsonError do
+priv fn parseValue(p: @Parser): Value throws JsonError do
     skipSpace(p)
     throw problem(p, "the text ended where a value should be", p.at) if p.at >= p.input.len
     val c = p.input[p.at]
@@ -480,7 +480,7 @@ priv fn parseValue(p: @Parser): @Value throws JsonError do
  * @param text exactly one JSON value, with spaces around it if need be
  * @throws when it isn't valid; the error tells the line and column, and {@code position} is the byte
  */
-fn parse(text: String): @Value throws JsonError do
+fn parse(text: String): Value throws JsonError do
     val p = new Parser { text, 0, 0 }
     val v = try parseValue(p)
     skipSpace(p)
@@ -491,7 +491,7 @@ fn parse(text: String): @Value throws JsonError do
 // Writing
 
 /** Adds `s` to `out` as a JSON string. */
-priv fn writeString(out: @StringBuilder, s: String) do
+priv fn writeString(out: StringBuilder, s: String) do
     out.append('"')
     for c in s do
         if c == '"' do
@@ -513,7 +513,7 @@ priv fn writeString(out: @StringBuilder, s: String) do
     out.append('"')
 
 /** Adds `x` to `out` in the fewest digits that read back as the same number. JSON has no infinity or NaN: they are `null`. */
-priv fn writeNumber(out: @StringBuilder, x: Double) do
+priv fn writeNumber(out: StringBuilder, x: Double) do
     if x != x or x > 1.7976931348623157e308 or x < -1.7976931348623157e308 do
         out.append("null")
     else do
@@ -527,14 +527,14 @@ priv fn writeNumber(out: @StringBuilder, x: Double) do
         out.append(text)
 
 /** A line break and the spaces of level `level`, when pretty printing. */
-priv fn newline(out: @StringBuilder, indent: Size, level: Size) do
+priv fn newline(out: StringBuilder, indent: Size, level: Size) do
     if indent > 0 do
         out.append('\n')
         for i in 0..<indent * level do
             out.append(' ')
 
 /** Adds `v` to `out`. An `indent` of 0 is compact; `level` is how deep it is. */
-priv fn write(out: @StringBuilder, v: @Value, indent: Size, level: Size) do
+priv fn write(out: StringBuilder, v: Value, indent: Size, level: Size) do
     when v.kind do
         :null do out.append("null")
         :bool do out.append(if v.flag do "true" else "false")
@@ -567,7 +567,7 @@ priv fn write(out: @StringBuilder, v: @Value, indent: Size, level: Size) do
             out.append('}')
 
 /** `v` as compact JSON text, on one line. */
-fn stringify(v: @Value): String do
+fn stringify(v: Value): String do
     val out = stringBuilder(256)
     write(out, v, 0, 0)
     ret out.build()
@@ -577,7 +577,7 @@ fn stringify(v: @Value): String do
  * @param v the value
  * @param indent how many spaces each level is indented
  */
-fn pretty(v: @Value, indent: Size = 2): String do
+fn pretty(v: Value, indent: Size = 2): String do
     val out = stringBuilder(256)
     write(out, v, if indent == 0 do 1 else indent, 0)
     ret out.build()

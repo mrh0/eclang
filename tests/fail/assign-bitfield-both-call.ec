@@ -1,5 +1,5 @@
 // error: The target and the value both call something
-rec Flags as
+mut rec Flags as
     a: Int : 3
     b: Int : 5
 

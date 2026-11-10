@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op.logical
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -18,6 +19,8 @@ import github.mrh0.ect2.Union
 
 /** `!!x` is true for true, non-zero numbers and non-null values; `!x` is the opposite. */
 class TNot(location: Loc, val expr: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // a number or Bool
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val (t, ir) = cd.usable(location, expr.process(cd, Types.None), "`!`")
         val set = false

@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -27,6 +28,8 @@ import github.mrh0.ect2.Union
  * otherwise [jump] leaves. It is an `if` before the statement it is in, so after it a variable a is known not to be null.
  */
 class TNullishJump(location: Loc, val left: ITok, private val jump: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(left)
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         if (cd.hoistProblem() != null) throw cd.needsStatement(location, "`??` with a jump", "Put it in a statement of its own: `val x = a ?? ret 0`.")
         val (lt, lir) = left.process(cd, hint)
@@ -62,5 +65,7 @@ class TNullishJump(location: Loc, val left: ITok, private val jump: ITok) : Tok(
 
 /** The missing value of `ret` on the right of `??`, in a function that returns nothing. */
 class TNoValue(location: Loc) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.NotAValue
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> = Types.None to IRRaw(location, "(void)0")
 }

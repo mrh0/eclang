@@ -46,7 +46,7 @@ class IRProgram(
             out.put(body)
         }
         val helpers = sb.types.helperFunctions()
-        sb.types.helperAtoms.forEach { atoms.get(it) }
+        sb.types.usedAtoms.forEach { atoms.get(it) }
         val types = sb.types.definitions()
 
         val standard = listOf("stdio.h", "stdlib.h", "string.h", "math.h", "stdbool.h", "stddef.h", "stdint.h", "limits.h", "stdalign.h", "signal.h", "sys/resource.h", "apr_general.h", "apr_pools.h")
@@ -56,13 +56,13 @@ class IRProgram(
         uses.filter { it !is IRInclude || it.path !in standard }.forEach { it.toC(sb, c) }
         sb.putLine()
         sb.commentLine("Runtime")
-        sb.putLine(RUNTIME)
+        sb.putLine(if (sb.types.checkMemory) checkedRuntime() else RUNTIME)
         sb.putLine(if (library != null) LIBRARY_RUNTIME else PROGRAM_RUNTIME)
         sb.commentLine("Types")
         sb.put(types)
         sb.putLine()
         sb.commentLine("Atoms")
-        atoms.getAll().forEach { sb.putLine("static char* const ${it.getId()} = \"${it.label}\";") }
+        atoms.getAll().filter { it.label in sb.types.usedAtoms }.forEach { sb.putLine("static char* const ${it.getId()} = \"${it.label}\";") }
         sb.putLine()
         sb.commentLine("Helpers")
         sb.put(helpers)
@@ -134,7 +134,7 @@ class IRProgram(
 
     /** The C statement that reports an uncaught [error] from `main`: its `message` field, or the error itself if it is text. */
     private fun uncaught(error: Type): String {
-        val (text, type) = (error as? Record)?.field("message")?.let { "__ec_result.error.message" to it } ?: ("__ec_result.error" to error)
+        val (text, type) = (error as? Record)?.let { r -> r.field("message")?.let { "__ec_result.error.${CTypes.fieldPath(r, "message")}" to it } } ?: ("__ec_result.error" to error)
         return when (type) {
             Types.CString, Types.Atom -> "fprintf(stderr, \"error: main failed: %s\\n\", $text);"
             Types.String -> "fprintf(stderr, \"error: main failed: %.*s\\n\", (int)$text.len, $text.data);"
@@ -147,11 +147,29 @@ class IRProgram(
     }
 
     companion object {
+        /** The allocation of [RUNTIME], with the pool memory checks off. */
+        private const val PALLOC = "static inline void* __ec_palloc(apr_pool_t* pool, size_t size) { if (pool == NULL) __ec_panic(\"eclang\", \"this thread has no current pool: start its code with a `pool do` block\"); return apr_palloc(pool, size); }"
+
+        /**
+         * [RUNTIME] for `--check-memory`: each allocation is a `malloc` of its own, freed by a cleanup of its pool, so that
+         * AddressSanitizer sees pool memory freed one value at a time and reports any use of it after its pool is cleared or
+         * destroyed: a memory error the compiler couldn't see (through C code, `unsafe`, or a gap in its checks).
+         */
+        private fun checkedRuntime(): String {
+            check(PALLOC in RUNTIME)
+            return RUNTIME.replace(PALLOC, "/* --check-memory: build with -fsanitize=address -g, and AddressSanitizer reports memory used after its pool was freed */\n" +
+                "static apr_status_t __ec_check_free(void* p) { free(p); return APR_SUCCESS; }\n" +
+                "static inline void* __ec_palloc(apr_pool_t* pool, size_t size) { if (pool == NULL) __ec_panic(\"eclang\", \"this thread has no current pool: start its code with a `pool do` block\"); " +
+                "void* p = malloc(size ? size : 1); if (p == NULL) __ec_panic(\"eclang\", \"out of memory\"); apr_pool_cleanup_register(pool, p, __ec_check_free, apr_pool_cleanup_null); return p; }")
+        }
+
         private val RUNTIME = """
             typedef struct { size_t len; char* data; } __ec_string_t;
             typedef struct { int line; int position; char* path; } __ec_location_t;
             _Noreturn static inline void __ec_panic(const char* at, const char* message) { fflush(stdout); fprintf(stderr, "%s: %s\n", at, message); abort(); }
+            _Noreturn static inline void __ec_panic_text(const char* at, __ec_string_t message) { fflush(stdout); fprintf(stderr, "%s: %.*s\n", at, (int)message.len, message.data); abort(); }
             static inline void* __ec_nn(void* p, const char* at) { if (p == NULL) __ec_panic(at, "null value used where a value was required"); return p; }
+            static inline void* __ec_c_nn_field(void* p, const char* at, const char* field) { if (p == NULL) { fflush(stdout); fprintf(stderr, "%s: the field %s of a C struct is NULL, but its `declare rec` says it never is. If it can be, declare the field nullable (`: T?`) and check it.\n", at, field); abort(); } return p; }
             static inline void* __ec_c_nn(void* p, const char* at, const char* fn) { if (p == NULL) { fflush(stdout); fprintf(stderr, "%s: the C function %s returned NULL, but its `declare fn` says it never does. If it can, declare its result nullable (`: T?`) and check it.\n", at, fn); abort(); } return p; }
             static inline bool __ec_str_eq(__ec_string_t a, __ec_string_t b) { return a.len == b.len && memcmp(a.data, b.data, a.len) == 0; }
             static int __ec_argc; static char** __ec_argv; /* the command line, for io.args in core:io.ec */
@@ -161,6 +179,9 @@ class IRProgram(
             static inline apr_pool_t* __ec_pool_create(apr_pool_t* parent) { apr_pool_t* p = NULL; if (apr_pool_create_ex(&p, parent, __ec_out_of_memory, NULL) != APR_SUCCESS) __ec_panic("eclang", "can't create a pool"); return p; }
             static inline void* __ec_palloc(apr_pool_t* pool, size_t size) { if (pool == NULL) __ec_panic("eclang", "this thread has no current pool: start its code with a `pool do` block"); return apr_palloc(pool, size); }
             static inline char* __ec_str_cstr(apr_pool_t* pool, __ec_string_t s) { char* c = __ec_palloc(pool, s.len + 1); if (s.len) memcpy(c, s.data, s.len); c[s.len] = 0; return c; }
+            static union { long double d; long long l; void* p; void (*f)(void); } __ec_no_elements; /* what `.data` of an empty array points to */
+            static inline void* __ec_data(void* p) { return p != NULL ? p : (void*)&__ec_no_elements; }
+            static inline char* __ec_fixed_cstr(apr_pool_t* pool, const char* a, size_t n) { size_t len = 0; while (len < n && a[len]) len++; char* c = __ec_palloc(pool, len + 1); if (len) memcpy(c, a, len); c[len] = 0; return c; }
             static inline __ec_string_t __ec_str_concat(apr_pool_t* pool, __ec_string_t a, __ec_string_t b) { char* s = __ec_palloc(pool, a.len + b.len + 1); if (a.len) memcpy(s, a.data, a.len); if (b.len) memcpy(s + a.len, b.data, b.len); s[a.len + b.len] = 0; return (__ec_string_t){a.len + b.len, s}; }
             _Noreturn static inline void __ec_panic_index(const char* at, size_t i, size_t len) { fflush(stdout); fprintf(stderr, "%s: index %lld is out of bounds for length %zu\n", at, (long long)i, len); abort(); }
             static inline size_t __ec_index(size_t i, size_t len, const char* at) { if (i >= len) __ec_panic_index(at, i, len); return i; }

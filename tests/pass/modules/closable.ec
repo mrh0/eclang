@@ -1,6 +1,6 @@
 module "closable"
 
-rec Door as
+mut rec Door as
     name: String
     open: Bool
 

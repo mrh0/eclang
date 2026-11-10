@@ -39,7 +39,7 @@ declare val APR_MMAP_LIMIT as Int
 ### <a id="apr_mmap_create"></a>`apr_mmap_create`
 
 ```ec
-fn apr_mmap_create(newmmap: @@apr_mmap_t, file: @apr_file_t, offset: apr_off_t, size: apr_size_t, flag: apr_int32_t, cntxt: @apr_pool_t): apr_status_t
+fn apr_mmap_create(out newmmap: @apr_mmap_t, file: @apr_file_t, offset: apr_off_t, size: apr_size_t, flag: apr_int32_t, cntxt: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_mmap_create`.*
@@ -47,7 +47,7 @@ fn apr_mmap_create(newmmap: @@apr_mmap_t, file: @apr_file_t, offset: apr_off_t, 
 ### <a id="apr_mmap_dup"></a>`apr_mmap_dup`
 
 ```ec
-fn apr_mmap_dup(new_mmap: @@apr_mmap_t, old_mmap: @apr_mmap_t, p: @apr_pool_t): apr_status_t
+fn apr_mmap_dup(out new_mmap: @apr_mmap_t, old_mmap: @apr_mmap_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_mmap_dup`.*
@@ -63,7 +63,7 @@ fn apr_mmap_delete(mm: @apr_mmap_t): apr_status_t
 ### <a id="apr_mmap_offset"></a>`apr_mmap_offset`
 
 ```ec
-fn apr_mmap_offset(addr: @@Any, mm: @apr_mmap_t, offset: apr_off_t): apr_status_t
+fn apr_mmap_offset(out addr: @Any, mm: @apr_mmap_t, offset: apr_off_t): apr_status_t
 ```
 
 *Binds the C function `apr_mmap_offset`.*

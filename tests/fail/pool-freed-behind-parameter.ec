@@ -1,11 +1,11 @@
 // error: `o.name` is the caller's memory and still points to memory of pool 'p'
-rec Owner as
+mut rec Owner as
     name: String
 
 fn fill(o: @Owner) do
-    val p = newPool()
+    val p = new Pool
     o.name = format(p, "hello ${1}")
-    freePool(p)
+    destroy p
 
 fn main(): Int do
     var o = Owner { name = "" }

@@ -11,6 +11,9 @@ declare rec apr_proc_t
 **Fields**
 
 - <a id="apr_proc_t.pid"></a>`pid: Int`
+- <a id="apr_proc_t.input"></a>`input: @apr_file_t?`
+- <a id="apr_proc_t.out"></a>`out: @apr_file_t?`
+- <a id="apr_proc_t.err"></a>`err: @apr_file_t?`
 
 ### <a id="apr_thread_t"></a>`apr_thread_t`
 
@@ -256,7 +259,7 @@ declare val APR_PROC_SIGNAL_CORE as Int
 ### <a id="apr_threadattr_create"></a>`apr_threadattr_create`
 
 ```ec
-fn apr_threadattr_create(new_attr: @@apr_threadattr_t, cont: @apr_pool_t): apr_status_t
+fn apr_threadattr_create(out new_attr: @apr_threadattr_t, cont: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_threadattr_create`.*
@@ -296,7 +299,7 @@ fn apr_threadattr_guardsize_set(attr: @apr_threadattr_t, guardsize: apr_size_t):
 ### <a id="apr_thread_create"></a>`apr_thread_create`
 
 ```ec
-fn apr_thread_create(new_thread: @@apr_thread_t, attr: @apr_threadattr_t?, func: apr_thread_start_t, data: @Any, cont: @apr_pool_t): apr_status_t
+fn apr_thread_create(out new_thread: @apr_thread_t, attr: @apr_threadattr_t?, func: apr_thread_start_t, escaping data: @Any, cont: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_thread_create`.*
@@ -328,7 +331,7 @@ fn apr_thread_yield()
 ### <a id="apr_thread_once_init"></a>`apr_thread_once_init`
 
 ```ec
-fn apr_thread_once_init(control: @@apr_thread_once_t, p: @apr_pool_t): apr_status_t
+fn apr_thread_once_init(out control: @apr_thread_once_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_thread_once_init`.*
@@ -352,7 +355,7 @@ fn apr_thread_detach(thd: @apr_thread_t): apr_status_t
 ### <a id="apr_thread_data_get"></a>`apr_thread_data_get`
 
 ```ec
-fn apr_thread_data_get(data: @@Any, key: CString, thread: @apr_thread_t): apr_status_t
+fn apr_thread_data_get(out data: @Any, key: CString, thread: @apr_thread_t): apr_status_t
 ```
 
 *Binds the C function `apr_thread_data_get`.*
@@ -368,7 +371,7 @@ fn apr_thread_data_set(data: @Any, key: CString, cleanup: (@Any) => apr_status_t
 ### <a id="apr_threadkey_private_create"></a>`apr_threadkey_private_create`
 
 ```ec
-fn apr_threadkey_private_create(key: @@apr_threadkey_t, dest: (@Any) => None, cont: @apr_pool_t): apr_status_t
+fn apr_threadkey_private_create(out key: @apr_threadkey_t, dest: (@Any) => None, cont: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_threadkey_private_create`.*
@@ -376,7 +379,7 @@ fn apr_threadkey_private_create(key: @@apr_threadkey_t, dest: (@Any) => None, co
 ### <a id="apr_threadkey_private_get"></a>`apr_threadkey_private_get`
 
 ```ec
-fn apr_threadkey_private_get(new_mem: @@Any, key: @apr_threadkey_t): apr_status_t
+fn apr_threadkey_private_get(out new_mem: @Any, key: @apr_threadkey_t): apr_status_t
 ```
 
 *Binds the C function `apr_threadkey_private_get`.*
@@ -400,7 +403,7 @@ fn apr_threadkey_private_delete(key: @apr_threadkey_t): apr_status_t
 ### <a id="apr_threadkey_data_get"></a>`apr_threadkey_data_get`
 
 ```ec
-fn apr_threadkey_data_get(data: @@Any, key: CString, threadkey: @apr_threadkey_t): apr_status_t
+fn apr_threadkey_data_get(out data: @Any, key: CString, threadkey: @apr_threadkey_t): apr_status_t
 ```
 
 *Binds the C function `apr_threadkey_data_get`.*
@@ -416,7 +419,7 @@ fn apr_threadkey_data_set(data: @Any, key: CString, cleanup: (@Any) => apr_statu
 ### <a id="apr_procattr_create"></a>`apr_procattr_create`
 
 ```ec
-fn apr_procattr_create(new_attr: @@apr_procattr_t, cont: @apr_pool_t): apr_status_t
+fn apr_procattr_create(out new_attr: @apr_procattr_t, cont: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_procattr_create`.*
@@ -544,7 +547,7 @@ fn apr_proc_create(new_proc: @apr_proc_t, progname: CString, args: @CString, env
 ### <a id="apr_proc_wait"></a>`apr_proc_wait`
 
 ```ec
-fn apr_proc_wait(proc: @apr_proc_t, exitcode: @Int, exitwhy: @Any, waithow: apr_wait_how_e): apr_status_t
+fn apr_proc_wait(proc: @apr_proc_t, out exitcode: Int, exitwhy: @Any, waithow: apr_wait_how_e): apr_status_t
 ```
 
 *Binds the C function `apr_proc_wait`.*

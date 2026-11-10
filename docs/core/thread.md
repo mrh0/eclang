@@ -1,6 +1,6 @@
 # Module `thread`
 
-Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic and Channel.
+Threads and the tools to share data between them: Mutex, RwLock, Cond, WaitGroup, Atomic, Queue and Channel.
 Built on pthread.h, APR's apr_thread_*.h and apr_atomic.h.
 
     use "core:thread.ec"
@@ -14,15 +14,21 @@ Built on pthread.h, APR's apr_thread_*.h and apr_atomic.h.
             job.total += i
 
     fn main(): Int throws Error do
-        var a = Job { id = 1, total = 0 }
-        val t = try thread.spawn(fn work, addrof(a))
+        val a = new Job { id = 1, total = 0 }
+        val t = try thread.spawn(fn work, a)
         try thread.join(t)
         io.log(a.total)
         ret 0
 
 A thread runs a function given a pointer to its data. Lambdas don't capture variables, so put what the thread
-needs in a record and pass its address. That data must live until the thread is done with it: join the
-thread before the data's block ends (or allocate the data with `new`).
+needs in a record and pass a pointer to it. The compiler checks that the data outlives the function starting the
+thread: it can't be a local variable (`addrof x`), nor be in a `pool do` block or a pool that function made, so
+allocate it with `new` in the current pool. The data is also `flat`: it holds numbers, records of them, and pointers to
+`sync` records, which their own functions make safe to share (a [`Mutex`](#thread.Mutex), an [`Atomic`](#thread.Atomic), a [`Queue`](#thread.Queue)), but no
+Strings, arrays, Lists or pointers to other records, which this thread might free or change while the other reads them.
+Share mutable state through a `sync rec` of your own that guards its fields with a Mutex, and hand work over in a
+[`Queue`](#thread.Queue), which copies its items. Each [`Thread`](#thread.Thread) must be joined or detached: dropping one, or never
+using a variable that holds one, is an error.
 
 Each thread starts with its own current pool, freed when its function returns, so its code can allocate as
 usual. Locks, conditions and channels are allocated in the pool that is current when they are made, and are
@@ -33,10 +39,10 @@ destroyed with it.
 ### <a id="thread.Thread"></a>`Thread`
 
 ```ec
-rec Thread
+resource rec Thread
 ```
 
-A running thread, from [`spawn`](#thread.spawn). [`join`](#thread.join) or [`detach`](#thread.detach) it.
+A running thread, from [`spawn`](#thread.spawn). [`join`](#thread.join) or [`detach`](#thread.detach) it: it is a `resource`, so it can't be dropped.
 
 **Fields**
 
@@ -46,7 +52,7 @@ A running thread, from [`spawn`](#thread.spawn). [`join`](#thread.join) or [`det
 ### <a id="thread.Mutex"></a>`Mutex`
 
 ```ec
-rec Mutex
+sync rec Mutex
 ```
 
 A lock for one thread at a time.
@@ -62,7 +68,7 @@ A lock for one thread at a time.
 ### <a id="thread.RwLock"></a>`RwLock`
 
 ```ec
-rec RwLock
+sync rec RwLock
 ```
 
 A lock for many readers at a time, or one writer.
@@ -74,7 +80,7 @@ A lock for many readers at a time, or one writer.
 ### <a id="thread.Cond"></a>`Cond`
 
 ```ec
-rec Cond
+sync rec Cond
 ```
 
 Lets threads wait until another thread says something changed. Always wait in a loop that checks the
@@ -93,7 +99,7 @@ condition, holding the mutex that protects it:
 ### <a id="thread.WaitGroup"></a>`WaitGroup`
 
 ```ec
-rec WaitGroup
+mut sync ref rec WaitGroup
 ```
 
 Waits for a number of tasks to finish.
@@ -112,14 +118,14 @@ Waits for a number of tasks to finish.
 ### <a id="thread.Atomic"></a>`Atomic`
 
 ```ec
-rec Atomic
+sync rec Atomic
 ```
 
 A UInt that threads can change at the same time without a lock.
 
     var hits = thread.Atomic { 0 }
-    thread.increment(addrof(hits))               // from any thread
-    io.log(thread.load(addrof(hits)))
+    thread.increment(mut hits)               // from any thread
+    io.log(thread.load(mut hits))
 
 **Fields**
 
@@ -128,7 +134,7 @@ A UInt that threads can change at the same time without a lock.
 ### <a id="thread.Channel"></a>`Channel`
 
 ```ec
-rec Channel
+mut sync ref rec Channel
 ```
 
 A queue of pointers, to hand work from one thread to another. [`send`](#thread.send) waits while the channel is full,
@@ -150,20 +156,56 @@ A queue of pointers, to hand work from one thread to another. [`send`](#thread.s
 - <a id="thread.Channel.notEmpty"></a>`notEmpty: Cond` — Signalled when an item arrives.
 - <a id="thread.Channel.notFull"></a>`notFull: Cond` — Signalled when there is room for an item.
 
+### <a id="thread.Queue"></a>`Queue`
+
+```ec
+mut sync ref rec Queue<T>
+```
+
+A queue of values, to hand work from one thread to another. Unlike a [`Channel`](#thread.Channel), it holds copies: [`send`](#thread.send) copies the
+item in, [`receive`](#thread.receive) copies it out, so no thread is left with a pointer into another's memory. Its items are `flat`: numbers,
+records of them, and pointers to `sync` records (another Queue, a [`Mutex`](#thread.Mutex)), which the compiler checks at each `send`.
+[`send`](#thread.send) waits while it is full, [`receive`](#thread.receive) while it is empty. After [`close`](#thread.close), `receive` gives what is left, then null.
+
+    rec Job as
+        id: Int
+        size: Long
+
+    val jobs: thread.Queue<Job> = try thread.queue(16)
+    try thread.send(jobs, Job { 1, 100 })        // producer: a copy goes in
+    val next = thread.receive(jobs)              // consumer: a Job?, null when closed
+
+**Parameters**
+
+- `<T>` — the type of the items
+
+**Fields**
+
+- <a id="thread.Queue.items"></a>`items: T[]` — The ring of items.
+- <a id="thread.Queue.head"></a>`head: Size` — The index in `items` of the first item.
+- <a id="thread.Queue.count"></a>`count: Size` — How many items it holds.
+- <a id="thread.Queue.closed"></a>`closed: Bool` — Whether [`close`](#thread.close) was called.
+- <a id="thread.Queue.lock"></a>`lock: Mutex` — Protects the other fields.
+- <a id="thread.Queue.notEmpty"></a>`notEmpty: Cond` — Signalled when an item arrives.
+- <a id="thread.Queue.notFull"></a>`notFull: Cond` — Signalled when there is room for an item.
+
 ## Functions
 
 ### <a id="thread.spawn"></a>`spawn`
 
 ```ec
-fn spawn(body: (@<T>) => None, data: @<T>): Thread throws OsError
+fn spawn(escaping flat body: (@<T>) => None, escaping flat data: @<T>): Thread throws OsError
 ```
 
 Starts a thread that runs `body(data)`. The thread must be joined (or detached).
 
 **Parameters**
 
-- `body` — the function to run
-- `data` — what it is given; it must live until the thread is done with it
+- `body` — the function to run, which the thread keeps (`escaping`): a lambda that uses a `var` of the caller can't be given,
+  and what a lambda captures must be `flat`
+- `data` — what it is given, which the thread keeps (`escaping`): not a local variable, nor in a pool the caller frees. It is
+  `flat`: what it points to holds numbers, records of them, and pointers to `sync` records (a [`Mutex`](#thread.Mutex), a [`Queue`](#thread.Queue), a
+  `sync rec` of your own), but no Strings, arrays, Lists or other pointers, which could reach memory this thread frees or changes
 
 **Returns** the new thread
 
@@ -174,10 +216,16 @@ Starts a thread that runs `body(data)`. The thread must be joined (or detached).
 ### `spawn`
 
 ```ec
-fn spawn(body: () => None): Thread throws OsError
+fn spawn(escaping flat body: () => None): Thread throws OsError
 ```
 
 Starts a thread that runs `body()`. The thread must be joined (or detached).
+
+**Parameters**
+
+- `body` — the function to run, which the thread keeps (`escaping`). A lambda can use the caller's `val`s (it copies them, in the
+  current pool) when they are `flat` (numbers, records of them, pointers to `sync` records), but not its `var`s, which it would
+  share with a function that may return before the thread ends
 
 **Returns** the new thread
 
@@ -376,7 +424,7 @@ Wakes every waiting thread.
 ### <a id="thread.waitGroup"></a>`waitGroup`
 
 ```ec
-fn waitGroup(): @WaitGroup throws OsError
+fn waitGroup(): WaitGroup throws OsError
 ```
 
 A WaitGroup with no tasks, in the current pool.
@@ -388,7 +436,7 @@ A WaitGroup with no tasks, in the current pool.
 ### <a id="thread.add"></a>`add`
 
 ```ec
-fn add(g: @WaitGroup, n: Long)
+fn add(g: WaitGroup, n: Long)
 ```
 
 Adds `n` tasks to wait for. The program panics when the count goes below 0.
@@ -396,7 +444,7 @@ Adds `n` tasks to wait for. The program panics when the count goes below 0.
 ### <a id="thread.done"></a>`done`
 
 ```ec
-fn done(g: @WaitGroup)
+fn done(g: WaitGroup)
 ```
 
 One task is finished. The program panics when that is more than were added.
@@ -404,7 +452,7 @@ One task is finished. The program panics when that is more than were added.
 ### `wait`
 
 ```ec
-fn wait(g: @WaitGroup)
+fn wait(g: WaitGroup)
 ```
 
 Waits until every task added is done.
@@ -412,7 +460,7 @@ Waits until every task added is done.
 ### <a id="thread.load"></a>`load`
 
 ```ec
-fn load(a: @Atomic): UInt
+fn load(mut a: Atomic): UInt
 ```
 
 The value now.
@@ -420,7 +468,7 @@ The value now.
 ### <a id="thread.store"></a>`store`
 
 ```ec
-fn store(a: @Atomic, value: UInt)
+fn store(mut a: Atomic, value: UInt)
 ```
 
 Sets the value.
@@ -428,7 +476,7 @@ Sets the value.
 ### `add`
 
 ```ec
-fn add(a: @Atomic, n: UInt): UInt
+fn add(mut a: Atomic, n: UInt): UInt
 ```
 
 Adds `n`.
@@ -438,7 +486,7 @@ Adds `n`.
 ### <a id="thread.sub"></a>`sub`
 
 ```ec
-fn sub(a: @Atomic, n: UInt)
+fn sub(mut a: Atomic, n: UInt)
 ```
 
 Subtracts `n`.
@@ -446,7 +494,7 @@ Subtracts `n`.
 ### <a id="thread.increment"></a>`increment`
 
 ```ec
-fn increment(a: @Atomic): UInt
+fn increment(mut a: Atomic): UInt
 ```
 
 Adds 1.
@@ -456,7 +504,7 @@ Adds 1.
 ### <a id="thread.decrement"></a>`decrement`
 
 ```ec
-fn decrement(a: @Atomic): Bool
+fn decrement(mut a: Atomic): Bool
 ```
 
 Subtracts 1.
@@ -466,7 +514,7 @@ Subtracts 1.
 ### <a id="thread.exchange"></a>`exchange`
 
 ```ec
-fn exchange(a: @Atomic, with: UInt): UInt
+fn exchange(mut a: Atomic, with: UInt): UInt
 ```
 
 Sets the value to `with`.
@@ -476,7 +524,7 @@ Sets the value to `with`.
 ### <a id="thread.compareAndSwap"></a>`compareAndSwap`
 
 ```ec
-fn compareAndSwap(a: @Atomic, expected: UInt, with: UInt): Bool
+fn compareAndSwap(mut a: Atomic, expected: UInt, with: UInt): Bool
 ```
 
 Sets the value to `with` if it is `expected`.
@@ -486,7 +534,7 @@ Sets the value to `with` if it is `expected`.
 ### <a id="thread.channel"></a>`channel`
 
 ```ec
-fn channel(capacity: Size): @Channel throws OsError
+fn channel(capacity: Size): Channel throws OsError
 ```
 
 A channel in the current pool.
@@ -502,7 +550,7 @@ A channel in the current pool.
 ### <a id="thread.send"></a>`send`
 
 ```ec
-fn send(c: @Channel, item: @Any) throws StateError
+fn send(c: Channel, item: @Any) throws StateError
 ```
 
 Puts `item` at the end, waiting while the channel is full.
@@ -514,7 +562,7 @@ Puts `item` at the end, waiting while the channel is full.
 ### <a id="thread.trySend"></a>`trySend`
 
 ```ec
-fn trySend(c: @Channel, item: @Any): Bool
+fn trySend(c: Channel, item: @Any): Bool
 ```
 
 Puts `item` at the end if there is room, without waiting.
@@ -524,7 +572,7 @@ Puts `item` at the end if there is room, without waiting.
 ### <a id="thread.receive"></a>`receive`
 
 ```ec
-fn receive(c: @Channel): @Any?
+fn receive(c: Channel): @Any?
 ```
 
 Takes the first item, waiting while the channel is empty.
@@ -534,7 +582,7 @@ Takes the first item, waiting while the channel is empty.
 ### <a id="thread.tryReceive"></a>`tryReceive`
 
 ```ec
-fn tryReceive(c: @Channel): @Any?
+fn tryReceive(c: Channel): @Any?
 ```
 
 Takes the first item if there is one, without waiting.
@@ -544,7 +592,7 @@ Takes the first item if there is one, without waiting.
 ### <a id="thread.close"></a>`close`
 
 ```ec
-fn close(c: @Channel)
+fn close(c: Channel)
 ```
 
 No more items can be sent. Threads waiting in [`receive`](#thread.receive) get what is left, then null; threads waiting in [`send`](#thread.send) get a StateError.
@@ -552,7 +600,85 @@ No more items can be sent. Threads waiting in [`receive`](#thread.receive) get w
 ### <a id="thread.size"></a>`size`
 
 ```ec
-fn size(c: @Channel): Size
+fn size(c: Channel): Size
 ```
 
 The number of items waiting in the channel.
+
+### <a id="thread.queue"></a>`queue`
+
+```ec
+fn queue(capacity: Size): Queue<T> throws OsError
+```
+
+An empty queue in the current pool: `val q: thread.Queue<Int> = try thread.queue(16)`.
+
+**Parameters**
+
+- `capacity` — how many items it holds (0 counts as 1)
+
+**Throws**
+
+- `OsError` — when the system can't make its lock
+
+### `send`
+
+```ec
+fn send(q: Queue<T>, flat item: <T>) throws StateError
+```
+
+Puts a copy of `item` at the end, waiting while the queue is full.
+
+**Parameters**
+
+- `item` — what to send: `flat`, so that the thread taking it gets no pointer into this one's memory
+
+**Throws**
+
+- `StateError` — when the queue is closed
+
+### `trySend`
+
+```ec
+fn trySend(q: Queue<T>, flat item: <T>): Bool
+```
+
+Puts a copy of `item` at the end if there is room, without waiting.
+
+**Returns** whether it did: false when the queue is full or closed
+
+### `receive`
+
+```ec
+fn receive(q: Queue<T>): <T>?
+```
+
+Takes the first item, waiting while the queue is empty.
+
+**Returns** the item; null when the queue is closed and empty
+
+### `tryReceive`
+
+```ec
+fn tryReceive(q: Queue<T>): <T>?
+```
+
+Takes the first item if there is one, without waiting.
+
+**Returns** the item, or null when the queue is empty
+
+### `close`
+
+```ec
+fn close(q: Queue<T>)
+```
+
+No more items can be sent. Threads waiting in [`receive`](#thread.receive) get what is left, then null; threads waiting in [`send`](#thread.send) get a StateError.
+
+### `size`
+
+```ec
+fn size(q: Queue<T>): Size
+```
+
+The number of items waiting in the queue.

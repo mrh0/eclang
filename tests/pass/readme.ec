@@ -75,7 +75,7 @@ fn main(): Int do
     val tuint: UInt = 10ui
     val tulong: ULong = 10ul
     val f: Float = 6f
-    vol volatileValue: Int = 0
+    var volatileValue: Volatile<Int> = 0
     io.log(tshort + tint)
     io.log(tlong + tulong as Long)
     io.log(tuint)
@@ -92,7 +92,7 @@ fn main(): Int do
     for index, item in array1 do
         io.log(index)
         io.log(item)
-    io.log(array2[2] + carray2[1])
+    io.log(array2[2] + unsafe carray2[1])
     val k = :test_atom
     io.log(k)
     // Operators

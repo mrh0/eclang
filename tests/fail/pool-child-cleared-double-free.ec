@@ -1,7 +1,7 @@
 // error: Can't use the pool 'c' here: `clearPool(p)` at line 5 freed it
 fn main(): Int do
-    val p = newPool()
-    val c = newPool(p)
+    val p = new Pool
+    val c = new Pool in p
     clearPool(p)
-    freePool(c)
+    destroy c
     ret 0

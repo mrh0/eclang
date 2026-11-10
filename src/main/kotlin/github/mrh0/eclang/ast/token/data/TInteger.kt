@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.data
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
@@ -13,6 +14,8 @@ import github.mrh0.ect2.Types
  * or binary literal above the largest Long has its top bit in [value], which reads as negative: only a ULong holds it.
  */
 class TInteger(location: Loc, val value: Long) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         if (value < 0) return Types.ULong to IRNumber(location, java.lang.Long.toUnsignedString(value).toBigInteger(), Types.ULong)
         val type = cd.types.intLiteral(value)

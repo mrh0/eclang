@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.data
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -15,7 +16,9 @@ import github.mrh0.ect2.Type
  * The String is built in the current pool, like `format("...")` (see Builtins).
  */
 class TInterpolated(location: Loc, val parts: List<Any>) : Tok(location) {
-    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> = Builtins.interpolate(cd, location, Builtins.current(location), this)
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // a copy, in the pool Lifetimes.value gives it
+
+    override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> = Builtins.interpolate(cd, location, Builtins.current(cd, location, "a String with `\${...}`"), this)
 
     /** `${value}`, or `${value:spec}`. */
     class Field(val value: ITok, val spec: FormatSpec?) {

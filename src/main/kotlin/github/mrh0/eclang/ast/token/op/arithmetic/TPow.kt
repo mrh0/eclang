@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op.arithmetic
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -17,6 +18,8 @@ import github.mrh0.ect2.Types
  * exponent gives 0 (1 ** n is 1, -1 ** n is ±1). Otherwise it is a Double, from C's `pow` (link with `-lm`).
  */
 class TPow(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // a number or Bool
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         var type: Type = Types.Double
         return arithmetic(cd, location, "**", left, right, ::power, { a, b -> Math.pow(a, b) },

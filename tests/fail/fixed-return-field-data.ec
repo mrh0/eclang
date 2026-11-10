@@ -2,7 +2,7 @@
 rec R as
     a: Char[2]
 
-fn f(): CString do
+fn f(): Char[]c do
     var r = R { ['a', 0 as Char] }
     ret r.a.data
 

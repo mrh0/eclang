@@ -20,10 +20,11 @@ The compiler is written in Kotlin and uses an ANTLR 4 grammar ([Eclang.g4](src/m
 8. [Records](#records)
 9. [Control Flow](#control-flow)
 10. [Error Handling](#error-handling)
-11. [Type System](#type-system)
-12. [Memory Management](#memory-management)
-13. [Ecdocs](#ecdocs)
-14. [Standard Library](#standard-library)
+11. [Assertions and Contracts](#assertions-and-contracts)
+12. [Type System](#type-system)
+13. [Memory Management](#memory-management)
+14. [Ecdocs](#ecdocs)
+15. [Standard Library](#standard-library)
 
 ## Goals
 
@@ -32,6 +33,7 @@ The compiler is written in Kotlin and uses an ANTLR 4 grammar ([Eclang.g4](src/m
 - Generating human-readable C source.
 - Function overloads, functional paradigms.
 - Null safety. Lifetimes. Catch most common memory safety issues.
+- Safe by default: records are immutable unless declared `mut rec`.
 - High preformance, but generally prefer safe code over performance.
 - Pool memory management, defer, deep-clone, APR (Apache Portable Runtime).
 - Modernized syntax (inspired by languages such as Python, Kotlin, Go, Elixir).
@@ -76,6 +78,7 @@ If `-o` is omitted, the output is written to `./out.c`.
 | `-nb, --no-bounds-check` | Don't check array and String indices at runtime (see [Arrays](#arrays-and-c-arrays)) |
 | `-na, --no-arithmetic-check` | Don't check division by zero and shift counts at runtime (see [Arithmetic Operators](#arithmetic-operators)) |
 | `-oc, --overflow-check` | Check at runtime that whole-number `+`, `-` and `*` fit their type |
+| `-r, --release` | Build for release: leave out [`debug` statements](#debug-statements) and `debug requires`/`ensures` |
 | `-v, --version` | Print version |
 | `-h, --help` | Print help |
 
@@ -89,7 +92,7 @@ One run reports the errors of every function (up to 30). Inside a function, chec
 ```
 java -jar target/eclang-0.1.0.jar run examples/fizzbuzz.ec
 ```
-`run` compiles the program, builds it with `gcc` (or `$CC`) using the APR flags from `apr-1-config`, `-lm`, `-fwrapv` and `-fno-strict-aliasing`, runs it, and exits with its exit code. It takes `-nb`, `-na`, `-oc`, `-d`, and `-k <dir>` to keep the generated `.c` file and the executable. What follows `--` goes to the program, which reads it with `io.args()`: `eclang run app.ec -- -v in.txt`.
+`run` compiles the program, builds it with `gcc` (or `$CC`) using the APR flags from `apr-1-config`, `-lm`, `-fwrapv` and `-fno-strict-aliasing`, runs it, and exits with its exit code. It takes `-nb`, `-na`, `-oc`, `-r`, `-d`, `-m` (see [Finding Memory Errors](#finding-memory-errors)), and `-k <dir>` to keep the generated `.c` file and the executable. What follows `--` goes to the program, which reads it with `io.args()`: `eclang run app.ec -- -v in.txt`.
 
 ### Generate documentation
 ```
@@ -102,7 +105,7 @@ java -jar target/eclang-0.1.0.jar doc examples/fib.ec [more.ec ...] [-o docs.md]
 gcc -fwrapv -fno-strict-aliasing out.c -o out -I/usr/include/apr-1.0 -L/usr/lib -lapr-1 -lm
 ```
 
-The generated C needs both flags, and `run` and `lib` pass them: `-fwrapv` because `+` on an Int wraps, and `-fno-strict-aliasing` because a pointer to a child record is used as a pointer to its parent.
+`run` and `lib` pass both flags. The generated C needs `-fwrapv`, because `+` on an Int wraps. `-fno-strict-aliasing` is for programs that use `!as` to read memory as another type (`p !as @Float` with p an `@Int`). C forbids that, and with `-O2` gcc may reorder such reads.
 
 The Makefile wraps both steps:
 ```
@@ -114,7 +117,7 @@ make compile-run FILE=./examples/fizzbuzz.ec
 ```
 tests/run.sh
 ```
-Programs in [tests/pass](tests/pass) must compile, build and print their `.out` file; programs in [tests/fail](tests/fail) must be rejected with the error on their first line; programs in [tests/panic](tests/panic) must compile, then stop at runtime with the message on their first line. Files in [tests/doc](tests/doc) must give their `.md` file from `eclang doc`, with the warnings in their `.err` file. Libraries in [tests/lib](tests/lib) must build with `eclang lib`, and the C program next to them must link to them and print their `.out` file.
+Programs in [tests/pass](tests/pass) must compile, build and print their `.out` file; programs in [tests/fail](tests/fail) must be rejected with the error on their first line; programs in [tests/panic](tests/panic) must compile, then stop at runtime with the message on their first line. A program in tests/pass with a `.release.out` file must also print that when built with `--release`, and programs in [tests/fail-c](tests/fail-c) must compile and then be rejected by gcc with the message on their first line (a [`const assert`](#compile-time-assertions) only C can check). Files in [tests/doc](tests/doc) must give their `.md` file from `eclang doc`, with the warnings in their `.err` file. Libraries in [tests/lib](tests/lib) must build with `eclang lib`, and the C program next to them must link to them and print their `.out` file.
 
 ## Modules and Imports
 
@@ -176,13 +179,15 @@ Bundled libraries:
 - [c/](src/main/resources/c): declarations for C's standard headers, one file per header (`core:c/stdio.ec`, `core:c/stdlib.ec`, `core:c/string.ec`, `core:c/ctype.ec`, `core:c/time.ec`, `core:c/unistd.ec`, `core:c/termios.ec`, `core:c/ioctl.ec`, ...).
 - [apr/](src/main/resources/apr): declarations for the Apache Portable Runtime, one file per APR header (`core:apr/pools.ec`, `core:apr/strings.ec`, `core:apr/tables.ec`, `core:apr/hash.ec`, ...).
 
+Bindings for other C libraries, which aren't bundled, are in [bindings/](bindings): [raylib](bindings/raylib/README.md) (`use "bindings/raylib/raylib.ec"`).
+
 ## Variables
 
 ```plaintext
 val a = 10          // immutable
 var b: Int = 20     // mutable
 const c = 30        // compile-time constant (see Constants)
-vol d: Int = 0      // volatile
+var d: Volatile<Int> = 0    // a C volatile variable
 
 b = a + b           // assignment
 b += 5              // also -= *= /= %= &= |= ^= <<= >>=
@@ -191,13 +196,17 @@ var e: Int          // starts out empty: 0
 
 Assignment works on anything that names a place: a variable, a field (`p.x = 1`, `line.a.x = 1`), an element (`a[i] = 1`) or what a pointer points to (`@p = 1`). A compound assignment such as `x += v` needs a `v` that fits `x`'s type (`x += 1.5` on an Int is an error).
 
-A record held in a `val` (or a parameter) is a fixed value, so its fields can't change either: `val p = Point { x = 1, y = 2 }` followed by `p.x = 3` is an error. Declare it with `var`, or change it through a pointer (`p: @Point` in `fn move(p: @Point) do p.x += 1`); a pointer in a `val` still lets you change what it points to. An array's elements live behind a pointer too, so `a[0] = 1` works on a `val` array.
+A record's fields are fixed once it is made, unless it is declared a [`mut rec`](#mutable-records): with `rec Point`, `p.x = 3` is an error even when p is a `var`. Give the variable a new record instead: `p = { ...p, x = 3 }`. The fields of a `mut rec` can change, but only where the record itself can: a `mut rec` held in a `val` (or a parameter) is fixed too. Declare it with `var`, or let a function change the caller's variable with a [`mut` parameter](#mutable-parameters) (`fn move(mut p: Point) do p.x += 1`, called as `move(mut p)` or `p.move()`). A pointer in a `val` still lets you change what it points to (the fields of a `mut rec`, or the whole value, `@p = ...`). An array's elements live behind a pointer too, so `a[0] = 1` works on a `val` array.
 
-`var x: T` without a value starts out empty: `0`, `false`, an empty String or array, `null` for a nullable type, and a record with every field empty, which suits C out-parameters (`var info: SomeCStruct` then `fill(addrof(info))`). Types that have no empty value (pointers, CStrings, atoms, unions, and records holding them) need a value or a `?`.
+`var x: T` without a value starts out empty: `0`, `false`, an empty String or array, `null` for a nullable type, and a record with every field empty, which suits C out-parameters (`var info: SomeCStruct` then `fill(mut info)`, see [External Declarations](#functions-1)). Types that have no empty value (pointers, CStrings, atoms, unions, and records holding them) need a value or a `?`.
 
 A name can only be defined once in a function: a `val` inside an `if` can't reuse the name of an outer variable (no shadowing), so a name means the same thing everywhere in a function. Choose a different name.
 
-`val`, `var`, `vol` and `const` can also be used at the top level to define globals. A global whose value isn't a C constant (`val start = now()`) is set when the program starts, before `main` runs, in the order the globals are written, except that a global comes after the globals its value needs, also through the functions it calls: `val a = f()` is set after `val b = new 1` when f reads b, wherever b is written. Globals that need each other can't be ordered, which is a warning: one of them reads the other before it is set.
+`Volatile<T>` as the type of a `var` (also `var x: Volatile<T>` without a value, and at the top level) makes it a C `volatile` variable of type T: `T volatile x`, so with a pointer type, the variable itself is volatile, not what it points at. Every read and write of it then happens in the C program as written, for a variable a signal handler or `setjmp` changes. It can't be part of another type, nor the type of a field, a parameter or a `val`.
+
+Words that mean something in one place only are no keywords, so they stay usable as names everywhere else: `it` (outside a [pipe stage](#operators)), `here`, `pool`, `caller`, `debug`, `where`, `extern`, `requires`, `ensures`, `module`, `struct`, `union`, `ref`, `packed`, `align`, `resource`, `sync`, `export`, `distinct`, `fits`, `outlives`, `out`, `escaping`, `own`, `flat` and `kept`. Where both could apply, a variable of that name wins over `here` and `pool`, and in a pipe stage `it` is the pipe's value.
+
+`val`, `var` and `const` can also be used at the top level to define globals. A global whose value isn't a C constant (`val start = now()`) is set when the program starts, before `main` runs, in the order the globals are written, except that a global comes after the globals its value needs, also through the functions it calls: `val a = f()` is set after `val b = new 1` when f reads b, wherever b is written. Globals that need each other can't be ordered, which is a warning: one of them reads the other before it is set.
 
 ### Constants
 
@@ -289,7 +298,7 @@ Strings can contain the escapes `\n` `\r` `\t` `\0` `\\` `\"` `\'` `\$` `\a` `\b
 
 `s[i]` is the byte at `i` (a `Char`), and `s[a..<b]` (or `s[a..=b]`, including `b`) is the part from `a` to `b`. Either end can be left out: `s[1..]` goes to the end, and `s[..<3]` starts at the beginning. A slice shares the String's memory, so it costs nothing. Both check their bounds (see [Arrays](#arrays-and-c-arrays)). A String's bytes can't be changed in place.
 
-`cstr(s)` (or `s.cstr()`) is a copy of a String that ends with a 0 byte, as a `CString` for C functions; `cstr(p, s)` copies it into pool p. A String's own bytes need not end with a 0 (a slice doesn't), so pass `cstr(s)` (or `%.*s` with `s.len as Int, s.data`) to C.
+`cstr(s)` (or `s.cstr()`) is a copy of a String that ends with a 0 byte, as a `CString` for C functions; `cstr(p, s)` copies it into pool p. A String's own bytes need not end with a 0 (a slice doesn't), so `s.data` is a `Char[]c`, not a `CString`: pass `cstr(s)` (or `%.*s` with `s.len as Int, s.data`) to C. `cstr` also takes a `Char[N]`, as C structs hold text, and copies it up to its first 0 (all N Chars when there is none). When you know the Chars end with a 0, `x.data !as CString` passes them without a copy.
 
 [core:string.ec](src/main/resources/string.ec) has the String functions: `startsWith(s, prefix)`, `indexOf(s, part)` (a `Size?`), `trim(s)` (a slice), `split(s, ',')` (a `String[]` of slices, in the current pool), `replace`, `join`, `toUpper`, `parseInt(s)` (a `Long throws Error`) and more; see [Standard Library](#standard-library).
 
@@ -326,7 +335,7 @@ val carray1 = ["One", "Two", "Three"]c
 val carray2: Int[]c = [5, 3, 6, 0]c
 ```
 
-`a[i]` on an array (or String) checks that `i` is less than `a.len`; otherwise the program stops with `file:line: index 10 is out of bounds for length 3`. To skip the check where speed matters, index the raw data instead: `a.data[i]` (a C array, which has no length). The `--no-bounds-check` option turns all the checks off.
+`a[i]` on an array (or String) checks that `i` is less than `a.len`; otherwise the program stops with `file:line: index 10 is out of bounds for length 3`. To skip the check where speed matters, index the raw data instead: `unsafe a.data[i]` (a C array, which has no length, so it needs [`unsafe`](#unsafe)). `.data` is never null: that of an empty array points to no elements, so C functions can be given it with a length of 0. The `--no-bounds-check` option turns all the checks off.
 
 `a[from..<to]` and `a[from..=to]` slice an array, sharing its elements: changing an element of the slice changes the array. C arrays have no length, so they can't be sliced.
 
@@ -347,14 +356,14 @@ var empty: Int[4]               // all zero
 val values: Int[3] = [1, 2, 3]  // the literal must have all 3 elements
 ```
 
-`a[i]` checks i against N: when the program runs, or when it compiles if i is a literal. `==`, `hash`, `clone`, `for` and `${...}` work on the elements; a `Char[N]` prints as text, up to its first 0.
+`a[i]` checks i against N: when the program runs, or when it compiles if i is a literal. `==`, `hash`, `clone`, `for` and `${...}` work on the elements; a `Char[N]` prints as text, up to its first 0. A String literal fills a `Char[N]`, as in C: `name: Char[16] = "ann"` sets the other Chars to 0, and a literal longer than N is an error. One of exactly N bytes leaves no 0 at the end, which `cstr` handles. A String value fills one too (`r.name = s`), checked when the program runs: one longer than N stops the program, so slice it first (`s[..N]`) if cutting it is what you want. `==` and `!=` compare a `Char[N]` with a String as text, up to the `Char[N]`'s first 0: `r.name == "ann"`.
 
 A `T[N]` turns into nothing else by itself, because what it turns into would point into it:
 
 | You want | Write | You get |
 | --- | --- | --- |
 | an array | `a[..]`, `a[1..<3]` | a `T[]` sharing a's memory |
-| a C pointer | `a.data` | a `T[]c`, or a `CString` for a `Char[N]` |
+| a C pointer | `a.data` | a `T[]c` (for a `Char[N]`, `cstr(a)` is a `CString` copy of its text) |
 | the length | `a.len` | a Size, known at compile time |
 
 These pointers follow the usual [lifetime](#lifetimes) rules: returning `a[..]` of a local `a` is an error. `T[N]` has a different meaning from `new T[n]`, which allocates a `T[]`. Note that in `x as Int[i]` the `[i]` belongs to the type; write `(x as Int)[i]` to index the result. `@Int[4]` is an array of four pointers, and `@(Int[4])` is a pointer to an array.
@@ -477,7 +486,7 @@ bool c = strcmp(a, b) == 0; // strcmp from string.h
 bool d = a==b;
 ```
 
-Arguments, the parts of a `${...}`, the two sides of an operator and the values of a record, tuple or array literal run left to right, so `add(next(), next())` passes the first value first, and `"${next()} ${count}"` reads `count` after the call. C doesn't promise this, so the compiler stores a value in a temporary when a later one could change it or depend on it. In an assignment, calls in the target run before the value: `a[next()] = next()`. A target without calls is read when C likes, so `a[i] = f()` may or may not see what f does to a global i.
+Arguments, the parts of a `${...}`, the two sides of an operator and the values of a record, tuple or array literal run left to right, so `add(next(), next())` passes the first value first, and `"${next()} ${count}"` reads `count` after the call. C doesn't promise this, so the compiler stores a value in a temporary when a later one could change it or depend on it. In an assignment, calls in the target run before the value (`a[next()] = next()`), and the rest of the target is read after it: `a[i] = f()` stores at the i that f leaves behind, and `a[i] += f()` adds to the element as f left it. The default of a record field runs its own parts left to right too.
 
 `<` `<=` `>` `>=` can be chained: `0 <= x < n` means `0 <= x and x < n`, with `x` evaluated once, and later parts only when the earlier ones hold.
 
@@ -527,7 +536,7 @@ val at = offsetof(Point, y)
 `a..<b` goes from a up to, but not including, b, and `a..=b` includes b. Ranges count in a `for` loop (`for i in 0..<n do`, see [For](#for)), slice arrays and Strings (`s[1..<3]`, and with an open end `s[1..]` and `s[..<3]`), and match in a `when` arm (`1..<10 do`, see [When](#when)).
 
 #### Pipe
-`x |> f(2)` passes x to the next call as its first argument: it is `f(x, 2)`, and `x |> f` is `f(x)`. Where the value should go somewhere else, write `it`: `x |> g(1, it)`, `x |> it * it`. A chain runs left to right, so `5 |> double |> add(1)` is `add(double(5), 1)`. The value before each `|>` is evaluated once: when `it` appears more than once, the compiler stores it in a temporary first. A stage can also be a lambda: `x |> fn (v: Int) = v - 1`.
+`x |> f(2)` passes x to the next call as its first argument: it is `f(x, 2)`, and `x |> f` is `f(x)`. Where the value should go somewhere else, write `it`: `x |> g(1, it)`, `x |> it * it`. `it` isn't a keyword: outside a pipe stage (and inside a lambda in one) it is an ordinary name, so a parameter or variable can be called `it`. A chain runs left to right, so `5 |> double |> add(1)` is `add(double(5), 1)`. The value before each `|>` is evaluated once: when `it` appears more than once, the compiler stores it in a temporary first. A stage can also be a lambda: `x |> fn (v: Int) = v - 1`.
 
 #### Type Tests
 `x is T` and `x !is T` test what a union value holds, or what kind of record a pointer points to (see [Union Types](#union-types)).
@@ -535,7 +544,7 @@ val at = offsetof(Point, y)
 #### Not Yet Implemented
 These are parsed, but the compiler reports that they are not supported yet:
 - The range `..>`
-- `yield`, a trailing `while`, `unit`, `anon` unions, and `var`/`val`/`vol` on parameters
+- `yield`, a trailing `while`, and `var`/`val` on parameters
 
 ## Functions
 
@@ -575,6 +584,24 @@ In this example:
 - `a` and `b` are mandatory parameters.
 - `c` is optional and defaults to the value of `a`. A default value runs once, when the function is entered without that argument.
 - `b` accepts either type. The compiler generates one C function per combination: (Int, Int), (Int, CString), (Int, Int, Int), (Int, CString, Int).
+
+A parameter whose default is `caller` is given the place of each call, like Swift's `#file` and `#line`. Its type is a `Location` (in `core:errors.ec`: `file`, `line`, `column` and `function`, printed as `main.ec:12`), a String (`"main.ec:12"`) or an Int (the line). `here` is the `Location` where it is written. A function that checks or reports something for its caller passes its own `at` on:
+
+```plaintext
+use "core:errors.ec"
+
+fn check(ok: Bool, what: String, at: Location = caller) do
+    io.log("${at}: ${what} failed") if not ok      // main.ec:12: the total failed
+
+fn checkAll(values: Int[], at: Location = caller) do
+    for v in values do
+        check(v > 0, "a positive value", at)        // the line that called checkAll
+
+check(total == 10, "the total")
+val start = here
+```
+
+`panic`, the assertions of `core:test.ec` and the functions of `core:log.ec` take one, so a panic and a failed check say where they come from.
 
 A union with `Null` is split the same way, with one more function for `null`: `Int | CString | Null` gives Int, CString and Null versions. A plain `T?` stays one function, and so does a union of atoms. Because each version is compiled separately, a check such as `if v is Int` is decided at compile time inside each version, and the branch that can't run is skipped.
 
@@ -620,6 +647,44 @@ When the receiver is a record with a field of function type, `button.onClick(5)`
 
 A method can also be in the module that declares the receiver's type, or one of its parents: with `f` an `io.File`, `f.close()` calls `io.close` from any module. Functions the code can see without that come first, so a `close` of your own that takes a File wins. Interfaces find their functions the same way.
 
+### Mutable Parameters
+
+A `mut` parameter is the caller's variable: what the function assigns to it, or to its fields, the caller sees. The caller says so with `mut` before the argument, or passes it as the receiver of a method call, which needs no `mut`:
+
+```plaintext
+mut rec Point as
+    x: Int
+    y: Int
+
+fn move(mut p: Point, dx: Int) do
+    p.x += dx
+
+fn swap(mut a: Int, mut b: Int) do
+    val t = a
+    a = b
+    b = t
+
+var p = Point { 1, 2 }
+move(mut p, 3)          // p is Point { 4, 2 }
+p.move(1)               // the same: p is a variable, so `move` gets it
+swap(mut p.x, mut p.y)  // fields and elements (`mut a[i]`) are variables too
+```
+
+A `mut` parameter of a record whose fields are fixed (a `rec`, not a `mut rec`) can still be given a whole new value: `p = { ...p, x = p.x + dx }`, which the caller sees too.
+
+In C, a `mut p: Point` is a `Point*`, and `p.x += dx` is `p->x += dx`; the call passes `&p`. So it is also how to pass a big record without copying it. A receiver that is already a pointer (`val pp: @Point`, then `pp.move(1)`) is passed as it is. Inside the function, `p` is used like any other variable: it can be read, assigned, passed on with `mut p`, and narrowed (`if p != null do`).
+
+What may be passed:
+- A variable, field, element or `@ptr` that can change: `mut p` of a `val` is an error. A value (`mut f()`, `mut Point { ... }`) has nowhere to put the change; store it in a `var` first.
+- Of exactly the parameter's type, as the function may store any value of that type there: a `mut a: Animal` doesn't take a `Cat` variable, nor a `mut x: Int` an `Int?` one.
+- Not the same variable twice in one call (`swap(mut a, mut a)`, or `mut p` with `mut p.x`), since a change through one would undo the other.
+
+The function can't keep a pointer to the caller's variable, which may be gone after the call: returning `addrof p` or storing it in a global or behind a pointer is an error, as for a local. And as the function may store in it what its other arguments point to, the caller checks that its variable outlives those: `pick(mut p, addrof b)` is an error when p lives longer than b.
+
+A `mut` parameter can't have a default value or be variadic, and a function value (`fn (Int) => None`) has no `mut` parameters: `fn move` as a value takes a `@Point`. `for x in it` finds `fn next(mut it: Iter): T?` like `fn next(it: @Iter)`.
+
+A loop forgets what checks made before it proved about a variable it passes as `mut` (as for an assignment, see [Flow Typing](#flow-typing)). `x.f()` inside a loop that changes x through a `mut` receiver, after such a check, is an error: write `f(mut x)` there.
+
 ### Variadic Parameters
 
 ```plaintext
@@ -655,7 +720,39 @@ val square: (Int) => Int = fn (x) = x * x
 io.log(apply(fn (x) = x * 3, 7))
 ```
 
-A lambda becomes an ordinary C function (`main_0_lambda0`), and its value is a pointer to it. It can't use the local variables or parameters of the function around it, since lambdas don't capture variables yet. Pass what it needs as a parameter, or use a global. `try` can't be used in a lambda.
+A lambda can use the variables and parameters of the function around it (it is a closure):
+
+```plaintext
+fn adder(n: Int): (Int) => Int = fn (x) = x + n     // keeps its own n
+
+val limit = 3
+val big = numbers.filter(fn (x) = x > limit)
+
+fn bump(mut c: Int) do
+    c += 1
+
+var count = 0
+val tick = fn () = bump(mut count)                  // changes count itself
+tick()
+tick()                                              // count is 2
+```
+
+- A `val` or parameter can't change, so the lambda keeps a copy of it. Such a lambda can be returned, stored or given to a thread. A check made before the lambda still holds in it: after `if name != null do`, a lambda there can use `name` as a String.
+- A `var` is shared: the lambda uses the variable itself, so a change made on either side is seen on the other. Such a lambda can't outlive the variable, as with `addrof` (see [Lifetimes](#lifetimes)): returning it, or giving it to a thread, is an error. To give it a copy instead, copy the value into a `val` first (`val countNow = count`). A check of a `var` that a lambda may change (with `mut count`, `addrof count` or `count.f()`) doesn't narrow it after the lambda is made, since calling the lambda could undo it.
+- A `mut` parameter can't be used in a lambda: it is the caller's variable. Copy it into a `val` first.
+
+A lambda that uses no local variables costs nothing to make. One that does is allocated in the current pool, with copies of the `val`s and pointers to the `var`s it uses. It lives as long as that pool, like `new`.
+
+Where a function that returns nothing is expected, a lambda's value is dropped: `thread.spawn(fn () = list.push(x))` takes a `() => None` even though `push` returns something.
+
+`try` in a lambda passes the error on from the lambda, which then can fail: it `throws` what its `try`s can fail with, the `throws` of the function type expected there, or what it says (`fn (s: String): Long throws Error = try parseInt(s)`). Where a function type that can't fail is expected, using `try` in the lambda is an error; handle the error inside it with `?? default` or `try ... catch`.
+
+```plaintext
+val parse = fn (s: String) = try parseInt(s) * 2      // (String) => Long throws Error
+val n = parse("21") ?? 0
+```
+
+In C, a lambda is a function of its own (`main_0_lambda0`) that takes the closure as its first argument, and a function value is a pointer to the closure, whose first member is that function: `f(x)` is `f->call(f, x)`.
 
 ## External Declarations
 
@@ -673,13 +770,37 @@ declare fn name extern "c_name" as (parameter_list): return_type
 declare fn printf as (format: CString, ...): Int
 ```
 
-A pointer result (a pointer, `CString` or C array) of a `declare fn` is never null for eclang, unless it is declared `T?`. C can't promise that, so the call checks it: if the C function returns NULL anyway, the program stops with `file:line: the C function getenv returned NULL, but its `declare fn` says it never does`. Declare the result `T?` when it can be NULL.
+A pointer result (a pointer, `CString` or C array) of a `declare fn` is never null for eclang, unless it is declared `T?`. C can't promise that, so the call checks it: if the C function returns NULL anyway, the program stops with `file:line: the C function getenv returned NULL, but its `declare fn` says it never does`. Declare the result `T?` when it can be NULL. Pointer fields of a `declare rec` or `declare struct` are checked the same way when they are read (`file:line: the field stat.name of a C struct is NULL, ...`), so declare a field `T?` when C may leave it NULL.
 
 `extern "c_name"` is optional and defaults to `name`.
 
 ```plaintext
 declare fn printf as (format: CString, value: Any): None
 declare fn abs extern "fabs" as (x: Double): Double
+```
+
+A C parameter that is a pointer to something the function fills in or changes can be a `mut` parameter (see [Mutable Parameters](#mutable-parameters)), passed with `mut x`. One C only writes, without reading it first, is an `out` parameter, which also takes a nullable variable of a pointer type: C overwrites its null. The variable is still a `T?` afterwards, as C may leave it null when it fails.
+
+```plaintext
+declare fn strtol as (s: CString, out end: CString, base: Int): Long      // char** end
+declare fn modf as (x: Double, out whole: Double): Double                  // double* whole
+declare fn apr_file_read as (f: @apr_file_t, buf: @Any, mut nbytes: Size): apr_status_t   // in: the size, out: what was read
+
+var end: CString? = null
+val n = strtol("42 rest"c, mut end, 10)
+var whole = 0.0
+val fraction = modf(3.25, mut whole)        // 3 and 0.25
+```
+
+`out` is only for C functions; an eclang function returns its results, several as a tuple. A parameter declared `@T` takes `addrof x` as before, so bindings can use either. The bindings of `core:` use `out` and `mut` for what C fills in (`apr_file_open(mut f, ...)`, `apr_stat(mut info, ...)`, `apr_socket_recv(s, buf, mut length)`), and keep `@T` where C also takes NULL (`strtol`'s `end`). A C function that keeps a pointer after it returns says so: `kept` when it keeps it in what its other pointer arguments point to, for as long as they live, and `escaping` when it keeps it anywhere else (another thread, a global of the library). Each call is then checked like a call of an eclang function that stores it there (see [Lifetimes](#lifetimes)). A C function without either is taken to keep nothing.
+
+```plaintext
+declare fn apr_hash_set as (ht: @apr_hash_t, kept key: @Any, klen: apr_ssize_t, kept value: @Any)
+
+val h = apr_hash_make(pool)
+var x = 1
+apr_hash_set(h, "x"c, APR_HASH_KEY_STRING, addrof x)    // error: 'apr_hash_set' keeps 'value' in what 'ht' points to, but here 'value' points to 'x', a local variable ...
+apr_hash_set(h, "x"c, APR_HASH_KEY_STRING, new 1)       // fine: in the same pool as the table
 ```
 
 ### Variables, Types and Structs
@@ -696,6 +817,21 @@ declare rec Pool extern "apr_pool_t"
 declare struct Point extern "point_t" as
     x: Int
     y: Int
+
+declare rec apr_proc_t as
+    pid: Int
+    input extern "in": @apr_file_t?     // C calls it `in`, an eclang keyword
+```
+
+A field takes `extern "c_name"` too, when C's name for it can't be used in eclang: `proc.input` is `proc.in` in C.
+
+A `declare struct` (and C's `union x`, `declare union`) is C's own type, kept for compatibility: its fields can always change, as C code expects. A `declare rec` (or `declare union rec`), a typedef, is like a `rec`: its fields are fixed for eclang code, which reads them and makes changed copies (`{ ...p, x = 1 }`). Write `declare mut rec` for one whose fields eclang code sets in place, such as a typedef a C API asks you to fill in:
+
+```plaintext
+declare mut rec AVFrame as
+    nb_samples: Int
+
+frame.nb_samples = 1024
 ```
 
 ### C Arrays, Bit-Fields and Unions in Structs
@@ -720,7 +856,7 @@ declare var tzname as CString[2]    // a global array
 
 var u: utsname
 uname(addrof u)
-io.log(u.sysname.data)
+io.log(cstr(u.sysname))
 ```
 
 `int m[2][3]` is `m: Int[3][2]`, read from the left: 2 rows of `Int[3]`. C passes arrays as pointers, so `declare fn` rejects `T[N]` parameters: declare `int a[4]` as `T[]c` or `@T`, and pass `a.data`.
@@ -767,7 +903,7 @@ In eclang, `apr_shutdown_how_e` is just another name for `:read | :write | :read
 
 ## Records
 
-Records are user-defined data structures that group related fields under a single name. `record` is an alias for `rec`.
+Records are user-defined data structures that group related fields under a single name.
 
 ```plaintext
 rec Test as
@@ -809,7 +945,7 @@ rec Node as
     next: @Node?
 ```
 
-It can't contain itself directly (`next: Node`, or through another record or a union): that would make it infinitely large.
+It can't contain itself directly (`next: Node`, or through another record or a union): that would make it infinitely large. A [`ref rec`](#reference-records) can, as its name means a pointer to it.
 
 `...` makes a copy of a record with some fields changed, which is how to change a field of a record in a `val`. Without a name, the copy has the type of the original. The original is evaluated once, and may also be a record that extends the named one.
 
@@ -817,6 +953,83 @@ It can't contain itself directly (`next: Node`, or through another record or a u
 val p = Point { 1, 2 }
 val q = Point { ...p, x = 5 }     // 5, 2
 val r = { ...p, y = 0 }           // a Point too
+```
+
+### Mutable Records
+
+A record's fields are fixed once it is made: `p.x = 5` is an error, whether p is a `val`, a `var`, a parameter, an element (`points[0].x = 5`) or reached through a pointer (`pp.x = 5` with `pp: @Point`). Code that has a record can count on it staying as it is, also when it is shared through a pointer or a [`ref rec`](#reference-records). To change one, make a new one with `...` and assign the variable: `p = { ...p, x = 5 }`.
+
+`mut` before `rec` declares a record whose fields can change in place: `p.x = 5`, `p.x += 1`, `inc(mut p.x)`, `p.cells[0] = 1` of a `T[N]` field:
+
+```plaintext
+mut rec Cursor as
+    line: Int
+    column: Int
+
+var at = Cursor { 1, 1 }
+at.column += 1                    // fine: Cursor is a `mut rec`
+```
+
+- The variable still decides as well: the fields of a `mut rec` in a `val` or a parameter can't change either (see [Variables](#variables)).
+- `mut` goes first, before the other words: `mut ref rec List<T>`, `mut sync ref rec Channel`, `mut packed rec Header`, `mut union Value`.
+- C typedefs follow the same rule: the fields of a `declare rec` (`declare union rec`) are fixed for eclang code, and `declare mut rec` (`declare mut union rec`) lets it change them; a typedef C only hands back (`div_t`) can stay fixed. A `declare struct` (`declare union`) is always mutable, for compatibility with C.
+- It is shallow: the fields are fixed, not what they point to. A `rec` with a `String[]` field can't get another array, but the array's elements can still change (`r.items[0] = x`).
+- A `mut rec` can't extend a record whose fields are fixed, which could then change where one is expected; the other way round works (see [Extending Records](#extending-records)).
+- A generic function or record that changes fields of its `T` says so with `<mut T>` (see [Generic Types](#generic-types)).
+
+### Reference Records
+
+`ref rec` declares a record that is always used through a pointer, like a class in Java or Swift. Its name in a type means a pointer to it: a `Counter` parameter, variable or field holds a `Counter*` in C, so passing it around doesn't copy it, and changing its fields changes the one record everyone refers to. `new` makes one, in the current pool (or `new ... in p`), as for any other record:
+
+```plaintext
+mut ref rec Counter as
+    name: String
+    count: Int = 0
+
+fn inc(c: Counter) do        // no `@`: a Counter is a pointer
+    c.count += 1
+
+val c = new Counter { "clicks" }
+c.inc()
+val same = c                 // the same record
+same.inc()                   // c.count is 2
+```
+
+- Its fields change for everyone at once, so only a `mut ref rec` lets them change (see [Mutable Records](#mutable-records)). Of a `ref rec` whose fields are fixed, make a new one instead: `c = new Counter { ...@c, count = 2 }`, which changes what c refers to and not what others see.
+- A record literal of one is only made by `new`: `Counter { "x" }` alone is an error. `new Counter` is an empty one, with its defaults. `@c` is the record itself, so `@c = Counter { "reset" }` overwrites it for everyone that refers to it (a `mut ref rec` only).
+- It can contain itself: `ref rec Node as` with `next: Node?` is a linked list. `extends` works between `ref rec`s (`ref rec Cat extends Animal`, then `pet is Cat`), not between a `ref rec` and a plain `rec`. A generic one, `ref rec Box<T>`, makes `Box<Int>` a pointer too.
+- `==` compares references (whether two names refer to the same record); `clone(c)` copies the record, and `${c}` prints it.
+- `T?` of one is a plain C pointer that may be NULL. `new Counter[n]` would hold null pointers, so write `new (Counter?)[n]`. `@Counter` is a pointer to a reference (`Counter**`), such as a C out-parameter.
+- `mut c: Counter` changes which record the caller's variable refers to: `c = new Counter { "other" }`.
+
+The records of `core:` that are objects rather than values are `ref rec`s: `List<T>`, `Map<K, V>`, `Set<T>`, `Deque<T>`, `Heap<T>`, `StringBuilder`, and in their modules `json.Value`, `regex.Regex`, `regex.Match`, `log.Logger`, `test.Test`, `thread.Channel`, `net.Connection`, `http.Server`, `http.Request`, `http.Response` and others. So `val names: List<String> = list()`, and a function takes `l: List<T>`. Small values that a function changes, such as `math.Random` and `thread.Atomic`, are passed as `mut`: `r.nextInt(1, 7)`, `thread.increment(mut hits)`.
+
+### Resource Records
+
+`resource` before `rec` declares a record whose values must be passed on: one that holds something that has to be ended, such as `thread.Thread`, which has to be joined or detached. Dropping one (a call returning it used as a statement) is an error, and so is a local variable holding one that is never used.
+
+```plaintext
+resource rec Transaction as
+    id: Int
+
+fn begin(): Transaction = Transaction { 1 }
+fn commit(t: Transaction) do
+    ret
+
+begin()                          // error: The Transaction begin(...) returns is dropped, but Transaction is a `resource` ...
+val t = begin()                  // error, unless t is used: commit(t)
+```
+
+Any use of the variable counts, so this catches a forgotten handle, not one that is only ended on some paths.
+
+### Sync Records
+
+`sync` before `rec` declares a record that threads may share: its own functions make that safe, with a lock or atomics. `thread.Mutex`, `thread.Atomic`, `thread.Queue`, `thread.Channel`, `log.Logger` and the other tools of `core:thread.ec` are `sync`. What goes to another thread (a `flat` parameter, such as `thread.spawn`'s data, see [Math, IO, Time and Threads](#math-io-time-and-threads)) may point to a `sync` record, but to nothing else. The compiler doesn't look inside one: `sync` vouches that its fields are only used under its lock, as `unsafe` vouches for code.
+
+```plaintext
+sync rec Tally as
+    lock: thread.Mutex
+    seen: Int                        // only changed with lock held
 ```
 
 ### Memory Layout
@@ -848,7 +1061,7 @@ union Value as              // the fields share their memory
 
 **`packed`** fields may be at any address, where C can't use a pointer to them. So `addrof`, `a[..]` and `.data` are errors on a field wider than a byte; reading and assigning work. **`align(n)`** takes a power of two; `new` and `clone` honour it too, past what a pool aligns to. Records with `packed` or `align` can't take part in `extends`, since a child must start like its parent, but they can be generic.
 
-**Bit-fields** are whole numbers or Bools. A literal must fit (`mode = 8` is an error for 3 bits), but other values are cut to the width as in C, so check them first if that matters. They have no address, so `addrof` and `offsetof` are errors.
+**Bit-fields** are whole numbers or Bools. A literal must fit (`mode = 8` is an error for 3 bits), and other values, including the result of `+=` and the like, are checked when the program runs: one that doesn't fit stops the program, where C would cut it to the width. A value whose type always fits (a UChar in 8 bits) needs no check. They have no address, so `addrof` and `offsetof` are errors.
 
 **Unions** hold one field at a time. A literal gives exactly one (`Value { f = 1.5 }`, or `Value { 1 }` for the first), and reading another field reinterprets the same bytes, which is only meaningful for plain data. eclang doesn't know which field is set, so a union has no `==` or `hash`, prints as `Value { ... }`, and `clone` copies its bytes without following pointers. Keep a field next to it to say what it holds, or use a [union type](#union-types), which does that for you.
 
@@ -863,7 +1076,7 @@ rec Point as
 
 val p = Point { 1, 2 }
 io.log("${p}")                          // Point { x: 1, y: 2 }
-val seen: @Set<Point> = set()           // needs `hash(p)`, which is generated
+val seen: Set<Point> = set()           // needs `hash(p)`, which is generated
 seen.add(p)
 ```
 
@@ -902,6 +1115,8 @@ val tom = Cat { name = "Tom"c, lives = 9 }
 ```
 
 A record that adds no fields is written without `as`: `rec Tabby extends Cat`. It is still a type of its own, so `is` and `as` tell it apart (core:errors.ec uses this for error types such as `rec RangeError extends Error`). A record of another module is named with its module: `rec Square extends shapes.Shape as`.
+
+A `mut rec` can't extend a record whose fields are fixed: a `Cat` can be used as an `Animal`, which must then stay as it is. A record whose fields are fixed may extend a `mut rec`; its own fields are then fixed, but those of the `Animal` it is can still change where it is used as an `Animal` (through an `@Animal`).
 
 A `Cat` fits wherever an `Animal` is expected. Through a pointer (`@Cat` → `@Animal`) it is the same value; by value, the `Animal` fields are copied. Going back down is checked at runtime:
 
@@ -946,7 +1161,7 @@ else if text == "none" do           // `else if` and `else if val` work on both 
     io.log(0)
 ```
 
-`assert condition` stops the program with an error naming the file, the line and the condition when the condition is false. `assert condition, "message"` reports the message instead. The code after an `assert` knows that the condition holds (see [Flow Typing](#flow-typing)).
+`assert condition` stops the program when the condition is false, and the code after it knows that the condition holds (see [Flow Typing](#flow-typing) and [Assertions and Contracts](#assertions-and-contracts)).
 ```plaintext
 assert count > 0
 assert node != null, "the list is empty"
@@ -1065,7 +1280,7 @@ for m in maybeValues where m != null do
 
 Any type can be looped over. Give it a `next` that takes a pointer and gives the next element, or `null` at the end:
 ```plaintext
-rec Countdown as
+mut rec Countdown as
     left: Int
 
 fn next(c: @Countdown): Int? do
@@ -1128,6 +1343,13 @@ fn twice(i: Int): Int throws Error do
 try throwsTest(50) catch error do
     io.log(error.message)
 
+// As a value: the value after `do` when the call fails, which may use the error...
+val n = try throwsTest(50) catch e do -e.code
+// ...or a block that leaves (`ret`, `throw`, `break`, `continue`, or a call that never returns).
+val m = try throwsTest(50) catch e do
+    io.log("can't: ${e.message}")
+    ret
+
 // 4. Leave, or call something, when the call fails. As a statement this also works on a function that returns nothing.
 throwsTest(50) ?? ret
 throwsTest(50) ?? panic("can't go on")
@@ -1139,9 +1361,99 @@ Ignoring the error is a compile error:
 error: The error from throwsTest(...) is ignored: it can fail with Error. Handle the error with `try`, `?? default` or `try ... catch e do`.
 ```
 
+The value after `do` must fit the call's own value type (`try name() catch e do null` needs a `String?` call). A block after `do` used as a value has no value of its own, so it must leave. Like `??` with a jump, `try ... catch` as a value is a statement of its own: `val`, `var`, an assignment or the body of `fn f() = ...`.
+
 If `main` can fail and does, the program prints an error and exits with status 1.
 
 `errdefer` undoes work when an error leaves the function: see [Defer](#defer).
+
+## Assertions and Contracts
+
+Assertions state what must be true for the program to go on. They come in four kinds:
+
+| Form | Checked | The code after it knows it holds | In a release build (`--release`) |
+| --- | --- | --- | --- |
+| `assert condition` | when the program runs | yes | kept |
+| `debug assert condition` (any `debug` statement) | when a debug build runs | no | left out |
+| `const assert condition` | when compiling | (nothing to know) | nothing to leave out |
+| `requires` / `ensures` on a function | at each call / at each return | `requires`: in the body | kept (`debug requires`: left out) |
+
+### Assert
+
+A failed `assert` stops the program with the line, the function, the condition and the values it compared:
+```plaintext
+assert a.len == b.len
+```
+```
+main.ec:12: assertion failed in merge: a.len == b.len
+    a.len = 3
+    b.len = 4
+```
+- Both sides of a comparison are shown, and the value an `is` checks (a union that can't be printed shows what it holds: `v holds a String`). Strings are shown in quotes. Of a call that is the whole condition (`assert isValid(x)`), the arguments that are variables or fields are shown.
+- When a side runs code (`assert total(a) == 7`), each side is kept in a temporary, in order, so it runs once and the report shows the value that was compared.
+- `assert a and b` checks `a`, then `b`: `b` only runs when `a` held, and sees what `a` proves (`assert s != null and s.len > 3`). The report says which part failed. A `try` can't be used after the first `and`; make it a check of its own.
+- `assert condition, message`: the message, any String (`"no user ${id}"`), comes first. It is only made when the check fails, in the current pool, so it costs nothing otherwise.
+- `assert false, "unreachable"` always stops, like `panic`, so a function can end in it.
+- An `assert` that the types or constants already decide is an error when it always fails (`assert LIMIT > 9` with `const LIMIT = 4`), and a warning when it always holds (`assert n is Int` of an Int), as it checks nothing. Not in a copy of a function made for one type of a union parameter or a `<T>`, where that is expected.
+
+### Debug Statements
+
+`debug` before a statement, or `debug do` and a block, makes code that only a debug build runs. A release build (`--release`, for `-c`, `run` and `lib`) leaves it out:
+```plaintext
+debug io.log("state: ${state}")
+debug assert isSorted(items)
+debug do
+    val took = time.now() - start
+    io.log("took ${took}")
+debug total += n                        // any statement
+debug defer io.log("done")              // deferred in a debug build only
+```
+It is checked the same way in both builds: in C it is `if (__EC_DEBUG) { ... }`, with `__EC_DEBUG` 0 in a release build, so `gcc -D__EC_DEBUG=0` (or `1`) builds the same C file either way. So that a release build means the same, what a `debug` statement does stays inside it:
+- A name it defines can only be used in it: `debug val n = 5` then `io.log(n)` is an error (use `debug do` for several statements).
+- What it proves doesn't hold after it: after `debug assert x != null`, x may still be null. Use `assert` when the code after it relies on the check.
+
+`debug` is no keyword elsewhere: `log.debug(...)`, a variable `debug` and a field `debug` still work. `const assert` can't be `debug`, as it costs nothing when the program runs.
+
+### Compile-Time Assertions
+
+`const assert` is checked when compiling, at the top level or in a function, and costs nothing when the program runs. A message after a comma is a plain String literal.
+```plaintext
+const SLOTS = 64
+const assert SLOTS <= 255, "a slot index is a UChar"
+const assert sizeof Header == 16, "Header is written to disk as it is"
+const assert offsetof(Header, flags) == 8
+```
+- A condition on constants and literals is decided by the compiler: `const assert SLOTS <= 255` fails with `it is false, as SLOTS = 300`. With `sizeof`, `alignof` or `offsetof`, which only C knows, it becomes a C `_Static_assert`, which the C compiler checks (`run` and `lib` say so when it fails). A condition on a value known only when the program runs is an error that points to `assert`.
+- `A is B` of two types: an A already is a B, with no conversion (the same type, a child record of B, `@Cat is @Animal`, a member of the union B, a record with interface B's fields and functions). `A fits B`: an A can be used where a B is expected, also with a lossless conversion (`Int fits Long`).
+- In a [generic function](#generic-types) it is checked for each type the function is compiled for, so it says what `<T>` must be, with the call that asked for that copy:
+```plaintext
+fn greet(x: <T>): String do
+    const assert <T> fits Named, "greet needs a name"
+    ret "hello ${x.name}"
+```
+```
+main.ec:9:5: error: greet needs a name: `const assert <T> fits Named` failed for <T> = Pt (the call at main.ec:13): Pt is missing `name: String`, required by Named
+```
+
+What the compiler knows of memory (see [Lifetimes](#lifetimes)) can be asserted too, as documentation that it checks:
+- `const assert a outlives b`: what the variable or field `a` points into lives at least as long as what `b` points into, so `a` can be stored in `b`. Memory of a pool the function can free (`new Pool`) only outlives memory in that same pool.
+- `const assert x in p`: what `x` points into is in the pool `p` (a `Pool` variable or field), or in the current pool with `x in pool`, and nowhere else.
+- `const assert not escapes(p)`: the function keeps nothing of its parameter `p` after it returns, not in a global, not behind another parameter, not in an `escaping` parameter, also through the functions it calls. It is checked once every function is compiled.
+
+These are checked against what the compiler can follow; when it can't show a claim, the error says why (`'d' points to memory from the pool of the pool block at line 13, which is freed when that block ends, ...`).
+
+### Contracts
+
+`requires` and `ensures` after a function's signature state what it needs and what it promises. There can be several, in any order, each with an optional message:
+```plaintext
+fn at(a: Int[], i: Size): Int requires i < a.len, "index out of range" ensures result != 0 = a[i]
+
+fn label(s: String?): Size requires s != null = s.len     // s isn't null in the body
+```
+- A `requires` is checked when the function starts, and a failure is reported at the call: `main.ec:8: requirement of half failed: n % 2 == 0`, with the values, as for `assert`. A call through a function value, or from C (`export fn`), is reported at the function itself, `(half called through a function value or from C)`. The body knows that a `requires` holds, as after an `assert`.
+- An `ensures` is checked at each `ret` and at the end of a function that returns nothing, where it is reported, with `result` the value returned (`guarantee of get failed: result >= 0`). A function that `throws` checks it only when it returns a value; one that returns `Never` can't have one; and no parameter can be called `result` then.
+- `debug requires` and `debug ensures` are only checked in a debug build. A `requires` that is `debug` proves nothing to the body.
+- A `requires` may use the parameters left out (their default values), and `ensures` sees what `mut` parameters hold at the end. Conditions should have no effects: a contract states a fact, it doesn't do work.
 
 ## Type System
 
@@ -1205,7 +1517,7 @@ The function must not reach its end, and can't `ret` or `throw`. Deferred statem
 
 ### Pointer Types
 
-Pointer types are written with the at sign `@`. Addresses are taken with the `addrof` keyword and dereferenced with `@`.
+Pointer types are written with the at sign `@`. Addresses are taken with the `addrof` keyword and dereferenced with `@`. Most code needs neither: a function changes a caller's variable through a [`mut` parameter](#mutable-parameters), a C function fills one in through an [`out` parameter](#functions-1), and a [`ref rec`](#reference-records) is a record always used through a pointer.
 
 ```plaintext
 val variable: Int = 10
@@ -1243,7 +1555,7 @@ fn n(a: CString?): CString do
     ret a!
 ```
 
-`addrof x!` passes the address of a nullable variable to C code that fills it in (an out parameter), without checking it.
+An [`out` parameter](#functions-1) of a `declare fn` takes a nullable variable that C fills in: `apr_file_open(mut f, ...)` with `var f: @apr_file_t? = null`. For a binding that declares the parameter as a pointer, `addrof x!` passes the address of a nullable variable to C code that fills it in, without checking it. It may only be an argument of a `declare fn`: anywhere else, the pointer would read x as never null although it may be. x is still a `T?` after the call, so check it before using it.
 
 ### Flow Typing
 
@@ -1259,7 +1571,7 @@ fn describe(v: Int | CString | Null): CString do
 
 Assigning to a variable forgets what was known about it, also in the enclosing blocks, and a loop forgets it for the whole loop (the next round sees the assigned value).
 
-A variable whose address the function takes (`addrof x` anywhere in it) is not narrowed, since a write through that pointer could change it after the check; the check gives a warning. Check a copy instead: `val now = x`, then `if now != null do`, or `if val now = x do`.
+A `mut` parameter is narrowed too, and passing a variable as `mut x` forgets what was known about it, like an assignment. A variable whose address the function takes (`addrof x` anywhere in it) is not narrowed, since a write through that pointer could change it after the check; the check gives a warning. Check a copy instead: `val now = x`, then `if now != null do`, or `if val now = x do`.
 
 ### Union Types
 
@@ -1309,16 +1621,27 @@ fn first(values: <T>[]): <T> = values[0]
 A `<T>` is decided by the arguments, by a lambda's return type (`<U>` in `(<T>) => <U>`), or, when only the result has it, by the type expected where the result goes:
 
 ```plaintext
-fn empty(): <T>[] = new (<T>)[0]
+fn empty(): <T>[] = unsafe new (<T>)[0]
 val names: String[] = empty()
 
-fn listOf(...values: <T>): @List<T>              // a variadic parameter can be generic: listOf(1, 2, 3)
+fn listOf(...values: <T>): List<T>              // a variadic parameter can be generic: listOf(1, 2, 3)
 fn orElse(value: <T>?, other: <T>): <T> = value ?? other
 ```
 
 A lambda given to a generic function needs no parameter types when the other arguments decide them: `numbers.map(fn (x) = x * 2)`.
 
-In a generic function, `new (<T>)[n]` makes room for n elements of any T, also a pointer type, which has no empty value. Those elements hold zeros until they are written, so read only what was written.
+A function that changes fields of a `<T>` writes `<mut T>` (once is enough), so that a call with a record whose fields are fixed is an error at the call, which names the function, rather than inside its copy:
+
+```plaintext
+fn reset(mut v: <mut T>) do
+    v.count = 0
+
+reset(mut tally)                  // tally must be a `mut rec` with a `count`
+```
+
+Any type that isn't a record whose fields are fixed (or a pointer to one) fits a `<mut T>`: numbers, Strings, arrays, `mut rec`s, `declare mut rec`s, `declare struct`s and C types without fields.
+
+In a generic function, `new (<T>)[n]` makes room for n elements of any T, also a pointer type, which has no empty value. Those elements hold zeros until they are written, which for a pointer is a null its type says it can't be. The compiler can't check that only written elements are read, so it needs [`unsafe`](#unsafe): `unsafe new (<T>)[n]`. Without it, `filled(n, value)` (in `core:array.ec`) makes an array of n copies of a value, and `new (<T>?)[n]` one of nulls.
 
 `Any`, interfaces and `<T>` have no fixed size in C, so they can only be parameter types (and, for `<T>`, return types). `@Any` is an untyped pointer (`void*`) and can be stored. To store a `<T>`, use a generic record.
 
@@ -1349,11 +1672,15 @@ fn swapped(p: Pair<A, B>): Pair<B, A> = Pair<B, A> { p.second, p.first }
 fn push(list: @Node<T>?, value: <T>): @Node<T> = new Node<T> { value, list }
 ```
 
+A type parameter written `mut T` (`rec Box<mut T>`) takes only types that fit a `<mut T>` (see [Generic Types](#generic-types)), for a record whose functions change fields of its T.
+
 A generic record can't extend a record, or be extended, yet. See [core:structures.ec](src/main/resources/structures.ec) for lists, maps and sets built this way.
 
 ### Function Types
 
-A function type `(A, B) => R` (or `(A, B) => R throws E`) is the type of a function value: a parameter, variable or record field holding a function, made with `fn name` (see [Function References](#function-references)). It is called like a function. In C it is a function pointer.
+A function type `(A, B) => R` (or `(A, B) => R throws E`) is the type of a function value: a parameter, variable or record field holding a function, made with `fn name` (see [Function References](#function-references)). It is called like a function. It may hold a lambda that uses the variables around it (see [Lambdas](#lambdas)).
+
+In a `declare` (a `declare fn`, `declare type`, `declare val` or a field of a `declare rec`) and in an `export fn`, a function type is what C has: a plain C function pointer, shown as `extern (A) => R` in errors. `fn name` converts to one, and so does a lambda that uses no local variables, written where it is passed (`qsort(a.data, a.len, sizeof Int, fn (x, y) = ...)`). A lambda that uses local variables can't be given to C, which has nowhere to keep them: pass what the callback needs through the `@Any` data argument such C functions take. A C function pointer isn't an eclang function value either; to use one as such, wrap it: `fn (x) = f(x)`.
 
 ```plaintext
 fn double(x: Int): Int = x * 2
@@ -1389,7 +1716,7 @@ fn greet(who: Named) do
 greet(Duck { "Donald"c, 9 })
 ```
 
-A pointer parameter works the same way: `@Named` accepts a pointer to any record with a `name: CString`, so the function can change it.
+A pointer parameter works the same way: `@Named` accepts a pointer to any record with a `name: CString`, so the function can change it, if the record is a [`mut rec`](#mutable-records) (each copy of the function is checked for the record it is given).
 
 An interface can also ask for functions, written without the record parameter: a record fits when a function of that name takes it first (so `x.area()` works on it) with the other parameter types, and returns the type. It may say `throws`: `fn tell(): Long throws Error`, or `fn write(String) throws Error` when it returns nothing.
 
@@ -1412,7 +1739,7 @@ Passing a record that lacks one is an error that names the function to define, e
 fn rename(who: @Named, name: CString) do
     who.name = name
 
-var duck = Duck { "Donald"c, 9 }
+var duck = Duck { "Donald"c, 9 }           // Duck must be a `mut rec` here
 rename(addrof(duck), "Daisy"c)
 ```
 
@@ -1493,6 +1820,8 @@ fn main(): Int do
     ret 0
 ```
 
+Without the `pool do`, every round would add a String to the pool of `main`, which is only freed when the program ends. The compiler adds that `pool do` itself to a loop (in any function, outside `pool do` blocks) whose rounds allocate in the current pool when nothing a round allocates is used after the round: the loop above needs no `pool do` written. It leaves a loop as it is when a round keeps something: a value stored in a variable from before the loop, in a global, returned, or in a list that outlives the round (`names.push("${i}")`), as a pool per round would free it too early. Write `names.push(keep(s))` (see [Keep](#keep)) to keep a copy and still free the rest of the round. Which loops got a pool is in the C: they create `__ec_round` pools.
+
 Strings with `${...}`, `concat`, `new` and `clone` allocate in the current pool, and so do the functions they're called from: a function that returns `new Point { ... }` allocates in its caller's current pool. Give a value its own pool by passing a `Pool` (`fn load(p: Pool): @Config`), and allocate in it with `new ... in p`, `clone(x, p)`, `format(p, "...")` and `concat(p, a, b)`.
 
 `pool name do` names the block's pool, so code in a nested block can still allocate in it:
@@ -1503,13 +1832,35 @@ pool results do
         val point = new Point { x = 1, y = 2 } in results
 ```
 
-A pool that isn't tied to a block is made with `newPool()` (a child of the current pool, freed with it at the latest) or `newPool(parent)`. `clearPool(p)` frees everything in `p` and keeps the pool, and `freePool(p)` frees it. Either also frees the pools made in `p`. The pool of a `pool do` block, and the current pool, are freed for you, so `freePool` rejects them, also through another name (`val q = pool`, or a field `h.p`). `clearPool` rejects the current pool outside a `pool do` block, as that pool is also the caller's, and clearing it would free what the callers hold in it. Inside a `pool do` block, `clearPool(pool)` clears that block's pool.
+A pool that isn't tied to a block is made with `new Pool` (a child of the current pool, freed with it at the latest) or `new Pool in parent`. `clearPool(p)` frees everything in `p` and keeps the pool, and the statement `destroy p` frees the pool. Either also frees the pools made in `p`:
+
+```plaintext
+val p = new Pool
+defer destroy p                          // or `destroy p` where it is no longer needed
+val names = load(p)
+```
+
+`destroy` frees a whole pool: a value can't be freed on its own, so give it a pool of its own and destroy that. On a `Pool?` variable or field (a `var`), `destroy` does nothing when it is null, and sets it to null afterwards, so it can't be destroyed twice: `destroy h.p` after `h.p = new Pool`.
+
+A function may clear and destroy only the pools it made with `new Pool`, also under another name (`val q = p`) or in a field of its own variable (`h.p` with `var h = H { p = new Pool }`), and those it takes over: an `own p: Pool` parameter. The caller must have made (or taken over) the pool it passes there, and gives it up: after the call, the pool and what was in it can't be used.
+
+```plaintext
+fn drop(own p: Pool) do
+    destroy p                            // no `unsafe`: the pool is this function's
+
+val p = new Pool
+val s = format(p, "in p")
+drop(p)
+io.log(s)                                // error: Can't use 's' here: it points to memory of pool 'p' that `drop(...)` ... freed
+```
+
+ Any other pool, such as a parameter, a global, a field behind a pointer or a call's result, may hold memory that code elsewhere still uses, which the compiler can't follow, so freeing it needs [`unsafe`](#unsafe): `unsafe destroy p`, `unsafe clearPool(p)`. The pool of a `pool do` block, and the current pool, are freed for you, so `destroy` rejects them, also through another name (`val q = pool`, or a field `h.p`), and `unsafe` doesn't change that. `clearPool` rejects the current pool outside a `pool do` block, as that pool is also the caller's, and clearing it would free what the callers hold in it. Inside a `pool do` block, `clearPool(pool)` clears that block's pool.
 
 `Pool` is `@apr_pool_t`, so pools can be passed to the APR functions in [apr/](src/main/resources/apr) (`apr_psprintf(pool, "%d items"c, 3)`, with `use "core:apr/strings.ec"`). In C, the current pool is a thread-local `__ec_pool` that the generated `main` creates. A thread started from C code has no current pool until its code opens a `pool do` block. Running out of memory stops the program with an error.
 
 ### New
 
-`new value` copies a value into the current pool and gives a pointer to the copy, which lives as long as the pool. `new T` points to an empty T (see [Variables](#variables)), and `new T[n]` makes an array of n empty elements; for any other element type, put it in parentheses: `new (@Point?)[n]`, `new (Int[])[n]` (a pointer has no empty value, so an array of pointers holds `@T?`). Add `in p` to use pool p:
+`new value` copies a value into the current pool and gives a pointer to the copy, which lives as long as the pool. `new T` points to an empty T (see [Variables](#variables)), and `new T[n]` makes an array of n empty elements; for any other element type, put it in parentheses: `new (@Point?)[n]`, `new (Int[])[n]` (a pointer has no empty value, so an array of pointers holds `@T?`). `new Pool` is different: it makes a new pool, not a pointer to one (see [Memory Pools](#memory-pools)). Add `in p` to use pool p:
 
 ```plaintext
 fn makePoint(x: Int, y: Int): @Point = new Point { x = x, y = y }
@@ -1528,6 +1879,22 @@ val copy = clone(list)                  // a @Node? with every node and name cop
 val numbers = clone([1, 2, 3])          // an array literal copied out of the stack
 ```
 
+### Keep
+
+`keep(x)` (or `x.keep()`) is `clone(x)` into the pool that was current when the function was called: memory that outlives every `pool do` block of the function, and the rounds of its loops. It is how a value made in a block is kept after it, which is what the errors about pool memory suggest:
+
+```plaintext
+fn collect(n: Int): List<String> do
+    val names: List<String> = list()
+    for i in 0..<n do
+        pool do
+            val line = describe(i)                 // scratch work, freed after each round
+            names.push(keep(line))                 // a copy that lives as long as names
+    ret names
+```
+
+To copy into another pool, write `clone(x, p)`. In a lambda, `keep` copies into the pool current where the lambda is called, which isn't known where it is written: see [Lifetimes](#lifetimes).
+
 ### Lifetimes
 
 The compiler rejects pointers that would outlive the memory they point to. That memory is a local variable or parameter (freed when its block ends), the elements of an array literal (stored on the stack, like those of a default value and the array of a `...rest` parameter), a literal that `addrof` points at, or a `pool do` block's pool, together with whatever was allocated in it, including by the functions called inside the block. A value pointing into such memory can't be returned or thrown, and can't be stored in a variable defined outside its block, in a global, or behind a pointer:
@@ -1544,20 +1911,99 @@ pool do
     name = "n is ${n}"      // error: ... 'name' lives longer
 ```
 
-Passing such pointers to functions is fine (`fill(addrof(info))`). The compiler follows values through variables, record and array literals, `new`, pipes, and calls: a call's result may point into its arguments (`ret id(addrof x)` is an error), or into the pools it is given (a C function given a pool is taken to allocate its result there). What is read out of memory (`r.field`, `p.next`, `s[a..<b]`, `@p`) may point where r, p and s do, because anything stored there must live at least as long. An element of a stack array is an exception: `ret names[0]` is fine when the Strings in `names` outlive the function. Names bound by `if val`, `when` arms, `catch` and `for` are followed like variables, a write through a pointer changes what it points at (`@pp = addrof x` after `pp = addrof o`), and a value left by one round of a loop reaches the code before it in the next round. `clone` makes new memory, except for what it can't copy (`@Any`, for one), which still points where it did. `try` inside a `pool do` block copies the error into the pool that was current before the block, because leaving the block frees its pool.
-
-A pool made with `newPool()` is followed the same way: after `clearPool(p)` or `freePool(p)`, a variable holding something allocated in p or a child pool of p before can't be used (and after `freePool(p)`, neither can p). A global can't hold such memory when the pool is freed, and neither can what a pointer parameter points at: after `o.name = format(p, ...)`, `freePool(p)` is an error unless `o.name` was given another value first, since the caller would be left with freed memory. This also covers another name for the pool, a `Pool` field (`h.p`), a global pool, and reading through a pointer (`@ps`).
+Passing such pointers to functions is fine (`fill(addrof(info))`), unless the function keeps them. The compiler knows which of its arguments a function stores through another one or in a global, also through the functions it calls, and what it allocates in the current pool and keeps, and checks each call as if the store were written there:
 
 ```plaintext
-val p = newPool()
+val names: List<String> = list()
+pool do
+    names.push("n is ${n}")     // error: 'push' keeps 'value' in what 'l' points to. Here 'value' points to memory from the pool of the `pool` block ...
+```
+
+A copy in a pool that outlives the block is fine (`names.push(keep(s))`, or `clone(s, outer)` with `val outer = pool` before the block), and `unsafe` takes the programmer's word for it. A store through what a call returned counts as a store into the arguments that result may point into: `find(m, k).value = v` (or `val e = find(m, k)`, then `e.value = v`) stores v in what m points to, when m's type can hold what `find` returns (a `Table` holding `Entry`s, for a `@Entry`). A C function is checked the same way for the parameters its `declare fn` marks `kept` or `escaping` (see [External Declarations](#functions-1)), and is taken to keep nothing else. A function with an interface parameter is compiled for each record it is given, so its calls of the interface's functions are checked like any other.
+
+A lambda is checked where it is written, as if it were called there: what it keeps of the variables it uses must live long enough (`fn () = list.push(addrof x)` is an error when `list` outlives `x`). What a function value keeps in its own arguments (a handler that stores in the request it is given) is followed by its type: every call of a value of that type is checked as if it called each lambda and `fn name` of that type. What it keeps anywhere else (a variable it uses, a global) can't be checked where it is called, so a lambda or `fn name` that keeps its parameters or memory it allocates there is an error:
+
+```plaintext
+val out: List<String> = list()
+each(parts, fn (s) = out.push(s))         // error: This lambda keeps its parameter 's' in what 'out' points to ...
+val p = pool
+each(parts, fn (s) = out.push(clone(s, p)))   // fine: a copy in the pool out lives in
+```
+
+`unsafe` before the lambda (or `unsafe fn name`) takes the programmer's word that every call gives it memory that lives long enough.
+
+A parameter marked `escaping` is kept after the call where the compiler can't follow it, by another thread or by C code. Its argument may not point to the caller's local variables, to a `pool do` block's memory, or into a pool the caller made with `new Pool`, and the function counts as storing it in a global, so the callers of a function that passes its own parameter on are checked too. `thread.spawn` takes its data this way:
+
+```plaintext
+declare fn register_callback_data as (escaping data: @Any)
+
+fn start(job: @Job): thread.Thread throws Error = try thread.spawn(fn work, job)
+
+var local = Job { 1 }
+val t = try start(addrof local)       // error: 'start' keeps 'job' in memory that outlives the call ...
+```
+
+The compiler follows values through variables, record and array literals, `new`, pipes, and calls: a call's result may point into its arguments (`ret id(addrof x)` is an error), or into the pools it is given (a C function given a pool is taken to allocate its result there). Which arguments, the compiler finds from the function's body, as the Goose language infers what a reference is rooted in, with no annotation: `fn find(entries: Entry[], key: String): String` that returns an entry's value doesn't point into `key`, so its result outlives a `key` from a pool freed after the call. Bodies are compiled in any order, so this is used when a first try fails on memory: the program is compiled again knowing what each function returns, up to a few times. It isn't known for function values, C functions, a call with a `mut` argument, or a function that takes the address of a local (`addrof x`) or whose lambdas change its `var`s: their result may point into every argument. It is by parameter, not by field: a function that returns `m.input`, with `m` in a scratch pool, counts as returning into `m`; pass what it returns as a parameter of its own instead. An error about memory that came through calls names them (`it came out of `find(...)`, and the result of `find` may point into what its parameter 'key' was given`), and an error about a call that keeps an argument names the calls through which it does. What is read out of memory (`r.field`, `p.next`, `s[a..<b]`, `@p`) may point where r, p and s do, because anything stored there must live at least as long. An element of a stack array is an exception: `ret names[0]` is fine when the Strings in `names` outlive the function. Names bound by `if val`, `when` arms, `catch` and `for` are followed like variables, a write through a pointer changes what it points at (`@pp = addrof x` after `pp = addrof o`), and a value left by one round of a loop reaches the code before it in the next round. `clone` makes new memory, except for what it can't copy (`@Any`, for one), which still points where it did. `try` inside a `pool do` block copies the error into the pool that was current before the block, because leaving the block frees its pool.
+
+A pool made with `new Pool` is followed the same way: after `clearPool(p)` or `destroy p`, a variable holding something allocated in p or a child pool of p before can't be used (and after `destroy p`, neither can p). A global can't hold such memory when the pool is freed, and neither can what a pointer parameter points at: after `o.name = format(p, ...)`, `destroy p` is an error unless `o.name` was given another value first, since the caller would be left with freed memory. This also covers another name for the pool, a `Pool` field (`h.p`), a global pool, and reading through a pointer (`@ps`).
+
+```plaintext
+val p = new Pool
 val s = format(p, "hello")
 clearPool(p)
 io.log(s)                      // error: 's' points to memory of pool 'p' that `clearPool(p)` freed
 ```
 
-This holds across `if`s and across the rounds of a loop: a value left by one round can't be used in the next if the loop clears its pool in between, and a loop can't free a pool it made outside.
+This holds across `if`s and across the rounds of a loop: a value left by one round can't be used in the next if the loop clears its pool in between, and a loop can't free a pool it made outside. It follows the paths through an `if`: a variable given a new value on the path that cleared its pool is fine after the `if`, as on every path it holds memory that wasn't freed:
 
-`ret` and `throw` also count what `defer` frees: with `defer freePool(p)`, `ret s` of a String in p is an error, since the pool is freed after s is read. Return a copy: `ret clone(s)`. The result of a call isn't rejected there, because a function working in a scratch pool often returns a call's result that isn't in that pool. `try` copies the error it passes on when a deferred statement frees a pool.
+```plaintext
+var s = format(p, "old")
+if refresh do
+    clearPool(p)
+    s = format(p, "new")
+io.log(s)                      // fine: s is "old" where p wasn't cleared, and "new" where it was
+```
+
+`ret` and `throw` also count what `defer` frees: with `defer destroy p`, `ret s` of a String in p is an error, since the pool is freed after s is read. Return a copy: `ret clone(s)`. The result of a call isn't rejected there, because a function working in a scratch pool often returns a call's result that isn't in that pool. `try` copies the error it passes on when a deferred statement frees a pool.
+
+### Unsafe
+
+A few operations can break memory safety in ways the compiler can't check, so they must be marked `unsafe`, which says that the programmer has checked them. `unsafe expr` allows them in one expression, `unsafe` before a statement in that statement (`unsafe destroy p`), and `unsafe do` in a block. None of them changes the generated C. A deferred statement written inside `unsafe` stays unsafe: `unsafe defer destroy p` is `defer unsafe destroy p`.
+
+```plaintext
+fn reversed(values: <T>[]): <T>[] do
+    val out = unsafe new (<T>)[values.len]     // every element is written before it is read
+    for i, v in values do
+        out[values.len - 1 - i] = v
+    ret out
+
+unsafe do
+    buffer = new (<T>)[n]
+```
+
+`unsafe` binds like `try`: `unsafe a + b` is `(unsafe a) + b`. These operations need it:
+- `new (<T>)[n]` in a generic function, whatever T is (see [Generic Types](#generic-types)).
+- `destroy p` and `clearPool(p)` of a pool the function didn't make with `new Pool` or take over with `own` (see [Memory Pools](#memory-pools)).
+- `p[i]` of a pointer (`@T`) or a C array (`T[]c`, also `a.data[i]`), which have no length to check i against. `p[0]` is `@p` and needs nothing. `unsafe p[i] = v` makes the whole assignment unsafe.
+- Reading a field of a `union` that can hold a pointer (a pointer, String, array, function, or a record holding one), also to index or write through it (`u.p.x = 1`): the union may hold another of its fields, whose bits are no valid pointer. Writing the field itself is fine. Keep a field next to the union that says which one it holds, and read it with `unsafe u.p` once you have checked that.
+
+`as unsafe` (`!as`) is a C cast; see [Type Casting](#type-casting).
+
+### Finding Memory Errors
+
+What the compiler can't check (`unsafe`, `!as`, what C code does) can still use memory after its pool was freed. `-m` (`--check-memory`) builds the program to find that at runtime: every allocation is a `malloc` of its own, freed with its pool, and `run -m` builds with gcc's AddressSanitizer (`-fsanitize=address -g`), which stops the program at the first use of freed memory and says where, at eclang lines: where the memory was allocated, where its pool was freed, and where it was used.
+
+```
+java -jar target/eclang-0.1.0.jar run -m app.ec
+==12345==ERROR: AddressSanitizer: heap-use-after-free on address ...
+    #1 0x... in main_0 app.ec:16
+freed by thread T0 here:
+    #3 0x... in main_0 app.ec:10
+previously allocated by thread T0 here:
+    #3 0x... in main_0 app.ec:12
+```
+
+The program is slower, and uses more memory, so this is for testing. `-c file.ec -m` writes the C for it, to build with `-fsanitize=address` yourself. Memory that APR allocates itself (`apr_pstrdup`, ...) isn't checked one value at a time.
 
 ### APR Bindings
 
@@ -1608,10 +2054,10 @@ The standard library is bundled with the compiler. Each part is loaded with `use
 | `core:math.ec` | `math.` | C's math.h, constants, number helpers, checked arithmetic, random numbers |
 | `core:io.ec` | `io.` | `log`, console, command-line arguments, files, directories, paths, environment variables |
 | `core:time.ec` | `time.` | `Time`, `Duration`, a steady clock, calendar dates, ISO 8601 |
-| `core:thread.ec` | `thread.` | threads, `Mutex`, `RwLock`, `Cond`, `WaitGroup`, `Atomic`, `Channel` |
+| `core:thread.ec` | `thread.` | threads, `Mutex`, `RwLock`, `Cond`, `WaitGroup`, `Atomic`, `Queue`, `Channel` |
 | `core:os.ec` | `os.` | system information, environment variables, users, running programs, signals |
-| `core:array.ec` | top level | algorithms on arrays of any type: `sort`, `map`, `filter`, `reduce`, `binarySearch`, ... |
-| `core:structures.ec` | top level | data structures: `List`, `Map`, `Set`, `Deque`, `Heap` |
+| `core:array.ec` | top level | algorithms on arrays of any type: `sort`, `map`, `filter`, `reduce`, `zip`, `chunked`, `binarySearch`, ... |
+| `core:structures.ec` | top level | data structures: `List`, `Map`, `Set`, `Deque`, `Heap`, `SlotPool`, and `groupBy`/`associate` of an array |
 | `core:encoding.ec` | `encoding.` | hexadecimal, Base64 and URL escapes |
 | `core:net.ec` | `net.` | TCP clients and servers, UDP, DNS lookups, timeouts |
 | `core:fs.ec` | `fs.` | walking directory trees, glob patterns, temporary files, normalising paths, memory-mapped reads |
@@ -1660,37 +2106,75 @@ val total = numbers.reduce(0, fn (sum, x) = sum + x)
 people.sortBy(fn (a, b) = a.age < b.age)
 ```
 
-Also: `contains`, `indexOf`, `lastIndexOf`, `count`, `find`, `findIndex`, `any`, `all`, `binarySearch`, `filter`, `copyOf`, `joined`, `distinct`, `take`, `drop`, `fill`, `swap`, `reverse`, `isSorted`.
+Also: `contains`, `indexOf`, `lastIndexOf`, `count`, `find`, `findIndex`, `any`, `all`, `binarySearch`, `filter`, `fold` (the same as `reduce`), `copyOf`, `joined`, `distinct`, `take`, `drop`, `takeWhile`, `dropWhile`, `fill`, `swap`, `reverse`, `isSorted`, and:
+
+```plaintext
+val pairs = numbers.zip(names)                          // (Int, String)[], as long as the shorter
+for (i, x) in names.enumerate() do ...                  // or `for i, x in names do`
+val all = groups.flatten()                              // also flatMap
+val (even, odd) = numbers.partition(fn (x) = x % 2 == 0)
+val rows = numbers.chunked(3)                           // [[1, 2, 3], [4, 5]]: slices of numbers
+val runs = numbers.windowed(2)                          // [[1, 2], [2, 3], ...]; windowed(size, step)
+val totals = numbers.scan(0, fn (sum, x) = sum + x)     // [0, 1, 3, 6, ...]
+val age = people.sumOf(fn (p) = p.age)
+val oldest = people.maxBy(fn (p) = p.age)               // a Person?; also minBy
+```
 
 ### Data Structures
 
-`core:structures.ec` has `List<T>` (a growing array), `Map<K, V>` and `Set<T>` (hash tables that keep the order things were added in), `Deque<T>` (a queue with two ends) and `Heap<T>` (a priority queue). `list()`, `map()` and the like have no argument to tell what they will hold, so write the type where the result goes.
+`core:structures.ec` has `List<T>` (a growing array), `Map<K, V>` and `Set<T>` (hash tables that keep the order things were added in), `Deque<T>` (a queue with two ends), `Heap<T>` (a priority queue) and `SlotPool<T>` (values reached by key, for lifetimes that don't nest). `list()`, `map()` and the like have no argument to tell what they will hold, so write the type where the result goes.
 
 ```plaintext
 use "core:structures.ec"
 
-val names: @List<String> = list()
+val names: List<String> = list()
 names.push("Ada")
 for name in names do
     io.log(name)
-val numbers = listOf(3, 1, 2)                 // a @List<Int>
+val numbers = listOf(3, 1, 2)                 // a List<Int>
 
-val ages: @Map<String, Int> = map()
+val ages: Map<String, Int> = map()
 ages.put("Ada", 36)
 io.log(ages.get("Ada") ?? 0)                  // get gives an Int?
 for name, age in ages do                      // in the order they were added
     io.log("${name}: ${age}")
 
-val seen: @Set<Int> = set()
+val seen: Set<Int> = set()
 seen.add(7)
 for value in seen do
     io.log(value)
 
-val queue: @Deque<Int> = deque()
+val queue: Deque<Int> = deque()
 queue.pushBack(1)
 val next = queue.popFront() ?? 0
 
-val tasks: @Heap<Int> = heap(fn (a: Int, b: Int) = a < b)
+val tasks: Heap<Int> = heap(fn (a: Int, b: Int) = a < b)
+```
+
+`List`, `Map`, `Set` and `Deque` have `map`, `filter` and `fold`, which make a new structure of the same kind (`map` of a `Map` gives a `List`; its functions take a key and a value). A `Map` also has `mapValues`, `getOrPut` and `update`, and `core:structures.ec` makes a `Map` of an array:
+
+```plaintext
+val counts: Map<String, Int> = map()
+counts.update(word, 0, fn (n) = n + 1)        // the value of word, from 0 when it has none
+val byFirst: Map<Char, List<String>> = map()
+byFirst.getOrPut(word[0], fn () = list()).push(word)
+val byLength = words.groupBy(fn (w) = w.len)  // Map<Size, List<String>>
+val ages = people.associate(fn (p) = (p.name, p.age))
+val byName = people.associateBy(fn (p) = p.name)
+val m = toMap([("a", 1), ("b", 2)])
+```
+
+A `SlotPool<T>` is for values whose lifetimes don't nest, such as the nodes of a graph: it hands out a `SlotKey` for each value instead of a pointer. A value can be taken away at any time, and its slot is used again by a later `add`, but each slot counts how often it was used, so the key of a value that is gone finds nothing (`get` gives null), never another value or freed memory. A `SlotKey` holds no pointer, so it can go anywhere, a `thread.Queue` included.
+
+```plaintext
+val nodes: SlotPool<Node> = slotPool()
+val a = nodes.add(Node { "a", null })
+val b = nodes.add(Node { "b", a })             // a link is a key
+nodes.remove(a)
+val link = nodes.get(b)!.next!
+io.log(nodes.get(link) == null)                // true: a is gone, though its slot may hold another value
+for (key, node) in nodes do
+    io.log(node.name)
 ```
 
 A structure's memory is in the pool that was current when it was made (`list(p, 16)` and `map(p)` take a pool), and it grows there. It doesn't copy what is put in it, so Strings and pointers in it must live at least as long as it does; the compiler doesn't check that through these functions.
@@ -1714,7 +2198,7 @@ try load("count.txt") catch e do
 
 ### Math, IO, Time and Threads
 
-These are modules, so their names start with the module's: `math.sqrt(2.0)`, `io.readLines(path)`, `time.now()`, `thread.spawn(fn work, addrof(job))`.
+These are modules, so their names start with the module's: `math.sqrt(2.0)`, `io.readLines(path)`, `time.now()`, `thread.spawn(fn work, job)`.
 
 ```plaintext
 use "core:math.ec"
@@ -1725,7 +2209,7 @@ use "core:thread.ec"
 val r = math.hypot(3.0, 4.0)
 val product = try math.checkedMul(a, b)             // a RangeError instead of overflowing
 var rng = math.random(42)                            // the same numbers on every run
-val roll = math.nextInt(addrof(rng), 1, 7)
+val roll = math.nextInt(mut rng, 1, 7)
 
 for line in try io.readLines("data.txt") do
     io.println(line)
@@ -1734,13 +2218,27 @@ val start = time.instant()
 io.log(time.iso(time.now()))                            // 2024-02-29T12:30:00.25Z
 io.log(time.text(time.elapsed(start)))                  // 1.5ms
 
-val t = try thread.spawn(fn work, addrof(job))       // work(job: @Job) runs in the thread
+val job = new Job { 1 }
+val t = try thread.spawn(fn work, job)               // work(job: @Job) runs in the thread
 try thread.join(t)
 ```
 
 `io.args()` gives the program's command-line arguments and `io.programName()` its name. `core:encoding.ec` turns bytes into text and back: `encoding.base64(s)`, `try encoding.fromBase64(text)`, `encoding.hex(s)`, `encoding.urlEscape(s)`.
 
-A thread gets a pointer to its data, since lambdas don't capture variables: join it before that data's block ends. Each thread has its own current pool. A detached thread doesn't depend on the pool it was started in, and is stopped when the program ends. A thread can be joined or detached once; another try is an error. Locks, conditions and channels are allocated in the current pool and freed with it; lock calls that fail (only possible when they are used wrongly) stop the program.
+A thread runs a function, which can be a lambda that uses the `val`s around it (`thread.spawn(fn () = io.log(count))`), or gets a pointer to its data. Both are `escaping` (see [Lifetimes](#lifetimes)): the lambda can't use a `var` of the function starting the thread, which may return before the thread ends, and the data can't be a local variable (`addrof x`), nor be in a `pool do` block or a pool the function made, so allocate it with `new` in the current pool. A `thread.Thread` is a `resource` record (see [Resource Records](#resource-records)): dropping one, or never using a variable holding one, is an error, so each thread is joined or detached. Each thread has its own current pool. A detached thread doesn't depend on the pool it was started in, and is stopped when the program ends. A thread can be joined or detached once; another try is an error. Locks, conditions and channels are allocated in the current pool and freed with it; lock calls that fail (only possible when they are used wrongly) stop the program.
+
+What a thread is given is also `flat`, as in Goose, where threads share no memory and only values without pointers cross between them: the data, and what the lambda captures, may hold numbers, Bools, atoms, records and fixed-size arrays of those, and pointers to `sync` records (see [Sync Records](#sync-records)), but no Strings, arrays, Lists or pointers to other records, which this thread might free or change while the other reads them. A parameter of one's own can say the same: `fn hand(flat job: @Job)`. Share what threads change through a `sync rec` that guards its fields with a `thread.Mutex`, and hand work over in a `thread.Queue<T>`, which copies its items in and out, so neither thread keeps a pointer into the other's memory (its `send` takes a `flat` item). `unsafe thread.spawn(...)` takes the programmer's word that the data outlives the thread and isn't changed without a lock (`core:http.ec` shares its `Server` so). `thread.Channel` hands over pointers (`@Any`), which the compiler can't check.
+
+```plaintext
+rec Sample as
+    id: Int
+    value: Long
+
+val q: thread.Queue<Sample> = try thread.queue(16)
+try thread.send(q, Sample { 1, 42 })                  // a copy goes in
+val next = thread.receive(q)                          // a Sample?, null once closed and empty
+try thread.send(names, "${i}")                        // error: a String points to its text, which isn't copied
+```
 
 ### Terminals
 
@@ -1963,6 +2461,7 @@ log.error(problem)                               // a message, or any Error
 log.setLevel(:debug)                             // :debug, :info (the first setting), :warn, :error, :off
 try log.toFile("app.log")                        // adds to the end of the file
 log.setTimestamps(:local)                        // :utc (the first setting), :local, :none
+log.setLocations(true)                           // ... INFO  main.ec:12: started
 
 val db = log.logger("db")                        // settings of its own
 log.info(db, "connected")                        // ... INFO  db: connected
@@ -2017,10 +2516,10 @@ io.log(http.param(u, "x") ?? "?")                // 1
 io.log(http.text(try http.resolve(u, "../c")))   // http://example.com:8080/c
 ```
 
-A server is a function from a request to a response. It runs on a fixed number of threads, so handlers run at the same time; each request has its own pool. As functions can't capture variables, a handler reaches the program's data through `req.context`, from `ServerOptions`.
+A server is a function from a request to a response. It runs on a fixed number of threads, so handlers run at the same time; each request has its own pool. A handler can be a lambda that uses the values around it (`http.run(server, fn (req) = http.text(200, greeting))`); what several handlers change needs a lock (`core:thread.ec`). `req.context`, from `ServerOptions`, also reaches the program's data.
 
 ```plaintext
-fn hello(req: @http.Request): @http.Response do
+fn hello(req: http.Request): http.Response do
     ret http.text(404, "nothing here\n") if req.path != "/"
     val name = http.param(req.url, "name") ?? "world"
     ret http.text(200, "hello ${name}\n")
@@ -2035,16 +2534,16 @@ fn main(): Int throws Error do
 
 ### Tests
 
-`core:test.ec` has assertions that say what differs, and a small runner. A failed check doesn't end a test. Tests are listed by hand, because finding them needs compiler support.
+`core:test.ec` has assertions that say what differs, and a small runner. A failed check doesn't end a test, and its report names the line of the check: each assertion takes `at: Location = caller` (see [Default Values](#default-values-and-union-parameters)), which a helper making checks can pass on. Tests are listed by hand, because finding them needs compiler support.
 
 ```plaintext
 use "core:test.ec"
 
-fn addition(t: @test.Test) do
+fn addition(t: test.Test) do
     test.equal(t, 1 + 1, 2)
     test.equal(t, render(), "line one\nline two\n", "the rendered text")
 
-fn parsing(t: @test.Test) throws Error do        // an error that gets out fails the test
+fn parsing(t: test.Test) throws Error do        // an error that gets out fails the test
     test.equal(t, try parseInt("12"), 12)
 
 fn main(): Int do
@@ -2058,7 +2557,7 @@ Strings show a line by line diff, or a mark under the first difference. There ar
 
 ```plaintext
 FAIL addition
-  check 2, the rendered text: the strings differ (- expected, + actual)
+  check 2 (tests.ec:5), the rendered text: the strings differ (- expected, + actual)
       line one
     - line two
     + line 2

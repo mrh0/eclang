@@ -1,6 +1,7 @@
 package github.mrh0.eclang.ast.token.global
 
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.type.checkNewTypeName
 import github.mrh0.eclang.context.CompileData
@@ -18,7 +19,7 @@ import github.mrh0.ect2.Types
 class CEnum(val name: String, val cName: String, val members: List<Pair<String, String>>)
 
 /** `declare enum Name as` followed by lines `:atom = C_CONSTANT`. */
-class TGlobalEnumDeclare(location: Loc, val name: String, val atoms: List<String>, val constants: List<String>) : Tok(location) {
+class TGlobalEnumDeclare(location: Loc, val name: String, val atoms: List<String>, val constants: List<String>) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         checkNewTypeName(cd, location, name)
         val labels = atoms.map { it.drop(1).lowercase() }

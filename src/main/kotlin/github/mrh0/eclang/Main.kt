@@ -53,6 +53,8 @@ fun main(args: Array<String>) {
     options.addOption("nb", "no-bounds-check", false, "Doesn't check array and String indices at runtime")
     options.addOption("na", "no-arithmetic-check", false, "Doesn't check division by zero and shift counts at runtime")
     options.addOption("oc", "overflow-check", false, "Checks at runtime that the results of whole-number +, - and * fit their type")
+    options.addOption("r", "release", false, "Builds for release: leaves out `debug` statements and `debug` contracts")
+    options.addOption("m", "check-memory", false, "Builds to find memory errors at runtime: a malloc per allocation, for AddressSanitizer (-fsanitize=address), which `run` adds")
     options.addOption("l", "lib", false, "Compiles a library: no main function, C calls its `export fn`s")
     options.addOption(Option.builder("H").longOpt("header").argName("path").hasArg().desc("With --lib, writes the library's C header to this file").build())
     options.addOption("h", "help", false, "Prints help")
@@ -66,8 +68,8 @@ fun main(args: Array<String>) {
         println("ECLang 'Easy C Language' v$VERSION (C) MRH0 2026")
         println("Usage:")
         println("\teclang -c <file.ec> [-o out.c]   Compiles to C.")
-        println("\teclang run <file.ec> [-nb] [-na] [-oc] [-- args]   Compiles, builds with $CC and runs the program.")
-        println("\teclang lib <file.ec> [-o dir] [-s] [-k] [-nb] [-na] [-oc]   Builds a C library (libNAME.so, or libNAME.a with -s) and its header NAME.h.")
+        println("\teclang run <file.ec> [-nb] [-na] [-oc] [-r] [-m] [-- args]   Compiles, builds with $CC and runs the program.")
+        println("\teclang lib <file.ec> [-o dir] [-s] [-k] [-nb] [-na] [-oc] [-r]   Builds a C library (libNAME.so, or libNAME.a with -s) and its header NAME.h.")
         println("\teclang doc <file.ec>... [-o docs.md] [-p]   Writes Markdown documentation from the ecdocs.")
         println("\teclang check   Compiles on request over stdin, for editors.")
         println("Options:")
@@ -102,6 +104,9 @@ private const val NO_ABI_NOTE = "-Wno-psabi"
 /** What the generated C needs: `+` on an Int wraps, and a pointer to a child record is used as a pointer to its parent. */
 private val C_SEMANTICS = listOf("-fwrapv", "-fno-strict-aliasing")
 
+/** What `run --check-memory` builds with: AddressSanitizer, with the debug information that its reports name lines from. */
+private val CHECK_MEMORY = listOf("-g", "-fsanitize=address", "-fno-omit-frame-pointer")
+
 /** The linker flags for the libraries a program asks for with `use "lib:z"`. */
 private fun linkFlags(compiled: Compiler.Compilation) = compiled.cd.linkedLibraries.map { "-l$it" }
 
@@ -121,6 +126,8 @@ private fun compileOrExit(file: File, cmd: CommandLine, library: String? = null)
         it.boundsChecks = !cmd.hasOption("nb")
         it.arithmeticChecks = !cmd.hasOption("na")
         it.overflowChecks = cmd.hasOption("oc")
+        it.release = cmd.hasOption("r")
+        it.checkMemory = cmd.hasOption("m")
     }
     val cd = result.cd
     cd.warnings.forEach { System.err.println("${it.location}: warning: ${it.message}") }
@@ -148,13 +155,15 @@ private fun run(allArgs: List<String>): Int {
     options.addOption("nb", "no-bounds-check", false, "Doesn't check array and String indices at runtime")
     options.addOption("na", "no-arithmetic-check", false, "Doesn't check division by zero and shift counts at runtime")
     options.addOption("oc", "overflow-check", false, "Checks at runtime that the results of whole-number +, - and * fit their type")
+    options.addOption("r", "release", false, "Builds for release: leaves out `debug` statements and `debug` contracts")
+    options.addOption("m", "check-memory", false, "Builds to find memory errors at runtime: a malloc per allocation, for AddressSanitizer (-fsanitize=address), which `run` adds")
     options.addOption("d", "debug", false, "Prints debug info")
     options.addOption(Option.builder("k").longOpt("keep").argName("dir").hasArg().desc("Keeps the C file and executable in this directory").build())
     val cmd = try { DefaultParser().parse(options, args.toTypedArray()) } catch (e: ParseException) {
         System.err.println("error: ${e.message}"); return 2
     }
     val path = cmd.argList.singleOrNull() ?: run {
-        System.err.println("Usage: eclang run <file.ec> [-nb] [-na] [-oc] [-k dir] [-- program arguments]")
+        System.err.println("Usage: eclang run <file.ec> [-nb] [-na] [-oc] [-r] [-m] [-k dir] [-- program arguments]")
         return 2
     }
     DEBUG = cmd.hasOption("d")
@@ -168,7 +177,8 @@ private fun run(allArgs: List<String>): Int {
     val exe = File(dir, name)
     val keep = cmd.hasOption("k")
     try {
-        val gcc = listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + listOf(source.path, "-o", exe.path) + linkFlags(compiled) + aprFlags() + "-lm"
+        val checkMemory = cmd.hasOption("m")
+        val gcc = listOf(CC, NO_ABI_NOTE) + C_SEMANTICS + (if (checkMemory) CHECK_MEMORY else listOf()) + listOf(source.path, "-o", exe.path) + linkFlags(compiled) + aprFlags() + "-lm"
         if (DEBUG) println(gcc.joinToString(" "))
         val built = try { ProcessBuilder(gcc).inheritIO().start().waitFor() } catch (e: IOException) {
             System.err.println("error: couldn't start the C compiler '$CC' (${e.message}). Install gcc, or set CC to your C compiler.")
@@ -176,10 +186,14 @@ private fun run(allArgs: List<String>): Int {
         }
         if (built != 0) {
             val libraries = if (compiled.cd.linkedLibraries.isEmpty()) "" else " If it says a library wasn't found, install ${compiled.cd.linkedLibraries.joinToString(", ")} or add its directory to LIBRARY_PATH."
-            System.err.println("error: the C compiler failed on the generated code${if (keep) " ($source)" else ""}. This is a bug in eclang if the program compiled without errors; please report it.$libraries")
+            val staticAsserts = if (compiled.cd.staticAsserts == 0) "" else " If it says a static assertion failed, that is a `const assert` only C could check: its message says which."
+            System.err.println("error: the C compiler failed on the generated code${if (keep) " ($source)" else ""}.$staticAsserts This is a bug in eclang if the program compiled without errors; please report it.$libraries")
             return 1
         }
-        return ProcessBuilder(listOf(exe.path) + programArgs).inheritIO().start().waitFor()
+        val program = ProcessBuilder(listOf(exe.path) + programArgs).inheritIO()
+        // Pools are freed by the program, or when it ends; what is left then isn't a leak worth reporting.
+        if (checkMemory) program.environment().putIfAbsent("ASAN_OPTIONS", "detect_leaks=0")
+        return program.start().waitFor()
     } finally {
         if (!keep) { source.delete(); exe.delete(); dir.delete() }
     }
@@ -197,6 +211,7 @@ private fun lib(args: List<String>): Int {
     options.addOption("nb", "no-bounds-check", false, "Doesn't check array and String indices at runtime")
     options.addOption("na", "no-arithmetic-check", false, "Doesn't check division by zero and shift counts at runtime")
     options.addOption("oc", "overflow-check", false, "Checks at runtime that the results of whole-number +, - and * fit their type")
+    options.addOption("r", "release", false, "Builds for release: leaves out `debug` statements and `debug` contracts")
     options.addOption("d", "debug", false, "Prints debug info")
     options.addOption("s", "static", false, "Builds a static library")
     options.addOption("k", "keep", false, "Keeps the C file")
@@ -205,7 +220,7 @@ private fun lib(args: List<String>): Int {
         System.err.println("error: ${e.message}"); return 2
     }
     val path = cmd.argList.singleOrNull() ?: run {
-        System.err.println("Usage: eclang lib <file.ec> [-o dir] [-s] [-k] [-nb] [-na] [-oc]")
+        System.err.println("Usage: eclang lib <file.ec> [-o dir] [-s] [-k] [-nb] [-na] [-oc] [-r]")
         return 2
     }
     DEBUG = cmd.hasOption("d")

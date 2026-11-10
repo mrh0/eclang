@@ -13,7 +13,7 @@ declare rec apr_global_mutex_t
 ### <a id="apr_global_mutex_create"></a>`apr_global_mutex_create`
 
 ```ec
-fn apr_global_mutex_create(mutex: @@apr_global_mutex_t, fname: CString, mech: apr_lockmech_e, pool: @apr_pool_t): apr_status_t
+fn apr_global_mutex_create(out mutex: @apr_global_mutex_t, fname: CString, mech: apr_lockmech_e, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_global_mutex_create`.*
@@ -21,7 +21,7 @@ fn apr_global_mutex_create(mutex: @@apr_global_mutex_t, fname: CString, mech: ap
 ### <a id="apr_global_mutex_child_init"></a>`apr_global_mutex_child_init`
 
 ```ec
-fn apr_global_mutex_child_init(mutex: @@apr_global_mutex_t, fname: CString, pool: @apr_pool_t): apr_status_t
+fn apr_global_mutex_child_init(mut mutex: @apr_global_mutex_t, fname: CString, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_global_mutex_child_init`.*

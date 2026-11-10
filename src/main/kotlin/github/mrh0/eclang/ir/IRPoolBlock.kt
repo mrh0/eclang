@@ -39,6 +39,7 @@ class IRPoolBlock(location: Loc, private val parent: String, private val name: S
 /** Leaving a `pool do` block (at its end, or on `ret`, `break`, ...): frees its pool [pool] and makes [parent] current again. */
 class IRPoolLeave(location: Loc, private val parent: String, private val pool: String) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
+        IRBlock.lineOf(sb, this) // what the pool's memory was freed by, under `--check-memory`: the `pool do` line
         sb.putStatement("apr_pool_destroy($pool)")
         sb.endStatement()
         sb.putStatement("__ec_pool = $parent")

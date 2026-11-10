@@ -2,7 +2,7 @@ use "core:io.ec"
 use "core:structures.ec"
 use "lib/countdown.ec"
 
-rec Count as
+mut rec Count as
     at: Int
     end: Int
 
@@ -24,7 +24,7 @@ fn iter(l: Letters): String = l.text
 rec Grid as
     size: Int
 
-rec Cells as
+mut rec Cells as
     at: Int
     size: Int
 
@@ -36,7 +36,7 @@ fn next(c: @Cells): (Int, Int)? do
     c.at += 1
     ret (c.at, c.at * c.at)
 
-rec Box<T> as
+mut rec Box<T> as
     value: T
     full: Bool
 
@@ -144,7 +144,7 @@ fn main() do
         io.log(name)
     for i, name in names do
         io.log("${i} ${name}")
-    val maybe: @List<Int?> = list()
+    val maybe: List<Int?> = list()
     maybe.push(1)
     maybe.push(null)
     maybe.push(3)
@@ -153,7 +153,7 @@ fn main() do
     for i, pair in listOf((1, 2), (3, 4)) do
         io.log("${i} ${pair}")
 
-    val ages: @Map<String, Int> = map()
+    val ages: Map<String, Int> = map()
     ages.put("Ada", 36)
     ages.put("Bob", 41)
     ages.put("Cid", 7)
@@ -177,7 +177,7 @@ fn main() do
     for i, v in seen do
         io.log("${i} ${v}")
 
-    val queue: @Deque<Int> = deque()
+    val queue: Deque<Int> = deque()
     queue.pushBack(2)
     queue.pushBack(3)
     queue.pushFront(1)

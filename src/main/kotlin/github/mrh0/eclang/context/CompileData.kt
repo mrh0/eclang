@@ -13,6 +13,8 @@ import github.mrh0.eclang.error.EcTypeMismatchError
 import github.mrh0.eclang.error.EcUnknownTypeError
 import github.mrh0.eclang.ast.token.global.CEnum
 import github.mrh0.eclang.ir.IIR
+import github.mrh0.eclang.ir.IRRaw
+import github.mrh0.eclang.ast.token.TNamed
 import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.eclang.ir.IRConvert
 import github.mrh0.eclang.ir.IRTempDeclare
@@ -34,10 +36,16 @@ class CompileData(val types: TypeContext = TypeContext()) {
     private var currentLocalContextBuilder = ContextBuilder("__top__")
     var genericContext: Map<String, Type>? = null
 
+    /** While a function's signature is compiled (Functions.declare): the type parameters written `<mut T>` in it. */
+    var mutTypeParams: MutableSet<String>? = null
+
     /** How many generic records are being made, one inside the other (see TTypeRecord). */
     var instantiating = 0
 
     val functions = Functions(this)
+
+    /** What functions keep of their arguments, for Lifetimes to follow memory through calls. */
+    val escapes = Escapes()
 
     /** The atoms (`:name`) the program uses. */
     val atoms = Atoms()
@@ -75,6 +83,18 @@ class CompileData(val types: TypeContext = TypeContext()) {
     /** Whether `+`, `-` and `*` on whole numbers stop the program when the result doesn't fit (`--overflow-check`). */
     var overflowChecks = false
 
+    /** A release build (`--release`): `debug` statements and `debug requires`/`ensures` are left out of the program (see TDebug), though still checked. */
+    var release = false
+
+    /**
+     * `--check-memory`: every allocation is a `malloc` of its own, freed with its pool, and statements carry `#line`s, so that a
+     * build with AddressSanitizer (`-fsanitize=address`) reports a use of freed pool memory at its eclang line (see IRProgram).
+     */
+    var checkMemory = false
+
+    /** How many `const assert`s only C can check (`_Static_assert`, see TConstAssert), for the message when the C compiler fails. */
+    var staticAsserts = 0
+
     fun moduleNamed(name: String): Module = modules.getOrPut(name) { Module(name) }
     fun findModule(name: String): Module? = modules[name]?.takeIf { !it.isTopLevel }
 
@@ -93,17 +113,79 @@ class CompileData(val types: TypeContext = TypeContext()) {
     fun visibleModules(): List<Module> = if (module.isTopLevel) listOf(module) else listOf(module, topLevel)
 
     /** The value called [name]: a local, then a global of this module, then a global of the top level. */
-    fun findVar(name: String): IVar? = ctx().getRaw(name) ?: visibleModules().firstNotNullOfOrNull { m -> m.globals.getRaw(name)?.takeIf { m === module || name !in m.privateGlobals } }?.also { functions.useGlobal(it.cName()) }
+    fun findVar(name: String): IVar? = ctx().getRaw(name) ?: capture(name)
+        ?: visibleModules().firstNotNullOfOrNull { m -> m.globals.getRaw(name)?.takeIf { m === module || name !in m.privateGlobals } }?.also { functions.useGlobal(it.cName()) }
 
-    fun getVar(location: Loc, name: String): IVar = findVar(name) ?: throw EcError(location, capturedProblem(name)
-        ?: "'$name' is not defined.${whereElse(name) { it.globals.getRaw(name) != null }}")
+    fun getVar(location: Loc, name: String): IVar = findVar(name) ?: throw EcError(location, "'$name' is not defined.${whereElse(name) { it.globals.getRaw(name) != null }}" +
+        (if (name == "it") " `it` is the value before the `|>` in a pipe stage (`x |> it * 2`); outside one it is an ordinary name, and no variable has it." else "") +
+        (ctx().stack.debugDefined[name]?.let { " It is defined in the `debug` statement at line ${it.getLine()}, so only that statement can use it: a release build leaves it out. Use it inside that statement (`debug do` makes a block), or define it outside." } ?: ""))
 
-    /** The error for using [name] inside a lambda when it is a local of a function around it, or null. */
-    private fun capturedProblem(name: String): String? {
-        if (enclosing.none { it.getRaw(name) != null }) return null
-        return "A lambda can't use '$name', a local variable of the function around it (lambdas don't capture variables yet). " +
-            "Pass it as a parameter instead, e.g. `fn (x: Int, $name: ...) = ...`, or make it a global."
+    /** The lambda whose body is being compiled, or null (see [Closure]). */
+    var closure: Closure? = null
+        private set
+
+    /** Compiles [compile] (the body of a lambda, inside [isolated]) with [c] as the lambda it is in. */
+    fun <T> inClosure(c: Closure, compile: () -> T): T {
+        val saved = closure
+        closure = c
+        try { return compile() } finally { closure = saved }
     }
+
+    /**
+     * [name] inside a lambda, when it is a local of the function (or lambda) around it: the lambda captures it, and from then
+     * on [name] is the copy in its closure (`__ec_env->name`) or, for a `var`, the variable itself through a pointer
+     * (`(*__ec_env->name)`). The value the closure starts with is compiled here, where the lambda is: in the function around it.
+     */
+    private fun capture(name: String): IVar? {
+        val c = closure ?: return null
+        c.captures[name]?.let { return it.inner }
+        val outer = outside(c) { ctx().getRaw(name) ?: capture(name) } ?: return null
+        if (outer is github.mrh0.eclang.context.state.CompileTimeConstant) return outer // a local `const` is its value
+        if (c.inC) throw EcError(c.location, "This lambda is passed to C as a plain function pointer, which can't carry variables, so it can't use '$name', a local variable of the function around it. " +
+            "Pass what it needs through the `@Any` data argument that such C functions take, or use a global.")
+        if (c.outerFunction?.params?.any { it.name == name && it.isMut } == true)
+            throw EcError(c.location, "A lambda can't use '$name', a `mut` parameter: that is the caller's variable, which the lambda could outlive. Copy it first (`val copy = $name`) and use the copy in the lambda.")
+        val base = (outer as? github.mrh0.eclang.context.state.NarrowedVar)?.base ?: outer
+        val field = localCName(name)
+        val captured = outside(c) {
+            Lifetimes.checkAlive(this, c.location, name, name)
+            unusedResources.remove(name)
+            if (base.canAssign()) {
+                // A `var` is shared: the closure points to it, so a change made on either side is seen on the other.
+                if (name in c.changes) {
+                    ctx().forget(name)
+                    changedByCalls += name
+                    changedByClosures.putIfAbsent(name, c.location)
+                }
+                Closure.Capture(name, field, base.getType(), true, github.mrh0.eclang.ir.data.IRAddressOf(c.location, base.toIR(c.location, this, Types.None)),
+                    github.mrh0.eclang.ast.token.op.TAddressOf(c.location, github.mrh0.eclang.ast.token.TNamed(c.location, name)),
+                    github.mrh0.eclang.context.state.Variable(name, base.getType(), "(*__ec_env->$field)"))
+            } else {
+                // A `val` or parameter never changes, so a copy is the same; it keeps what checks before the lambda proved.
+                Closure.Capture(name, field, outer.getType(), false, outer.toIR(c.location, this, Types.None), github.mrh0.eclang.ast.token.TNamed(c.location, name),
+                    github.mrh0.eclang.context.state.Constant(name, outer.getType(), "__ec_env->$field", base.kind()))
+            }
+        }
+        c.captures[name] = captured
+        c.escapeParams += Escapes.capture(name)
+        if (captured.byReference) c.escapeParams += Escapes.captureValue(name)
+        return captured.inner
+    }
+
+    /** Runs [compile] where the lambda [c] is written: in the function (or lambda) around it. */
+    private fun <T> outside(c: Closure, compile: CompileData.() -> T): T {
+        val saved = Triple(currentLocalContextBuilder, function, genericContext)
+        currentLocalContextBuilder = c.outer; function = c.outerFunction; genericContext = c.outerGenerics; closure = c.parent
+        try { return compile() } finally {
+            currentLocalContextBuilder = saved.first; function = saved.second; genericContext = saved.third; closure = c
+        }
+    }
+
+    /**
+     * The locals of the function being compiled that a closure created so far may change (it uses them with `mut x`, `addrof x`
+     * or as the receiver of a method), with where: like `addrof x`, a check of them before a call proves nothing after it.
+     */
+    var changedByClosures: MutableMap<String, Loc> = HashMap()
 
     /** `other.name`: the global [name] of module [m]. */
     fun getVarIn(location: Loc, m: Module, name: String): IVar = m.globals.getRaw(name)?.also {
@@ -174,9 +256,11 @@ class CompileData(val types: TypeContext = TypeContext()) {
 
     /**
      * Compiles [compile] (a lambda's body) as a separate function: with its own scope, outside every loop, and with
-     * nothing to hoist into, then restores the state of the function around it.
+     * nothing to hoist into, then restores the state of the function around it. With [keepTemps], code that runs where
+     * it is written (the default of a record field) can still declare temporaries before the statement ([declareTemp]),
+     * which [ArgumentOrder] sets in place.
      */
-    fun <T> isolated(compile: () -> T): T {
+    fun <T> isolated(keepTemps: Boolean = false, compile: () -> T): T {
         val (savedContext, savedGenerics, savedFunction) = Triple(currentLocalContextBuilder, genericContext, function)
         val (savedHoisted, savedBarrier) = hoisted to hoistBarrier
         val savedLiteralHome = literalHome
@@ -184,21 +268,27 @@ class CompileData(val types: TypeContext = TypeContext()) {
         val savedLoops = ArrayList(loops)
         val savedPipes = ArrayList(pipeValues)
         val savedPools = ArrayList(poolBlocks)
+        val savedLoopPools = ArrayList(loopPools)
+        val savedClosure = closure
+        closure = null
         enclosing += currentLocalContextBuilder
-        loops.clear(); pipeValues.clear(); poolBlocks.clear()
+        loops.clear(); pipeValues.clear(); poolBlocks.clear(); loopPools.clear()
         val savedGlobalTemps = globalTemps
-        function = null; hoisted = null; hoistBarrier = null; literalHome = null; globalTemps = null
+        function = null; hoisted = null; hoistBarrier = null; literalHome = null
+        globalTemps = if (keepTemps) savedHoisted ?: savedGlobalTemps else null
         try {
             return compile()
         } finally {
             globalTemps = savedGlobalTemps
             enclosing.removeAt(enclosing.size - 1)
+            closure = savedClosure
             currentLocalContextBuilder = savedContext; genericContext = savedGenerics; function = savedFunction
             hoisted = savedHoisted; hoistBarrier = savedBarrier; literalHome = savedLiteralHome
             effects = savedEffects // a lambda's body doesn't run where it is written
             loops.clear(); loops += savedLoops
             pipeValues.clear(); pipeValues += savedPipes
             poolBlocks.clear(); poolBlocks += savedPools
+            loopPools.clear(); loopPools += savedLoopPools
         }
     }
 
@@ -216,6 +306,35 @@ class CompileData(val types: TypeContext = TypeContext()) {
 
     /** The C variable holding the pool that was current before the outermost `pool do` block, while in one. */
     var poolEntry: String? = null
+
+    /** The pool that was current when the function (or lambda) was called, as C: where `keep` copies to, and `try` copies an error to. */
+    fun entryPool(location: Loc): IIR = entryPoolOf(location, if (poolBlocks.isNotEmpty()) poolEntry!! else TNamed.CURRENT_POOL)
+
+    /** [otherwise], or, around the loops whose rounds get a pool of their own (see LoopPools), the pool around the outermost. */
+    fun entryPoolOf(location: Loc, otherwise: String): IIR = if (loopPools.isEmpty()) IRRaw(location, otherwise) else LoopPools.IREntryPool(location, loopPools.toList(), otherwise)
+
+    /** The program's `main`, whose current pool, outside `pool do` blocks, lives until the program ends (see [LoopPools]). */
+    var programMain: Overload? = null
+
+    /** The loops of `main` around the code being compiled that [LoopPools] looks at, outermost first. */
+    val loopPools = ArrayList<LoopPools.Loop>()
+
+    /** Every loop whose rounds [LoopPools] may give a pool of their own, in the order they were compiled. */
+    val roundLoops = ArrayList<LoopPools.Loop>()
+
+    /** What allocates in the current pool, so far (see [LoopPools]). */
+    val allocations = ArrayList<LoopPools.Allocation>()
+
+    /**
+     * Notes that the code compiled at [location] ([what]) allocates in the current pool; with [callee], it calls that function,
+     * which may. In a `pool do` block it allocates in the block's pool, which is freed with it.
+     */
+    fun noteAllocation(location: Loc, what: String, callee: github.mrh0.eclang.ast.token.TBlock? = null) {
+        if (poolBlocks.isNotEmpty() || ctx().stack.imagining) return
+        val body = if (enclosing.isEmpty()) function?.body else null
+        if (body == null && loopPools.isEmpty()) return
+        allocations += LoopPools.Allocation(location, what, body, loopPools.reversed(), callee)
+    }
 
     /** The values `it` stands for in the `|>` stages being compiled, innermost last. */
     val pipeValues = ArrayList<Pair<Type, IIR>>()
@@ -238,11 +357,37 @@ class CompileData(val types: TypeContext = TypeContext()) {
      */
     var functionHasErrors = false
 
+    /** How many `unsafe` expressions or blocks the code being compiled is in (see [TUnsafe]); 0 at the start of each function. */
+    var unsafeDepth = 0
+
+    /** Whether the code being compiled is inside `unsafe`, so operations the compiler can't check are allowed. */
+    val isUnsafe get() = unsafeDepth > 0
+
     /**
      * The locals of the function being compiled whose address is taken somewhere in it (`addrof x`), with where.
      * A write through such a pointer changes the variable behind flow typing's back, so they aren't narrowed.
      */
     var addressTaken: Map<String, Loc> = mapOf()
+
+    /**
+     * The locals of the function being compiled that a call has been given to change so far (`f(mut x)`, `x.f()` with a `mut`
+     * receiver, see `MutPlace`): ArgumentOrder can't take them as fixed, since a call among the same arguments may change them.
+     */
+    var changedByCalls: MutableSet<String> = HashSet()
+
+    /**
+     * The locals of the function being compiled that hold a `resource` record (a `thread.Thread`) and haven't been read yet, with
+     * where they were defined; each must be read before the function ends (see [resourceRecord]).
+     */
+    val unusedResources = LinkedHashMap<String, Pair<Loc, github.mrh0.ect2.Record>>()
+
+    /** The `resource` record [type] is (`resource rec Thread`), or null: a value of it can't be dropped. */
+    fun resourceRecord(type: Type): github.mrh0.ect2.Record? = (type as? github.mrh0.ect2.Record)?.takeIf { it.layout.isResource }
+
+    /** Why dropping a value of [record], a `resource` record, is an error, with what to do. [what] says how it is dropped. */
+    fun resourceError(location: Loc, record: github.mrh0.ect2.Record, what: String): EcError = EcError(location,
+        "$what, but ${record.name} is a `resource`: each one has to be passed on, as it holds something that must be ended. " +
+            if (record.name == "Thread") "Join it (`try thread.join(t)`) or let it run on its own (`try thread.detach(t)`)." else "Store it and give it to the function that ends it.")
 
     /** The checks that already warned that they don't narrow an address-taken local (a condition is analyzed more than once). */
     val warnedAliased = HashSet<String>()
@@ -294,7 +439,7 @@ class CompileData(val types: TypeContext = TypeContext()) {
      * A compiled loop body: [value], the label `break` jumps to (null when no `break` uses one), the label `continue`
      * from an inner loop jumps to (likewise), and whether any `break` leaves the loop.
      */
-    class LoopBody<T>(val value: T, val label: String?, val nextLabel: String?, val breaks: Boolean)
+    class LoopBody<T>(val value: T, val label: String?, val nextLabel: String?, val breaks: Boolean, val round: LoopPools.Loop? = null)
 
     /** Compiles a loop body. [hasElse]: the loop has an `else` block. [name]: its label, if it has one. */
     fun <T> loop(location: Loc, hasElse: Boolean, name: String?, compile: () -> T): LoopBody<T> {
@@ -302,13 +447,19 @@ class CompileData(val types: TypeContext = TypeContext()) {
         val id = labelCounter++
         val frame = LoopFrame(name, "__ec_loop_end$id", "__ec_loop_next$id", hasElse, ctx().depth())
         loops += frame
+        // A round of a loop outside `pool do` starts in the scope the body opens, and may get a pool of its own; see LoopPools.
+        val loopPool = if (function != null && enclosing.isEmpty() && poolBlocks.isEmpty())
+            LoopPools.Loop(location, ctx().depth() + 1, temp().replace("tmp", "outer"), temp().replace("tmp", "round")).also { loopPools += it; roundLoops += it } else null
+        val stack = ctx().stack
+        if (loopPool != null) stack.pendingRound = ContextStack.PendingRound(loopPool.depth, location, LoopPools.RoundLeave(location, loopPool)) { loopPool.registered = true }
         try {
             val value = compile()
             Lifetimes.loopCompiled(this)
-            return LoopBody(value, frame.end.takeIf { it in usedLabels }, frame.next.takeIf { it in usedLabels }, frame.breaks)
+            return LoopBody(value, frame.end.takeIf { it in usedLabels }, frame.next.takeIf { it in usedLabels }, frame.breaks, loopPool)
         } finally {
             loops.removeAt(loops.size - 1)
             Lifetimes.loopLeft(this)
+            if (loopPool != null) { loopPools.remove(loopPool); stack.pendingRound = null }
         }
     }
 
@@ -359,8 +510,8 @@ class CompileData(val types: TypeContext = TypeContext()) {
      * something else when the next round starts, so what flow typing knew about them no longer holds.
      */
     fun forgetAssigned(location: Loc, assigned: Set<String>) {
-        assigned.forEach { ctx().forget(Util.testIdentifier(location, it)) }
-        Lifetimes.loopKills(this, location, assigned)
+        // `@p`: what the `mut` parameter p points to (see Narrowing.local).
+        assigned.forEach { ctx().forget(if (it.startsWith("@")) "@" + Util.testIdentifier(location, it.drop(1)) else Util.testIdentifier(location, it)) }
         Lifetimes.loopStarts(this)
     }
 
@@ -456,7 +607,7 @@ class CompileData(val types: TypeContext = TypeContext()) {
         (hoisted ?: globalTemps ?: throw EcError(location, "This needs a temporary variable, so it can only be used inside a function body.")).add(IRTempDeclare(location, name, type))
     }
 
-    /** False where there is nowhere to declare a temporary, as in the default of a record field. */
+    /** False where there is nowhere to declare a temporary: outside function bodies and the values of globals. */
     val canDeclareTemps get() = hoisted != null || globalTemps != null
 
     /** The temporaries of the global being compiled, see [withGlobalTemps]. */

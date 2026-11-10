@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -21,6 +22,8 @@ import github.mrh0.ect2.Union
  * (`val n = parse(s) ?? 0`). b is only evaluated when needed.
  */
 class TNullishCoalescing(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(left, right)
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val (lt, lir) = left.process(cd, hint)
         if (lt is Result) {

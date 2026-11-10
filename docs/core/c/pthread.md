@@ -13,7 +13,7 @@ declare type pthread_t as ULong
 ### <a id="pthread_create"></a>`pthread_create`
 
 ```ec
-fn pthread_create(thread: @pthread_t, attr: @Any?, start: (@Any) => @Any?, arg: @Any): Int
+fn pthread_create(out thread: pthread_t, attr: @Any?, start: (@Any) => @Any?, arg: @Any): Int
 ```
 
 *Binds the C function `pthread_create`.*

@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.branch.TTailIf
 import github.mrh0.eclang.ast.token.function.call.TStatementCall
@@ -15,7 +16,7 @@ import github.mrh0.eclang.ir.IRBlock
 import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
-class TBlock(location: Loc, val statements: List<ITok>) : Tok(location) {
+class TBlock(location: Loc, val statements: List<ITok>) : NonValueTok(location) {
     /** For a function body: the locals whose address is taken in it (`TFunc.addressTaken`). */
     var addressTaken: Map<String, Loc> = mapOf()
 
@@ -29,6 +30,18 @@ class TBlock(location: Loc, val statements: List<ITok>) : Tok(location) {
      */
     private fun isIndependent(statement: ITok) = statement is TStatementCall || statement is TStatement ||
         statement is TStatementAssign || (statement is TDestructure && statement.assigns) || (statement is TTailIf && !statement.isConditional)
+
+    /**
+     * [e], saying why a `debug assert` didn't help when one narrowed a variable before: a release build leaves it out, so the
+     * code after it can't rely on it. Only for errors about null or a union, which is what a narrowing would have fixed.
+     */
+    private fun debugHint(cd: CompileData, e: EcError): EcError {
+        val narrowed = cd.ctx().stack.debugNarrowed
+        if (narrowed.isEmpty() || !(e.reason.contains("null") || e.reason.contains("?") || e.reason.contains("|"))) return e
+        val (name, at) = narrowed.entries.first()
+        return EcError(e.location, e.reason + " Note: the `debug` check of '$name' at line ${at.getLine()} doesn't count here, because a release build leaves it out. " +
+            "Make it an `assert` to check it in every build.")
+    }
 
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         cd.ctx().push()
@@ -47,7 +60,7 @@ class TBlock(location: Loc, val statements: List<ITok>) : Tok(location) {
                 irs += hoisted
                 irs += ir
             } catch (e: EcError) {
-                cd.report(e)
+                cd.report(debugHint(cd, e))
                 while (cd.ctx().depth() > depth) cd.ctx().pop()
                 // The rest of the block may need what the statement would have declared or narrowed; checking it
                 // would mostly report follow-up errors. The block is then treated as leaving here.
@@ -59,7 +72,8 @@ class TBlock(location: Loc, val statements: List<ITok>) : Tok(location) {
         }
         val diverges = cd.ctx().hasReturned()
         val deferredIr = if (!diverges) cd.compileDeferred(TErrDefer.normal(cd.ctx().getNewDeferred()).reversed()) else listOf()
-        cd.ctx().pop()
+        // A block's statements run whenever the code around it gets here (a branch pushes a scope of its own).
+        cd.ctx().stack.pop(ran = true)
         return Types.None to IRBlock(location, irs, deferredIr, diverges)
     }
 }

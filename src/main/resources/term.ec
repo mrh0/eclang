@@ -65,13 +65,13 @@ rec Dimensions as
 /** The APR file of stdin. Opened once, in the root pool, because it is used from any pool. */
 priv fn openStdin(): @apr_file_t do
     var f: @apr_file_t? = null
-    apr_file_open_stdin(addrof(f!), pool)
+    apr_file_open_stdin(mut f, pool)
     ret f!
 
 /** The APR file of stdout. It has no buffer of its own. */
 priv fn openStdout(): @apr_file_t do
     var f: @apr_file_t? = null
-    apr_file_open_stdout(addrof(f!), pool)
+    apr_file_open_stdout(mut f, pool)
     ret f!
 
 priv val input = openStdin()
@@ -86,7 +86,7 @@ fn isInteractive(): Bool = isatty(STDIN_FILENO) == 1 and isTerminal()
 /** The value of the environment variable `name`, or null when it isn't set. */
 priv fn envValue(name: CString): String? do
     var value: CString = ""c
-    ret null if apr_env_get(addrof(value), name, pool) != APR_SUCCESS
+    ret null if apr_env_get(mut value, name, pool) != APR_SUCCESS
     ret fromC(value)
 
 /** The whole number in the environment variable `name`, or `otherwise`. */
@@ -107,7 +107,7 @@ fn size(): Dimensions do
 priv fn emit(s: String) do
     fflush(stdout)
     var written: apr_size_t = 0
-    apr_file_write_full(output, s.data, s.len, addrof(written))
+    apr_file_write_full(output, s.data, s.len, mut written)
 
 // ---------------------------------------------------------------------------------------------------
 // Colours and styles
@@ -208,7 +208,7 @@ fn colorsEnabled(): Bool do
     ret true
 
 /** Adds the codes of a colour: `base` is 30 for text, 40 for background. */
-priv fn appendColor(b: @StringBuilder, c: Color, base: Int) do
+priv fn appendColor(b: StringBuilder, c: Color, base: Int) do
     if c.code >= RGB_FLAG do
         b.append(";")
         b.append((base + 8) as Long)
@@ -231,7 +231,7 @@ priv fn appendColor(b: @StringBuilder, c: Color, base: Int) do
         b.append((base + c.code - 1) as Long)
 
 /** Adds the escape sequence that selects `style`, whatever was selected before. */
-priv fn appendStyle(b: @StringBuilder, style: Style) do
+priv fn appendStyle(b: StringBuilder, style: Style) do
     b.append("\x1b[0")
     b.append(";1") if style.bold
     b.append(";2") if style.dim
@@ -428,7 +428,7 @@ priv fn undoModes() do
 priv fn redoModes() do
     var settings = original
     if rawActive do
-        applyRaw(addrof(settings), rawKeepsSignals)
+        applyRaw(mut settings, rawKeepsSignals)
         tcsetattr(STDIN_FILENO, TCSADRAIN, addrof(settings))
     writeDirect("\x1b[?1049h") if fullscreenActive
     writeDirect("\x1b[?25l") if cursorHidden or fullscreenActive
@@ -487,8 +487,8 @@ priv fn releaseHandlers() do
 priv var rawKeepsSignals = true
 
 /** Changes `settings` to raw mode, keeping "\n" as a line break for what `io.log` prints. */
-priv fn applyRaw(settings: @termios, keepSignals: Bool) do
-    cfmakeraw(settings)
+priv fn applyRaw(mut settings: termios, keepSignals: Bool) do
+    cfmakeraw(mut settings)
     settings.c_oflag = settings.c_oflag | OPOST
     if keepSignals do
         settings.c_lflag = settings.c_lflag | ISIG
@@ -502,9 +502,9 @@ priv fn applyRaw(settings: @termios, keepSignals: Bool) do
  */
 fn enterRaw(keepSignals: Bool = true) throws IoError do
     if not rawActive do
-        throw ioError(apr_get_os_error(), "stdin") if tcgetattr(STDIN_FILENO, addrof(original)) != 0
+        throw ioError(apr_get_os_error(), "stdin") if tcgetattr(STDIN_FILENO, mut original) != 0
         var settings = original
-        applyRaw(addrof(settings), keepSignals)
+        applyRaw(mut settings, keepSignals)
         throw ioError(apr_get_os_error(), "stdin") if tcsetattr(STDIN_FILENO, TCSADRAIN, addrof(settings)) != 0
         rawKeepsSignals = keepSignals
         rawActive = true
@@ -800,12 +800,12 @@ priv fn waitForInput(micros: Long): Int do
     fd.reqevents = APR_POLLIN as Short
     fd.desc.f = input
     var ready: apr_int32_t = 0
-    ret apr_poll(addrof(fd), 1, addrof(ready), micros)
+    ret apr_poll(addrof(fd), 1, mut ready, micros)
 
 /** Reads what stdin has into `pending`. */
 priv fn fillPending() do
     var got: apr_size_t = pending.len - pendingLen
-    val status = apr_file_read(input, addrof(pending[pendingLen]), addrof(got))
+    val status = apr_file_read(input, addrof(pending[pendingLen]), mut got)
     if APR_STATUS_IS_EINTR(status) == 0 do
         if status != APR_SUCCESS do
             inputClosed = true
@@ -892,7 +892,7 @@ rec Cell as
  * A grid of cells to draw on, from {@link screen}. Nothing shows until {@link render}, which writes only what
  * changed since the last time, so drawing everything again for each frame is fine.
  */
-rec Screen as
+mut ref rec Screen as
     /** The width. */
     cols: Int
     /** The height. */
@@ -918,17 +918,17 @@ priv fn blankCells(count: Size): Cell[] do
     ret cells
 
 /** A screen of a given size, in the current pool. */
-fn screen(cols: Int, rows: Int): @Screen do
+fn screen(cols: Int, rows: Int): Screen do
     val count = (cols * rows) as Size
     ret new Screen { cols, rows, blankCells(count), blankCells(count) }
 
 /** A screen the size of the terminal, in the current pool. */
-fn screen(): @Screen do
+fn screen(): Screen do
     val d = size()
     ret screen(d.cols, d.rows)
 
 /** Changes the size of `s`, after a {@link Resize} event. What it holds is cleared, and all of it is drawn again. */
-fn resize(s: @Screen, d: Dimensions) do
+fn resize(s: Screen, d: Dimensions) do
     if d.cols != s.cols or d.rows != s.rows do
         val count = (d.cols * d.rows) as Size
         s.cols = d.cols
@@ -938,22 +938,22 @@ fn resize(s: @Screen, d: Dimensions) do
     s.stale = true
 
 /** Makes {@link render} draw everything again, after something else wrote to the terminal. */
-fn invalidate(s: @Screen) do
+fn invalidate(s: Screen) do
     s.stale = true
 
 /** Fills `s` with spaces. */
-fn clear(s: @Screen) do
+fn clear(s: Screen) do
     for i in 0..<s.cells.len do
         s.cells[i] = Cell { 32, PLAIN }
 
 /** The index of a cell. */
-priv fn indexOf(s: @Screen, col: Int, row: Int): Size = (row * s.cols + col) as Size
+priv fn indexOf(s: Screen, col: Int, row: Int): Size = (row * s.cols + col) as Size
 
 /** Whether a cell is on the screen. */
-priv fn inside(s: @Screen, col: Int, row: Int): Bool = col >= 0 and row >= 0 and col < s.cols and row < s.rows
+priv fn inside(s: Screen, col: Int, row: Int): Bool = col >= 0 and row >= 0 and col < s.cols and row < s.rows
 
 /** Blanks the other half of the wide character at a cell, if it holds one, because that cell is drawn over. */
-priv fn breakWide(s: @Screen, col: Int, row: Int) do
+priv fn breakWide(s: Screen, col: Int, row: Int) do
     val i = indexOf(s, col, row)
     if s.cells[i].ch == 0 and col > 0 do
         s.cells[i - 1] = Cell { 32, s.cells[i - 1].style }
@@ -961,7 +961,7 @@ priv fn breakWide(s: @Screen, col: Int, row: Int) do
         s.cells[i + 1] = Cell { 32, s.cells[i + 1].style }
 
 /** Puts a character in a cell. Outside the screen, nothing happens; a wide character that doesn't fit is a space. */
-fn put(s: @Screen, col: Int, row: Int, ch: UInt, style: Style = PLAIN) do
+fn put(s: Screen, col: Int, row: Int, ch: UInt, style: Style = PLAIN) do
     val width = charWidth(ch)
     if inside(s, col, row) and width > 0 do
         breakWide(s, col, row)
@@ -978,7 +978,7 @@ fn put(s: @Screen, col: Int, row: Int, ch: UInt, style: Style = PLAIN) do
  * interpreted, so don't pass what {@link styled} made; use `style`.
  * @return the column after the text
  */
-fn text(s: @Screen, col: Int, row: Int, value: String, style: Style = PLAIN): Int do
+fn text(s: Screen, col: Int, row: Int, value: String, style: Style = PLAIN): Int do
     var at = col
     var i: Size = 0
     while i < value.len and at < s.cols do
@@ -989,17 +989,17 @@ fn text(s: @Screen, col: Int, row: Int, value: String, style: Style = PLAIN): In
     ret at
 
 /** Fills a rectangle with a character. */
-fn fill(s: @Screen, col: Int, row: Int, cols: Int, rows: Int, ch: UInt = 32, style: Style = PLAIN) do
+fn fill(s: Screen, col: Int, row: Int, cols: Int, rows: Int, ch: UInt = 32, style: Style = PLAIN) do
     for y in row..<row + rows do
         for x in col..<col + cols do
             put(s, x, y, ch, style)
 
 /** A row of `count` horizontal line characters, as used in {@link box}. */
-fn horizontalLine(s: @Screen, col: Int, row: Int, count: Int, style: Style = PLAIN) do
+fn horizontalLine(s: Screen, col: Int, row: Int, count: Int, style: Style = PLAIN) do
     fill(s, col, row, count, 1, 0x2500, style)
 
 /** A column of `count` vertical line characters. */
-fn verticalLine(s: @Screen, col: Int, row: Int, count: Int, style: Style = PLAIN) do
+fn verticalLine(s: Screen, col: Int, row: Int, count: Int, style: Style = PLAIN) do
     fill(s, col, row, 1, count, 0x2502, style)
 
 /** The lines of a {@link box}. */
@@ -1024,7 +1024,7 @@ priv fn boxChar(chars: String, n: Size): UInt do
  * @param title text in the top edge; "" for none
  * @param style how the frame and title look
  */
-fn box(s: @Screen, col: Int, row: Int, cols: Int, rows: Int, kind: BoxKind = :single, title: String = "", style: Style = PLAIN) do
+fn box(s: Screen, col: Int, row: Int, cols: Int, rows: Int, kind: BoxKind = :single, title: String = "", style: Style = PLAIN) do
     if not (cols < 2 or rows < 2) do
         val chars = boxChars(kind)
         val right = col + cols - 1
@@ -1043,19 +1043,19 @@ fn box(s: @Screen, col: Int, row: Int, cols: Int, rows: Int, kind: BoxKind = :si
             text(s, col + 2, row, " ${shown} ", style)
 
 /** Shows the cursor at a cell after {@link render}, as for a text field. */
-fn placeCursor(s: @Screen, col: Int, row: Int) do
+fn placeCursor(s: Screen, col: Int, row: Int) do
     s.cursorCol = col
     s.cursorRow = row
 
 /** Leaves the cursor hidden after {@link render}. */
-fn removeCursor(s: @Screen) do
+fn removeCursor(s: Screen) do
     s.cursorCol = -1
 
 /**
  * The escape sequences that bring the terminal up to date with `s`, and marks them as done. {@link render} writes
  * them; this is for testing what a program draws.
  */
-fn frame(s: @Screen): String do
+fn frame(s: Screen): String do
     val b = stringBuilder(256)
     if s.stale do
         b.append("\x1b[0m\x1b[2J")
@@ -1091,7 +1091,7 @@ fn frame(s: @Screen): String do
     ret b.build()
 
 /** Shows what was drawn on `s`, writing only the cells that changed. */
-fn render(s: @Screen) do
+fn render(s: Screen) do
     pool do
         emit(frame(s))
 

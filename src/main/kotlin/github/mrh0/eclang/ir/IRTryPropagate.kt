@@ -14,13 +14,16 @@ import github.mrh0.ect2.Result
  * if (tmp.code != 0) { <deferred>; return (Outer){.code = 1, .error = tmp.error}; }
  * ```
  * With [copyInto] (the C name of a pool), the error is deep-copied into that pool first: inside a `pool do` block
- * it may be in the block's pool, which the deferred statements free.
+ * it may be in the block's pool, which the deferred statements free. [outerOf] gives the result type of the function: in a
+ * lambda that infers its `throws`, it is only known after its whole body is compiled.
  */
 class IRTryPropagate(
-    location: Loc, val temp: String, val type: Result, val call: IIR, val outer: Result, val deferred: List<IIR>,
-    val copyInto: String? = null,
+    location: Loc, val temp: String, val type: Result, val call: IIR, private val outerOf: () -> Result, val deferred: List<IIR>,
+    val copyInto: () -> String? = { null },
 ) : IR(location) {
     override fun toC(sb: CSourceBuilder, c: Context) {
+        val outer = outerOf()
+        val copyInto = copyInto()
         sb.putStatement("${sb.types.cName(type)} $temp = ")
         call.toC(sb, c)
         sb.endStatement()

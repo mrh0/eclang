@@ -16,7 +16,7 @@ HTTP/1.1: parsing URLs, a client, and a small server. Built on core:net.ec.
     io.log(http.param(u, "y") ?? "?")                   // 2
     io.log(http.text(try http.resolve(u, "../c")))      // http://ada@example.com:8080/c
 
-    fn hello(req: @http.Request): @http.Response do
+    fn hello(req: http.Request): http.Response do
         ret http.text(404, "nothing here") if req.path != "/"
         val name = http.param(req.url, "name") ?? "world"
         ret http.text(200, "hello ${name}\n")
@@ -31,7 +31,7 @@ Everything is read into memory; the limits on it are `maxBody` in [`Options`](#h
 
 The server keeps a fixed number of threads, each serving one connection at a time, so handlers run at the same time
 and whatever they share needs a lock (core:thread.ec). Each request has its own pool, freed after its response is
-sent. A handler gets what it needs through `req.context`, since functions can't capture variables. A panic in a
+sent. A handler can be a lambda that uses the variables around it (or reach the program's data through `req.context`). A panic in a
 handler ends the program. The server is strict about what it reads, and limits the size of a request, but it is small:
 in front of the open Internet, put it behind a reverse proxy.
 
@@ -43,7 +43,7 @@ such as 404 isn't a failure: it is in [`Response`](#http.Response). What is retu
 ### <a id="http.Url"></a>`Url`
 
 ```ec
-rec Url
+mut rec Url
 ```
 
 The parts of a URL, as in `http://user@host:8080/path?query#fragment`. Only `host` is changed, to lower case; the rest
@@ -75,19 +75,19 @@ A field of the head of a request or response.
 ### <a id="http.Headers"></a>`Headers`
 
 ```ec
-rec Headers
+ref rec Headers
 ```
 
 The headers of a request or response, in their order: [`headers`](#http.headers). A name can be there several times.
 
 **Fields**
 
-- <a id="http.Headers.fields"></a>`fields: @List<Header>` — The fields.
+- <a id="http.Headers.fields"></a>`fields: List<Header>` — The fields.
 
 ### <a id="http.Request"></a>`Request`
 
 ```ec
-rec Request
+ref rec Request
 ```
 
 A request: what [`Handler`](#http.Handler)s get.
@@ -97,7 +97,7 @@ A request: what [`Handler`](#http.Handler)s get.
 - <a id="http.Request.method"></a>`method: String` — "GET", "POST", ...
 - <a id="http.Request.url"></a>`url: Url` — The URL as it was in the request: usually only a path and a query.
 - <a id="http.Request.path"></a>`path: String` — The path, without its %XX escapes.
-- <a id="http.Request.headers"></a>`headers: @Headers` — The headers.
+- <a id="http.Request.headers"></a>`headers: Headers` — The headers.
 - <a id="http.Request.body"></a>`body: String` — The body, and "" for none.
 - <a id="http.Request.remote"></a>`remote: net.Address` — Who sent it.
 - <a id="http.Request.context"></a>`context: @Any?` — What was given in [`ServerOptions`](#http.ServerOptions), to reach the data of the program.
@@ -105,7 +105,7 @@ A request: what [`Handler`](#http.Handler)s get.
 ### <a id="http.Response"></a>`Response`
 
 ```ec
-rec Response
+ref rec Response
 ```
 
 A response, from a server to a client.
@@ -114,7 +114,7 @@ A response, from a server to a client.
 
 - <a id="http.Response.status"></a>`status: Int` — The status: 200, 404, ...
 - <a id="http.Response.reason"></a>`reason: String` — The text after the status: "OK", "Not Found", ...
-- <a id="http.Response.headers"></a>`headers: @Headers` — The headers.
+- <a id="http.Response.headers"></a>`headers: Headers` — The headers.
 - <a id="http.Response.body"></a>`body: String` — The body, and "" for none.
 - <a id="http.Response.url"></a>`url: String = ""` — Where it came from, after any redirects; "" on the server.
 
@@ -130,13 +130,13 @@ How a client makes a request: `http.Options { timeout = time.seconds(5) }`.
 
 - <a id="http.Options.timeout"></a>`timeout: time.Duration? = time.seconds(30)` — How long connecting, and each read and write, may take; null for as long as it takes.
 - <a id="http.Options.redirects"></a>`redirects: Int = 5` — How many redirects to follow; 0 gives the redirect itself as the response.
-- <a id="http.Options.headers"></a>`headers: @Headers? = null` — Headers to send, next to those that are always sent. They take precedence over those.
+- <a id="http.Options.headers"></a>`headers: Headers? = null` — Headers to send, next to those that are always sent. They take precedence over those.
 - <a id="http.Options.maxBody"></a>`maxBody: Size = 1073741824` — The largest body to read.
 
 ### <a id="http.ServerOptions"></a>`ServerOptions`
 
 ```ec
-rec ServerOptions
+mut rec ServerOptions
 ```
 
 How a server works.
@@ -152,7 +152,7 @@ How a server works.
 ### <a id="http.Handler"></a>`Handler`
 
 ```ec
-type Handler = (@Request) => @Response
+type Handler = (Request) => Response
 ```
 
 What serves requests: a function from a request to a response.
@@ -160,7 +160,7 @@ What serves requests: a function from a request to a response.
 ### <a id="http.FailingHandler"></a>`FailingHandler`
 
 ```ec
-type FailingHandler = (@Request) => @Response throws Error
+type FailingHandler = (Request) => Response throws Error
 ```
 
 What serves requests and can fail, which the client sees as the status 500.
@@ -168,7 +168,7 @@ What serves requests and can fail, which the client sees as the status 500.
 ### <a id="http.Server"></a>`Server`
 
 ```ec
-rec Server
+mut ref rec Server
 ```
 
 A server: [`server`](#http.server).
@@ -179,7 +179,7 @@ A server: [`server`](#http.server).
 - <a id="http.Server.options"></a>`options: ServerOptions` — How it works.
 - <a id="http.Server.running"></a>`running: @thread.Atomic` — Whether workers should go on: 1 or 0.
 - <a id="http.Server.accepting"></a>`accepting: thread.Mutex` — Held by the worker that is waiting for a connection.
-- <a id="http.Server.workers"></a>`workers: @List<thread.Thread>` — The workers, once it has started.
+- <a id="http.Server.workers"></a>`workers: List<thread.Thread>` — The workers, once it has started.
 - <a id="http.Server.handler"></a>`handler: Handler = fn unserved` — What serves requests, when `canFail` is false.
 - <a id="http.Server.failing"></a>`failing: FailingHandler = fn unservedFailing` — What serves requests, when `canFail` is true.
 - <a id="http.Server.canFail"></a>`canFail: Bool = false` — Which of the two is in use.
@@ -260,7 +260,7 @@ The first value called `name` in the query of `u`; null when it has none, or the
 ### <a id="http.headers"></a>`headers`
 
 ```ec
-fn headers(): @Headers
+fn headers(): Headers
 ```
 
 New empty headers, in the current pool.
@@ -268,7 +268,7 @@ New empty headers, in the current pool.
 ### <a id="http.add"></a>`add`
 
 ```ec
-fn add(h: @Headers, name: String, value: String)
+fn add(h: Headers, name: String, value: String)
 ```
 
 Adds a header, next to others of that name.
@@ -276,7 +276,7 @@ Adds a header, next to others of that name.
 ### <a id="http.remove"></a>`remove`
 
 ```ec
-fn remove(h: @Headers, name: String)
+fn remove(h: Headers, name: String)
 ```
 
 Removes all the headers called `name`.
@@ -284,7 +284,7 @@ Removes all the headers called `name`.
 ### <a id="http.set"></a>`set`
 
 ```ec
-fn set(h: @Headers, name: String, value: String)
+fn set(h: Headers, name: String, value: String)
 ```
 
 Sets the header `name`, in place of those of that name.
@@ -292,7 +292,7 @@ Sets the header `name`, in place of those of that name.
 ### <a id="http.get"></a>`get`
 
 ```ec
-fn get(h: @Headers, name: String): String?
+fn get(h: Headers, name: String): String?
 ```
 
 The first header called `name`, in any case, or null when there is none.
@@ -300,7 +300,7 @@ The first header called `name`, in any case, or null when there is none.
 ### <a id="http.getAll"></a>`getAll`
 
 ```ec
-fn getAll(h: @Headers, name: String): String[]
+fn getAll(h: Headers, name: String): String[]
 ```
 
 All the headers called `name`, in any case.
@@ -308,7 +308,7 @@ All the headers called `name`, in any case.
 ### <a id="http.has"></a>`has`
 
 ```ec
-fn has(h: @Headers, name: String): Bool
+fn has(h: Headers, name: String): Bool
 ```
 
 Whether there is a header called `name`, in any case.
@@ -324,7 +324,7 @@ The usual text of a status, or "" for one that has none.
 ### <a id="http.response"></a>`response`
 
 ```ec
-fn response(status: Int, body: String, contentType: String): @Response
+fn response(status: Int, body: String, contentType: String): Response
 ```
 
 A response with this body and `Content-Type`.
@@ -332,7 +332,7 @@ A response with this body and `Content-Type`.
 ### `text`
 
 ```ec
-fn text(status: Int, body: String): @Response
+fn text(status: Int, body: String): Response
 ```
 
 A response of plain text.
@@ -340,7 +340,7 @@ A response of plain text.
 ### <a id="http.html"></a>`html`
 
 ```ec
-fn html(status: Int, body: String): @Response
+fn html(status: Int, body: String): Response
 ```
 
 A response of HTML.
@@ -348,7 +348,7 @@ A response of HTML.
 ### <a id="http.json"></a>`json`
 
 ```ec
-fn json(status: Int, body: String): @Response
+fn json(status: Int, body: String): Response
 ```
 
 A response of JSON, which `body` must be: `http.json(200, json.stringify(value))`.
@@ -356,7 +356,7 @@ A response of JSON, which `body` must be: `http.json(200, json.stringify(value))
 ### <a id="http.redirect"></a>`redirect`
 
 ```ec
-fn redirect(location: String, status: Int = 302): @Response
+fn redirect(location: String, status: Int = 302): Response
 ```
 
 A response that sends the client to `location`, with the status 302, or the one given.
@@ -372,7 +372,7 @@ The [`Options`](#http.Options) that are used when none are given.
 ### <a id="http.request"></a>`request`
 
 ```ec
-fn request(method: String, url: String, body: String = "", options: Options = defaults()): @Response throws Error
+fn request(method: String, url: String, body: String = "", options: Options = defaults()): Response throws Error
 ```
 
 Makes a request, following redirects.
@@ -394,7 +394,7 @@ Makes a request, following redirects.
 ### `get`
 
 ```ec
-fn get(url: String, options: Options = defaults()): @Response throws Error
+fn get(url: String, options: Options = defaults()): Response throws Error
 ```
 
 A GET request.
@@ -413,7 +413,7 @@ A GET request.
 ### <a id="http.head"></a>`head`
 
 ```ec
-fn head(url: String, options: Options = defaults()): @Response throws Error
+fn head(url: String, options: Options = defaults()): Response throws Error
 ```
 
 A HEAD request, which gets the headers of a GET without its body.
@@ -432,7 +432,7 @@ A HEAD request, which gets the headers of a GET without its body.
 ### <a id="http.post"></a>`post`
 
 ```ec
-fn post(url: String, body: String, contentType: String = "application/octet-stream", options: Options = defaults()): @Response throws Error
+fn post(url: String, body: String, contentType: String = "application/octet-stream", options: Options = defaults()): Response throws Error
 ```
 
 A POST request.
@@ -453,7 +453,7 @@ A POST request.
 ### <a id="http.postForm"></a>`postForm`
 
 ```ec
-fn postForm(url: String, fields: (String, String)[], options: Options = defaults()): @Response throws Error
+fn postForm(url: String, fields: (String, String)[], options: Options = defaults()): Response throws Error
 ```
 
 A POST request of a form, as a browser sends one.
@@ -473,7 +473,7 @@ A POST request of a form, as a browser sends one.
 ### <a id="http.put"></a>`put`
 
 ```ec
-fn put(url: String, body: String, contentType: String = "application/octet-stream", options: Options = defaults()): @Response throws Error
+fn put(url: String, body: String, contentType: String = "application/octet-stream", options: Options = defaults()): Response throws Error
 ```
 
 A PUT request.
@@ -494,7 +494,7 @@ A PUT request.
 ### <a id="http.delete"></a>`delete`
 
 ```ec
-fn delete(url: String, options: Options = defaults()): @Response throws Error
+fn delete(url: String, options: Options = defaults()): Response throws Error
 ```
 
 A DELETE request.
@@ -521,7 +521,7 @@ The [`ServerOptions`](#http.ServerOptions) that are used when none are given.
 ### <a id="http.server"></a>`server`
 
 ```ec
-fn server(port: Int, host: String = "0.0.0.0", options: ServerOptions = serverDefaults()): @Server throws OsError
+fn server(port: Int, host: String = "0.0.0.0", options: ServerOptions = serverDefaults()): Server throws OsError
 ```
 
 A server listening on a port, which isn't serving yet: see [`start`](#http.start) and [`run`](#http.run).
@@ -541,7 +541,7 @@ A server listening on a port, which isn't serving yet: see [`start`](#http.start
 ### <a id="http.start"></a>`start`
 
 ```ec
-fn start(s: @Server, handler: Handler) throws OsError
+fn start(s: Server, escaping handler: Handler) throws OsError
 ```
 
 Starts serving requests on other threads, and goes on. [`stop`](#http.stop) and [`wait`](#http.wait) end it.
@@ -549,7 +549,7 @@ Starts serving requests on other threads, and goes on. [`stop`](#http.stop) and 
 **Parameters**
 
 - `s` — the server
-- `handler` — what serves requests
+- `handler` — what serves requests, which the workers keep (`escaping`): a lambda that uses the caller's `val`s is fine, its `var`s aren't
 
 **Throws**
 
@@ -558,7 +558,7 @@ Starts serving requests on other threads, and goes on. [`stop`](#http.stop) and 
 ### `start`
 
 ```ec
-fn start(s: @Server, handler: FailingHandler) throws OsError
+fn start(s: Server, escaping handler: FailingHandler) throws OsError
 ```
 
 Starts serving requests on other threads with a handler that can fail: a failure is logged with core:log.ec, and the
@@ -576,7 +576,7 @@ client gets the status 500.
 ### <a id="http.stop"></a>`stop`
 
 ```ec
-fn stop(s: @Server)
+fn stop(s: Server)
 ```
 
 Tells a server to stop, which a handler can do too. Requests that are being served are finished. [`wait`](#http.wait) waits for that.
@@ -588,7 +588,7 @@ Tells a server to stop, which a handler can do too. Requests that are being serv
 ### <a id="http.wait"></a>`wait`
 
 ```ec
-fn wait(s: @Server) throws OsError
+fn wait(s: Server) throws OsError
 ```
 
 Waits until a server has stopped, and closes its port.
@@ -600,7 +600,7 @@ Waits until a server has stopped, and closes its port.
 ### <a id="http.run"></a>`run`
 
 ```ec
-fn run(s: @Server, handler: Handler) throws OsError
+fn run(s: Server, handler: Handler) throws OsError
 ```
 
 Serves requests until [`stop`](#http.stop) is called.
@@ -617,7 +617,7 @@ Serves requests until [`stop`](#http.stop) is called.
 ### `run`
 
 ```ec
-fn run(s: @Server, handler: FailingHandler) throws OsError
+fn run(s: Server, handler: FailingHandler) throws OsError
 ```
 
 Serves requests until [`stop`](#http.stop) is called, with a handler that can fail: see [`start`](#http.start).

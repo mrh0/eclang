@@ -4,6 +4,7 @@ import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.context.Context
 import github.mrh0.eclang.ir.IR
 import github.mrh0.eclang.output.c.CSourceBuilder
+import github.mrh0.eclang.output.c.CTypes
 import github.mrh0.ect2.Prim
 import github.mrh0.ect2.Record
 import github.mrh0.ect2.Type
@@ -15,7 +16,7 @@ class IRZero(location: Loc, private val type: Type) : IR(location) {
         sb.put(when {
             type === Types.Bool -> "false"
             type is Prim && type !== Types.String -> "0"
-            type is Record && type.inHierarchy -> "{.__ec_tid = ${type.id}}"
+            type is Record && type.inHierarchy -> "{.${CTypes.tagPath(type)} = ${type.id}}"
             else -> "{0}"
         })
     }

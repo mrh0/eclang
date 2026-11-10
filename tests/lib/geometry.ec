@@ -32,7 +32,7 @@ export fn distance(p: Point): Int do
 
 export extern "geo_calls" fn callCount(): Int = calls
 
-export fn originName(): CString = origin.name.data
+export fn originName(): CString = cstr(origin.name)
 
 export fn greet(name: CString): CString do
     ret "hello ${name}".cstr()

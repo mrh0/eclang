@@ -71,7 +71,7 @@ fn apr_hash_copy(pool: @apr_pool_t, h: @apr_hash_t): @apr_hash_t
 ### <a id="apr_hash_set"></a>`apr_hash_set`
 
 ```ec
-fn apr_hash_set(ht: @apr_hash_t, key: @Any, klen: apr_ssize_t, value: @Any)
+fn apr_hash_set(ht: @apr_hash_t, kept key: @Any, klen: apr_ssize_t, kept value: @Any)
 ```
 
 *Binds the C function `apr_hash_set`.*
@@ -103,7 +103,7 @@ fn apr_hash_next(hi: @apr_hash_index_t): @apr_hash_index_t?
 ### <a id="apr_hash_this"></a>`apr_hash_this`
 
 ```ec
-fn apr_hash_this(hi: @apr_hash_index_t, key: @@Any, klen: @apr_ssize_t, value: @@Any)
+fn apr_hash_this(hi: @apr_hash_index_t, out key: @Any, out klen: apr_ssize_t, out value: @Any)
 ```
 
 *Binds the C function `apr_hash_this`.*

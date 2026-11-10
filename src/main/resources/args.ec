@@ -63,7 +63,7 @@ rec Positional as
     repeated: Bool
 
 /** What a program or command accepts, from {@link parser} and {@link command}. */
-rec Parser as
+mut ref rec Parser as
     /** Its name. */
     name: String
     /** The whole way to call it, for the help: "tool build". */
@@ -71,26 +71,26 @@ rec Parser as
     /** What it does, for the help. */
     about: String
     /** Its flags and options. */
-    options: @List<@Spec>
+    options: List<@Spec>
     /** Its positional arguments. */
-    positionals: @List<@Positional>
+    positionals: List<@Positional>
     /** Its commands. */
-    commands: @List<@Parser>
+    commands: List<Parser>
     /** Whether it can be called without a command when it has commands. */
     commandOptional: Bool
 
 /** What the command line said, from {@link parse} and {@link run}. */
-rec Parsed as
+mut ref rec Parsed as
     /** What it was parsed with. */
-    parser: @Parser
+    parser: Parser
     /** The words of each option and positional argument, by name; a flag has one for each time it was given. */
-    given: @Map<String, @List<String>>
+    given: Map<String, List<String>>
     /** The parts of the program this is a command of. */
-    parent: @Parsed?
+    parent: Parsed?
     /** The name of the command that was given, or null. */
     command: String?
     /** What follows the command, or null. */
-    sub: @Parsed?
+    sub: Parsed?
     /** The help to print, when `--help` was given: nothing else is checked then. */
     help: String?
 
@@ -103,10 +103,10 @@ rec ArgsError extends ArgumentError as
 // Saying what is accepted
 
 /** A new {@link Parser}, in the current pool. */
-priv fn newParser(name: String, path: String, about: String): @Parser do
-    val options: @List<@Spec> = list()
-    val positionals: @List<@Positional> = list()
-    val commands: @List<@Parser> = list()
+priv fn newParser(name: String, path: String, about: String): Parser do
+    val options: List<@Spec> = list()
+    val positionals: List<@Positional> = list()
+    val commands: List<Parser> = list()
     ret new Parser { name, path, about, options, positionals, commands, false }
 
 /**
@@ -114,7 +114,7 @@ priv fn newParser(name: String, path: String, about: String): @Parser do
  * @param name the program's name, for the help
  * @param about what it does, for the help
  */
-fn parser(name: String, about: String): @Parser = newParser(name, name, about)
+fn parser(name: String, about: String): Parser = newParser(name, name, about)
 
 /**
  * Adds a flag: `--name`, which is on or off.
@@ -123,7 +123,7 @@ fn parser(name: String, about: String): @Parser = newParser(name, name, about)
  * @param help what it is for
  * @param short its short name; none by default
  */
-fn flag(p: @Parser, name: String, help: String, short: Char = 0 as Char) do
+fn flag(p: Parser, name: String, help: String, short: Char = 0 as Char) do
     p.options.push(new Spec { name, help, short, false, "", null, false })
 
 /**
@@ -134,7 +134,7 @@ fn flag(p: @Parser, name: String, help: String, short: Char = 0 as Char) do
  * @param short its short name; none by default
  * @param valueName what the help calls its value
  */
-fn option(p: @Parser, name: String, help: String, short: Char = 0 as Char, valueName: String = "VALUE") do
+fn option(p: Parser, name: String, help: String, short: Char = 0 as Char, valueName: String = "VALUE") do
     p.options.push(new Spec { name, help, short, true, valueName, null, false })
 
 /**
@@ -146,7 +146,7 @@ fn option(p: @Parser, name: String, help: String, short: Char = 0 as Char, value
  * @param valueName what the help calls its value
  * @param fallback its value when it isn't given
  */
-fn option(p: @Parser, name: String, help: String, short: Char, valueName: String, fallback: String) do
+fn option(p: Parser, name: String, help: String, short: Char, valueName: String, fallback: String) do
     p.options.push(new Spec { name, help, short, true, valueName, fallback, false })
 
 /**
@@ -157,7 +157,7 @@ fn option(p: @Parser, name: String, help: String, short: Char, valueName: String
  * @param short its short name; none by default
  * @param valueName what the help calls its value
  */
-fn requiredOption(p: @Parser, name: String, help: String, short: Char = 0 as Char, valueName: String = "VALUE") do
+fn requiredOption(p: Parser, name: String, help: String, short: Char = 0 as Char, valueName: String = "VALUE") do
     p.options.push(new Spec { name, help, short, true, valueName, null, true })
 
 /**
@@ -167,7 +167,7 @@ fn requiredOption(p: @Parser, name: String, help: String, short: Char = 0 as Cha
  * @param help what it is for
  * @param required whether it must be given; those that may be left out come last
  */
-fn positional(p: @Parser, name: String, help: String, required: Bool = true) do
+fn positional(p: Parser, name: String, help: String, required: Bool = true) do
     p.positionals.push(new Positional { name, help, required, false })
 
 /**
@@ -177,7 +177,7 @@ fn positional(p: @Parser, name: String, help: String, required: Bool = true) do
  * @param help what it is for
  * @param required whether at least one must be given
  */
-fn rest(p: @Parser, name: String, help: String, required: Bool = false) do
+fn rest(p: Parser, name: String, help: String, required: Bool = false) do
     p.positionals.push(new Positional { name, help, required, true })
 
 /**
@@ -187,7 +187,7 @@ fn rest(p: @Parser, name: String, help: String, required: Bool = false) do
  * @param name what is typed
  * @param about what it does, for the help
  */
-fn command(p: @Parser, name: String, about: String): @Parser do
+fn command(p: Parser, name: String, about: String): Parser do
     val sub = newParser(name, "${p.path} ${name}", about)
     p.commands.push(sub)
     ret sub
@@ -202,13 +202,13 @@ priv fn optionLabel(o: @Spec): String do
     ret "${short}--${o.name}${value}"
 
 /** Adds one line of a table: `label` padded to `width`, then `text`. */
-priv fn row(out: @StringBuilder, label: String, width: Size, text: String) do
+priv fn row(out: StringBuilder, label: String, width: Size, text: String) do
     out.append("  ")
     out.append(padEnd(label, width + 2))
     out.appendLine(text)
 
 /** The line of the help that tells how to call `p`. */
-priv fn usageLine(p: @Parser): String do
+priv fn usageLine(p: Parser): String do
     val out = stringBuilder(64)
     out.append("Usage: ")
     out.append(p.path)
@@ -221,7 +221,7 @@ priv fn usageLine(p: @Parser): String do
     ret out.build()
 
 /** The help of `p`, as `--help` prints it. */
-fn help(p: @Parser): String do
+fn help(p: Parser): String do
     val out = stringBuilder(512)
     if p.about.len > 0 do
         out.appendLine(p.about)
@@ -258,7 +258,7 @@ fn help(p: @Parser): String do
 // Parsing
 
 /** The {@link ArgsError} of `p`. */
-priv fn wrong(p: @Parser, argument: String, message: String): ArgsError = ArgsError { ERR_ARGUMENT, message, argument, "Try '${p.path} --help'." }
+priv fn wrong(p: Parser, argument: String, message: String): ArgsError = ArgsError { ERR_ARGUMENT, message, argument, "Try '${p.path} --help'." }
 
 /** How many single edits turn `a` into `b` (the Levenshtein distance). */
 priv fn distance(a: String, b: String): Size do
@@ -285,7 +285,7 @@ priv fn distance(a: String, b: String): Size do
     ret previous[b.len]
 
 /** The one of `names` closest to `word`, or null when none is close enough to be a typing mistake. */
-priv fn closest(word: String, names: @List<String>): String? do
+priv fn closest(word: String, names: List<String>): String? do
     var best: String? = null
     var bestDistance = word.len / 2 + 1
     if bestDistance > 3 do
@@ -299,29 +299,29 @@ priv fn closest(word: String, names: @List<String>): String? do
     ret best
 
 /** " Did you mean 'x'?" for `word` among `names`, or "". */
-priv fn suggestion(word: String, names: @List<String>, prefix: String): String do
+priv fn suggestion(word: String, names: List<String>, prefix: String): String do
     if val name = closest(word, names) do
         ret " Did you mean '${prefix}${name}'?"
     ret ""
 
 /** The long option `name` of `p`, or null. */
-priv fn longOption(p: @Parser, name: String): @Spec? do
+priv fn longOption(p: Parser, name: String): @Spec? do
     for o in p.options where o.name == name do
         ret o
     ret null
 
 /** The short option `c` of `p`, or null. */
-priv fn shortOption(p: @Parser, c: Char): @Spec? do
+priv fn shortOption(p: Parser, c: Char): @Spec? do
     for o in p.options where o.short == c do
         ret o
     ret null
 
 /** Remembers that `name` was given, with `word`. */
-priv fn remember(r: @Parsed, name: String, word: String) do
+priv fn remember(r: Parsed, name: String, word: String) do
     if val words = r.given.get(name) do
         words.push(word)
     else do
-        val words: @List<String> = list()
+        val words: List<String> = list()
         words.push(word)
         r.given.put(name, words)
 
@@ -329,7 +329,7 @@ priv fn remember(r: @Parsed, name: String, word: String) do
 priv fn isNegativeNumber(word: String): Bool = word.len > 1 and word[0] == '-' and (isDigit(word[1]) or word[1] == '.')
 
 /** What is left to read of the words. */
-priv rec Words as
+priv mut rec Words as
     /** All the words. */
     all: String[]
     /** The next one. */
@@ -339,7 +339,7 @@ priv rec Words as
  * The next word, as the value of `shown`.
  * @throws when there is none
  */
-priv fn valueOf(p: @Parser, w: @Words, shown: String, o: @Spec): String throws ArgsError do
+priv fn valueOf(p: Parser, w: @Words, shown: String, o: @Spec): String throws ArgsError do
     throw wrong(p, shown, "the option '${shown}' needs a value: ${shown} ${o.valueName}") if w.at >= w.all.len
     val word = w.all[w.at]
     w.at += 1
@@ -349,7 +349,7 @@ priv fn valueOf(p: @Parser, w: @Words, shown: String, o: @Spec): String throws A
  * Reads the word `--...`.
  * @throws when it isn't an option of `p`, or its value is wrong
  */
-priv fn readLongOption(p: @Parser, r: @Parsed, w: @Words, word: String) throws ArgsError do
+priv fn readLongOption(p: Parser, r: Parsed, w: @Words, word: String) throws ArgsError do
     val equals = indexOf(word, '=')
     val name = word[2..<(equals ?? word.len)]
     val shown = "--${name}"
@@ -363,7 +363,7 @@ priv fn readLongOption(p: @Parser, r: @Parsed, w: @Words, word: String) throws A
             else do
                 remember(r, name, "")
     else do
-        val names: @List<String> = list()
+        val names: List<String> = list()
         for o in p.options do
             names.push(o.name)
         names.push("help")
@@ -374,7 +374,7 @@ priv fn readLongOption(p: @Parser, r: @Parsed, w: @Words, word: String) throws A
  * Reads the word `-abc`.
  * @throws when something in it isn't an option of `p`, or a value is missing
  */
-priv fn readShortOptions(p: @Parser, r: @Parsed, w: @Words, word: String) throws ArgsError do
+priv fn readShortOptions(p: Parser, r: Parsed, w: @Words, word: String) throws ArgsError do
     var i: Size = 1
     while i < word.len do
         val c = word[i]
@@ -397,13 +397,13 @@ priv fn readShortOptions(p: @Parser, r: @Parsed, w: @Words, word: String) throws
  * Checks that what must be given was given.
  * @throws when something is missing
  */
-priv fn checkRequired(p: @Parser, r: @Parsed) throws ArgsError do
+priv fn checkRequired(p: Parser, r: Parsed) throws ArgsError do
     for o in p.options where o.required and r.given.get(o.name) == null do
         throw wrong(p, "--${o.name}", "the option '--${o.name}' is required: --${o.name} ${o.valueName}")
     for a in p.positionals where a.required and r.given.get(a.name) == null do
         throw wrong(p, a.name, "the argument <${a.name}> is missing. ${usageLine(p)}")
     if p.commands.len > 0 and r.command == null and not p.commandOptional do
-        val names: @List<String> = list()
+        val names: List<String> = list()
         for c in p.commands do
             names.push(c.name)
         val all = join(names.items(), ", ")
@@ -416,8 +416,8 @@ priv fn isHelp(word: String): Bool = word == "--help" or word == "-h"
  * Reads the words from `w` on as `p` says.
  * @throws when they are wrong
  */
-priv fn parseWords(p: @Parser, w: @Words, parent: @Parsed?): @Parsed throws ArgsError do
-    val given: @Map<String, @List<String>> = map()
+priv fn parseWords(p: Parser, w: @Words, parent: Parsed?): Parsed throws ArgsError do
+    val given: Map<String, List<String>> = map()
     val r = new Parsed { p, given, parent, null, null, null }
     var position: Size = 0
     var stopped = false
@@ -434,8 +434,8 @@ priv fn parseWords(p: @Parser, w: @Words, parent: @Parsed?): @Parsed throws Args
         else if not stopped and startsWith(word, '-') and word.len > 1 and not isNegativeNumber(word) do
             try readShortOptions(p, r, w, word)
         else if p.commands.len > 0 and position == p.positionals.len do
-            var found: @Parser? = null
-            val names: @List<String> = list()
+            var found: Parser? = null
+            val names: List<String> = list()
             for c in p.commands do
                 names.push(c.name)
                 if c.name == word do
@@ -466,27 +466,27 @@ priv fn parseWords(p: @Parser, w: @Words, parent: @Parsed?): @Parsed throws Args
  * @param words the words, usually `io.args()`
  * @throws when they are wrong; the message says how
  */
-fn parse(p: @Parser, words: String[]): @Parsed throws ArgsError do
+fn parse(p: Parser, words: String[]): Parsed throws ArgsError do
     val w = new Words { words, 0 }
     ret try parseWords(p, w, null)
 
 /** Where {@link run} gets the result of {@link parse}: a `catch` can't give a value. */
-priv rec Outcome as
+priv mut rec Outcome as
     /** What was parsed. */
-    parsed: @Parsed?
+    parsed: Parsed?
 
 /**
  * Keeps the result of {@link parse} in `out`.
  * @throws when the words are wrong
  */
-priv fn parseInto(out: @Outcome, p: @Parser, words: String[]) throws ArgsError do
+priv fn parseInto(out: @Outcome, p: Parser, words: String[]) throws ArgsError do
     out.parsed = try parse(p, words)
 
 /**
  * Reads the program's arguments as `p` says. With `--help` this prints the help and ends the program with exit code 0.
  * When they are wrong, it prints why to stderr and ends the program with exit code 2.
  */
-fn run(p: @Parser): @Parsed do
+fn run(p: Parser): Parsed do
     val out = new Outcome { null }
     try parseInto(out, p, io.args()) catch problem do
         io.flush()
@@ -504,7 +504,7 @@ fn run(p: @Parser): @Parsed do
 // Reading the result
 
 /** The words of `name`, here or in the program a command belongs to, or null when it wasn't given. */
-priv fn wordsOf(r: @Parsed, name: String): @List<String>? do
+priv fn wordsOf(r: Parsed, name: String): List<String>? do
     if val words = r.given.get(name) do
         ret words
     if val up = r.parent do
@@ -512,7 +512,7 @@ priv fn wordsOf(r: @Parsed, name: String): @List<String>? do
     ret null
 
 /** The default of the option `name`, here or in the program a command belongs to. */
-priv fn fallbackOf(r: @Parsed, name: String): String? do
+priv fn fallbackOf(r: Parsed, name: String): String? do
     if val o = longOption(r.parser, name) do
         ret o.fallback
     if val up = r.parent do
@@ -520,25 +520,25 @@ priv fn fallbackOf(r: @Parsed, name: String): String? do
     ret null
 
 /** Whether a flag, option or positional argument was given. */
-fn isSet(r: @Parsed, name: String): Bool = wordsOf(r, name) != null
+fn isSet(r: Parsed, name: String): Bool = wordsOf(r, name) != null
 
 /** How many times it was given: for `-vvv`, 3. */
-fn times(r: @Parsed, name: String): Size do
+fn times(r: Parsed, name: String): Size do
     if val words = wordsOf(r, name) do
         ret words.len
     ret 0
 
 /** The value of an option or positional argument: the last one given, or else the default, or else null. */
-fn value(r: @Parsed, name: String): String? do
+fn value(r: Parsed, name: String): String? do
     if val words = wordsOf(r, name) do
         ret words.buffer[words.len - 1]
     ret fallbackOf(r, name)
 
 /** All the values of an option or positional argument, in the order they were given; the default when none was. */
-fn valuesOf(r: @Parsed, name: String): String[] do
+fn valuesOf(r: Parsed, name: String): String[] do
     if val words = wordsOf(r, name) do
         ret words.items()
-    val out: @List<String> = list()
+    val out: List<String> = list()
     if val fallback = fallbackOf(r, name) do
         out.push(fallback)
     ret out.items()
@@ -548,7 +548,7 @@ fn valuesOf(r: @Parsed, name: String): String[] do
  * @return the number, or null when it has no value
  * @throws when it isn't a whole number
  */
-fn longValue(r: @Parsed, name: String): Long? throws ArgsError do
+fn longValue(r: Parsed, name: String): Long? throws ArgsError do
     if val text = value(r, name) do
         try parseInt(text) catch problem do
             throw wrong(r.parser, name, "'${name}' must be a whole number, not '${text}'")

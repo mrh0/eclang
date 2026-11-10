@@ -3,7 +3,7 @@ use "core:string.ec"
 use "core:encoding.ec"
 use "core:bytes.ec"
 
-fn dump(w: @bytes.Writer) do
+fn dump(w: bytes.Writer) do
     io.log(encoding.hex(bytes.finish(w)))
     bytes.clear(w)
 

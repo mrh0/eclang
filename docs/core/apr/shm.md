@@ -13,7 +13,7 @@ declare rec apr_shm_t
 ### <a id="apr_shm_create"></a>`apr_shm_create`
 
 ```ec
-fn apr_shm_create(m: @@apr_shm_t, reqsize: apr_size_t, filename: CString, pool: @apr_pool_t): apr_status_t
+fn apr_shm_create(out m: @apr_shm_t, reqsize: apr_size_t, filename: CString, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_shm_create`.*
@@ -37,7 +37,7 @@ fn apr_shm_destroy(m: @apr_shm_t): apr_status_t
 ### <a id="apr_shm_attach"></a>`apr_shm_attach`
 
 ```ec
-fn apr_shm_attach(m: @@apr_shm_t, filename: CString, pool: @apr_pool_t): apr_status_t
+fn apr_shm_attach(out m: @apr_shm_t, filename: CString, pool: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_shm_attach`.*

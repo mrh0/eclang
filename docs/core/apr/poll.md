@@ -152,7 +152,7 @@ declare val APR_POLL_FILE as apr_datatype_e
 ### <a id="apr_pollset_create"></a>`apr_pollset_create`
 
 ```ec
-fn apr_pollset_create(pollset: @@apr_pollset_t, size: apr_uint32_t, p: @apr_pool_t, flags: apr_uint32_t): apr_status_t
+fn apr_pollset_create(out pollset: @apr_pollset_t, size: apr_uint32_t, p: @apr_pool_t, flags: apr_uint32_t): apr_status_t
 ```
 
 *Binds the C function `apr_pollset_create`.*
@@ -160,7 +160,7 @@ fn apr_pollset_create(pollset: @@apr_pollset_t, size: apr_uint32_t, p: @apr_pool
 ### <a id="apr_pollset_create_ex"></a>`apr_pollset_create_ex`
 
 ```ec
-fn apr_pollset_create_ex(pollset: @@apr_pollset_t, size: apr_uint32_t, p: @apr_pool_t, flags: apr_uint32_t, method: apr_pollset_method_e): apr_status_t
+fn apr_pollset_create_ex(out pollset: @apr_pollset_t, size: apr_uint32_t, p: @apr_pool_t, flags: apr_uint32_t, method: apr_pollset_method_e): apr_status_t
 ```
 
 *Binds the C function `apr_pollset_create_ex`.*
@@ -192,7 +192,7 @@ fn apr_pollset_remove(pollset: @apr_pollset_t, descriptor: @apr_pollfd_t): apr_s
 ### <a id="apr_pollset_poll"></a>`apr_pollset_poll`
 
 ```ec
-fn apr_pollset_poll(pollset: @apr_pollset_t, timeout: apr_interval_time_t, num: @apr_int32_t, descriptors: @@apr_pollfd_t): apr_status_t
+fn apr_pollset_poll(pollset: @apr_pollset_t, timeout: apr_interval_time_t, out num: apr_int32_t, out descriptors: @apr_pollfd_t): apr_status_t
 ```
 
 *Binds the C function `apr_pollset_poll`.*
@@ -208,7 +208,7 @@ fn apr_pollset_wakeup(pollset: @apr_pollset_t): apr_status_t
 ### <a id="apr_poll"></a>`apr_poll`
 
 ```ec
-fn apr_poll(aprset: @apr_pollfd_t, numsock: apr_int32_t, nsds: @apr_int32_t, timeout: apr_interval_time_t): apr_status_t
+fn apr_poll(aprset: @apr_pollfd_t, numsock: apr_int32_t, out nsds: apr_int32_t, timeout: apr_interval_time_t): apr_status_t
 ```
 
 *Binds the C function `apr_poll`.*
@@ -232,7 +232,7 @@ fn apr_poll_method_defname(): CString
 ### <a id="apr_pollcb_create"></a>`apr_pollcb_create`
 
 ```ec
-fn apr_pollcb_create(pollcb: @@apr_pollcb_t, size: apr_uint32_t, p: @apr_pool_t, flags: apr_uint32_t): apr_status_t
+fn apr_pollcb_create(out pollcb: @apr_pollcb_t, size: apr_uint32_t, p: @apr_pool_t, flags: apr_uint32_t): apr_status_t
 ```
 
 *Binds the C function `apr_pollcb_create`.*
@@ -240,7 +240,7 @@ fn apr_pollcb_create(pollcb: @@apr_pollcb_t, size: apr_uint32_t, p: @apr_pool_t,
 ### <a id="apr_pollcb_create_ex"></a>`apr_pollcb_create_ex`
 
 ```ec
-fn apr_pollcb_create_ex(pollcb: @@apr_pollcb_t, size: apr_uint32_t, p: @apr_pool_t, flags: apr_uint32_t, method: apr_pollset_method_e): apr_status_t
+fn apr_pollcb_create_ex(out pollcb: @apr_pollcb_t, size: apr_uint32_t, p: @apr_pool_t, flags: apr_uint32_t, method: apr_pollset_method_e): apr_status_t
 ```
 
 *Binds the C function `apr_pollcb_create_ex`.*

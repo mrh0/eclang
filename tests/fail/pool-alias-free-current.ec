@@ -1,5 +1,5 @@
-// error: Can't free 'q': it holds the current pool
+// error: Can't destroy 'q': it holds the current pool
 fn main(): Int do
     val q = pool
-    freePool(q)
+    destroy q
     ret 0

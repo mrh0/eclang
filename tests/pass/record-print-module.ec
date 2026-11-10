@@ -53,11 +53,11 @@ fn main(): Int do
     io.log("${other}")
 
     // The result is built in the pool asked for, whichever pool a `str` allocates in.
-    val p = newPool()
+    val p = new Pool
     val kept = format(p, "${coin}!")
     pool do
         val inner = format(p, "${purse}")
         io.log(inner)
     io.log(kept)
-    freePool(p)
+    destroy p
     ret 0

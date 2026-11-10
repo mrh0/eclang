@@ -144,7 +144,7 @@ fn strftime(s: CString, max: Size, format: CString, t: @tm): Size
 ### <a id="clock_gettime"></a>`clock_gettime`
 
 ```ec
-fn clock_gettime(clock: clockid_t, ts: @timespec): Int
+fn clock_gettime(clock: clockid_t, out ts: timespec): Int
 ```
 
 *Binds the C function `clock_gettime`.*

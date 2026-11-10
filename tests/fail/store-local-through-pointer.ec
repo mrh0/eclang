@@ -1,5 +1,5 @@
 // error: Can't store this in field 'next': it points to 'other', a local variable, which is freed when its block ends, but field 'next' outlives this function
-rec Node as
+mut rec Node as
     next: @Node?
 
 fn link(n: @Node) do

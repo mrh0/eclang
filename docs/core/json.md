@@ -36,7 +36,7 @@ What a [`Value`](#json.Value) is.
 ### <a id="json.Value"></a>`Value`
 
 ```ec
-rec Value
+ref rec Value
 ```
 
 A JSON value. Make one with [`parse`](#json.parse) or the functions below, and read it with [`asString`](#json.asString) and the like.
@@ -49,8 +49,8 @@ A JSON value. Make one with [`parse`](#json.parse) or the functions below, and r
 - <a id="json.Value.whole"></a>`whole: Long = 0` — The value of a `:number` that is whole and fits, when `isWhole`.
 - <a id="json.Value.isWhole"></a>`isWhole: Bool = false` — Whether a `:number` is exactly `whole`.
 - <a id="json.Value.text"></a>`text: String = ""` — The value of a `:string`.
-- <a id="json.Value.elements"></a>`elements: @List<@Value>? = null` — The elements of an `:array`.
-- <a id="json.Value.fields"></a>`fields: @Map<String, @Value>? = null` — The fields of an `:object`.
+- <a id="json.Value.elements"></a>`elements: List<Value>? = null` — The elements of an `:array`.
+- <a id="json.Value.fields"></a>`fields: Map<String, Value>? = null` — The fields of an `:object`.
 
 ### <a id="json.JsonError"></a>`JsonError`
 
@@ -70,7 +70,7 @@ Text isn't valid JSON.
 ### <a id="json.nil"></a>`nil`
 
 ```ec
-fn nil(): @Value
+fn nil(): Value
 ```
 
 The JSON value `null`.
@@ -78,7 +78,7 @@ The JSON value `null`.
 ### <a id="json.boolean"></a>`boolean`
 
 ```ec
-fn boolean(b: Bool): @Value
+fn boolean(b: Bool): Value
 ```
 
 A JSON `true` or `false`.
@@ -86,7 +86,7 @@ A JSON `true` or `false`.
 ### <a id="json.number"></a>`number`
 
 ```ec
-fn number(x: Double): @Value
+fn number(x: Double): Value
 ```
 
 A JSON number.
@@ -94,7 +94,7 @@ A JSON number.
 ### `number`
 
 ```ec
-fn number(x: Long): @Value
+fn number(x: Long): Value
 ```
 
 A JSON number that stays exact.
@@ -102,7 +102,7 @@ A JSON number that stays exact.
 ### <a id="json.string"></a>`string`
 
 ```ec
-fn string(s: String): @Value
+fn string(s: String): Value
 ```
 
 A JSON string.
@@ -110,7 +110,7 @@ A JSON string.
 ### <a id="json.array"></a>`array`
 
 ```ec
-fn array(): @Value
+fn array(): Value
 ```
 
 A new empty JSON array; see [`add`](#json.add).
@@ -118,7 +118,7 @@ A new empty JSON array; see [`add`](#json.add).
 ### <a id="json.object"></a>`object`
 
 ```ec
-fn object(): @Value
+fn object(): Value
 ```
 
 A new empty JSON object; see [`put`](#json.put).
@@ -126,7 +126,7 @@ A new empty JSON object; see [`put`](#json.put).
 ### <a id="json.add"></a>`add`
 
 ```ec
-fn add(a: @Value, item: @Value)
+fn add(a: Value, item: Value)
 ```
 
 Adds `item` at the end of the array `a`. The program stops when `a` isn't an array.
@@ -134,7 +134,7 @@ Adds `item` at the end of the array `a`. The program stops when `a` isn't an arr
 ### `add`
 
 ```ec
-fn add(a: @Value, item: String)
+fn add(a: Value, item: String)
 ```
 
 Adds a string at the end of the array `a`.
@@ -142,7 +142,7 @@ Adds a string at the end of the array `a`.
 ### `add`
 
 ```ec
-fn add(a: @Value, item: Long)
+fn add(a: Value, item: Long)
 ```
 
 Adds a number at the end of the array `a`.
@@ -150,7 +150,7 @@ Adds a number at the end of the array `a`.
 ### `add`
 
 ```ec
-fn add(a: @Value, item: Double)
+fn add(a: Value, item: Double)
 ```
 
 Adds a number at the end of the array `a`.
@@ -158,7 +158,7 @@ Adds a number at the end of the array `a`.
 ### `add`
 
 ```ec
-fn add(a: @Value, item: Bool)
+fn add(a: Value, item: Bool)
 ```
 
 Adds a `true` or `false` at the end of the array `a`.
@@ -166,7 +166,7 @@ Adds a `true` or `false` at the end of the array `a`.
 ### <a id="json.put"></a>`put`
 
 ```ec
-fn put(o: @Value, key: String, value: @Value)
+fn put(o: Value, key: String, value: Value)
 ```
 
 Sets the field `key` of the object `o`. The program stops when `o` isn't an object.
@@ -174,7 +174,7 @@ Sets the field `key` of the object `o`. The program stops when `o` isn't an obje
 ### `put`
 
 ```ec
-fn put(o: @Value, key: String, value: String)
+fn put(o: Value, key: String, value: String)
 ```
 
 Sets the field `key` of the object `o` to a string.
@@ -182,7 +182,7 @@ Sets the field `key` of the object `o` to a string.
 ### `put`
 
 ```ec
-fn put(o: @Value, key: String, value: Long)
+fn put(o: Value, key: String, value: Long)
 ```
 
 Sets the field `key` of the object `o` to a number.
@@ -190,7 +190,7 @@ Sets the field `key` of the object `o` to a number.
 ### `put`
 
 ```ec
-fn put(o: @Value, key: String, value: Double)
+fn put(o: Value, key: String, value: Double)
 ```
 
 Sets the field `key` of the object `o` to a number.
@@ -198,7 +198,7 @@ Sets the field `key` of the object `o` to a number.
 ### `put`
 
 ```ec
-fn put(o: @Value, key: String, value: Bool)
+fn put(o: Value, key: String, value: Bool)
 ```
 
 Sets the field `key` of the object `o` to `true` or `false`.
@@ -206,7 +206,7 @@ Sets the field `key` of the object `o` to `true` or `false`.
 ### <a id="json.isNull"></a>`isNull`
 
 ```ec
-fn isNull(v: @Value?): Bool
+fn isNull(v: Value?): Bool
 ```
 
 Whether `v` is the JSON value `null`. False when there is no value at all.
@@ -214,7 +214,7 @@ Whether `v` is the JSON value `null`. False when there is no value at all.
 ### <a id="json.asString"></a>`asString`
 
 ```ec
-fn asString(v: @Value?): String?
+fn asString(v: Value?): String?
 ```
 
 The text of a string, or null for anything else.
@@ -222,7 +222,7 @@ The text of a string, or null for anything else.
 ### <a id="json.asNumber"></a>`asNumber`
 
 ```ec
-fn asNumber(v: @Value?): Double?
+fn asNumber(v: Value?): Double?
 ```
 
 The value of a number, or null for anything else.
@@ -230,7 +230,7 @@ The value of a number, or null for anything else.
 ### <a id="json.asLong"></a>`asLong`
 
 ```ec
-fn asLong(v: @Value?): Long?
+fn asLong(v: Value?): Long?
 ```
 
 The value of a whole number that fits a Long, or null for anything else. 3.0 and 1e3 are whole; 3.5 isn't.
@@ -238,7 +238,7 @@ The value of a whole number that fits a Long, or null for anything else. 3.0 and
 ### <a id="json.asBool"></a>`asBool`
 
 ```ec
-fn asBool(v: @Value?): Bool?
+fn asBool(v: Value?): Bool?
 ```
 
 The value of a `true` or `false`, or null for anything else.
@@ -246,7 +246,7 @@ The value of a `true` or `false`, or null for anything else.
 ### <a id="json.field"></a>`field`
 
 ```ec
-fn field(v: @Value?, key: String): @Value?
+fn field(v: Value?, key: String): Value?
 ```
 
 The field `key` of an object; null when there is no such field, or `v` isn't an object.
@@ -254,7 +254,7 @@ The field `key` of an object; null when there is no such field, or `v` isn't an 
 ### <a id="json.item"></a>`item`
 
 ```ec
-fn item(v: @Value?, i: Size): @Value?
+fn item(v: Value?, i: Size): Value?
 ```
 
 Element `i` of an array; null when there is no such element, or `v` isn't an array.
@@ -262,7 +262,7 @@ Element `i` of an array; null when there is no such element, or `v` isn't an arr
 ### <a id="json.items"></a>`items`
 
 ```ec
-fn items(v: @Value?): (@Value)[]
+fn items(v: Value?): (Value)[]
 ```
 
 The elements of an array, for `for`; none for anything else.
@@ -270,7 +270,7 @@ The elements of an array, for `for`; none for anything else.
 ### <a id="json.keys"></a>`keys`
 
 ```ec
-fn keys(v: @Value?): String[]
+fn keys(v: Value?): String[]
 ```
 
 The names of the fields of an object, in their order; none for anything else.
@@ -278,7 +278,7 @@ The names of the fields of an object, in their order; none for anything else.
 ### <a id="json.count"></a>`count`
 
 ```ec
-fn count(v: @Value?): Size
+fn count(v: Value?): Size
 ```
 
 How many elements an array, or fields an object, has; 0 for anything else.
@@ -286,7 +286,7 @@ How many elements an array, or fields an object, has; 0 for anything else.
 ### <a id="json.find"></a>`find`
 
 ```ec
-fn find(v: @Value?, path: String): @Value?
+fn find(v: Value?, path: String): Value?
 ```
 
 Follows a path of fields and indexes: `json.find(v, "users[2].name")`. Field names with "." or "[" in them need
@@ -297,7 +297,7 @@ Follows a path of fields and indexes: `json.find(v, "users[2].name")`. Field nam
 ### <a id="json.parse"></a>`parse`
 
 ```ec
-fn parse(text: String): @Value throws JsonError
+fn parse(text: String): Value throws JsonError
 ```
 
 Parses JSON text. Of a field that appears twice, the last one counts.
@@ -313,7 +313,7 @@ Parses JSON text. Of a field that appears twice, the last one counts.
 ### <a id="json.stringify"></a>`stringify`
 
 ```ec
-fn stringify(v: @Value): String
+fn stringify(v: Value): String
 ```
 
 `v` as compact JSON text, on one line.
@@ -321,7 +321,7 @@ fn stringify(v: @Value): String
 ### <a id="json.pretty"></a>`pretty`
 
 ```ec
-fn pretty(v: @Value, indent: Size = 2): String
+fn pretty(v: Value, indent: Size = 2): String
 ```
 
 `v` as JSON text for people, on several lines.

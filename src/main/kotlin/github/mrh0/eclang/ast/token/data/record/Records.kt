@@ -4,6 +4,7 @@ import github.mrh0.eclang.context.Lifetimes
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.token.type.checkBits
+import github.mrh0.eclang.ast.token.type.fitBits
 import github.mrh0.eclang.context.ArgumentOrder
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
@@ -58,17 +59,20 @@ internal fun createRecord(cd: CompileData, location: Loc, record: Record, values
         val default = defaultOf(cd, record, name)!!
         order.compile(given.size + i, default) {
             cd.inModule(cd.moduleNamed(defaultOwner(cd, record, name).namespace)) {
-                cd.isolated {
+                cd.isolated(keepTemps = true) {
                     cd.newContext("${record.name} default", record.typeBindings)
                     val value = default.process(cd, type)
                     checkBits(location, record, name, type, value.first)
-                    type to cd.expect(location, value, type, "the default of field '$name' of ${record.name}")
+                    type to fitBits(location, record, name, type, value.first, cd.expect(location, value, type, "the default of field '$name' of ${record.name}"))
                 }
             }
         }
     }
     val finished = order.finish(location)
-    val irs = given.indices.map { i -> cd.expect(location, finished.getValue(i), fields[given[i]]!!, "field '${given[i]}' of ${record.name}") }
+    val irs = given.indices.map { i ->
+        val value = finished.getValue(i)
+        fitBits(location, record, given[i], fields[given[i]]!!, value.first, cd.expect(location, value, fields[given[i]]!!, "field '${given[i]}' of ${record.name}"))
+    }
     val defaults = defaulted.indices.map { finished.getValue(given.size + it).second }
     val allocates = defaulted.any { Lifetimes.holdsPointer(fields[it]!!) }
     val onStack = defaulted.any { Lifetimes.usesStack(defaultOf(cd, record, it)!!) }

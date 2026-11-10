@@ -24,7 +24,12 @@ class Prim internal constructor(id: Int, val name: String, val category: Categor
 
 /** `@T`: a non-null pointer to [target]. A nullable pointer is `@T?`. */
 class Pointer internal constructor(id: Int, val target: Type) : Type(id) {
-    override fun toString() = "@${paren(target)}"
+    /** A pointer to a `ref rec` is written as the record's name: that is what `Counter` means in a type. */
+    override fun toString() = when {
+        target is Record && target.layout.isRef -> target.name
+        target is Applied && target.generic.isRef -> target.toString()
+        else -> "@${paren(target)}"
+    }
 }
 
 /** `T[]` (eclang array with length) or `T[]c` (plain C array) when [isC]. */
@@ -57,9 +62,13 @@ class Union internal constructor(id: Int, val members: List<Type>) : Type(id) {
     }
 }
 
-/** `(A, B) => R`, optionally `throws E`. */
-class FunctionType internal constructor(id: Int, val params: List<Type>, val returns: Type, val throws: Type?) : Type(id) {
-    override fun toString() = "${params.joinToString(", ", "(", ")")} => $returns" + (throws?.let { " throws $it" } ?: "")
+/**
+ * `(A, B) => R`, optionally `throws E`. In eclang it is a function value, which can carry the variables a lambda uses
+ * (a closure). With [isC] it is a plain C function pointer: a function type written in a `declare`, which C calls
+ * directly, so only a function without captured variables (`fn name`, or a lambda that uses none) converts to it.
+ */
+class FunctionType internal constructor(id: Int, val params: List<Type>, val returns: Type, val throws: Type?, val isC: Boolean = false) : Type(id) {
+    override fun toString() = (if (isC) "extern " else "") + "${params.joinToString(", ", "(", ")")} => $returns" + (throws?.let { " throws $it" } ?: "")
 }
 
 /**
@@ -125,7 +134,18 @@ sealed class Declared(id: Int, val namespace: String, val name: String, private 
  * How a record is laid out in memory: `packed` (no padding between fields), `align(n)` (its address is a multiple of n),
  * and [isUnion], for `union Name as` (all fields start at the same address, so it holds one of them at a time).
  */
-class Layout(val packed: Boolean = false, val align: Long? = null, val isUnion: Boolean = false) {
+/**
+ * How a record is laid out in C: `packed`, `align(n)`, a `union`. [isRef] is for `ref rec`, which doesn't change the struct but
+ * what the record's name means in a type: a pointer to it (see [Pointer.toString]).
+ */
+/**
+ * [isResource]: `resource rec`, a value that can't be dropped: each one must be passed on (a thread to join, say).
+ * [isSync]: `sync rec`, a record its own functions make safe to share between threads (a lock, a queue): see `Sharing`.
+ * [isMut]: `mut rec`, whose fields can change after it is made. Other records are fixed: a change makes a new one
+ * (`{ ...p, x = 1 }`). See [Record.isMutable].
+ */
+class Layout(val packed: Boolean = false, val align: Long? = null, val isUnion: Boolean = false, val isRef: Boolean = false, val isResource: Boolean = false,
+             val isSync: Boolean = false, val isMut: Boolean = false) {
     /** Whether C's default layout of a struct applies, so that a child record starts like its parent. */
     val isDefault get() = !packed && align == null && !isUnion
 }
@@ -149,7 +169,13 @@ class Record internal constructor(
     /** The bit-fields among the fields (`flags: UInt : 3`), with their widths in bits. */
     val bitWidths = HashMap<String, Int>()
 
+    /** Fields of a `declare rec` whose C name differs from their eclang name (`input extern "in": ...`): eclang name to C name. */
+    val cFieldNames = HashMap<String, String>()
+
     val isUnion get() = layout.isUnion
+
+    /** Whether eclang code can change its fields after it is made: a `mut rec`, a `declare mut rec`, or a `declare struct` (always, for C compatibility). */
+    val isMutable get() = layout.isMut || isCStruct
 
     /** What each type parameter of [generic] stands for in this instance: `T` to Int. */
     val typeBindings: Map<String, Type> get() = generic?.params?.zip(typeArgs)?.toMap() ?: mapOf()
@@ -186,6 +212,10 @@ class Record internal constructor(
  */
 class GenericRecord internal constructor(
     id: Int, val namespace: String, val name: String, val params: List<String>, val instantiate: (List<Type>) -> Record,
+    /** `ref rec List<T>`: `List<Int>` in a type is a pointer to the instance. */
+    val isRef: Boolean = false,
+    /** The parameters written `mut T` (`rec Box<mut T>`): their arguments must be types whose fields can change (see [TypeContext.fixedRecord]). */
+    val mutParams: Set<String> = setOf(),
 ) : Type(id) {
     /** The instances made so far, by their type arguments. */
     val instances = HashMap<List<Type>, Record>()

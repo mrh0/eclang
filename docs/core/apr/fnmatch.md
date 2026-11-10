@@ -53,7 +53,7 @@ fn apr_fnmatch_test(pattern: CString): Int
 ### <a id="apr_match_glob"></a>`apr_match_glob`
 
 ```ec
-fn apr_match_glob(pattern: CString, result: @@apr_array_header_t, p: @apr_pool_t): apr_status_t
+fn apr_match_glob(pattern: CString, out result: @apr_array_header_t, p: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_match_glob`.*

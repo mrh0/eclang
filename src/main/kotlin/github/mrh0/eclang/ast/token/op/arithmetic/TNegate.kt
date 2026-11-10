@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op.arithmetic
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -16,6 +17,8 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 class TNegate(location: Loc, val expr: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // a number or Bool
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val e = cd.usable(location, expr.process(cd, Types.None), "`-`")
         return when (val t = e.first) {

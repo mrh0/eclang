@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.type
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -20,6 +21,8 @@ import github.mrh0.ect2.*
  * Anything else needs `!as`, an unchecked C cast.
  */
 class TCast(location: Loc, val expr: ITok, val type: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(expr)
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val to = cd.storable(location, type.process(cd, Types.None).first, "`as`")
         val value = cd.usable(location, expr.process(cd, to), "`as`")

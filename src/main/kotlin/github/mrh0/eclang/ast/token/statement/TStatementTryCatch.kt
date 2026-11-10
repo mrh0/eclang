@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token.statement
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.Lifetimes
@@ -15,7 +16,7 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 /** `try f() catch e do ...`: runs f(); if it failed, runs the block with `e` set to the error. */
-class TStatementTryCatch(location: Loc, val expr: ITok, val errorName: String, val body: ITok) : Tok(location) {
+class TStatementTryCatch(location: Loc, val expr: ITok, val errorName: String, val body: ITok) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val (t, ir) = expr.process(cd, Types.None)
         if (t !is Result) throw EcError(location, "`try ... catch` is for calls that can fail, but this is a $t, which can't fail.")

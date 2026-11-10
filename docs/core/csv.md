@@ -65,7 +65,7 @@ Text isn't valid CSV.
 ### <a id="csv.Reader"></a>`Reader`
 
 ```ec
-rec Reader
+mut ref rec Reader
 ```
 
 Reads CSV a row at a time: [`reader`](#csv.reader).
@@ -83,7 +83,7 @@ Reads CSV a row at a time: [`reader`](#csv.reader).
 ### <a id="csv.Table"></a>`Table`
 
 ```ec
-rec Table
+ref rec Table
 ```
 
 CSV whose first row names the columns: [`table`](#csv.table).
@@ -92,7 +92,7 @@ CSV whose first row names the columns: [`table`](#csv.table).
 
 - <a id="csv.Table.header"></a>`header: String[]` — The names of the columns.
 - <a id="csv.Table.rows"></a>`rows: String[][]` — The rows after the first, each with a field for every column.
-- <a id="csv.Table.columns"></a>`columns: @Map<String, Size>` — Where each name is in the header.
+- <a id="csv.Table.columns"></a>`columns: Map<String, Size>` — Where each name is in the header.
 
 ## Functions
 
@@ -107,7 +107,7 @@ The [`Options`](#csv.Options) of RFC 4180, which is what is used when no others 
 ### <a id="csv.reader"></a>`reader`
 
 ```ec
-fn reader(text: String, options: Options = rfc4180()): @Reader
+fn reader(text: String, options: Options = rfc4180()): Reader
 ```
 
 A [`Reader`](#csv.Reader) of `text`, in the current pool.
@@ -120,7 +120,7 @@ A [`Reader`](#csv.Reader) of `text`, in the current pool.
 ### <a id="csv.next"></a>`next`
 
 ```ec
-fn next(r: @Reader): String[]? throws CsvError
+fn next(r: Reader): String[]? throws CsvError
 ```
 
 Reads the next row.
@@ -172,7 +172,7 @@ Reads a whole CSV file.
 ### <a id="csv.table"></a>`table`
 
 ```ec
-fn table(text: String, options: Options = rfc4180()): @Table throws CsvError
+fn table(text: String, options: Options = rfc4180()): Table throws CsvError
 ```
 
 Reads CSV whose first row names the columns, skipping empty lines.
@@ -191,7 +191,7 @@ Reads CSV whose first row names the columns, skipping empty lines.
 ### <a id="csv.columnIndex"></a>`columnIndex`
 
 ```ec
-fn columnIndex(t: @Table, name: String): Size?
+fn columnIndex(t: Table, name: String): Size?
 ```
 
 Where the column `name` is, or null when there is none.
@@ -199,7 +199,7 @@ Where the column `name` is, or null when there is none.
 ### <a id="csv.value"></a>`value`
 
 ```ec
-fn value(t: @Table, row: Size, name: String): String?
+fn value(t: Table, row: Size, name: String): String?
 ```
 
 The field of a column in a row: `csv.value(t, 0, "age")`.
@@ -215,7 +215,7 @@ The field of a column in a row: `csv.value(t, 0, "age")`.
 ### <a id="csv.column"></a>`column`
 
 ```ec
-fn column(t: @Table, name: String): String[]?
+fn column(t: Table, name: String): String[]?
 ```
 
 All the fields of the column `name`, or null when there is no such column.
@@ -249,7 +249,7 @@ The rows as CSV.
 ### `stringify`
 
 ```ec
-fn stringify(t: @Table, options: Options = rfc4180()): String
+fn stringify(t: Table, options: Options = rfc4180()): String
 ```
 
 A table as CSV, header first.

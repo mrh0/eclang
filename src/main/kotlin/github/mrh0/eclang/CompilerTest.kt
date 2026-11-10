@@ -35,6 +35,14 @@ fun main() {
         check("A program compiles the same way every time", again, first)
         check("Atoms of one compilation don't leak into the next", other?.contains("__ec_atom_red"), false)
         check("A program has its own atoms", other?.contains("__ec_atom_blue"), true)
+        // gcc -Wall -Wextra -Werror rejects an unused `static char* const`, such as a member of io.OpenMode nobody uses.
+        val unusedAtoms = program("unused-atoms", """
+            use "core:io.ec"
+            fn main(): Int do
+                io.log("hi"c)
+                ret 0
+        """)
+        check("Atoms the C never refers to aren't defined", Compiler.compile(unusedAtoms).c?.contains("__ec_atom_append"), false)
 
         val exporting = program("exporting", """
             fn f(): Int = 1
@@ -102,6 +110,49 @@ fun main() {
         """)
         val orderC = Compiler.compile(order)
         check("A global is set after what its value needs, without a warning", orderC.c!!.indexOf("value = ") < orderC.c!!.indexOf("first = ") && orderC.cd.warnings.isEmpty(), true)
+
+        // LoopPools: a loop that allocates in the current pool and keeps nothing past a round gets a pool per round.
+        val loops = program("loops", """
+            var kept: String = ""
+            fn label(n: Int): String = "n is ${'$'}{n}"
+            fn add(a: Int, b: Int): Int = a + b
+            fn keep(s: String) do
+                kept = s
+            fn helper() do
+                for i in 0..<3 do
+                    val s = "${'$'}{i}"
+            fn main(): Int do
+                for i in 0..<3 do
+                    val s = "line ${'$'}{i}"
+                var last = ""
+                for i in 0..<3 do
+                    last = "line ${'$'}{i}"
+                var j = 0
+                while j < 3 do
+                    val s = label(j)
+                    j += 1
+                for i in 0..<3 do
+                    j = add(j, i)
+                for i in 0..<3 do
+                    pool do
+                        val s = "x ${'$'}{i}"
+                for i in 0..<3 do
+                    keep("k ${'$'}{i}")
+                for i in 0..<3 do
+                    var acc = ""
+                    for k in 0..<2 do
+                        acc = "${'$'}{acc}${'$'}{k}"
+                helper()
+                ret j
+        """)
+        val loopsC = Compiler.compile(loops)
+        check("Loops that allocate and keep nothing past a round get a pool per round, in any function",
+            loopsC.cd.roundLoops.filter { it.enabled }.map { it.location.getLine() }, listOf(7, 10, 16, 26))
+        check("Rounds with a pool of their own are written as such, and nothing is warned about", loopsC.c!!.contains("__ec_pool = __ec_pool_create(__ec_outer") && loopsC.cd.warnings.isEmpty(), true)
+
+        val chain = program("chain", "fn pick(x: Int): Int do\n    if x == 0 do\n        ret 0\n" +
+            (1 until 3000).joinToString("") { "    else if x == $it do\n        ret $it\n" } + "    ret -1\n\nfn main(): Int = pick(5)")
+        check("A long `else if` chain compiles (the parser recurses once per branch)", Compiler.compile(chain).c?.contains("else if (x==2999)"), true)
 
         val request = "check 1 ${library.path}\n".toByteArray() + "9 ${library.path}\n".toByteArray() + "fn f( do\n".toByteArray()
         val reply = java.io.ByteArrayOutputStream()

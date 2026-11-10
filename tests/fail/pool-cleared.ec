@@ -2,7 +2,7 @@
 use "core:io.ec"
 
 fn main(): Int do
-    val p = newPool()
+    val p = new Pool
     val s = format(p, "hello ${1}")
     clearPool(p)
     io.log(s)

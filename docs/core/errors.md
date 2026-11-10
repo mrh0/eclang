@@ -112,6 +112,24 @@ Reading or writing a file failed. Make one with [`ioError`](#ioError).
 
 - <a id="IoError.path"></a>`path: String` — The path of the file.
 
+### <a id="Location"></a>`Location`
+
+```ec
+rec Location
+```
+
+A place in the source: what `here` is, and what a parameter with the default `caller` is given, the place of the call.
+
+    fn check(ok: Bool, at: Location = caller) do
+        io.log("failed at ${at}") if not ok             // failed at main.ec:12
+
+**Fields**
+
+- <a id="Location.file"></a>`file: String` — The name of the file, without its directory: "main.ec".
+- <a id="Location.line"></a>`line: Int` — The line, from 1.
+- <a id="Location.column"></a>`column: Int` — The column, from 1.
+- <a id="Location.function"></a>`function: String` — The function it is in, or "" outside functions.
+
 ## Values
 
 ### <a id="ERR_FAILED"></a>`ERR_FAILED`
@@ -358,10 +376,23 @@ fn describe(e: Error): String
 
 The error in words: "<kind>: <message>", e.g. "parse error: expected a digit". See [`errorKind`](#errorKind).
 
+### <a id="str"></a>`str`
+
+```ec
+fn str(l: Location): String
+```
+
+"file.ec:12".
+
 ### <a id="panic"></a>`panic`
 
 ```ec
-fn panic(message: String)
+fn panic(message: String, at: Location = caller): Never
 ```
 
-Stops the program: flushes stdout, prints "panic: <message>" to stderr, and exits with status 1.
+Stops the program: flushes stdout, prints "panic: <message>" and where it was called from to stderr, and exits with status 1.
+
+**Parameters**
+
+- `message` — what went wrong
+- `at` — where: the call, unless it is given

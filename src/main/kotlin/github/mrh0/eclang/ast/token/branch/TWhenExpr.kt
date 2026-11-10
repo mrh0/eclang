@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.branch
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -20,6 +21,8 @@ import github.mrh0.ect2.Types
  * Never) instead of giving a value. Every case must be handled, so without a complete set of arms it needs `else do`.
  */
 class TWhenExpr(location: Loc, private val binding: String?, private val mutable: Boolean, val subject: ITok, private val arms: List<WhenArm>) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(flows)
+
     /** The values the `when` may give, and the subject when an arm can name it; see Lifetimes. */
     val flows: List<ITok> get() = arms.filter { it.isValue }.map { it.body } + if (binding != null || arms.any { it.binding != null }) listOf(subject) else listOf()
 
@@ -51,6 +54,8 @@ class TWhenExpr(location: Loc, private val binding: String?, private val mutable
 
     /** The value of an arm, stored in the `when`'s [temp]. */
     private class Value(location: Loc, private val value: ITok, private val hint: Type, temp: String, private val values: MutableList<Value>) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.From(value)
+
         val assign = IRWhenAssign(location, temp)
         lateinit var compiled: Pair<Type, IIR>
 
@@ -68,6 +73,8 @@ class TWhenExpr(location: Loc, private val binding: String?, private val mutable
 
     /** An arm written as statements: it has no value to give, so it must leave. */
     private class Leaving(location: Loc, private val body: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.NotAValue
+
         override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
             val ir = body.process(cd, hint)
             if ((ir.second as IRBlock).diverges || cd.functionHasErrors) return ir

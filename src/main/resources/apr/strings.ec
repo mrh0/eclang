@@ -16,13 +16,13 @@ declare fn apr_pvsprintf as (p: @apr_pool_t, fmt: CString, ap: va_list): CString
 declare fn apr_psprintf as (p: @apr_pool_t, fmt: CString, ...): CString
 declare fn apr_cpystrn as (dst: CString, src: CString, dst_size: apr_size_t): CString
 declare fn apr_collapse_spaces as (dest: CString, src: CString): CString
-declare fn apr_tokenize_to_argv as (arg_str: CString, argv_out: @@CString, token_context: @apr_pool_t): apr_status_t
+declare fn apr_tokenize_to_argv as (arg_str: CString, out argv_out: @CString, token_context: @apr_pool_t): apr_status_t
 // str is null after the first call; returns null when there are no more tokens.
-declare fn apr_strtok as (str: CString?, sep: CString, last: @CString): CString?
+declare fn apr_strtok as (str: CString?, sep: CString, mut last: CString): CString?
 declare fn apr_itoa as (p: @apr_pool_t, n: Int): CString
 declare fn apr_ltoa as (p: @apr_pool_t, n: Long): CString
 declare fn apr_off_t_toa as (p: @apr_pool_t, n: apr_off_t): CString
-declare fn apr_strtoff as (offset: @apr_off_t, buf: CString, end: @CString, base: Int): apr_status_t
-declare fn apr_strtoi64 as (buf: CString, end: @CString, base: Int): apr_int64_t
+declare fn apr_strtoff as (out offset: apr_off_t, buf: CString, out end: CString, base: Int): apr_status_t
+declare fn apr_strtoi64 as (buf: CString, out end: CString, base: Int): apr_int64_t
 declare fn apr_atoi64 as (buf: CString): apr_int64_t
 declare fn apr_strfsize as (size: apr_off_t, buf: CString): CString

@@ -15,7 +15,7 @@
  *     io.log(http.param(u, "y") ?? "?")                   // 2
  *     io.log(http.text(try http.resolve(u, "../c")))      // http://ada@example.com:8080/c
  *
- *     fn hello(req: @http.Request): @http.Response do
+ *     fn hello(req: http.Request): http.Response do
  *         ret http.text(404, "nothing here") if req.path != "/"
  *         val name = http.param(req.url, "name") ?? "world"
  *         ret http.text(200, "hello ${name}\n")
@@ -30,7 +30,7 @@
  *
  * The server keeps a fixed number of threads, each serving one connection at a time, so handlers run at the same time
  * and whatever they share needs a lock (core:thread.ec). Each request has its own pool, freed after its response is
- * sent. A handler gets what it needs through `req.context`, since functions can't capture variables. A panic in a
+ * sent. A handler can be a lambda that uses the variables around it (or reach the program's data through `req.context`). A panic in a
  * handler ends the program. The server is strict about what it reads, and limits the size of a request, but it is small:
  * in front of the open Internet, put it behind a reverse proxy.
  *
@@ -54,7 +54,7 @@ use "core:log.ec"
  * The parts of a URL, as in `http://user@host:8080/path?query#fragment`. Only `host` is changed, to lower case; the rest
  * is as written, with its %XX escapes.
  */
-rec Url as
+mut rec Url as
     /** What comes before the ":", in lower case; "" in a relative URL. */
     scheme: String = ""
     /** What comes before the "@"; "" for nothing. */
@@ -81,7 +81,7 @@ priv fn isScheme(s: String): Bool do
  * Reads what is between "//" and the path into `u`.
  * @throws when the port or the brackets of an IPv6 address aren't valid
  */
-priv fn parseAuthority(u: @Url, s: String, text: String) throws ParseError do
+priv fn parseAuthority(mut u: Url, s: String, text: String) throws ParseError do
     var rest = s
     if val at = lastIndexOf(rest, '@') do
         u.userInfo = rest[0..<at]
@@ -125,7 +125,7 @@ fn parseUrl(text: String): Url throws ParseError do
             rest = rest[colon + 1..]
     if rest.startsWith("//") do
         val end = indexOf(rest, "/", 2) ?? rest.len
-        try parseAuthority(addrof u, rest[2..<end], text)
+        try parseAuthority(mut u, rest[2..<end], text)
         rest = rest[end..]
     u.path = rest
     ret u
@@ -161,7 +161,7 @@ fn target(u: Url): String do
 
 /** `path` without its "." and ".." segments, as RFC 3986 says. */
 priv fn withoutDots(path: String): String do
-    val out: @List<String> = list()
+    val out: List<String> = list()
     var rest = path
     while rest.len > 0 do
         if rest.startsWith("../") do
@@ -207,7 +207,7 @@ fn resolve(base: Url, reference: String): Url throws ParseError do
  * @throws when an escape isn't valid
  */
 fn parseQuery(query: String): (String, String)[] throws ParseError do
-    val pairs: @List<(String, String)> = list()
+    val pairs: List<(String, String)> = list()
     for part in query.split('&') where part.len > 0 do
         val at = indexOf(part, '=') ?? part.len
         val name = try encoding.urlUnescape(part[0..<at], true)
@@ -243,21 +243,21 @@ rec Header as
     value: String
 
 /** The headers of a request or response, in their order: {@link headers}. A name can be there several times. */
-rec Headers as
+ref rec Headers as
     /** The fields. */
-    fields: @List<Header>
+    fields: List<Header>
 
 /** New empty headers, in the current pool. */
-fn headers(): @Headers do
-    val fields: @List<Header> = list()
+fn headers(): Headers do
+    val fields: List<Header> = list()
     ret new Headers { fields }
 
 /** Adds a header, next to others of that name. */
-fn add(h: @Headers, name: String, value: String) do
+fn add(h: Headers, name: String, value: String) do
     h.fields.push(Header { name, value })
 
 /** Removes all the headers called `name`. */
-fn remove(h: @Headers, name: String) do
+fn remove(h: Headers, name: String) do
     var kept: Size = 0
     for field in h.fields.items() do
         if not equalsIgnoreCase(field.name, name) do
@@ -266,25 +266,25 @@ fn remove(h: @Headers, name: String) do
     h.fields.len = kept
 
 /** Sets the header `name`, in place of those of that name. */
-fn set(h: @Headers, name: String, value: String) do
+fn set(h: Headers, name: String, value: String) do
     remove(h, name)
     add(h, name, value)
 
 /** The first header called `name`, in any case, or null when there is none. */
-fn get(h: @Headers, name: String): String? do
+fn get(h: Headers, name: String): String? do
     for field in h.fields do
         ret field.value if equalsIgnoreCase(field.name, name)
     ret null
 
 /** All the headers called `name`, in any case. */
-fn getAll(h: @Headers, name: String): String[] do
-    val found: @List<String> = list()
+fn getAll(h: Headers, name: String): String[] do
+    val found: List<String> = list()
     for field in h.fields do
         found.push(field.value) if equalsIgnoreCase(field.name, name)
     ret found.items()
 
 /** Whether there is a header called `name`, in any case. */
-fn has(h: @Headers, name: String): Bool = get(h, name) != null
+fn has(h: Headers, name: String): Bool = get(h, name) != null
 
 /** Whether `s` is a token of HTTP: the form of a method or the name of a header. */
 priv fn isToken(s: String): Bool do
@@ -300,7 +300,7 @@ priv fn isHeaderValue(s: String): Bool do
     ret true
 
 /** Whether one of the comma-separated tokens of the headers called `name` is `token`, in any case. */
-priv fn hasToken(h: @Headers, name: String, token: String): Bool do
+priv fn hasToken(h: Headers, name: String, token: String): Bool do
     for value in getAll(h, name) do
         for part in value.split(',') do
             ret true if equalsIgnoreCase(part.trim(), token)
@@ -310,7 +310,7 @@ priv fn hasToken(h: @Headers, name: String, token: String): Bool do
 // Messages
 
 /** A request: what {@link Handler}s get. */
-rec Request as
+ref rec Request as
     /** "GET", "POST", ... */
     method: String
     /** The URL as it was in the request: usually only a path and a query. */
@@ -318,7 +318,7 @@ rec Request as
     /** The path, without its %XX escapes. */
     path: String
     /** The headers. */
-    headers: @Headers
+    headers: Headers
     /** The body, and "" for none. */
     body: String
     /** Who sent it. */
@@ -327,13 +327,13 @@ rec Request as
     context: @Any?
 
 /** A response, from a server to a client. */
-rec Response as
+ref rec Response as
     /** The status: 200, 404, ... */
     status: Int
     /** The text after the status: "OK", "Not Found", ... */
     reason: String
     /** The headers. */
-    headers: @Headers
+    headers: Headers
     /** The body, and "" for none. */
     body: String
     /** Where it came from, after any redirects; "" on the server. */
@@ -379,22 +379,22 @@ fn statusText(status: Int): String do
         else do ret ""
 
 /** A response with this body and `Content-Type`. */
-fn response(status: Int, body: String, contentType: String): @Response do
+fn response(status: Int, body: String, contentType: String): Response do
     val h = headers()
     add(h, "Content-Type", contentType)
     ret new Response { status, statusText(status), h, body }
 
 /** A response of plain text. */
-fn text(status: Int, body: String): @Response = response(status, body, "text/plain; charset=utf-8")
+fn text(status: Int, body: String): Response = response(status, body, "text/plain; charset=utf-8")
 
 /** A response of HTML. */
-fn html(status: Int, body: String): @Response = response(status, body, "text/html; charset=utf-8")
+fn html(status: Int, body: String): Response = response(status, body, "text/html; charset=utf-8")
 
 /** A response of JSON, which `body` must be: `http.json(200, json.stringify(value))`. */
-fn json(status: Int, body: String): @Response = response(status, body, "application/json")
+fn json(status: Int, body: String): Response = response(status, body, "application/json")
 
 /** A response that sends the client to `location`, with the status 302, or the one given. */
-fn redirect(location: String, status: Int = 302): @Response do
+fn redirect(location: String, status: Int = 302): Response do
     val r = text(status, "")
     set(r.headers, "Location", location)
     ret r
@@ -410,9 +410,9 @@ priv const MAX_HEAD: Size = 65536
 priv const MAX_HEADERS: Size = 200
 
 /** Reading a message, which can go wrong in a way the server answers with a status. */
-priv rec Reading as
+priv mut rec Reading as
     /** The connection. */
-    c: @net.Connection
+    c: net.Connection
     /** The largest body to read. */
     maxBody: Size
     /** The status to answer with when reading failed; 0 when the other side isn't to blame. */
@@ -441,7 +441,7 @@ priv fn headLine(r: @Reading): String? throws Error do
  * Reads the headers up to the empty line after them.
  * @throws when they aren't valid, or there are too many
  */
-priv fn readHeaders(r: @Reading): @Headers throws Error do
+priv fn readHeaders(r: @Reading): Headers throws Error do
     val h = headers()
     while true do
         val line = try headLine(r) ?? throw refuse(r, 400, "the connection ended inside the headers")
@@ -470,7 +470,7 @@ priv fn trimValue(s: String): String do
  * The value of `Content-Length`, or null when there is none.
  * @throws when it isn't a number, or there are several that differ, which is how requests are smuggled past a proxy
  */
-priv fn contentLength(r: @Reading, h: @Headers): Size? throws ParseError do
+priv fn contentLength(r: @Reading, h: Headers): Size? throws ParseError do
     var length: Size? = null
     for value in getAll(h, "Content-Length") do
         throw refuse(r, 400, "Content-Length isn't a number") if value.len == 0 or value.len > 18
@@ -525,7 +525,7 @@ priv fn readSized(r: @Reading, length: Size): String throws Error do
  * The value of `Transfer-Encoding`, checked: whether it says `chunked`.
  * @throws when it says something else, or there is a Content-Length next to it, which is how requests are smuggled past a proxy
  */
-priv fn isChunked(r: @Reading, h: @Headers): Bool throws ParseError do
+priv fn isChunked(r: @Reading, h: Headers): Bool throws ParseError do
     ret false if not has(h, "Transfer-Encoding")
     throw refuse(r, 400, "this message has both Transfer-Encoding and Content-Length") if has(h, "Content-Length")
     val values = getAll(h, "Transfer-Encoding")
@@ -536,7 +536,7 @@ priv fn isChunked(r: @Reading, h: @Headers): Bool throws ParseError do
  * Writes the head of a message into `b`.
  * @throws when a header would break the message
  */
-priv fn addHeaders(b: @StringBuilder, h: @Headers) throws ArgumentError do
+priv fn addHeaders(b: StringBuilder, h: Headers) throws ArgumentError do
     for field in h.fields do
         throw argumentError("headers", "this isn't the name of a header: ${quote(field.name)}") if not isToken(field.name)
         throw argumentError("headers", "the header ${field.name} has a line break or control character in its value") if not isHeaderValue(field.value)
@@ -556,7 +556,7 @@ rec Options as
     /** How many redirects to follow; 0 gives the redirect itself as the response. */
     redirects: Int = 5
     /** Headers to send, next to those that are always sent. They take precedence over those. */
-    headers: @Headers? = null
+    headers: Headers? = null
     /** The largest body to read. */
     maxBody: Size = 1073741824
 
@@ -564,7 +564,7 @@ rec Options as
 fn defaults(): Options = Options { redirects = 5 }
 
 /** The headers of a request: those of the options, and what is missing from them. */
-priv fn requestHeaders(u: Url, method: String, body: String, options: Options): @Headers do
+priv fn requestHeaders(u: Url, method: String, body: String, options: Options): Headers do
     val h = headers()
     if val given = options.headers do
         h.fields.pushAll(given.fields.items())
@@ -586,7 +586,7 @@ priv fn requestHeaders(u: Url, method: String, body: String, options: Options): 
  * Reads the body of a response.
  * @throws when it isn't valid, or is larger than allowed
  */
-priv fn responseBody(r: @Reading, method: String, status: Int, h: @Headers): String throws Error do
+priv fn responseBody(r: @Reading, method: String, status: Int, h: Headers): String throws Error do
     ret "" if method == "HEAD" or status == 204 or status == 304
     val chunked = try isChunked(r, h)
     ret try readChunked(r) if chunked
@@ -605,7 +605,7 @@ priv fn responseBody(r: @Reading, method: String, status: Int, h: @Headers): Str
  * Reads a response, past any 100 Continue.
  * @throws when it isn't valid
  */
-priv fn readResponse(r: @Reading, method: String, url: String): @Response throws Error do
+priv fn readResponse(r: @Reading, method: String, url: String): Response throws Error do
     while true do
         r.headSize = 0
         val line = try headLine(r) ?? throw parseError("the server closed the connection without an answer", "", 0)
@@ -621,7 +621,7 @@ priv fn readResponse(r: @Reading, method: String, url: String): @Response throws
  * Makes one request, without following redirects.
  * @throws when it can't be made, or the answer isn't valid
  */
-priv fn exchange(method: String, u: Url, body: String, options: Options): @Response throws Error do
+priv fn exchange(method: String, u: Url, body: String, options: Options): Response throws Error do
     throw argumentError("url", "https isn't supported: it needs a TLS library, which a program can't link yet") if u.scheme == "https"
     throw argumentError("url", "this URL should start with http://, and it is: ${text(u)}") if u.scheme != "http" or u.host.len == 0
     throw argumentError("method", "this isn't a method: ${quote(method)}") if not isToken(method)
@@ -650,7 +650,7 @@ priv fn sameOrigin(a: Url, b: Url): Bool = a.scheme == b.scheme and a.host == b.
  * @throws when the URL isn't http, the server can't be reached, a timeout passes, the answer isn't valid or is larger
  *     than `maxBody`, or there are too many redirects
  */
-fn request(method: String, url: String, body: String = "", options: Options = defaults()): @Response throws Error do
+fn request(method: String, url: String, body: String = "", options: Options = defaults()): Response throws Error do
     var u = try parseUrl(url)
     var verb = method
     var content = body
@@ -689,7 +689,7 @@ fn request(method: String, url: String, body: String = "", options: Options = de
  * @return the response, whatever its status
  * @throws when it can't be made; see {@link request}
  */
-fn get(url: String, options: Options = defaults()): @Response throws Error = try request("GET", url, "", options)
+fn get(url: String, options: Options = defaults()): Response throws Error = try request("GET", url, "", options)
 
 /**
  * A HEAD request, which gets the headers of a GET without its body.
@@ -698,7 +698,7 @@ fn get(url: String, options: Options = defaults()): @Response throws Error = try
  * @return the response, whatever its status
  * @throws when it can't be made; see {@link request}
  */
-fn head(url: String, options: Options = defaults()): @Response throws Error = try request("HEAD", url, "", options)
+fn head(url: String, options: Options = defaults()): Response throws Error = try request("HEAD", url, "", options)
 
 /** A copy of `options` with the header `Content-Type`. */
 priv fn withType(options: Options, contentType: String): Options do
@@ -718,7 +718,7 @@ priv fn withType(options: Options, contentType: String): Options do
  * @return the response, whatever its status
  * @throws when it can't be made; see {@link request}
  */
-fn post(url: String, body: String, contentType: String = "application/octet-stream", options: Options = defaults()): @Response throws Error = try request("POST", url, body, withType(options, contentType))
+fn post(url: String, body: String, contentType: String = "application/octet-stream", options: Options = defaults()): Response throws Error = try request("POST", url, body, withType(options, contentType))
 
 /**
  * A POST request of a form, as a browser sends one.
@@ -728,7 +728,7 @@ fn post(url: String, body: String, contentType: String = "application/octet-stre
  * @return the response, whatever its status
  * @throws when it can't be made; see {@link request}
  */
-fn postForm(url: String, fields: (String, String)[], options: Options = defaults()): @Response throws Error = try post(url, makeQuery(fields), "application/x-www-form-urlencoded", options)
+fn postForm(url: String, fields: (String, String)[], options: Options = defaults()): Response throws Error = try post(url, makeQuery(fields), "application/x-www-form-urlencoded", options)
 
 /**
  * A PUT request.
@@ -739,7 +739,7 @@ fn postForm(url: String, fields: (String, String)[], options: Options = defaults
  * @return the response, whatever its status
  * @throws when it can't be made; see {@link request}
  */
-fn put(url: String, body: String, contentType: String = "application/octet-stream", options: Options = defaults()): @Response throws Error = try request("PUT", url, body, withType(options, contentType))
+fn put(url: String, body: String, contentType: String = "application/octet-stream", options: Options = defaults()): Response throws Error = try request("PUT", url, body, withType(options, contentType))
 
 /**
  * A DELETE request.
@@ -748,7 +748,7 @@ fn put(url: String, body: String, contentType: String = "application/octet-strea
  * @return the response, whatever its status
  * @throws when it can't be made; see {@link request}
  */
-fn delete(url: String, options: Options = defaults()): @Response throws Error = try request("DELETE", url, "", options)
+fn delete(url: String, options: Options = defaults()): Response throws Error = try request("DELETE", url, "", options)
 
 // ---------------------------------------------------------------------------------------------------
 // The server
@@ -757,7 +757,7 @@ fn delete(url: String, options: Options = defaults()): @Response throws Error = 
 priv const POLL_MILLIS: Long = 50
 
 /** How a server works. */
-rec ServerOptions as
+mut rec ServerOptions as
     /** How many connections are served at the same time; more of them wait. */
     workers: Int = 16
     /** How long a read or write of a request may take, once it has started. */
@@ -773,19 +773,19 @@ rec ServerOptions as
 fn serverDefaults(): ServerOptions = ServerOptions { workers = 16 }
 
 /** What serves requests: a function from a request to a response. */
-type Handler = (@Request) => @Response
+type Handler = (Request) => Response
 
 /** What serves requests and can fail, which the client sees as the status 500. */
-type FailingHandler = (@Request) => @Response throws Error
+type FailingHandler = (Request) => Response throws Error
 
 /** The handler of a server that hasn't started. */
-priv fn unserved(req: @Request): @Response = text(503, "Service Unavailable\n")
+priv fn unserved(req: Request): Response = text(503, "Service Unavailable\n")
 
 /** The failing handler of a server that hasn't started. */
-priv fn unservedFailing(req: @Request): @Response throws Error = text(503, "Service Unavailable\n")
+priv fn unservedFailing(req: Request): Response throws Error = text(503, "Service Unavailable\n")
 
 /** A server: {@link server}. */
-rec Server as
+mut ref rec Server as
     /** Where it listens. {@code listener.address.port} is the port, also when the system chose it. */
     listener: net.Listener
     /** How it works. */
@@ -795,7 +795,7 @@ rec Server as
     /** Held by the worker that is waiting for a connection. */
     accepting: thread.Mutex
     /** The workers, once it has started. */
-    workers: @List<thread.Thread>
+    workers: List<thread.Thread>
     /** What serves requests, when {@code canFail} is false. */
     handler: Handler = fn unserved
     /** What serves requests, when {@code canFail} is true. */
@@ -811,45 +811,29 @@ rec Server as
  * @return the server, in the current pool, which must outlive it
  * @throws when the port is in use, or needs privileges this program doesn't have
  */
-fn server(port: Int, host: String = "0.0.0.0", options: ServerOptions = serverDefaults()): @Server throws OsError do
+fn server(port: Int, host: String = "0.0.0.0", options: ServerOptions = serverDefaults()): Server throws OsError do
     val l = try net.listen(port, host)
     val running = new thread.Atomic { 0 }
-    val workers: @List<thread.Thread> = list()
+    val workers: List<thread.Thread> = list()
     ret new Server { l, options, running, try thread.mutex(), workers }
 
 /** Whether the workers should go on. */
-priv fn isRunning(s: @Server): Bool = thread.load(s.running) != 0
-
-/** Where a function leaves what it made, for a caller that also wants to catch its error. */
-priv rec Slot as
-    /** The response. */
-    response: @Response? = null
-    /** The request. */
-    request: @Request? = null
-    /** The connection. */
-    connection: @net.Connection? = null
-
-/**
- * Runs a handler that can fail.
- * @throws when it fails
- */
-priv fn fillResponse(handler: FailingHandler, req: @Request, slot: @Slot) throws Error do
-    slot.response = try handler(req)
+priv fn isRunning(s: Server): Bool = thread.load(mut @s.running) != 0
 
 /** Runs the handler, in a way that can't fail: a failure becomes the status 500. */
-priv fn answer(s: @Server, req: @Request): @Response do
+priv fn answer(s: Server, req: Request): Response do
     ret s.handler(req) if not s.canFail
-    val slot = new Slot { response = null }
-    try fillResponse(s.failing, req, slot) catch e do
+    val res = try s.failing(req) catch e do
         log.error("http: ${req.method} ${req.path}: ${describe(e)}")
-    ret slot.response ?? text(500, "Internal Server Error\n")
+        ret text(500, "Internal Server Error\n")
+    ret res
 
 /**
  * Reads the request line and what follows it.
  * @return the request, or null when the connection ended first
  * @throws when it isn't valid, or reading fails
  */
-priv fn readRequest(s: @Server, r: @Reading): @Request? throws Error do
+priv fn readRequest(s: Server, r: @Reading): Request? throws Error do
     var first = try headLine(r) ?? ret null
     // One empty line before a request is allowed: some clients send one after the body of the last.
     if first.len == 0 do
@@ -890,7 +874,7 @@ priv fn readRequest(s: @Server, r: @Reading): @Request? throws Error do
  * @param keepOpen whether the connection stays open after it
  * @throws when sending fails, or a header would break the message
  */
-priv fn sendResponse(c: @net.Connection, method: String, res: @Response, keepOpen: Bool) throws Error do
+priv fn sendResponse(c: net.Connection, method: String, res: Response, keepOpen: Bool) throws Error do
     val b = stringBuilder(256 + res.body.len)
     val noBody = res.status == 204 or res.status == 304 or (res.status >= 100 and res.status < 200)
     b.append("HTTP/1.1 ${res.status} ${res.reason}\r\n")
@@ -904,7 +888,7 @@ priv fn sendResponse(c: @net.Connection, method: String, res: @Response, keepOpe
     try net.send(c, b.build())
 
 /** Whether the next request has come; false when it didn't in time, or the server is stopping. */
-priv fn awaitRequest(s: @Server, c: @net.Connection): Bool do
+priv fn awaitRequest(s: Server, c: net.Connection): Bool do
     val started = time.instant()
     while isRunning(s) do
         val came = net.waitReadable(c, time.millis(POLL_MILLIS)) ?? ret false
@@ -912,24 +896,17 @@ priv fn awaitRequest(s: @Server, c: @net.Connection): Bool do
         ret false if time.elapsed(started).micros > s.options.idleTimeout.micros
     ret false
 
-/**
- * Reads a request.
- * @throws when it isn't valid, or reading fails
- */
-priv fn fillRequest(s: @Server, r: @Reading, slot: @Slot) throws Error do
-    slot.request = try readRequest(s, r)
-
 /** Serves one request, in the current pool, and says whether the connection stays open. */
-priv fn serveOne(s: @Server, c: @net.Connection): Bool do
+priv fn serveOne(s: Server, c: net.Connection): Bool do
     val r = new Reading { c, s.options.maxBody }
-    val slot = new Slot { response = null }
-    try fillRequest(s, r, slot) catch e do
+    val read = try readRequest(s, r) catch e do
         val status = if e.code == ERR_RANGE do 431 else r.refusal
         if status != 0 do
             val message = concat(e.message, "\n")
             try sendResponse(c, "", text(status, message), false) catch e2 do
                 log.debug("http: can't send a refusal: ${e2.message}")
-    val req = slot.request ?? ret false
+        ret false
+    val req = read ?? ret false
     val res = answer(s, req)
     val keepOpen = not hasToken(req.headers, "Connection", "close") and not hasToken(res.headers, "Connection", "close") and isRunning(s)
     try sendResponse(c, req.method, res, keepOpen) catch e3 do
@@ -942,37 +919,34 @@ priv fn serveOne(s: @Server, c: @net.Connection): Bool do
     ret keepOpen
 
 /** Serves a connection until it closes, with a pool for each request. */
-priv fn serveConnection(s: @Server, c: @net.Connection) do
+priv fn serveConnection(s: Server, c: net.Connection) do
     net.setTimeout(c, s.options.timeout)
     var open = true
     while open and awaitRequest(s, c) do
         pool do
             open = serveOne(s, c)
 
-/**
- * Waits for a connection for a moment.
- * @throws when none comes, or accepting fails
- */
-priv fn acceptInto(s: @Server, slot: @Slot) throws OsError do
-    slot.connection = try net.accept(s.listener, time.millis(POLL_MILLIS))
+/** Waits for a connection for a moment, taking its turn with the other workers; null when none came. */
+priv fn acceptNext(s: Server): net.Connection? do
+    thread.lock(s.accepting)
+    defer thread.unlock(s.accepting)
+    ret null if not isRunning(s)
+    val c = try net.accept(s.listener, time.millis(POLL_MILLIS)) catch e do
+        if e.code != ERR_TIMEOUT do
+            // Out of file descriptors, say. There is nothing to do but to try again soon.
+            log.warn("http: can't accept a connection: ${e.message}")
+            time.sleep(time.millis(POLL_MILLIS))
+        ret null
+    ret c
 
 /** Waits for a connection for a moment, and serves it. */
-priv fn serveNext(s: @Server) do
-    val slot = new Slot { response = null }
-    thread.lock(s.accepting)
-    if isRunning(s) do
-        try acceptInto(s, slot) catch e do
-            if e.code != ERR_TIMEOUT do
-                // Out of file descriptors, say. There is nothing to do but to try again soon.
-                log.warn("http: can't accept a connection: ${e.message}")
-                time.sleep(time.millis(POLL_MILLIS))
-    thread.unlock(s.accepting)
-    if val c = slot.connection do
+priv fn serveNext(s: Server) do
+    if val c = acceptNext(s) do
         serveConnection(s, c)
         net.close(c)
 
 /** What each worker runs. Only one at a time waits for a connection, so none of them is stuck when the server stops. */
-priv fn work(s: @Server) do
+priv fn work(s: Server) do
     while isRunning(s) do
         pool do
             serveNext(s)
@@ -981,18 +955,20 @@ priv fn work(s: @Server) do
  * Starts the workers.
  * @throws when the system can't start a thread
  */
-priv fn startWorkers(s: @Server) throws OsError do
-    thread.store(s.running, 1)
+priv fn startWorkers(s: Server) throws OsError do
+    thread.store(mut @s.running, 1)
+    // The workers share the Server, which isn't `flat`: they only read it, except for its atomics and what its own locks guard,
+    // and it lives until stop has joined them all.
     for i in 0..<s.options.workers do
-        s.workers.push(try thread.spawn(fn work, s))
+        s.workers.push(try unsafe thread.spawn(fn work, s))
 
 /**
  * Starts serving requests on other threads, and goes on. {@link stop} and {@link wait} end it.
  * @param s the server
- * @param handler what serves requests
+ * @param handler what serves requests, which the workers keep (`escaping`): a lambda that uses the caller's `val`s is fine, its `var`s aren't
  * @throws when the system can't start a thread
  */
-fn start(s: @Server, handler: Handler) throws OsError do
+fn start(s: Server, escaping handler: Handler) throws OsError do
     s.handler = handler
     try startWorkers(s)
 
@@ -1003,7 +979,7 @@ fn start(s: @Server, handler: Handler) throws OsError do
  * @param handler what serves requests
  * @throws when the system can't start a thread
  */
-fn start(s: @Server, handler: FailingHandler) throws OsError do
+fn start(s: Server, escaping handler: FailingHandler) throws OsError do
     s.failing = handler
     s.canFail = true
     try startWorkers(s)
@@ -1012,14 +988,14 @@ fn start(s: @Server, handler: FailingHandler) throws OsError do
  * Tells a server to stop, which a handler can do too. Requests that are being served are finished. {@link wait} waits for that.
  * @param s the server
  */
-fn stop(s: @Server) do
-    thread.store(s.running, 0)
+fn stop(s: Server) do
+    thread.store(mut @s.running, 0)
 
 /**
  * Waits until a server has stopped, and closes its port.
  * @throws when a worker can't be joined
  */
-fn wait(s: @Server) throws OsError do
+fn wait(s: Server) throws OsError do
     for worker in s.workers do
         try thread.join(worker)
     s.workers.clear()
@@ -1031,7 +1007,7 @@ fn wait(s: @Server) throws OsError do
  * @param handler what serves requests
  * @throws when the system can't start a thread
  */
-fn run(s: @Server, handler: Handler) throws OsError do
+fn run(s: Server, handler: Handler) throws OsError do
     try start(s, handler)
     try wait(s)
 
@@ -1041,6 +1017,6 @@ fn run(s: @Server, handler: Handler) throws OsError do
  * @param handler what serves requests
  * @throws when the system can't start a thread
  */
-fn run(s: @Server, handler: FailingHandler) throws OsError do
+fn run(s: Server, handler: FailingHandler) throws OsError do
     try start(s, handler)
     try wait(s)

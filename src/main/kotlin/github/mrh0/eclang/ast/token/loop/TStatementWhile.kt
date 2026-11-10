@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token.loop
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.TExprNest
 import github.mrh0.eclang.ast.token.data.TBoolean
@@ -15,7 +16,7 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 /** `while condition do`, optionally with an `else` block that runs when the loop ends without `break`. */
-class TStatementWhile(location: Loc, private val condition: ITok, private val body: ITok, private val elseBody: ITok?, private val assigned: Set<String>) : Tok(location), ILabeledLoop {
+class TStatementWhile(location: Loc, private val condition: ITok, private val body: ITok, private val elseBody: ITok?, private val assigned: Set<String>) : NonValueTok(location), ILabeledLoop {
     override var label: String? = null
 
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {

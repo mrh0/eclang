@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token.branch
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.ast.token.op.requireBool
 import github.mrh0.eclang.context.CompileData
@@ -14,7 +15,7 @@ import github.mrh0.ect2.Type
 import github.mrh0.ect2.Types
 
 /** `statement if condition`. After `ret 0 if x == null`, x is known not to be null. */
-class TTailIf(location: Loc, private val body: ITok, private val condition: ITok?) : Tok(location) {
+class TTailIf(location: Loc, private val body: ITok, private val condition: ITok?) : NonValueTok(location) {
     val isConditional get() = condition != null
 
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {

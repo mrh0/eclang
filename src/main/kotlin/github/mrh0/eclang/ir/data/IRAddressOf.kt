@@ -12,6 +12,8 @@ class IRAddressOf(location: Loc, val expr: IIR) : IR(location) {
     override fun isConstant() = expr.isConstant()
 
     override fun toC(sb: CSourceBuilder, c: Context) {
+        // `&(*__ec_at_AInt(a, i, ...))` is the pointer the bounds check gives.
+        if (expr is github.mrh0.eclang.ir.accessor.IRAccessorArray && expr.isChecked) return expr.pointerC(sb, c)
         sb.put('&')
         expr.toC(sb, c)
     }

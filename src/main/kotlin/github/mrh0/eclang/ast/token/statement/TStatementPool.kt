@@ -2,6 +2,7 @@ package github.mrh0.eclang.ast.token.statement
 
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
+import github.mrh0.eclang.ast.NonValueTok
 import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.context.Lifetimes
@@ -20,7 +21,7 @@ import github.mrh0.ect2.Types
  * ends, however it ends (`ret`, `break`, `try`, ...); [Lifetimes] rejects keeping anything from it longer.
  * [name] names the pool inside the block, for `new x in name` from a nested block.
  */
-class TStatementPool(location: Loc, private val name: String?, private val body: ITok) : Tok(location) {
+class TStatementPool(location: Loc, private val name: String?, private val body: ITok) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         val parent = cd.temp().replace("tmp", "parent")
         cd.ctx().push()
@@ -54,7 +55,7 @@ class TStatementPool(location: Loc, private val name: String?, private val body:
     override fun toString() = "TStatementPool($name, $body)"
 
     /** The deferred statement that leaves the block: frees [pool] and makes [parent] the current pool again. */
-    private class Leave(location: Loc, private val parent: String, private val pool: String) : Tok(location) {
+    private class Leave(location: Loc, private val parent: String, private val pool: String) : NonValueTok(location) {
         override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> = Types.None to IRPoolLeave(location, parent, pool)
     }
 

@@ -12,7 +12,7 @@ rec Node<T> as
     value: T
     next: @Node<T>?
 
-rec Stack<T> as
+mut rec Stack<T> as
     items: T[]
     count: Size = 0
 
@@ -36,7 +36,7 @@ fn length(list: @Node<T>?): Int do
     ret n
 
 /** `T` is only in the result: the expected type decides it. */
-fn stack(capacity: Size): @Stack<T> = new Stack<T> { new (<T>)[capacity] }
+fn stack(capacity: Size): @Stack<T> = new Stack<T> { unsafe new (<T>)[capacity] }
 
 fn add(s: @Stack<T>, value: <T>) do
     s.items[s.count] = value
@@ -53,7 +53,7 @@ fn stackOf(...values: <T>): @Stack<T> do
     ret s
 
 fn mapped(values: <T>[], f: (<T>) => <U>): <U>[] do
-    val out = new (<U>)[values.len]
+    val out = unsafe new (<U>)[values.len]
     for i, v in values do
         out[i] = f(v)
     ret out

@@ -19,7 +19,7 @@ declare type apr_dso_handle_sym_t as @Any
 ### <a id="apr_dso_load"></a>`apr_dso_load`
 
 ```ec
-fn apr_dso_load(res_handle: @@apr_dso_handle_t, path: CString, ctx: @apr_pool_t): apr_status_t
+fn apr_dso_load(out res_handle: @apr_dso_handle_t, path: CString, ctx: @apr_pool_t): apr_status_t
 ```
 
 *Binds the C function `apr_dso_load`.*

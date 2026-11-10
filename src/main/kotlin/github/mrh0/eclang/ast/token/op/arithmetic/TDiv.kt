@@ -1,5 +1,6 @@
 package github.mrh0.eclang.ast.token.op.arithmetic
 
+import github.mrh0.eclang.ast.PointerFlow
 import github.mrh0.eclang.ast.ITok
 import github.mrh0.eclang.ast.Loc
 import github.mrh0.eclang.ast.Tok
@@ -11,6 +12,8 @@ import github.mrh0.ect2.Type
 
 /** `a / b`. Two whole numbers divide to a whole number, rounding towards zero (like C). */
 class TDiv(location: Loc, val left: ITok, val right: ITok) : Tok(location) {
+    override fun pointerFlow(): PointerFlow = PointerFlow.Nothing // a number or Bool
+
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> =
         arithmetic(cd, location, "/", left, right,
             { a, b -> if (b == 0L) throw ArithmeticException("division by zero") else a / b },
