@@ -12,6 +12,8 @@
 #   tests/memory/freed.ec built with `run --check-memory` (AddressSanitizer) must be reported for using freed memory
 #   bindings/raylib     checked against raylib.h when it is installed or on C_INCLUDE_PATH, skipped otherwise
 #   bindings/ffmpeg     checked against FFmpeg's headers, and its examples run, when they are installed or on C_INCLUDE_PATH, skipped otherwise
+#   bindings/sqlite     checked against sqlite3.h, and its examples run, when it is installed or on C_INCLUDE_PATH, skipped otherwise
+#   bindings/cimgui     checked (functions and struct fields) against cimgui.h of the same ImGui version, and its examples built (headless.ec run), when it is on C_INCLUDE_PATH, skipped otherwise
 # Usage: tests/run.sh [name-filter]
 cd "$(dirname "$0")/.." || exit 1
 shopt -s nullglob
@@ -141,6 +143,83 @@ if [ -z "$1" ] || [[ ffmpeg == *"$1"* ]]; then
             if [ -z "$problem" ]; then echo "pass ffmpeg bindings ($(sed -E 's/^.*: (.*)\.$/\1/' <<< "$made"))"; passed=$((passed + 1))
             else fail "ffmpeg" "$problem"; fi
         fi
+    fi
+fi
+
+# bindings/sqlite (not part of core:), when sqlite3.h is installed or on C_INCLUDE_PATH: the `declare fn`s must match
+# it, constants.ec must be what generate.py makes of it (when it is the version constants.ec was made from), and the
+# examples must build and work: books.ec on its own, sql.ec on a database file it makes and reads again.
+if [ -z "$1" ] || [[ sqlite == *"$1"* ]]; then
+    header=$(echo '#include <sqlite3.h>' | gcc -E -H -x c - 2>&1 > /dev/null | grep -m1 '/sqlite3\.h$' | sed 's/^\.* //')
+    if [ -z "$header" ]; then echo "skip sqlite bindings (sqlite3.h not found: install SQLite's development files (libsqlite3-dev) or put its directory on C_INCLUDE_PATH)"
+    else
+        problem=""
+        version=$(grep -m1 -oP '#define SQLITE_VERSION\s+"\K[^"]+' "$header")
+        ours=$(sed -n 2p bindings/sqlite/constants.ec | grep -oP 'SQLite \K[0-9.]+[0-9]')
+        bindings/sqlite/generate.py "$(dirname "$header")" > "$OUT/sqlite-constants.ec" 2> "$OUT/sqlite-generate.err" || problem="generate.py failed: $(head -3 "$OUT/sqlite-generate.err")"
+        if [ -z "$problem" ] && [ "$version" == "$ours" ] && ! cmp -s "$OUT/sqlite-constants.ec" bindings/sqlite/constants.ec; then problem="constants.ec isn't what bindings/sqlite/generate.py makes of $header: run it again"; fi
+        if [ -z "$problem" ] && ! tools/check-bindings.py "$OUT/sqlite" bindings/sqlite/sqlite.ec > "$OUT/sqlite.out" 2>&1; then problem="$(grep -m5 error "$OUT/sqlite.out")"; fi
+        for example in bindings/sqlite/examples/*.ec; do
+            [ -n "$problem" ] && break
+            name=$(basename "$example" .ec)
+            if ! java -jar "$JAR" -c "$example" -o "$OUT/sqlite-$name.c" > "$OUT/sqlite-$name.err" 2>&1 || [ -s "$OUT/sqlite-$name.err" ]; then problem="$example: $(head -5 "$OUT/sqlite-$name.err")"
+            elif ! gcc -fwrapv -fno-strict-aliasing -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-but-set-variable "$OUT/sqlite-$name.c" -o "$OUT/sqlite-$name" -I/usr/include/apr-1.0 -lsqlite3 -lapr-1 -lm 2> "$OUT/sqlite-$name.err"; then problem="$example: gcc: $(head -5 "$OUT/sqlite-$name.err")"; fi
+        done
+        # What each run must print (a part of its output), with the arguments it is run with; `!` first: it must fail.
+        expect() {
+            local name=$1 wanted=$2 failing=""; shift 2
+            [ "$1" == "!" ] && { failing=1; shift; }
+            [ -n "$problem" ] && return
+            if "$OUT/sqlite-$name" "$@" > "$OUT/sqlite-$name.run" 2>&1; then [ -n "$failing" ] && problem="examples/$name.ec $* should fail, but printed: $(head -5 "$OUT/sqlite-$name.run")"
+            elif [ -z "$failing" ]; then problem="examples/$name.ec failed: $(tail -3 "$OUT/sqlite-$name.run")"; fi
+            if [ -z "$problem" ] && ! grep -qF -- "$wanted" "$OUT/sqlite-$name.run"; then problem="examples/$name.ec should print '$wanted', but printed: $(head -5 "$OUT/sqlite-$name.run")"; fi
+        }
+        expect books "U.K.L.G. Ursula K. Le Guin    3 book(s), 4.38"
+        expect books "Cover: 4 bytes, starting with 89 50"
+        expect books "rc 2067 is SQLITE_CONSTRAINT_UNIQUE: true, kind ERR_ARGUMENT: true"
+        expect sql "pear | 1.5 | NULL" "$OUT/sqlite.db" "CREATE TABLE fruit (name TEXT, price REAL, stock INTEGER); INSERT INTO fruit VALUES ('apple', 0.5, 10), ('pear', 0.75, NULL); -- a comment
+SELECT name, price * 2 AS double_price, stock FROM fruit ORDER BY name;"
+        expect sql "apple,pear" "$OUT/sqlite.db" "SELECT group_concat(name) AS names FROM fruit"
+        expect sql "no such table: nope" ! "$OUT/sqlite.db" "SELECT * FROM nope"
+        if [ -z "$problem" ]; then echo "pass sqlite bindings (SQLite $version)"; passed=$((passed + 1))
+        else fail "sqlite" "$problem"; fi
+    fi
+fi
+
+# bindings/cimgui (not part of core:), when cimgui.h of the version cimgui.ec was made from is installed or on
+# C_INCLUDE_PATH: the `declare fn`s and the struct fields must match it, cimgui.ec must be what generate.py makes when
+# the header's directory is a cimgui checkout, and the examples must build: headless.ec is also run when libcimgui
+# links, and raylib.ec (which needs a window) is only compiled, when raylib.h is found too.
+if [ -z "$1" ] || [[ cimgui == *"$1"* ]]; then
+    header=$(echo '#include <cimgui.h>' | gcc -E -H -x c - 2>&1 > /dev/null | grep -m1 '/cimgui\.h$' | sed 's/^\.* //')
+    version=$(sed -n 2p "${header:-/dev/null}" 2>/dev/null | grep -oP 'version "\K[^"]+')
+    if [ -z "$header" ]; then echo "skip cimgui bindings (cimgui.h not found: build cimgui (see bindings/cimgui/README.md) and put its directory on C_INCLUDE_PATH)"
+    elif ! grep -q "Dear ImGui $version " bindings/cimgui/cimgui.ec; then echo "skip cimgui bindings ($header is for Dear ImGui $version, the bindings are for another version)"
+    else
+        problem=""; notes=""
+        checkout=$(dirname "$header")
+        if [ -f "$checkout/generator/output/definitions.json" ] && [ -f "$checkout/imgui/imgui.h" ]; then
+            if ! bindings/cimgui/generate.py "$checkout" > "$OUT/cimgui-generated.ec" 2> "$OUT/cimgui-generate.err"; then problem="generate.py failed: $(head -3 "$OUT/cimgui-generate.err")"
+            elif ! cmp -s "$OUT/cimgui-generated.ec" bindings/cimgui/cimgui.ec; then problem="cimgui.ec isn't what bindings/cimgui/generate.py makes of $checkout: run it again"; fi
+        else notes="$notes, not regenerated (no cimgui checkout at the header)"; fi
+        if [ -z "$problem" ] && ! tools/check-bindings.py --fields "$OUT/cimgui" bindings/cimgui/cimgui.ec > "$OUT/cimgui.out" 2>&1; then problem="$(grep -m5 error "$OUT/cimgui.out")"; fi
+        build() {   # compiles an example to $OUT/cimgui-NAME.o
+            local name=$1
+            if ! java -jar "$JAR" -c "bindings/cimgui/examples/$name.ec" -o "$OUT/cimgui-$name.c" > "$OUT/cimgui-$name.err" 2>&1 || [ -s "$OUT/cimgui-$name.err" ]; then problem="examples/$name.ec: $(head -5 "$OUT/cimgui-$name.err")"
+            elif ! gcc -fwrapv -fno-strict-aliasing -Wall -Wextra -Werror -Wno-unused-variable -Wno-unused-but-set-variable -c "$OUT/cimgui-$name.c" -o "$OUT/cimgui-$name.o" -I/usr/include/apr-1.0 2> "$OUT/cimgui-$name.err"; then problem="examples/$name.ec: gcc: $(head -5 "$OUT/cimgui-$name.err")"; fi
+        }
+        [ -z "$problem" ] && build headless
+        if [ -z "$problem" ]; then
+            if ! gcc "$OUT/cimgui-headless.o" -o "$OUT/cimgui-headless" -lcimgui -lapr-1 -lm 2> "$OUT/cimgui-link.err"; then notes="$notes, headless.ec not run (libcimgui doesn't link: put its directory on LIBRARY_PATH)"
+            elif ! "$OUT/cimgui-headless" > "$OUT/cimgui-headless.run" 2>&1; then problem="examples/headless.ec failed: $(tail -3 "$OUT/cimgui-headless.run")"
+            elif ! grep -qF "clicks: 1, enabled: false, speed: 2.5" "$OUT/cimgui-headless.run"; then problem="examples/headless.ec should print 'clicks: 1, enabled: false, speed: 2.5', but printed: $(head -5 "$OUT/cimgui-headless.run")"; fi
+        fi
+        if [ -z "$problem" ]; then
+            if echo '#include <raylib.h>' | gcc -E -x c - > /dev/null 2>&1; then build raylib
+            else notes="$notes, raylib.ec not compiled (raylib.h not found)"; fi
+        fi
+        if [ -z "$problem" ]; then echo "pass cimgui bindings (Dear ImGui $version$notes)"; passed=$((passed + 1))
+        else fail "cimgui" "$problem"; fi
     fi
 fi
 

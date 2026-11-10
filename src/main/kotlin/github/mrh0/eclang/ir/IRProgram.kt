@@ -50,10 +50,16 @@ class IRProgram(
         val types = sb.types.definitions()
 
         val standard = listOf("stdio.h", "stdlib.h", "string.h", "math.h", "stdbool.h", "stddef.h", "stdint.h", "limits.h", "stdalign.h", "signal.h", "sys/resource.h", "apr_general.h", "apr_pools.h")
+        // `use "define:NAME"` comes before every #include, as a -D option would.
+        val defines = uses.filterIsInstance<IRDefine>()
+        if (defines.isNotEmpty()) {
+            defines.map { it.line() }.distinct().forEach { sb.putLine(it) }
+            sb.putLine()
+        }
         standard.forEach { sb.putLine("#include <$it>") }
         sb.putLine()
         sb.commentLine("Uses")
-        uses.filter { it !is IRInclude || it.path !in standard }.forEach { it.toC(sb, c) }
+        uses.filter { (it !is IRInclude || it.path !in standard) && it !is IRDefine }.forEach { it.toC(sb, c) }
         sb.putLine()
         sb.commentLine("Runtime")
         sb.putLine(if (sb.types.checkMemory) checkedRuntime() else RUNTIME)
@@ -128,7 +134,8 @@ class IRProgram(
         // Which header declares a C type isn't known, so a signature with one takes them all; most libraries need none.
         val includes = listOf("stdbool.h", "stddef.h", "stdint.h") + if (c.usesCTypes) listOf("apr_pools.h") + uses.filterIsInstance<IRInclude>().map { it.path } else listOf()
         val guard = "${name.uppercase()}_H"
-        return "#ifndef $guard\n#define $guard\n\n${includes.distinct().joinToString("") { "#include <$it>\n" }}\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n" +
+        val defines = if (c.usesCTypes) uses.filterIsInstance<IRDefine>().map { it.line() + "\n" }.distinct().joinToString("") else ""
+        return "#ifndef $guard\n#define $guard\n\n$defines${includes.distinct().joinToString("") { "#include <$it>\n" }}\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n" +
             "typedef struct { size_t len; char* data; } __ec_string_t;\n$definitions\n\n${prototypes.joinToString("\n")}\n\n#ifdef __cplusplus\n}\n#endif\n\n#endif\n"
     }
 

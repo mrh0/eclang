@@ -6,6 +6,7 @@ import github.mrh0.eclang.ast.Tok
 import github.mrh0.eclang.context.CompileData
 import github.mrh0.eclang.error.EcError
 import github.mrh0.eclang.ir.IIR
+import github.mrh0.eclang.ir.IRDefine
 import github.mrh0.eclang.ir.IREmbed
 import github.mrh0.eclang.ir.IRInclude
 import github.mrh0.eclang.ir.IRPass
@@ -16,6 +17,7 @@ import github.mrh0.ect2.Types
 class TGlobalUse(location: Loc, val path: String) : NonValueTok(location) {
     override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
         if (path.startsWith(LIBRARY)) return link(cd, path.removePrefix(LIBRARY))
+        if (path.startsWith(DEFINE)) return define(path.removePrefix(DEFINE))
         if (path.endsWith(".ec")) return Types.None to IRPass(location, "use $path")
         if (path.startsWith("core:")) {
             if (path.endsWith(".c")) return Types.None to IREmbed(location, path, Util.getStream(location, path).bufferedReader().use { it.readText() })
@@ -36,11 +38,26 @@ class TGlobalUse(location: Loc, val path: String) : NonValueTok(location) {
         return Types.None to IRPass(location, "Link with -l$name")
     }
 
+    /**
+     * `use "define:NAME"` (or `NAME=value`): a C `#define` before every `#include` of the C file, for headers that
+     * look for one, such as cimgui.h's `CIMGUI_DEFINE_ENUMS_AND_STRUCTS`.
+     */
+    private fun define(text: String): Pair<Type, IIR> {
+        val name = text.substringBefore('=')
+        val value = if ('=' in text) text.substringAfter('=') else null
+        if (!Regex("[A-Za-z_][A-Za-z0-9_]*").matches(name) || name.startsWith("__ec_"))
+            throw EcError(location, "`use \"$DEFINE$text\"` needs the name of a C macro: `use \"${DEFINE}NAME\"`, or `use \"${DEFINE}NAME=1\"` to give it a value. Names starting with `__ec_` are kept for the compiler.")
+        if (value != null && !Regex("-?[A-Za-z0-9_.]+").matches(value))
+            throw EcError(location, "The value of `use \"$DEFINE$text\"` must be a number or a name (letters, digits, `_` and `.`). Write a longer value as a `const` in eclang.")
+        return Types.None to IRDefine(location, name, value)
+    }
+
     override fun toString(): String {
         return "TGlobalUse($path)"
     }
 
     private companion object {
         const val LIBRARY = "lib:"
+        const val DEFINE = "define:"
     }
 }

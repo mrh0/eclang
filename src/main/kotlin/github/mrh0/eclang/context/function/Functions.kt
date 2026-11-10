@@ -113,8 +113,9 @@ class Overload(
     /** For `export fn`: the name C calls it by, which is [cName]. */
     val exportName: String? = null,
     /**
-     * When the caller leaves out `at: Location = caller` parameters: the overload that has them, whose C function this calls, and
-     * where each goes among its parameters. This one is never compiled; the call fills them in with the place of the call.
+     * When the caller leaves out `at: Location = caller` parameters, or parameters with defaults of a C function: the overload that
+     * has them, whose C function this calls, and where each goes among its parameters. This one is never compiled; the call fills
+     * them in with the place of the call or the default.
      */
     val full: Overload? = null,
     val callerFilled: Map<Int, Parameter> = mapOf(),
@@ -252,7 +253,7 @@ class Functions(private val cd: CompileData) {
         throws?.let { cd.storable(func.location, it, "error type of '$name'") }
         varArg?.takeIf { it.isVarArg && !Overload.containsTypeParam(it.type) }?.let { cd.storable(it.location, it.type, "the variadic parameter '${it.name}'") }
         fixed.filter { it.isCaller }.forEach { p ->
-            if (isExternal) throw EcError(p.location, "C functions have no default values, so parameter '${p.name}' can't be `caller`. Declare an eclang function that takes the place and calls it.")
+            if (isExternal) throw EcError(p.location, "A C function can't take a Location, so parameter '${p.name}' can't be `caller`. Declare an eclang function that takes the place and calls it.")
             if (p.isMut || !THere.takes(cd, p.type)) throw EcError(p.location, "`caller` gives a parameter the place of the call, as a Location (core:errors.ec), a String (\"file.ec:12\") or an Int (the line), " +
                 "but '${p.name}' is a ${if (p.isMut) "mut " else ""}${p.type}. Write `${p.name}: Location = caller`.")
         }
@@ -281,8 +282,9 @@ class Functions(private val cd: CompileData) {
         val list = overloads.getOrPut(key(module, name)) { mutableListOf() }
         val earlier = list.size
         // A copy that leaves out a `caller` parameter calls the one that has it: those come first, and [made] finds them.
+        // So does one that leaves out a default of a C function, which has no body to set it in: the call passes the default.
         val made = HashMap<List<Type?>, Overload>()
-        fun filled(combo: List<Parameter?>) = combo.indices.filter { combo[it] == null && fixed[it].isCaller }
+        fun filled(combo: List<Parameter?>) = combo.indices.filter { combo[it] == null && (fixed[it].isCaller || isExternal) }
         for (combo in combinations.sortedBy { filled(it).isNotEmpty() }) {
             val callers = filled(combo)
             val full = if (callers.isEmpty()) null else made.getValue(combo.mapIndexed { i, p -> if (i in callers) fixed[i].type else p?.type })
@@ -453,10 +455,13 @@ class Functions(private val cd: CompileData) {
         if (winners.size > 1) throw EcAmbiguousSignatureError(location, name, written.map { it.first }, winners.map { it.overload.describe() })
 
         val (picked, _, bindings, given) = winners[0]
-        // `at: Location = caller` left out: the overload that has it, given the place of this call.
+        // `at: Location = caller` left out: the overload that has it, given the place of this call. A default of a C
+        // function left out is compiled here, in the module of the declaration, as C has nowhere else to put it.
         val chosen = picked.full ?: picked
         val args = if (picked.full == null) given else given.toMutableList().apply {
-            picked.callerFilled.toSortedMap().forEach { (i, p) -> add(i, THere.value(cd, location, p.type)) }
+            picked.callerFilled.toSortedMap().forEach { (i, p) ->
+                add(i, if (p.isCaller) THere.value(cd, location, p.type) else cd.inModule(picked.module) { p.default!!.process(cd, p.type) })
+            }
         }
         val argTypes = args.map { it.first }
         val target = if (chosen.isTemplate) instantiate(location, chosen, argTypes, bindings, expected) else chosen

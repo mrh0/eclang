@@ -1,0 +1,39 @@
+A = "1"
+B = "two words"
+C = "3"
+D = ""
+COLOR = "#fff"
+--
+S = "no ${A} \\n here"
+D = "tab\tquote\" dollar$ back\\ odd\\q"
+--
+M = "line one\nline two"
+N = "a\nb"
+--
+HOME_X = ""
+A = "1"
+P = "1/bin:1"
+Q = "1/bin:1!"
+R = "$A"
+--
+X = "2"
+--
+A.b_c9 = "ok"
+--
+error: line 1, column 1: expected a variable name (letters, digits, _ and ., not starting with a digit), and found '='
+error: line 1, column 1: expected a variable name (letters, digits, _ and ., not starting with a digit), and found '1'
+error: line 1, column 2: 'A' needs '=' and a value after it: A=value
+error: line 1, column 3: this value has no closing "
+error: line 1, column 7: only a comment can follow a quoted value. Put the whole value inside the quotes
+error: line 1, column 3: '${' needs a variable name and a '}' after it. Write \$ in double quotes, or use single quotes, for a plain $
+error: line 1, column 3: '${' needs a variable name and a '}' after it. Write \$ in double quotes, or use single quotes, for a plain $
+2
+from file
+from file!
+shell
+3
+file
+0
+load: not found: /nonexistent/.env: No such file or directory
+from file
+the environment variable 'ECLANG_ENV_MISSING' isn't set: set it, or add ECLANG_ENV_MISSING=... to the .env file

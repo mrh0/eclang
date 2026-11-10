@@ -167,6 +167,12 @@ use "zlib.h"
 use "lib:z"
 ```
 
+Define a C macro with the `define:` prefix, for a header that looks for one: `use "define:NAME"` or `use "define:NAME=value"` (a number or a name) writes `#define NAME value` at the top of the C file, before every `#include`, as a `-D` option would, and in a library's header too.
+```plaintext
+use "define:CIMGUI_DEFINE_ENUMS_AND_STRUCTS"
+use "cimgui.h"
+```
+
 Import another `.ec` file. A plain path is looked up next to the file that has the `use`, then in the working directory. The `core:` prefix loads files bundled with the compiler (from [src/main/resources](src/main/resources)). Each file is loaded once, however many files use it.
 ```plaintext
 use "core:io.ec"
@@ -179,7 +185,7 @@ Bundled libraries:
 - [c/](src/main/resources/c): declarations for C's standard headers, one file per header (`core:c/stdio.ec`, `core:c/stdlib.ec`, `core:c/string.ec`, `core:c/ctype.ec`, `core:c/time.ec`, `core:c/unistd.ec`, `core:c/termios.ec`, `core:c/ioctl.ec`, ...).
 - [apr/](src/main/resources/apr): declarations for the Apache Portable Runtime, one file per APR header (`core:apr/pools.ec`, `core:apr/strings.ec`, `core:apr/tables.ec`, `core:apr/hash.ec`, ...).
 
-Bindings for other C libraries, which aren't bundled, are in [bindings/](bindings): [raylib](bindings/raylib/README.md) (`use "bindings/raylib/raylib.ec"`).
+Bindings for other C libraries, which aren't bundled, are in [bindings/](bindings): [raylib](bindings/raylib/README.md) (`use "bindings/raylib/raylib.ec"`), [FFmpeg](bindings/ffmpeg/README.md) (`use "bindings/ffmpeg/ffmpeg.ec"`), [SQLite](bindings/sqlite/README.md) (`use "bindings/sqlite/sqlite.ec"`) and [Dear ImGui through cimgui](bindings/cimgui/README.md) (`use "bindings/cimgui/cimgui.ec"`).
 
 ## Variables
 
@@ -777,6 +783,15 @@ A pointer result (a pointer, `CString` or C array) of a `declare fn` is never nu
 ```plaintext
 declare fn printf as (format: CString, value: Any): None
 declare fn abs extern "fabs" as (x: Double): Double
+```
+
+A parameter can have a default value, as in an eclang function. C has none, so a call that leaves it out passes the default itself: it is compiled at each call, in the module of the `declare fn`.
+
+```plaintext
+declare fn strtol as (s: CString, end: @CString? = null, base: Int = 10): Long
+
+strtol("42"c)               // strtol("42", NULL, 10)
+strtol("ff"c, base = 16)
 ```
 
 A C parameter that is a pointer to something the function fills in or changes can be a `mut` parameter (see [Mutable Parameters](#mutable-parameters)), passed with `mut x`. One C only writes, without reading it first, is an `out` parameter, which also takes a nullable variable of a pointer type: C overwrites its null. The variable is still a `T?` afterwards, as C may leave it null when it fails.
@@ -2067,6 +2082,7 @@ The standard library is bundled with the compiler. Each part is loaded with `use
 | `core:unicode.ec` | `unicode.` | code points of UTF-8 text: going through them, encoding, validating, repairing |
 | `core:bytes.ec` | `bytes.` | a binary reader and writer with a byte order, varints |
 | `core:csv.ec` | `csv.` | reading and writing CSV (RFC 4180), tables with a header |
+| `core:env.ec` | `env.` | loading environment variables from a `.env` file |
 | `core:log.ec` | `log.` | levels, timestamps, output to stderr or a file, from any thread |
 | `core:regex.ec` | `regex.` | matching, capturing, replacing and splitting, in linear time |
 | `core:http.ec` | `http.` | URLs, an HTTP/1.1 client and a small server |
@@ -2445,6 +2461,21 @@ while true do
 io.log(csv.stringify([["a,b", "c"], ["1", "2"]]))
 val tabs = csv.Options { separator = '\t' }       // also quote, lineBreak, skipBlankLines, strict
 val cells = try csv.parse(text, tabs)
+```
+
+### .env files
+
+`core:env.ec` reads `NAME=value` lines, with `#` comments, an optional `export `, single quotes (taken as written) and double quotes (with `\n`, `\t`, `\"`, `\\`, `\$` and `${NAME}`). Quoted values can go over several lines, and `${NAME}` also works in an unquoted value. `load` keeps variables that are already set unless it's given `override = true`. An error has the line and column.
+
+```plaintext
+use "core:env.ec"
+
+try env.load()                                   // .env in the current directory
+try env.loadIfExists(".env.local", override = true)
+val url = try env.require("DATABASE_URL")        // a NotFoundError that names the variable
+val port = env.get("PORT") ?? "8080"
+
+val values = try env.parse("A=1\nB=\"${A}/x\"\n")  // a Map<String, String>, nothing set
 ```
 
 ### Logging
