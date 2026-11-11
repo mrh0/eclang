@@ -16,6 +16,7 @@ import github.mrh0.eclang.ast.token.op.TIs
 import github.mrh0.eclang.ast.token.op.TRange
 import github.mrh0.eclang.ast.token.op.compare.TEquals
 import github.mrh0.eclang.ast.token.op.compare.TGreaterOrEquals
+import github.mrh0.eclang.ast.token.op.compare.TGreaterThan
 import github.mrh0.eclang.ast.token.op.compare.TLessOrEquals
 import github.mrh0.eclang.ast.token.op.compare.TLessThan
 import github.mrh0.eclang.ast.token.op.logical.TAnd
@@ -127,6 +128,8 @@ private class WhenOn(location: Loc, private val subject: ITok, private val arms:
     /** Whether the subject equals [value], or is in it when it is a range. */
     private fun matches(at: Loc, value: ITok): ITok {
         val range = value.unnested() as? TRange ?: return TEquals(at, subject, value)
+        // `a..>b` counts down from a to just above b: b < x <= a.
+        if (range.descending) return TExprNest(at, TAnd(at, TGreaterThan(at, subject, range.to!!), TLessOrEquals(at, subject, range.from!!)))
         val low = range.from?.let { TGreaterOrEquals(at, subject, it) }
         val high = range.to?.let { if (range.inclusive) TLessOrEquals(at, subject, it) else TLessThan(at, subject, it) }
         return if (low != null && high != null) TExprNest(at, TAnd(at, low, high)) else low ?: high!!

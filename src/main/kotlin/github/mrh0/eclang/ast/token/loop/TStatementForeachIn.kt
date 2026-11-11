@@ -62,7 +62,7 @@ class TStatementForeachIn(
     }
 
     private fun range(cd: CompileData, hint: Type, range: TRange): IIR {
-        val op = if (range.inclusive) "..=" else "..<"
+        val op = range.op
         if (pattern != null) throw EcError(location, "A range gives one number per round, so there is no tuple for `$varName` to take apart. Write `for i in a$op" + "b do`.")
         if (indexName != null) throw EcError(location, "A range has no index: write `for $varName in a$op" + "b do`. `for i, x in values` is for arrays and Strings.")
         val name = testIdentifier(location, varName)
@@ -79,7 +79,7 @@ class TStatementForeachIn(
             filtered(cd, hint, listOf()).also { cd.ctx().pop() }
         }) {
             IRStatementForeachInRange(location, cName, IRType(location, type),
-                cd.expect(location, l, type, "start of the range"), cd.expect(location, u, type, "end of the range"), it, range.inclusive)
+                cd.expect(location, l, type, "start of the range"), cd.expect(location, u, type, "end of the range"), it, range.inclusive, range.descending)
         }
     }
 

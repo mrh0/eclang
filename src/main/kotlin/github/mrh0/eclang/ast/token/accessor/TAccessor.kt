@@ -91,6 +91,7 @@ class TAccessor(location: Loc, val expr: ITok, val index: ITok) : Tok(location),
     }
 
     private fun slice(cd: CompileData, t: Type, ir: IIR, range: TRange): Triple<Type, IIR, Type> {
+        if (range.descending) throw EcError(location, "A slice shares the memory of what it slices, so it can't run backwards: write `[b + 1..=a]` for the elements of `[a..>b]`, and count down over them with `for i in a..>b do`.")
         if (t is FixedArray) {
             checkStored(location, expr, t, "sliced")
             checkViewable(location, expr, t, "A slice")

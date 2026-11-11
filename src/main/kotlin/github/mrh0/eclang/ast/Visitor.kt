@@ -569,7 +569,7 @@ class Visitor(private val file: File, private val fixed: Loc? = null, private va
         }
         "<<", "&", "|", "^" -> TBitwise(loc(ctx), ctx.op.text, visit(ctx.left), visit(ctx.right))
         "..<", "..=" -> TRange(loc(ctx), visit(ctx.left), visit(ctx.right), inclusive = ctx.op.text == "..=")
-        "..>" -> throw EcError(loc(ctx), "Range operator `..>` is not supported yet.")
+        "..>" -> TRange(loc(ctx), visit(ctx.left), visit(ctx.right), inclusive = false, descending = true)
         "&&", "and" -> TAnd(loc(ctx), visit(ctx.left), visit(ctx.right))
         "||", "or" -> TOr(loc(ctx), visit(ctx.left), visit(ctx.right))
         "^^", "xor" -> TXOr(loc(ctx), visit(ctx.left), visit(ctx.right))

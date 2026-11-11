@@ -290,7 +290,9 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
 internal fun callIR(cd: CompileData, location: Loc, name: String, target: CallTarget): IIR {
     cd.noteEffect()
     // A function with `requires` is called through a C function that is also given the place of the call, to report a failed one.
-    val (cName, args) = if (target.overload.hasRequires) cd.functions.contractCall(target.overload) to target.args + github.mrh0.eclang.ir.IRRaw(location, github.mrh0.eclang.ir.IRConvert.where(location))
+    // One overload passing a call on to the next (Functions.build) passes on the place it was called from.
+    val at = if (cd.functions.forwardCallSite) "(char*)__ec_at" else github.mrh0.eclang.ir.IRConvert.where(location)
+    val (cName, args) = if (target.overload.hasRequires) cd.functions.contractCall(target.overload) to target.args + github.mrh0.eclang.ir.IRRaw(location, at)
         else target.overload.cName to target.args
     val call = IRGlobalFunctionCall(location, name, cName, IRArguments(location, args.map { IRArgument(location, it) }))
     val enum = if (target.overload.isExternal && target.overload.throws == null) cd.enums[target.type] else null

@@ -433,7 +433,7 @@ Operators bind in this order, tightest first:
 | `&` | bitwise and |
 | `^` | bitwise xor |
 | `\|` | bitwise or |
-| `..<` `..=` | range |
+| `..<` `..=` `..>` | range |
 | `<` `>` `<=` `>=` | |
 | `is` `!is` | type test |
 | `==` `!=` `===` `!==` | |
@@ -539,7 +539,7 @@ val at = offsetof(Point, y)
 ```
 
 #### Ranges
-`a..<b` goes from a up to, but not including, b, and `a..=b` includes b. Ranges count in a `for` loop (`for i in 0..<n do`, see [For](#for)), slice arrays and Strings (`s[1..<3]`, and with an open end `s[1..]` and `s[..<3]`), and match in a `when` arm (`1..<10 do`, see [When](#when)).
+`a..<b` goes from a up to, but not including, b, and `a..=b` includes b. `a..>b` goes the other way: from a down to, but not including, b, so `10..>0` is 10 to 1. Ranges count in a `for` loop (`for i in 0..<n do`, see [For](#for)), slice arrays and Strings (`s[1..<3]`, and with an open end `s[1..]` and `s[..<3]`; not with `..>`, since a slice shares memory in order), and match in a `when` arm (`1..<10 do`, and `10..>0 do` for 1 to 10, see [When](#when)).
 
 #### Pipe
 `x |> f(2)` passes x to the next call as its first argument: it is `f(x, 2)`, and `x |> f` is `f(x)`. Where the value should go somewhere else, write `it`: `x |> g(1, it)`, `x |> it * it`. `it` isn't a keyword: outside a pipe stage (and inside a lambda in one) it is an ordinary name, so a parameter or variable can be called `it`. A chain runs left to right, so `5 |> double |> add(1)` is `add(double(5), 1)`. The value before each `|>` is evaluated once: when `it` appears more than once, the compiler stores it in a temporary first. A stage can also be a lambda: `x |> fn (v: Int) = v - 1`.
@@ -549,7 +549,6 @@ val at = offsetof(Point, y)
 
 #### Not Yet Implemented
 These are parsed, but the compiler reports that they are not supported yet:
-- The range `..>`
 - `yield`, a trailing `while`, and `var`/`val` on parameters
 
 ## Functions
@@ -1279,11 +1278,13 @@ for i, name in names do
     io.log(name)
 ```
 
-Count with a range: `..<` stops before the end, `..=` includes it.
+Count with a range: `..<` stops before the end, `..=` includes it, and `..>` counts down, stopping before the end.
 ```plaintext
 for i in 0..<10 do          // 0 to 9
     io.log(i)
 for i in 1..=10 do          // 1 to 10
+    io.log(i)
+for i in 10..>0 do          // 10 down to 1
     io.log(i)
 ```
 
@@ -1469,6 +1470,13 @@ fn label(s: String?): Size requires s != null = s.len     // s isn't null in the
 - An `ensures` is checked at each `ret` and at the end of a function that returns nothing, where it is reported, with `result` the value returned (`guarantee of get failed: result >= 0`). A function that `throws` checks it only when it returns a value; one that returns `Never` can't have one; and no parameter can be called `result` then.
 - `debug requires` and `debug ensures` are only checked in a debug build. A `requires` that is `debug` proves nothing to the body.
 - A `requires` may use the parameters left out (their default values), and `ensures` sees what `mut` parameters hold at the end. Conditions should have no effects: a contract states a fact, it doesn't do work.
+- `requires` also chooses between functions with the same parameter types. A call goes to the first one, in the order they are declared, whose `requires` hold, or else to the one without `requires` (there may be one). When none fits, the last one's `requires` fails as usual:
+  ```plaintext
+  fn describe(n: Int): String requires n > 0 = "positive"
+  fn describe(n: Int): String requires n < 0 = "negative"
+  fn describe(n: Int): String = "zero"          // describe(0)
+  ```
+  They must return the same type, and `debug requires` doesn't count, as a release build doesn't check it. For now they can't be generic, `declare fn`, `export fn`, or have `...`, `mut`, `own` or `caller` parameters.
 
 ## Type System
 

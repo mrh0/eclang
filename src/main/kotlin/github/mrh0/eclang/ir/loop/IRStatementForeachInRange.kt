@@ -8,8 +8,8 @@ import github.mrh0.eclang.ir.IRType
 import github.mrh0.eclang.output.BlockScope
 import github.mrh0.eclang.output.c.CSourceBuilder
 
-class IRStatementForeachInRange(location: Loc, private val varName: String, private val varType: IRType, private val lower: IIR, private val upper: IIR, private val body: IIR, private val inclusive: Boolean = false) : IR(location) {
-    // `for (int i=a; i<b; i++)`, or `i<=b` when [inclusive].
+class IRStatementForeachInRange(location: Loc, private val varName: String, private val varType: IRType, private val lower: IIR, private val upper: IIR, private val body: IIR, private val inclusive: Boolean = false, private val descending: Boolean = false) : IR(location) {
+    // `for (int i=a; i<b; i++)`, or `i<=b` when [inclusive], or `i>b; i--` when [descending].
     override fun toString(): String {
         return "for($varName, $lower, $upper, $body)"
     }
@@ -19,9 +19,9 @@ class IRStatementForeachInRange(location: Loc, private val varName: String, priv
         varType.toC(sb, c)
         sb.put(" $varName=")
         lower.toC(sb, c)
-        sb.put(";$varName${if (inclusive) "<=" else "<"}")
+        sb.put(";$varName${if (descending) ">" else if (inclusive) "<=" else "<"}")
         upper.toC(sb, c)
-        sb.put(";$varName++")
+        sb.put(";$varName${if (descending) "--" else "++"}")
         sb.put(") ")
         sb.pushScope(BlockScope())
         body.toC(sb, c)

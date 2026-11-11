@@ -130,6 +130,25 @@ class Overload(
     val hasRequires get() = contracts.any { it.requires }
 
     /**
+     * The `requires` that choose between overloads of the same parameter types (not `debug` ones, which a release build doesn't
+     * check): see [dispatch].
+     */
+    val guards get() = contracts.filter { it.requires && !it.debug }
+
+    /**
+     * Overloads with the same parameter types told apart by their `requires` (`fn a(i: Int) requires i > 0` and `fn a(i: Int)`),
+     * in the order they are tried: those with `requires` as declared, then the one without. A call goes to the first; when its
+     * `requires` don't hold it passes the call on to the next (see Functions.build). Null for an ordinary overload.
+     */
+    var dispatch: MutableList<Overload>? = null
+
+    /** The overload a call of this one goes to: the first of its [dispatch]. */
+    val dispatchHead: Overload get() = dispatch?.first() ?: this
+
+    /** The overload this one passes the call on to when its `requires` don't hold, or null. */
+    val dispatchNext: Overload? get() = dispatch?.let { d -> d.getOrNull(d.indexOf(this) + 1) }
+
+    /**
      * True when the function has `<T>`, interface or Any parameters, or a `<T>` only in its result. It is never compiled itself; each call
      * compiles an instance for the concrete argument types instead.
      */
@@ -311,8 +330,15 @@ class Functions(private val cd: CompileData) {
             val full = if (callers.isEmpty()) null else made.getValue(combo.mapIndexed { i, p -> if (i in callers) fixed[i].type else p?.type })
             val present = combo.filterNotNull()
             val absent = fixed.filterIndexed { i, _ -> combo[i] == null && i !in callers }
-            val same = list.indexOfFirst { it.params.map { p -> p.type } == present.map { p -> p.type } && (it.varArg == null) == (varArg == null) }
-            if (same in 0 until earlier) throw EcError(func.location, "Function $name(${present.joinToString { it.type.toString() }}) is already defined at ${list[same].location}.")
+            fun sameTypes(o: Overload) = o.params.map { p -> p.type } == present.map { p -> p.type } && (o.varArg == null) == (varArg == null)
+            val same = list.drop(earlier).indexOfFirst(::sameTypes).let { if (it < 0) -1 else it + earlier }
+            val before = list.take(earlier).filter { sameTypes(it) && it.full == null }
+            val guarded = func.contracts.any { it.requires && !it.debug }
+            val unguarded = before.firstOrNull { it.guards.isEmpty() }
+            if (before.isNotEmpty() && (!guarded && unguarded != null || before.none { it.guards.isNotEmpty() } && !guarded))
+                throw EcError(func.location, "Function $name(${present.joinToString { it.type.toString() }}) is already defined at ${(unguarded ?: before[0]).location}. " +
+                    "Two functions with the same parameter types can only both be defined when `requires` tells them apart: a call goes to the first whose `requires` hold, or else to the one without." +
+                    if ((before + listOf(null)).any { o -> (o?.contracts ?: func.contracts).any { it.debug && it.requires } }) " A `debug requires` doesn't count, as a release build doesn't check it." else "")
             val base = module.cName(name)
             val index = counters.merge(base, 1, Int::plus)!! - 1
             val cName = full?.cName ?: func.exportName ?: if (isExternal) (func.getSourceName() ?: name) else "${base}_$index"
@@ -326,6 +352,7 @@ class Functions(private val cd: CompileData) {
             val overload = Overload(func.location, module, name, cName, present, absent, returns, throws, varArg, body, isExternal, isUnionCopy = isUnionCopy, declaredUnions = declaredUnions,
                 declared = fixed.map { it.name }, namedOnly = same >= 0, exportName = if (full == null) func.exportName else null, full = full, callerFilled = positions, contracts = func.contracts,
                 mutGenerics = mutGenerics)
+            if (before.isNotEmpty()) joinDispatch(func, overload, before)
             list += overload
             // What a C function keeps (`kept`) is stored in its other pointer arguments, which its calls are checked against (see Escapes).
             if (isExternal) for (k in present.filter { it.isKept }) for (o in present) if (o !== k && Lifetimes.holdsPointer(o.type)) cd.escapes.store(overload, Escapes.Store(k.name, o.name))
@@ -336,6 +363,37 @@ class Functions(private val cd: CompileData) {
             if (!isExternal && !overload.isTemplate) toBuild += overload
         }
     }
+
+    /**
+     * Adds [overload] to the [Overload.dispatch] of the earlier overloads [before], which have the same parameter types: one of
+     * them or it has `requires`, and at most one has none.
+     */
+    private fun joinDispatch(func: TFunc, overload: Overload, before: List<Overload>) {
+        val group = before.first().dispatch ?: mutableListOf(before.first()).also { before.first().dispatch = it }
+        val shown = "${overload.name}(${overload.params.joinToString { it.type.toString() }})"
+        fun reject(why: String): Nothing = throw EcError(func.location, "$shown is also defined at ${before.first().location}, with other `requires`, but $why")
+        for (o in group + overload) when {
+            o.full != null || o.callerFilled.isNotEmpty() -> reject("a function with a `caller` parameter can't be told apart from another by `requires` yet. Give one of them another name.")
+            o.namedOnly -> reject("one of them is a copy that only named arguments reach, as its default values leave it with the parameter types of another copy. Give one of them another name.")
+            o.isExternal -> reject("a C function (`declare fn`) can't be told apart from another by `requires`. Give one of them another name.")
+            o.isTemplate -> reject("a generic function (with `<T>`, interface or Any parameters) can't be told apart from another by `requires` yet. Give one of them another name, or concrete parameter types.")
+            o.varArg != null -> reject("a function with `...` can't be told apart from another by `requires` yet. Take an array instead.")
+            o.params.any { it.isMut || it.isOwn } -> reject("a function with `mut` or `own` parameters can't be told apart from another by `requires` yet. Give one of them another name.")
+            o.exportName != null -> reject("an exported function is one C function, so it can't pass calls on to another. Give one of them another name.")
+            o.returns !== overload.returns || o.throws !== overload.throws -> reject("${o.location} returns ${resultOf(o)} and this returns ${resultOf(overload)}. Overloads told apart by `requires` must return the same type.")
+        }
+        group += overload
+        // Those with `requires` first, in the order they were declared (a stable sort), then the one without.
+        val ordered = group.sortedBy { it.guards.isEmpty() }
+        group.clear(); group += ordered
+        overload.dispatch = group
+    }
+
+    /** The overload the call being compiled goes to instead of the first of its [Overload.dispatch] (see [build]). */
+    var forwardTo: Overload? = null
+
+    /** Whether the call being compiled passes on the place it was called from (`__ec_at`), as one overload passing a call to the next does. */
+    var forwardCallSite = false
 
     /** The `export fn`s, in the order they were declared. */
     val exported = ArrayList<Overload>()
@@ -473,12 +531,16 @@ class Functions(private val cd: CompileData) {
             .let { w -> w.filter { it.overload.module === cd.module }.ifEmpty { w } }
             // Copies of one function, made for its default values: arguments in order fill its parameters in order.
             .let { w -> if (w.distinctBy { it.overload.location }.size > 1) w else w.filter { (o) -> o.params.map { it.name } == o.declared.take(o.params.size) }.ifEmpty { w } }
+            // Overloads told apart by `requires` are one: the call goes to the first of them, which passes it on.
+            .distinctBy { it.overload.dispatchHead }
         if (winners.size > 1) throw EcAmbiguousSignatureError(location, name, written.map { it.first }, winners.map { it.overload.describe() })
 
         val (picked, _, bindings, given) = winners[0]
         // `at: Location = caller` left out: the overload that has it, given the place of this call. A default of a C
         // function left out is compiled here, in the module of the declaration, as C has nowhere else to put it.
-        val chosen = picked.full ?: picked
+        // Inside an overload told apart by `requires`, the call that passes it on goes to the next one (see [build]).
+        val chosen = forwardTo?.takeIf { picked.dispatch != null && it.dispatch === picked.dispatch }?.also { forwardTo = null }
+            ?: (picked.full ?: picked).dispatchHead
         val args = if (picked.full == null) given else given.toMutableList().apply {
             picked.callerFilled.toSortedMap().forEach { (i, p) ->
                 add(i, if (p.isCaller) THere.value(cd, location, p.type) else cd.inModule(picked.module) { p.default!!.process(cd, p.type) })
@@ -758,7 +820,7 @@ class Functions(private val cd: CompileData) {
                 val bindings = mutableMapOf<TypeParam, Type>()
                 score(o, listOf(form), bindings)?.let { Scored(o, it, bindings, listOf()) }
             }.minByOrNull { it.cost } ?: continue
-            val target = if (best.overload.isTemplate) instantiate(location, best.overload, listOf(form), best.bindings, Types.None) else best.overload
+            val target = if (best.overload.isTemplate) instantiate(location, best.overload, listOf(form), best.bindings, Types.None) else best.overload.dispatchHead
             if (target.returns !== Types.String || target.throws != null)
                 throw EcError(target.location, "`\${...}` prints a $t with `str`, so `str` must return a String and can't fail. Give it the result type String, or call it something else.")
             return target
@@ -816,7 +878,7 @@ class Functions(private val cd: CompileData) {
         return candidates.firstOrNull { o ->
             o.full == null && o.varArg == null && !o.isTemplate && o.params.map { it.type } == signature.params &&
                 o.returns === signature.returns && o.throws === signature.throws
-        }?.also { if (!it.isExternal) use(it.cName) } ?: throw EcError(location, "No function $name has the type $signature. Available: ${candidates.joinToString("; ") { it.describe() }}.")
+        }?.dispatchHead?.also { if (!it.isExternal) use(it.cName) } ?: throw EcError(location, "No function $name has the type $signature. Available: ${candidates.joinToString("; ") { it.describe() }}.")
     }
 
     /** The C functions made for `fn name` as a function value, by C name (see [closureOf]). */
@@ -1005,6 +1067,24 @@ class Functions(private val cd: CompileData) {
         return name
     }
 
+    /** `a and b and c` as `a`, `b`, `c`. */
+    private fun conjuncts(t: ITok): List<ITok> = when (val u = t.unnested()) {
+        is github.mrh0.eclang.ast.token.op.logical.TAnd -> conjuncts(u.left) + conjuncts(u.right)
+        else -> listOf(t)
+    }
+
+    /**
+     * The call of [next] with the parameters of the overload being built, which goes to [next] although the call of its name would
+     * go to the first of its dispatch, and passes on the place the call was made from.
+     */
+    private inner class Forward(c: Loc, name: String, args: List<ITok>, private val next: Overload) : github.mrh0.eclang.ast.token.function.call.TExprCall(c, name, args) {
+        override fun process(cd: CompileData, hint: Type): Pair<Type, IIR> {
+            forwardTo = next
+            forwardCallSite = true
+            try { return super.process(cd, hint) } finally { forwardTo = null; forwardCallSite = false }
+        }
+    }
+
     private fun build(o: Overload): IIR = cd.inModule(o.module) {
         cd.newContext(o.cName, o.bindings)
         cd.function = o
@@ -1035,15 +1115,29 @@ class Functions(private val cd: CompileData) {
             Lifetimes.define(cd, p.name, default, p.type)
             hoisted + IRStatementDefineVal(p.location, local, value)
         }
+        // Overloads told apart by `requires`: when one of this one's doesn't hold, the call goes on to the next overload. Each part
+        // of an `and` is its own check, so the body sees what each proves, as after an `assert`.
+        val next = o.dispatchNext
+        val forwarded = if (next != null) o.guards else listOf()
+        val forward = forwarded.flatMap { c -> conjuncts(c.condition).map { c.location to it } }.mapNotNull { (loc, part) ->
+            val call = Forward(c = loc, name = o.name, args = o.params.map { TNamed(loc, it.name) }, next = next!!)
+            val pass = github.mrh0.eclang.ast.token.statement.TStatementReturn(loc, call)
+            cd.recover {
+                cd.collectHoisted {
+                    github.mrh0.eclang.ast.token.branch.TStatementIf(loc, listOf(github.mrh0.eclang.ast.token.op.logical.TNot(loc, github.mrh0.eclang.ast.token.TExprNest(loc, part))),
+                        listOf(TBlock(loc, listOf(pass))), null).process(cd, Types.None).second
+                }.let { (hoisted, ir) -> hoisted + ir }
+            }
+        }.flatten()
         // What the `requires` prove holds in the body: they are checked before it.
-        val requires = o.contracts.filter { it.requires }.flatMap { c ->
+        val requires = o.contracts.filter { it.requires && it !in forwarded }.flatMap { c ->
             cd.recover { cd.collectHoisted { c.check(o.name, "__ec_at").process(cd, Types.None).second }.let { (hoisted, ir) -> hoisted + ir } } ?: listOf()
         }
         val body = o.body!!.process(cd, Types.None).second as IRBlock
         // `ensures` of a function that returns nothing, at its end; a `ret` checks them itself (TStatementReturn).
         val ensures = if (o.returns === Types.None && !body.diverges) cd.recover { ensures(o, o.contracts.firstOrNull { !it.requires }?.location ?: o.location, null) } ?: listOf() else listOf()
         if (!cd.functionHasErrors) cd.unusedResources.forEach { (name, found) -> cd.report(cd.resourceError(found.first, found.second, "'$name' is never used")) }
-        val block = IRBlock(body.location, entry + defaults + requires + body.statements + ensures, body.deferred, body.diverges)
+        val block = IRBlock(body.location, entry + defaults + forward + requires + body.statements + ensures, body.deferred, body.diverges)
         // What it returns is known when every statement was followed, and no write through a pointer to a local, or by a lambda, was missed.
         cd.escapes.finishResult(o, complete = !cd.functionHasErrors && cd.addressTaken.isEmpty() && cd.changedByClosures.isEmpty())
         if (o.returns !== Types.None && !block.diverges && !cd.functionHasErrors)
