@@ -778,6 +778,10 @@ class Functions(private val cd: CompileData) {
     fun accepts(name: String, argument: Type, qualifier: Module? = null, receiver: Boolean = false) =
         visible(name, qualifier).any { !it.namedOnly && fitsArity(it, 1) && score(it, listOf(argument), HashMap(), receiver = receiver) != null }
 
+    /** Whether a function [name] takes [arguments] (in order, none of them `mut`). */
+    fun accepts(name: String, arguments: List<Type>, qualifier: Module? = null, receiver: Boolean = false) =
+        visible(name, qualifier).any { o -> !o.namedOnly && fitsArity(o, arguments.size) && (try { score(o, arguments, HashMap(), receiver = receiver) } catch (_: EcError) { null }) != null }
+
     /**
      * The call `name(argument)` that a language feature makes for a type (`next` and `iter` of `for`), or null when nothing takes
      * [argument]. The function may be in the module that declares the type, as the feature can be used anywhere the value gets to.

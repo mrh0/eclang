@@ -2,8 +2,8 @@ package github.mrh0.eclang.doc
 
 /**
  * Renders [FileDocs] as Markdown: per file, its overview, then its types, values and functions, each with its
- * signature, description and tags. Undocumented declarations are listed with their signature; `priv` ones only
- * with [includePrivate]. `{@link name}` and `@see name` link to a declaration of the documented files when there is
+ * signature (a function's `requires`/`ensures` under it), description and tags. Undocumented declarations are listed
+ * with their signature; `priv` ones only with [includePrivate]. `{@link name}` and `@see name` link to a declaration of the documented files when there is
  * one (`name`, `Type.field` or `module.name`, `#` working as `.`).
  */
 class Markdown(private val files: List<FileDocs>, private val includePrivate: Boolean = false) {
@@ -54,6 +54,7 @@ class Markdown(private val files: List<FileDocs>, private val includePrivate: Bo
         line()
         line("```ec")
         line(item.signature)
+        item.contracts.forEach { line("    $it") }
         line("```")
         line()
         val doc = item.doc

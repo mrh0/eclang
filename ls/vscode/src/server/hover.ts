@@ -185,7 +185,7 @@ function render({ item, module, owner }: Found): string {
     const params = doc?.all(PARAM).filter(p => p.arg !== null) ?? [];
     const returns = doc?.first(RETURN);
     return [
-        code(item.signature),
+        code([item.signature, ...item.contracts.map(c => `    ${c}`)].join("\n")),
         ...(deprecated ? [`> **Deprecated.** ${inline(deprecated.text)}`.trimEnd()] : []),
         ...(doc && doc.description.length > 0 ? [inline(doc.description)] : []),
         ...(notes.length > 0 ? [notes.map(n => `*${n}.*`).join(" ")] : []),

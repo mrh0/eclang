@@ -56,7 +56,8 @@ public class Oracle {
         List<String> members = new ArrayList<>();
         for (DocItem m : i.getMembers()) members.add(item(m));
         return "{\"kind\":" + str(i.getKind().name()) + ",\"name\":" + str(i.getName()) + ",\"signature\":" + str(i.getSignature()) + ",\"location\":" + loc(i.getLocation())
-            + ",\"doc\":" + ecdoc(i.getDoc()) + ",\"isPrivate\":" + i.isPrivate() + ",\"members\":[" + String.join(",", members) + "],\"cName\":" + str(i.getCName()) + "}";
+            + ",\"doc\":" + ecdoc(i.getDoc()) + ",\"isPrivate\":" + i.isPrivate() + ",\"members\":[" + String.join(",", members) + "],\"cName\":" + str(i.getCName())
+            + ",\"contracts\":[" + String.join(",", i.getContracts().stream().map(Oracle::str).toList()) + "]}";
     }
 
     static String ecdoc(Ecdoc d) {

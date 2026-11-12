@@ -27,31 +27,43 @@ import github.mrh0.eclang.util.StringLiteral
 import github.mrh0.ect2.*
 
 /**
- * Functions the compiler provides, used when the program defines no function of that name. Those that allocate
- * use the current pool (`pool`), or the pool given as their optional first argument (for `clone`, the second):
+ * Functions the compiler provides, used when the program defines no function of that name (or, for [always], none that takes
+ * the arguments). Those that allocate
+ * use the current pool (`pool`), or the pool given as their optional first argument (for `clone` and `copy`, the second):
  * - `format("x is ${x}")`: the interpolated String (a String literal with `${...}` on its own does the same);
  * - `concat(a, b, ...)`: the Strings joined;
  * - `clone(x)`: a deep copy of x (see CTypes.clone);
+ * - `copy(x)`: a copy of x one level deep, sharing what that points to (see CTypes.shallowCopy);
  * - `keep(x)`: a deep copy of x in the pool that was current when the function was called ([TEntryPool]), which outlives
  *   its `pool do` blocks: what a value made in one needs to be kept after it;
- * - `hash(x)`: a hash of x that fits `==` (see CTypes.hash), also when other `hash` functions exist but none takes x;
+ * - `hash(x)`: a hash of x that fits `==` (see CTypes.hash);
  * - `clearPool(p)`: frees everything in p (`new Pool` makes a pool, and `destroy p` frees it: see TNew and
  *   TStatementDestroy; `newPool` and `freePool` only say so);
  * - `cstr(s)`: a copy of the String s that ends with a 0 byte, as a CString for C functions.
  */
 internal object Builtins {
-    private val names = setOf("format", "concat", "clone", "keep", "hash", "newPool", "clearPool", "freePool", "cstr")
+    private val names = setOf("format", "concat", "clone", "copy", "keep", "hash", "newPool", "clearPool", "freePool", "cstr")
+
+    /**
+     * Builtins every value has, also when functions of the same name exist: they are called when none of those takes the
+     * arguments (`clone(p)` with a `fn clone(d: @Door)` around, or the `copy` of `Grid`s).
+     */
+    private val always = setOf("clone", "copy", "keep", "hash")
 
     fun has(name: String) = name in names
 
+    fun always(name: String) = name in always
+
+    /** The builtins `x.name()` can call on every value, with what each gives, for completion. */
+    fun methods(receiver: Type): List<Pair<String, Type>> = listOf("clone" to receiver, "copy" to receiver, "keep" to receiver, "hash" to Types.ULong)
+
     /**
-     * Calls builtin [name] with [args] (for `x.name(...)`, x is `args[0]`, already compiled as [first]). Adds to
+     * Calls builtin [name] with [args] (those in [given] already compiled: for `x.name(...)`, x is `args[0]`). Adds to
      * [pools] each pool the result may be allocated in (null: the current pool), and to [kept] each argument the
      * result may still point into, for Lifetimes.
      */
-    fun call(cd: CompileData, order: ArgumentOrder, location: Loc, name: String, args: List<ITok>, first: Pair<Type, IIR>?, pools: MutableList<ITok?>, kept: MutableList<ITok>): Pair<Type, IIR> {
-        val compiled = HashMap<Int, Pair<Type, IIR>>()
-        first?.let { compiled[0] = it }
+    fun call(cd: CompileData, order: ArgumentOrder, location: Loc, name: String, args: List<ITok>, given: Map<Int, Pair<Type, IIR>>, pools: MutableList<ITok?>, kept: MutableList<ITok>): Pair<Type, IIR> {
+        val compiled = HashMap(given)
         fun arg(i: Int, hint: Type = Types.None) = compiled.getOrPut(i) { order.compile(i, args[i]) { args[i].process(cd, hint) } }
         fun isPoolArg(i: Int) = isPoolType(cd, cd.usable(location, arg(i), "argument ${i + 1} of `$name`").first)
         return when (name) {
@@ -86,6 +98,16 @@ internal object Builtins {
                 if (CTypes.cloneKeepsPointers(type)) kept += args[0]
                 val into = if (args.size == 2) pool(cd, location, "`$name`", arg(1)) else current(cd, location, "`clone`")
                 type to IRClone(location, type, cd.expect(location, value, type, "`clone`"), into)
+            }
+            "copy" -> {
+                if (args.size !in 1..2) throw EcError(location, "`copy` takes the value to copy, and optionally the pool to copy it into: `copy(x)` or `copy(x, p)`.")
+                val value = cd.usable(location, arg(0), "`copy`")
+                val type = cd.storable(location, value.first, "`copy`")
+                CTypes.copyProblem(type)?.let { throw EcError(location, "Can't `copy` a $type: $it. Copy it as a pointer to a type of known size, e.g. `copy(p as unsafe @Point)`.") }
+                pools += args.getOrNull(1)
+                if (CTypes.copyKeepsPointers(type)) kept += args[0]
+                val into = if (args.size == 2) pool(cd, location, "`$name`", arg(1)) else current(cd, location, "`copy`")
+                type to IRClone(location, type, cd.expect(location, value, type, "`copy`"), into, shallow = true)
             }
             "keep" -> {
                 if (args.size != 1) throw EcError(location, "`keep` takes the value to keep: `keep(x)` copies x into the pool the function was called with, which outlives its `pool do` blocks. " +

@@ -652,6 +652,45 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
         }}($pool, $expr)"
     }
 
+    /**
+     * C that copies [expr] (a [t]) one level deep into the pool [pool] (`copy(x)`): what a pointer points to (the whole child
+     * record, for a record that is extended), the elements of an array and the bytes of a String or CString are copied, and
+     * what they in turn point to is shared with the original. Any other value is [expr] itself, as C copies it.
+     */
+    fun shallowCopy(t: Type, expr: String, pool: String): String = when {
+        t is Distinct -> shallowCopy(t.base, expr, pool)
+        t === Types.String || t === Types.CString -> "${cloner(t)}($pool, $expr)"
+        t is ArrayType && !t.isC || t is Pointer && sized(t.target) -> "${copier(t)}($pool, $expr)"
+        t is Union && isPlain(t) && t.members.any { it is Pointer || it === Types.CString } -> {
+            val member = t.members.first { it !== Types.Null }
+            "${helper("__ec_copy_${mangle(t)}") { name ->
+                val c = cName(t)
+                "static inline $c $name(apr_pool_t* pool, $c v) {\n\treturn v == NULL ? NULL : ${shallowCopy(member, "v", "pool")};\n}\n"
+            }}($pool, $expr)"
+        }
+        else -> expr
+    }
+
+    /** `__ec_copy_T(pool, v)`: a copy of the array or pointer `v` one level deep; see [shallowCopy]. */
+    private fun copier(t: Type): String = helper("__ec_copy_${mangle(t)}") { name ->
+        val c = cName(t)
+        val body = if (t is ArrayType) {
+            val e = cName(t.element)
+            "\t$c a = {v.len, ${allocate("pool", "v.len * sizeof($e)", t.element)}};\n\tif (v.len) memcpy(a.data, v.data, v.len * sizeof($e));\n\treturn a;\n"
+        } else {
+            val target = (t as Pointer).target
+            val tc = cName(target)
+            // A pointer to a record that is extended may point to a child record: copy the whole child.
+            val cases = ((target as? Record)?.descendants?.drop(1) ?: listOf()).joinToString("") { child ->
+                val cc = cName(child)
+                "\tcase ${child.id}: { $cc* p = ${allocate("pool", "sizeof($cc)", child)}; *p = *($cc*)v; return ($c)p; }\n"
+            }
+            val dispatch = if (cases.isEmpty()) "" else "\tswitch (*(int*)v) {\n$cases\tdefault: break;\n\t}\n"
+            "$dispatch\t$tc* p = ${allocate("pool", "sizeof($tc)", target)};\n\t*p = *v;\n\treturn p;\n"
+        }
+        "static inline $c $name(apr_pool_t* pool, $c v) {\n$body}\n"
+    }
+
     /** A deep copy of [expr] inside a clone, using its map of copied pointers. */
     private fun copy(t: Type, expr: String, pool: String): String = if (!ownsMemory(t)) expr else "${cloner(t)}($pool, $expr)"
 
@@ -1068,6 +1107,40 @@ class CTypes(private val types: TypeContext, private val printers: Map<Type, Ove
             is Record -> !(t.isExternal && t.fields.isEmpty())
             is Interface, is TypeParam -> false
             else -> true
+        }
+
+        /** Why `copy` can't copy a [t] one level deep, or null when it can (see shallowCopy). */
+        fun copyProblem(t: Type): String? = when {
+            t is Distinct -> copyProblem(t.base)
+            t is ArrayType && t.isC -> "a C array (`T[]c`) has no length, so there is no telling how much to copy"
+            t is Pointer && !isSized(t.target) -> "eclang doesn't know the size of what a ${t} points to"
+            t is Union && isPlain(t) -> t.members.firstNotNullOfOrNull { if (it === Types.Null) null else copyProblem(it) }
+            else -> null
+        }
+
+        /** Whether a copy of a [t] made by `copy` may still hold a pointer of the original: one level deep, it shares the rest. */
+        fun copyKeepsPointers(t: Type): Boolean = when {
+            t is Distinct -> copyKeepsPointers(t.base)
+            t === Types.String || t === Types.CString -> false
+            t is ArrayType -> holdsPointers(t.element)
+            t is Pointer -> holdsPointers(t.target)
+            t is Union && isPlain(t) -> t.members.any { it !== Types.Null && copyKeepsPointers(it) }
+            else -> holdsPointers(t)
+        }
+
+        /** Whether a [t] may hold a pointer (to memory, a function or a String's bytes). */
+        private fun holdsPointers(t: Type, seen: MutableSet<Type> = HashSet()): Boolean {
+            if (!seen.add(t)) return false
+            return when (t) {
+                is Distinct -> holdsPointers(t.base, seen)
+                is FixedArray -> holdsPointers(t.element, seen)
+                is Union -> t.members.any { holdsPointers(it, seen) }
+                is Tuple -> t.elements.any { holdsPointers(it, seen) }
+                is Record -> !t.isDefined || t.isUnion || t.fields.values.any { holdsPointers(it, seen) }
+                is Prim -> t === Types.String || t === Types.CString || t === Types.Any
+                is IntLiteral, is FloatLiteral, is AtomLiteral -> false
+                else -> true
+            }
         }
 
         /** Whether a copy of a [t] made by `clone` may still hold a pointer of the original: see `ownsMemory` for what it doesn't copy. */

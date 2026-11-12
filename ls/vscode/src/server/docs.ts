@@ -12,7 +12,8 @@ export type DocKind = "FUNCTION" | "C_FUNCTION" | "RECORD" | "C_RECORD" | "C_STR
 /**
  * A declaration, with its ecdoc (or null) and its [signature] as written (a function's is rebuilt as
  * `fn name(params): R throws E`, `declare fn` included). [members] are a record's fields, an interface's fields and
- * methods, and an enum's values. [cName] is the C name of a `declare`d function.
+ * methods, and an enum's values. [cName] is the C name of a `declare`d function. [contracts] are a function's
+ * `requires`/`ensures` as written (`debug requires x > 0` included), one per entry.
  */
 export interface DocItem {
     kind: DocKind;
@@ -23,6 +24,7 @@ export interface DocItem {
     isPrivate: boolean;
     members: DocItem[];
     cName: string | null;
+    contracts: string[];
 }
 
 /** A function's lines, and the names that mean something else inside it than outside. */
@@ -160,7 +162,8 @@ export class DocExtractor {
             this.checkTags(doc, name.text, params, returns, throws);
         }
         const cName = f instanceof P.FunctionDeclareContext ? (f._externalName ? content(f._externalName.text) : f._name.text) : null;
-        const item: DocItem = { kind: cName !== null ? "C_FUNCTION" : "FUNCTION", name: name.text, signature, location: loc(name), doc, isPrivate, members: [], cName };
+        const item: DocItem = { kind: cName !== null ? "C_FUNCTION" : "FUNCTION", name: name.text, signature, location: loc(name), doc, isPrivate, members: [], cName,
+            contracts: f instanceof P.FunctionDeclareContext ? [] : this.contracts(form._contracts) };
         this.scopes.push(this.scope(f, item, params));
         return item;
     }
@@ -204,13 +207,13 @@ export class DocExtractor {
 
     private global(g: P.GlobalContext, start: Token, isPrivate: boolean): DocItem | null {
         const item = (kind: DocKind, name: Token, what: string, signature = this.source(g), members: DocItem[] = []): DocItem =>
-            ({ kind, name: name.text, signature, location: loc(name), doc: this.doc(start, what), isPrivate, members, cName: null });
+            ({ kind, name: name.text, signature, location: loc(name), doc: this.doc(start, what), isPrivate, members, cName: null, contracts: [] });
         const value = (kind: DocKind, what: string) => {
             const name = g.getToken(EclangParser.NAME, 0).symbol;
             return item(kind, name, `${what} '${name.text}'`);
         };
         const member = (kind: DocKind, name: Token, signature: string, docStart: Token, what: string): DocItem =>
-            ({ kind, name: name.text, signature, location: loc(name), doc: this.doc(docStart, what), isPrivate: false, members: [], cName: null });
+            ({ kind, name: name.text, signature, location: loc(name), doc: this.doc(docStart, what), isPrivate: false, members: [], cName: null, contracts: [] });
         const fields = (names: Token[], types: P.TypeContext[]) =>
             names.map((n, i) => member("FIELD", n, `${n.text}: ${this.source(types[i])}`, n, "a record field"));
 
@@ -255,6 +258,20 @@ export class DocExtractor {
         const children = ctx.children ?? [];
         const end = children.findIndex(c => (c instanceof TerminalNode && c.getText() === "as") || isLayout(c));
         return this.between(ctx.start, stopOf(children[(end < 0 ? children.length : end) - 1]));
+    }
+
+    /**
+     * The source text of each contract. `debug requires x - 1 > 0` parses as two contracts, `debug requires` and
+     * `x -1 > 0` (see the grammar and `Visitor.contracts`), which are put back together here.
+     */
+    private contracts(list: P.ContractContext[]): string[] {
+        const texts: string[] = [];
+        for (let i = 0; i < list.length;) {
+            const c = list[i++];
+            const split = !c._debug && c._kind.text === "debug" && ["requires", "ensures"].includes(c._condition.getText()) && i < list.length;
+            texts.push(this.between(c.start, (split ? list[i++] : c).stop!));
+        }
+        return texts;
     }
 
     private between(start: Token, stop: Token): string {

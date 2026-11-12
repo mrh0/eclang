@@ -95,6 +95,9 @@ class Completion(private val atom: Boolean) {
             }
             val methods = cd.functions.methodsFor(receiver)
             items += functions(cd, methods.map { it.first }, expected, receiver = true) { o -> methods.first { it.first === o }.second }
+            // Every value has these, unless a function of the same name takes it (that one is listed above).
+            for ((name, type) in github.mrh0.eclang.ast.token.function.call.Builtins.methods(receiver))
+                if (items.none { it.label == name }) items += Item(name, "method", "fn $name(): $type", rank(METHOD, cd, type, expected), params = 0)
             throw Hit(Found("member", expected, receiver, merge(items)))
         }
 

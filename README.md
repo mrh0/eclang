@@ -181,7 +181,7 @@ use "geo.ec"
 ```
 
 Bundled libraries:
-- The standard library (see [Standard Library](#standard-library)): `core:string.ec`, `core:errors.ec` (`Error` and the error types that extend it), `core:array.ec`, `core:structures.ec`, and the modules `core:io.ec` (`io.log`, ...), `core:math.ec`, `core:time.ec`, `core:thread.ec`, `core:os.ec`, `core:term.ec`, `core:encoding.ec`, `core:net.ec`, `core:tls.ec`, `core:path.ec`, `core:fs.ec`, `core:json.ec`, `core:hash.ec`, `core:args.ec`, `core:uuid.ec`, `core:big.ec`, `core:parallel.ec`, `core:test.ec` and `core:bench.ec`.
+- The standard library (see [Standard Library](#standard-library)): `core:string.ec`, `core:errors.ec` (`Error` and the error types that extend it), `core:array.ec`, `core:structures.ec` (or one structure's file: `core:list.ec`, `core:map.ec`, ...), and the modules `core:io.ec` (`io.log`, ...), `core:math.ec`, `core:time.ec`, `core:thread.ec`, `core:os.ec`, `core:term.ec`, `core:encoding.ec`, `core:net.ec`, `core:tls.ec`, `core:path.ec`, `core:fs.ec`, `core:json.ec`, `core:hash.ec`, `core:args.ec`, `core:uuid.ec`, `core:big.ec`, `core:parallel.ec`, `core:test.ec` and `core:bench.ec`.
 - [c/](src/main/resources/c): declarations for C's standard headers, one file per header (`core:c/stdio.ec`, `core:c/stdlib.ec`, `core:c/string.ec`, `core:c/ctype.ec`, `core:c/time.ec`, `core:c/unistd.ec`, `core:c/termios.ec`, `core:c/ioctl.ec`, ...).
 - [apr/](src/main/resources/apr): declarations for the Apache Portable Runtime, one file per APR header (`core:apr/pools.ec`, `core:apr/strings.ec`, `core:apr/tables.ec`, `core:apr/hash.ec`, ...).
 
@@ -1012,7 +1012,7 @@ same.inc()                   // c.count is 2
 - Its fields change for everyone at once, so only a `mut ref rec` lets them change (see [Mutable Records](#mutable-records)). Of a `ref rec` whose fields are fixed, make a new one instead: `c = new Counter { ...@c, count = 2 }`, which changes what c refers to and not what others see.
 - A record literal of one is only made by `new`: `Counter { "x" }` alone is an error. `new Counter` is an empty one, with its defaults. `@c` is the record itself, so `@c = Counter { "reset" }` overwrites it for everyone that refers to it (a `mut ref rec` only).
 - It can contain itself: `ref rec Node as` with `next: Node?` is a linked list. `extends` works between `ref rec`s (`ref rec Cat extends Animal`, then `pet is Cat`), not between a `ref rec` and a plain `rec`. A generic one, `ref rec Box<T>`, makes `Box<Int>` a pointer too.
-- `==` compares references (whether two names refer to the same record); `clone(c)` copies the record, and `${c}` prints it.
+- `==` compares references (whether two names refer to the same record); `copy(c)` copies the record, `clone(c)` also what it points to, and `${c}` prints it.
 - `T?` of one is a plain C pointer that may be NULL. `new Counter[n]` would hold null pointers, so write `new (Counter?)[n]`. `@Counter` is a pointer to a reference (`Counter**`), such as a C out-parameter.
 - `mut c: Counter` changes which record the caller's variable refers to: `c = new Counter { "other" }`.
 
@@ -1612,6 +1612,18 @@ fn a(atom: :log | :dont_log) do
     io.log(atom) if atom == :log
 ```
 
+`Omit<R, :a, :c>` is the enum R (a union of atoms, such as a `type` or a `declare enum`) without the atoms :a and :c. What it leaves out may also be a union of atoms. Each atom left out must be one of R's, so a misspelling is an error, and something must be left:
+
+```plaintext
+type Dir = :north | :south | :east | :west
+type Vertical = :north | :south
+type Horizontal = Omit<Dir, Vertical>       // :east | :west
+
+fn widen(d: Omit<Dir, :west>): Dir = d      // a smaller enum fits a larger one
+```
+
+The result is a plain union of atoms, so a `when` on a `Horizontal` needs only `:east` and `:west`. It isn't the C enum R stands for: a `declare fn` that takes a `declare enum` still takes `Omit` of it, as the atoms convert. `Omit` isn't a keyword, and a type of your own called `Omit` takes precedence.
+
 ### Duck Typing
 
 ```plaintext
@@ -1898,9 +1910,22 @@ val buffer = new Char[size] in p        // Char[], in pool p
 `clone(x)` (or `x.clone()`) makes a deep copy of x in the current pool, and `clone(x, p)` makes one in pool p. Strings, CStrings and arrays are copied, and what a pointer points to is copied too, recursively, so the copy shares no memory with the original. A pointer to a record that is extended copies the record it really points to (`@Animal` holding a `Cat` copies the Cat). What `clone` can't copy is kept as it is: C arrays (`T[]c`, which have no length), `@Any`, function values, C unions, and pointers to C types whose fields eclang doesn't know (such as `Pool`). Each pointer is copied once: a value that two parts of x point to is one value in the copy too, and a value that points back to itself (a cycle) is copied as the same cycle. A pointer into a value (`addrof r.first`) is a copy of its own: in the copy it doesn't point into the copy of r.
 
 ```plaintext
-val copy = clone(list)                  // a @Node? with every node and name copied
+val deep = clone(list)                  // a @Node? with every node and name copied
 val numbers = clone([1, 2, 3])          // an array literal copied out of the stack
 ```
+
+### Copy
+
+`copy(x)` (or `x.copy()`, `copy(x, p)` for pool p) is a shallow copy: it copies one level and shares the rest with the original. For a pointer (or `ref rec`) it makes a new record with the same fields, whose pointers point where the original's do (a pointer to a `Cat` in an `@Animal` copies the whole Cat). For an array it makes new elements that hold the same values, and for a String or CString it copies the text. Any other value is copied as it is, like `val b = a`. A `@Any`, a pointer to a C type whose fields eclang doesn't know, and a C array (`T[]c`) can't be copied, since their size is unknown.
+
+```plaintext
+val p = new Pair { 1, new Inner { 2 } }
+val q = copy(p)                         // a new Pair
+q.n = 10                                // p.n is still 1
+q.inner.a = 20                          // p.inner.a is 20 too: both point to the same Inner
+```
+
+`clone`, `copy`, `keep` and `hash` work on every value. A function of your own with one of these names (`fn copy(g: Grid<T>): Grid<T>`) is used for what it takes, and the builtin for everything else.
 
 ### Keep
 
@@ -2033,7 +2058,7 @@ The program is slower, and uses more memory, so this is for testing. `-c file.ec
 The APR bindings declare APR's functions with eclang types. Functions that return `NULL` when nothing is found (`apr_table_get`, `apr_hash_get`, `apr_hash_next`, ...) return nullable types. C `const` has no eclang equivalent: a `CString` is passed where C wants a `const char*`, and the compiler adds the casts C needs for pointers to pointers and function pointers. `tests/run.sh` checks every binding against the APR headers ([tools/check-bindings.py](tools/check-bindings.py)).
 
 ## Ecdocs
-An ecdoc is a comment starting with `/**`; it documents the declaration right after it, as in Javadoc. `eclang doc` turns them into Markdown. The description is Markdown, and block tags follow it. Types are never written in an ecdoc: `eclang doc` takes them from the declaration, the thrown type included.
+An ecdoc is a comment starting with `/**`; it documents the declaration right after it, as in Javadoc. `eclang doc` turns them into Markdown. The description is Markdown, and block tags follow it. Types are never written in an ecdoc: `eclang doc` takes them from the declaration, the thrown type included, and lists a function's `requires` and `ensures` under its signature.
 ```
 /**
  * The distance between two points, always zero or more.
@@ -2082,7 +2107,20 @@ The standard library is bundled with the compiler. Each part is loaded with `use
 | `core:parallel.ec` | `parallel.` | `map`, `each` and `times` on several threads, waiting until they are done |
 | `core:os.ec` | `os.` | system information, environment variables, users, running programs, signals |
 | `core:array.ec` | top level | algorithms on arrays of any type: `sort`, `map`, `filter`, `reduce`, `zip`, `chunked`, `binarySearch`, ... |
-| `core:structures.ec` | top level | data structures: `List`, `Map`, `Set`, `Deque`, `Heap`, `SlotPool`, `SortedMap`, `SortedSet`, `BitSet`, `LruCache`, and `groupBy`/`associate` of an array |
+| `core:structures.ec` | top level | the data structures below at once, up to `LruCache` |
+| `core:list.ec` | top level | `List` |
+| `core:map.ec` | top level | `Map`, the `hash` functions it uses, and `groupBy`/`associate` of an array |
+| `core:set.ec` | top level | `Set` |
+| `core:deque.ec` | top level | `Deque` |
+| `core:heap.ec` | top level | `Heap` |
+| `core:slotpool.ec` | top level | `SlotPool` |
+| `core:tree.ec` | top level | `SortedMap`, `SortedSet` |
+| `core:bitset.ec` | top level | `BitSet` |
+| `core:lru.ec` | top level | `LruCache` |
+| `core:ringbuffer.ec` | top level | `RingBuffer` |
+| `core:counter.ec` | top level | `Counter` |
+| `core:grid.ec` | top level | `Grid` |
+| `core:disjointset.ec` | top level | `DisjointSet` |
 | `core:encoding.ec` | `encoding.` | hexadecimal, Base64 and URL escapes |
 | `core:net.ec` | `net.` | TCP clients and servers, UDP, DNS lookups, timeouts, waiting for many sockets at once |
 | `core:tls.ec` | `tls.` | TLS through OpenSSL (links `-lssl -lcrypto`): `net.secure`, HTTPS |
@@ -2152,7 +2190,7 @@ val oldest = people.maxBy(fn (p) = p.age)               // a Person?; also minBy
 
 ### Data Structures
 
-`core:structures.ec` has `List<T>` (a growing array), `Map<K, V>` and `Set<T>` (hash tables that keep the order things were added in), `Deque<T>` (a queue with two ends), `Heap<T>` (a priority queue) and `SlotPool<T>` (values reached by key, for lifetimes that don't nest). `list()`, `map()` and the like have no argument to tell what they will hold, so write the type where the result goes.
+`core:structures.ec` has `List<T>` (a growing array), `Map<K, V>` and `Set<T>` (hash tables that keep the order things were added in), `Deque<T>` (a queue with two ends), `Heap<T>` (a priority queue) and `SlotPool<T>` (values reached by key, for lifetimes that don't nest), each also in a file of its own (`core:list.ec`, `core:map.ec`, `core:set.ec`, `core:deque.ec`, `core:heap.ec`, `core:slotpool.ec`, `core:tree.ec`, `core:bitset.ec`, `core:lru.ec`) for a program that needs only some. `list()`, `map()` and the like have no argument to tell what they will hold, so write the type where the result goes.
 
 ```plaintext
 use "core:structures.ec"
@@ -2181,7 +2219,7 @@ val next = queue.popFront() ?? 0
 val tasks: Heap<Int> = heap(fn (a: Int, b: Int) = a < b)
 ```
 
-`List`, `Map`, `Set` and `Deque` have `map`, `filter` and `fold`, which make a new structure of the same kind (`map` of a `Map` gives a `List`; its functions take a key and a value). A `Map` also has `mapValues`, `getOrPut` and `update`, and `core:structures.ec` makes a `Map` of an array:
+`List`, `Map`, `Set`, `Deque`, `Heap` and `SortedMap` have `map`, `filter` and `fold`, which make a new structure of the same kind (`map` of a `Map`, `SortedMap` or `Heap` gives a `List`; those of a map take a key and a value). `heapOf(less, ...)` makes a `Heap` of values, `for` goes through one in no particular order, and `sorted()` gives its elements in the order `pop` would. `Deque` has `get(i)` and `set(i, v)` like a `List`. Both maps also have `mapValues`, a `Map` has `getOrPut` and `update`, and `core:structures.ec` makes a `Map` of an array:
 
 ```plaintext
 val counts: Map<String, Int> = map()
@@ -2221,6 +2259,33 @@ val byX: SortedSet<Point> = sortedSet(fn (a: Point, b: Point) = a.x < b.x)
 val pages: LruCache<String, Page> = lruCache(100)
 if val dropped = pages.put(url, page) do          // the page used least recently, when it was full
     io.log("dropped ${dropped.first}")
+```
+
+`core:ringbuffer.ec`, `core:counter.ec`, `core:grid.ec` and `core:disjointset.ec` aren't in `core:structures.ec`, so that its users can still name their own types `Grid` or `Counter`; `use` them by themselves. `RingBuffer<T>` holds a fixed number of elements and drops the oldest for a new one (`push` returns it); it allocates nothing after it is made. `Counter<T>` counts how often each value was added, `mostCommon(n)` gives the largest counts. `Grid<T>` is a two-dimensional array with `get(x, y)`, `row(y)`, `column(x)` and `neighbors(x, y)` (`neighbors8` with the corners). `DisjointSet` keeps the numbers 0 to n - 1 in groups (union-find): `union(a, b)` joins two groups and `connected(a, b)` says whether two numbers are in one.
+
+```plaintext
+use "core:ringbuffer.ec"
+use "core:counter.ec"
+use "core:grid.ec"
+use "core:disjointset.ec"
+
+val recent: RingBuffer<String> = ringBuffer(100)  // the last 100 lines
+recent.push(line)
+
+val words: Counter<String> = counter()
+words.addAll(text.split(" "))
+for (word, n) in words.mostCommon(3) do
+    io.log("${word}: ${n}")
+
+val board = grid(8, 8, '.')
+board.set(3, 4, '#')
+for (x, y) in board.neighbors(3, 4) do
+    io.log(board.get(x, y))
+
+val parts = disjointSet(graph.len)
+for (a, b) in edges do
+    parts.union(a, b)
+io.log(parts.groups())                            // how many connected parts
 ```
 
 A structure's memory is in the pool that was current when it was made (`list(p, 16)` and `map(p)` take a pool), and it grows there. It doesn't copy what is put in it, so Strings and pointers in it must live at least as long as it does; the compiler doesn't check that through these functions.

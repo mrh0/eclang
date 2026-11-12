@@ -21,7 +21,8 @@ enum class DocKind(val title: String) {
 /**
  * A declaration, with its ecdoc (or null) and its [signature] as written (a function's is rebuilt as
  * `fn name(params): R throws E`, `declare fn` included). [members] are a record's fields, an interface's
- * fields and methods, and an enum's values. [cName] is the C name of a `declare`d function.
+ * fields and methods, and an enum's values. [cName] is the C name of a `declare`d function. [contracts] are a
+ * function's `requires`/`ensures` as written (`debug requires x > 0` included), one per entry.
  */
 class DocItem(
     val kind: DocKind,
@@ -32,6 +33,7 @@ class DocItem(
     val isPrivate: Boolean = false,
     val members: List<DocItem> = listOf(),
     val cName: String? = null,
+    val contracts: List<String> = listOf(),
 )
 
 /**
@@ -104,6 +106,11 @@ class DocExtractor(private val file: File, private val docs: Map<Int, Token>, pr
             is FunctionInlineContext -> Triple(f.name, f.params, f.returnType to f.throwing)
             else -> error("unknown function form ${f.javaClass.simpleName}")
         }
+        val contracts = contracts(when (f) {
+            is FunctionBlockContext -> f.contracts
+            is FunctionInlineContext -> f.contracts
+            else -> listOf()
+        })
         // `fn f(): T throws E` parses either way: as `throws` after the type or as a type `T throws E`.
         val (returns, throws) = written.first.let { r -> if (written.second == null && r is TypeThrowsContext) r.left to r.throwing else written }
         val thrown = throws?.let { text(it).split('|').map { t -> t.trim().removePrefix("(").removeSuffix(")").trim() } }.orEmpty()
@@ -136,7 +143,22 @@ class DocExtractor(private val file: File, private val docs: Map<Int, Token>, pr
             }
         }
         val cName = if (f is FunctionDeclareContext) Util.getStringContent(f.externalName?.text) ?: f.name.text else null
-        return DocItem(if (f is FunctionDeclareContext) DocKind.C_FUNCTION else DocKind.FUNCTION, name.text, signature, Loc(name, file), doc, isPrivate, cName = cName)
+        return DocItem(if (f is FunctionDeclareContext) DocKind.C_FUNCTION else DocKind.FUNCTION, name.text, signature, Loc(name, file), doc, isPrivate, cName = cName, contracts = contracts)
+    }
+
+    /**
+     * The source text of each contract. `debug requires x - 1 > 0` parses as two contracts, `debug requires` and
+     * `x -1 > 0` (see the grammar and `Visitor.contracts`), which are put back together here.
+     */
+    private fun contracts(list: List<ContractContext>): List<String> {
+        val texts = mutableListOf<String>()
+        var i = 0
+        while (i < list.size) {
+            val c = list[i++]
+            val split = c.debug == null && c.kind.text == "debug" && c.condition.text in CONTRACT_KINDS && i < list.size
+            texts += source(c.start, (if (split) list[i++] else c).stop)
+        }
+        return texts
     }
 
     private fun paramName(p: ParameterContext): String? = when (p) {
@@ -197,6 +219,8 @@ class DocExtractor(private val file: File, private val docs: Map<Int, Token>, pr
         val last = before.last().let { (it as? ParserRuleContext)?.stop ?: (it as TerminalNode).symbol }
         return source(ctx.start, last)
     }
+
+    private companion object { val CONTRACT_KINDS = setOf("requires", "ensures") }
 
     private fun isLayout(node: Any): Boolean = node is TerminalNode && node.symbol.type.let { it == NL || it == INDENT || it == DEDENT }
 

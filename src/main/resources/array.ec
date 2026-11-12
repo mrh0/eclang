@@ -10,7 +10,7 @@
  *
  * The functions are top-level, so they can be called on an array. Those that return a new array allocate it in the
  * current pool. An array literal lives on the stack, so `clone` it before sorting it, or to keep it. See
- * core:structures.ec for lists, maps and sets, and for `groupBy` and `associate`, which make a Map of an array.
+ * core:structures.ec for lists, maps and sets, and core:map.ec for `groupBy` and `associate`, which make a Map of an array.
  */
 use "core:errors.ec"
 use "core:string.ec"

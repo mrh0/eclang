@@ -148,7 +148,7 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
             rest.firstOrNull { it.unnested() is TMutArg }?.let { throw EcError((it.unnested() as TMutArg).location, "`$name` is built in, and takes values: none of its parameters is `mut`. Remove `mut`.") }
             if (argNames != null) throw EcError(location, "`$name` is built in, and its arguments have no names. Pass them in order.")
             val (used, kept) = mutableListOf<ITok?>() to mutableListOf<ITok>()
-            return Builtins.call(cd, order, location, name, if (first != null) args else rest, first, used, kept).also { pools = used; aliased = kept; storedInto = kept }
+            return Builtins.call(cd, order, location, name, if (first != null) args else rest, first?.let { mapOf(0 to it) } ?: mapOf(), used, kept).also { pools = used; aliased = kept; storedInto = kept }
         }
         rest.forEach { (it.unnested() as? TAddressOf)?.isArgument = true }
         val count = rest.size + (if (first != null) 1 else 0)
@@ -165,9 +165,15 @@ open class TExprCall(location: Loc, val name: String, val args: List<ITok>, val 
             }.also { types[i + offset] = it.first }
         }
         val processed = order.finish(location).values.toList()
-        // `hash(x)` of a type without a function of its own is generated, like `==`.
-        if (qualifier == null && name == "hash" && names == null && count == 1 && !cd.functions.accepts(name, cd.usable(location, processed[0], "the argument of `hash`").first))
-            return Builtins.call(cd, ArgumentOrder(cd), location, name, if (first != null) args else rest, processed[0], mutableListOf(), mutableListOf())
+        // `clone`, `copy`, `keep` and `hash` work on every value: a function of the same name only takes over for what it takes
+        // (`hash(x)` of a type without a function of its own is generated, like `==`).
+        if (qualifier == null && Builtins.always(name) && names == null && rest.none { it.unnested() is TMutArg } &&
+            !cd.functions.accepts(name, processed.mapIndexed { i, v -> cd.usable(location, v, "argument ${i + 1} of `$name`").first }, receiver = first != null)) {
+            val (used, kept) = mutableListOf<ITok?>() to mutableListOf<ITok>()
+            val result = Builtins.call(cd, ArgumentOrder(cd), location, name, if (first != null) args else rest, processed.withIndex().associate { it.index to it.value }, used, kept)
+            pools = used; aliased = kept; storedInto = kept
+            return result.first to order.wrap(location, result.second)
+        }
         // A function given a pool may return memory from it; an eclang function may also allocate in the current one.
         pools = (if (first != null) args else rest).filterIndexed { i, _ -> processed[i].first === cd.types.pool }
         val mutable = List(count) { i -> if (i < offset) addressed else rest[i - offset].unnested() is TMutArg }
